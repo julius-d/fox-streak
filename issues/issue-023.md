@@ -1,0 +1,1 @@
+Add a icon. Currently the flutter default is used. Now let us use the fox.png
