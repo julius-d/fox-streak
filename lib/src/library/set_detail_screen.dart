@@ -80,12 +80,18 @@ class SetDetailScreen extends ConsumerWidget {
         actions: [
           PopupMenuButton<String>(
             key: const Key('setOverflowMenu'),
-            tooltip: 'Set actions',
+            tooltip: l10n.setActions,
             onSelected: (value) async {
               if (value == 'share') {
-                final set = await setsRepo.getSetById(setId);
-                if (!context.mounted) return;
-                await shareSet(ref, setId, set?.title ?? 'set');
+                try {
+                  final set = await setsRepo.getSetById(setId);
+                  if (!context.mounted) return;
+                  await shareSet(ref, setId, set?.title ?? 'set');
+                } catch (_) {
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context)
+                      .showSnackBar(SnackBar(content: Text(l10n.shareFailed)));
+                }
               } else if (value == 'import') {
                 try {
                   await importSetFromPicker(ref);
@@ -93,6 +99,10 @@ class SetDetailScreen extends ConsumerWidget {
                   if (!context.mounted) return;
                   ScaffoldMessenger.of(context)
                       .showSnackBar(SnackBar(content: Text(e.toString())));
+                } catch (_) {
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context)
+                      .showSnackBar(SnackBar(content: Text(l10n.importFailed)));
                 }
               }
             },

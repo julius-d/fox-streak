@@ -218,7 +218,7 @@ class _SetCard extends ConsumerWidget {
             ...icons,
             PopupMenuButton<String>(
               key: Key('setMenu-${set.id}'),
-              tooltip: 'Set actions',
+              tooltip: l10n.setActions,
               onSelected: (value) {
                 switch (value) {
                   case 'rename':

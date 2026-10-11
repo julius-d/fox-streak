@@ -75,6 +75,9 @@ abstract class AppLocalizations {
   String get directionEnDe;
   String get shareSet;
   String get importSet;
+  String get setActions;
+  String get shareFailed;
+  String get importFailed;
   String get errorRequired;
   String get errorCreatorLength;
   String get errorInvalidPhone;
@@ -172,6 +175,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shareSet => 'Share';
   @override
   String get importSet => 'Import';
+  @override
+  String get setActions => 'Set actions';
+  @override
+  String get shareFailed => 'Sharing failed. Please try again.';
+  @override
+  String get importFailed => 'Import failed. Please try again.';
   @override
   String get errorRequired => 'This field is required';
   @override
@@ -275,6 +284,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get shareSet => 'Teilen';
   @override
   String get importSet => 'Importieren';
+  @override
+  String get setActions => 'Set-Aktionen';
+  @override
+  String get shareFailed => 'Teilen fehlgeschlagen. Bitte versuch es erneut.';
+  @override
+  String get importFailed =>
+      'Importieren fehlgeschlagen. Bitte versuch es erneut.';
   @override
   String get errorRequired => 'Dieses Feld ist erforderlich';
   @override

@@ -16,6 +16,21 @@ import 'package:share_plus/share_plus.dart';
 import '../data/providers.dart';
 import '../data/set_json_codec.dart';
 
+/// Builds the `.foxstreak.json` share filename for a set [title].
+///
+/// Pure (no I/O) so it is unit-testable. Keeps Unicode letters/digits
+/// (German umlauts included), `_`, `-` and spaces; strips everything else.
+/// Blank titles fall back to `set`.
+String shareFileNameForTitle(String title) {
+  final trimmed = title.trim();
+  final safeTitle = trimmed.isEmpty
+      ? 'set'
+      : trimmed
+            .replaceAll(RegExp(r'[^\p{L}\p{N}\-_ ]+', unicode: true), '')
+            .trim();
+  return '${safeTitle.isEmpty ? 'set' : safeTitle}.foxstreak.json';
+}
+
 /// Exports [setId] to a temp `.foxstreak.json` file and opens the share sheet.
 ///
 /// Returns the exported file path, or null when the set no longer exists.
@@ -29,10 +44,7 @@ Future<String?> shareSet(WidgetRef ref, int setId, String title) async {
   } on SetImportException {
     return null;
   }
-  final safeTitle = title.trim().isEmpty
-      ? 'set'
-      : title.trim().replaceAll(RegExp(r'[^\w\- ]+'), '').trim();
-  final fileName = '${safeTitle.isEmpty ? 'set' : safeTitle}.foxstreak.json';
+  final fileName = shareFileNameForTitle(title);
   final file = File('${Directory.systemTemp.path}/$fileName');
   await file.writeAsString(jsonEncode(payload));
   await SharePlus.instance.share(
