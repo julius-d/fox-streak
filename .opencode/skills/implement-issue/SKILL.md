@@ -8,6 +8,8 @@ Remember that we need a clean code with an maintainable architecture and excelle
 
 Create a new git worktree for the issue.
 Then implment the issue.
+When creating new UI, create `integration_test` test for it, to check they realy work.
+Write the `integration_test`, execute it and make sure it passes before you finish the implementation of the issue.
 
 You are done when the issue is implemented, all tests are passing, and the code is formatted.
 Especially: `flutter analyze`, `dart format`, `flutter test`.
