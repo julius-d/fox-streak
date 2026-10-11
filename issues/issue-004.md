@@ -13,8 +13,8 @@ Editors tailored to: vocab DE<->EN, phone numbers, birth dates.
 
 ## Tasks
 1. Reusable `ItemEditor` switching by `type`
-2. Phone input: numeric keyboard, auto-strip spaces/`+49` kept as typed but validated
-3. Date input: `showDatePicker` wrapped in themed calendar sheet, year scrollable (birthdays 1920-today)
+2. Phone input: numeric keyboard (digits only, no `+` key); auto-strip spaces/`-`/`/`/`(`/`)`/`.`/`+` on paste; stored digits-only `^[0-9]{3,15}$` with leading `0` (e.g. `0164256737871`), validated per #002
+3. Date input: `showDatePicker` wrapped in themed calendar sheet, year scrollable (birthdays 1900-01-01..today per #002)
 4. Distractor generator: auto-suggest from same set if user leaves blank
 
 ## Notes

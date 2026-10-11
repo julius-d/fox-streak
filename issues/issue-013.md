@@ -13,7 +13,7 @@ App is fun on first install; APK builds cleanly.
 
 ## Tasks
 1. `assets/seed/*.json` + importer on first launch
-2. Use clearly fake numbers (e.g. 0151-XXXX) to avoid real dialing
+2. Use clearly fake but validator-valid numbers (digit-only reserved range, e.g. `015100000001`…) to avoid real dialing and pass #002 `^[0-9]{3,15}$` import validation
 3. QA: install, airplane-mode (must work offline), rotation, dark mode, large font
 4. Version app `0.1.0+1`, changelog started
 

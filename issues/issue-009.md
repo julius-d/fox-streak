@@ -16,5 +16,5 @@ Status: open | Priority: P0 | Type: feature
 2. `formatDate` locale-aware (de: 14.05.2012, en: 05/14/2012)
 3. Unit tests: leap years, ISO parse
 
-## Open question
-Day-only vs full-date mode (some birthdays remembered without year)? Propose: setting per item `granularity: full|dayMonth`.
+## Open question — DECIDED 2026-10-11
+Day-only vs full-date mode — rejected per #002 (full date only, ISO `YYYY-MM-DD`, range `1900-01-01..today`). No `granularity` column in schema v1.

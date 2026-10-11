@@ -20,6 +20,7 @@ Duolingo has course creation tools; ours is simpler: user-generated decks like Q
 2. FAB "New set" -> title + type-mix allowed in one set
 3. Empty states + sample CTA ("Try demo set")
 4. Widget tests for create/delete flow
+5. Set-detail overflow menu: Share (via `share_plus`) + Import (via `file_picker` + `importSetFromJson` from #002), incl. real-number export warning dialog per #008
 
 ## Out of scope
 Exercise gameplay itself (see #005-#009).

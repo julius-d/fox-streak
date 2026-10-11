@@ -9,22 +9,22 @@ Local-only storage for sets and progress. No accounts. Persistence layer only �
 - Store: **Drift + SQLite** (`drift`, `drift_flutter`; codegen via `drift_dev` + `build_runner`). Hive/Isar rejected: originals discontinued.
 - Scope: schema + repositories + JSON codec + tests. XP formula → #010, streak → #011.
 - Sharing: **JSON file** (`.foxstreak.json`) via share sheet / file picker (UI wiring in #003, codec here).
-- Dates: **full date only** (ISO `YYYY-MM-DD`, year required). No day/month-only mode.
+- Dates: **full date only** (ISO `YYYY-MM-DD`, year required, range `1900-01-01..today`). No day/month-only mode (per-item `granularity` rejected — see #009).
 - Profiles: **single profile** per device (one `ProfileStats` row, id fixed to 0).
 
 ## Schema v1 (Drift tables)
 - `question_sets`: `id INTEGER PK AUTOINCREMENT`, `title TEXT`, `description TEXT DEFAULT ''`, `created_by TEXT` (`parent|teacher|learner`), `created_at INTEGER` (epoch ms), `updated_at INTEGER`
 - `items`: `id`, `set_id FK CASCADE`, `type TEXT` (`vocab|phone|date`), `prompt TEXT`, `answer TEXT`, `direction TEXT NULL` (`deEn|enDe`, vocab only), `choices TEXT NULL` (JSON array of distractors, vocab only), `hint TEXT NULL DEFAULT ''`, `position INTEGER` (ordering inside set)
   - vocab: `prompt` = word in source language, `answer` = translation
-  - phone: `answer` = digits only (`normalizePhone` strips spaces/`-`/`/`/`(`/`)` in #008; store raw digits, 3–15 chars)
+  - phone: `answer` = digits only, German style with leading `0` (e.g. `0164256737871`). `normalizePhone` (see #008) strips spaces/`-`/`/`/`(`/`)`/`.` and any `+`; stored value must match `^[0-9]{3,15}$`
   - date: `answer` = ISO date, validated `1900-01-01..today`
-- `attempts`: `id`, `item_id FK CASCADE`, `ok BOOLEAN`, `at INTEGER` (epoch ms). No XP column — #010 derives XP from attempts.
-- `profile_stats`: single row (`id = 0 CHECK`), `xp_total INTEGER DEFAULT 0`, `streak_count INTEGER DEFAULT 0`, `last_active_day TEXT NULL` (`YYYY-MM-DD`, local tz), `daily_goal_xp INTEGER DEFAULT 30`
+- `attempts`: `id`, `item_id FK CASCADE`, `ok BOOLEAN`, `at INTEGER` (epoch ms). No per-attempt XP column.
+- `profile_stats`: single row (`id = 0 CHECK`), `xp_total INTEGER DEFAULT 0` (accumulator maintained exclusively by #010 `XpService` — sole writer; never written directly by repo callers or lesson code), `streak_count INTEGER DEFAULT 0`, `last_active_day TEXT NULL` (`YYYY-MM-DD`, local tz), `daily_goal_xp INTEGER DEFAULT 30`
 - Drift `schemaVersion = 1`. Later versions add migrations + `migration test`.
 
 ## Repositories (`lib/src/data/`)
 - `SetsRepository`: CRUD sets + items, reorder, duplicate set, `exportSetToJson(id)` / `importSetFromJson(map)` (throws `SetImportException` on bad schema/unknown version)
-- `StatsRepository`: read/update `ProfileStats`, `recordAttempt(itemId, ok, {DateTime? now})`
+- `StatsRepository`: read/update `ProfileStats`, `recordAttempt(itemId, ok, {DateTime? now})` (writes `attempts` row only + ensures profile row exists; MUST NOT touch `streak_count`/`last_active_day` — those are #011 `StreakService`'s exclusive columns)
 - `AppDatabase` (Drift): constructed via `drift_flutter` (`driftDatabase(name: 'fox_streak')`), Riverpod providers: `appDatabaseProvider`, `setsRepositoryProvider`, `statsRepositoryProvider`
 - `Clock` abstraction (`systemClockProvider`, overridable in tests) — returns local `DateTime.now()`; date-only helpers (`toLocalDayString`) live here for reuse in #011
 
