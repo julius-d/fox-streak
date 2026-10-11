@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.6'
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Check formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Analyze
+        run: flutter analyze
+
+      # Added because #017 landed first (strict-casts/inference/raw-types +
+      # riverpod_lint surface via `flutter analyze`; this is the fix-hygiene gate).
+      # NOTE: `dart fix --dry-run` exits 0 even when fixes are proposed, so
+      # grep for the clean marker to make this step fail when fixes exist.
+      - name: Check for auto-fixable issues
+        run: |
+          output="$(dart fix --dry-run 2>&1)"
+          echo "$output"
+          echo "$output" | grep -q "Nothing to fix!"
+
+      - name: Run tests
+        run: flutter test
+
+      - name: Build Android debug APK (smoke check)
+        run: flutter build apk --debug
