@@ -96,3 +96,14 @@ flutter test           # must be green
   `main`), record the green run URL, push a format-breaking commit to confirm
   the red format step, revert it, merge, then record the green `main` run URL
   in the closing comment and flip Status to done.
+
+## Verification (remote runs, 2026-10-11)
+- PR #1 (`chore/ci-018` → `main`): CI green (owner-reported), merged as
+  `e85872c`. Rebased to a #018-only diff before merge (see history).
+- RED proof — PR #2 (`test/ci-red-proof` → `main`, never merged, branch
+  deleted after): `https://github.com/julius-d/fox-streak/actions/runs/38153827942/job/114512572404?pr=2`
+  `Check formatting` failed as expected:
+  `Changed ci_red_probe.dart / Formatted 41 files (1 changed) / Error:
+  Process completed with exit code 1.`
+- PENDING: green `main` run URL (push-to-main CI after the #1 merge) — then
+  flip Status to done.
