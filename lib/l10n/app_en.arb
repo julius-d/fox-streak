@@ -74,5 +74,143 @@
   "errorDuplicateChoice": "Must be different from the answer",
   "errorInvalidDay": "Enter a day 1–31",
   "errorInvalidMonth": "Enter a month 1–12",
-  "errorInvalidYear": "Enter a year 1900–today"
+  "errorInvalidYear": "Enter a year 1900–today",
+  "@exercisePhoneDialPrompt": {
+    "description": "Prompt shown above the dial pad for phone exercises",
+    "placeholders": {}
+  },
+  "exercisePhoneDialPrompt": "Dial the number",
+  "@exercisePhoneRevealHint": {
+    "description": "Tooltip/label for the reveal hint button (eye icon)",
+    "placeholders": {}
+  },
+  "exercisePhoneRevealHint": "Reveal number",
+  "@exercisePhoneRevealHintAria": {
+    "description": "Accessibility label for reveal hint button",
+    "placeholders": {}
+  },
+  "exercisePhoneRevealHintAria": "Reveal the phone number (costs hint bonus)",
+  "@exercisePhoneMaskedDigit": {
+    "description": "Character used to mask digits as they are typed",
+    "placeholders": {}
+  },
+  "exercisePhoneMaskedDigit": "●",
+  "@exercisePhoneCorrect": {
+    "description": "Success message when phone number is dialed correctly",
+    "placeholders": {}
+  },
+  "exercisePhoneCorrect": "Correct!",
+  "@exercisePhoneWrongAnswer": {
+    "description": "Error message showing the correct phone number",
+    "placeholders": {
+      "answer": {"type": "String"}
+    }
+  },
+  "exercisePhoneWrongAnswer": "The number was {answer}",
+  "@lessonEmptySetNote": {
+    "description": "Empty state message for set with no items, prompting to add items",
+    "placeholders": {}
+  },
+  "lessonEmptySetNote": "Add items to start practicing!",
+  "@lessonStart": {
+    "description": "Button label to start a lesson/practice session",
+    "placeholders": {}
+  },
+  "lessonStart": "Practice",
+  "@lessonTitle": {
+    "description": "App bar title for the lesson screen",
+    "placeholders": {}
+  },
+  "lessonTitle": "Lesson",
+  "@lessonQuit": {
+    "description": "Tooltip for the quit button in lesson app bar",
+    "placeholders": {}
+  },
+  "lessonQuit": "Quit lesson",
+  "@lessonProgressLabel": {
+    "description": "Accessibility label for lesson progress bar",
+    "placeholders": {}
+  },
+  "lessonProgressLabel": "Lesson progress",
+  "@lessonCorrect": {
+    "description": "Feedback message for correct answer",
+    "placeholders": {}
+  },
+  "lessonCorrect": "Correct!",
+  "@lessonWrongAnswer": {
+    "description": "Feedback message for wrong answer with correct answer placeholder",
+    "placeholders": {
+      "answer": {"type": "String"}
+    }
+  },
+  "lessonWrongAnswer": "The answer was {answer}",
+  "@lessonCheck": {
+    "description": "Button label to check/submit answer",
+    "placeholders": {}
+  },
+  "lessonCheck": "CHECK",
+  "@lessonContinue": {
+    "description": "Button label to continue to next question after feedback",
+    "placeholders": {}
+  },
+  "lessonContinue": "CONTINUE",
+  "@lessonSkip": {
+    "description": "Button label to skip current question",
+    "placeholders": {}
+  },
+  "lessonSkip": "Skip",
+  "@lessonQuitTitle": {
+    "description": "Title for quit lesson confirmation dialog",
+    "placeholders": {}
+  },
+  "lessonQuitTitle": "Quit lesson?",
+  "@lessonQuitMessage": {
+    "description": "Message for quit lesson confirmation dialog",
+    "placeholders": {}
+  },
+  "lessonQuitMessage": "Your progress will be lost. Are you sure you want to quit?",
+  "@lessonConfirmQuit": {
+    "description": "Confirm button label for quit lesson dialog",
+    "placeholders": {}
+  },
+  "lessonConfirmQuit": "Quit",
+  "@lessonCelebrate": {
+    "description": "Accessibility label for celebration mascot when score > 0",
+    "placeholders": {}
+  },
+  "lessonCelebrate": "Well done!",
+  "@lessonNoScore": {
+    "description": "Accessibility label for empty mascot when score is 0",
+    "placeholders": {}
+  },
+  "lessonNoScore": "Keep practicing!",
+  "@lessonScoreSummary": {
+    "description": "Score summary with correct count, total, and percentage",
+    "placeholders": {
+      "correct": {"type": "int"},
+      "total": {"type": "int"},
+      "pct": {"type": "int"}
+    }
+  },
+  "lessonScoreSummary": "{correct} of {total} correct ({pct}%)",
+  "@lessonXpComingSoon": {
+    "description": "Label for XP coming soon stub",
+    "placeholders": {}
+  },
+  "lessonXpComingSoon": "XP — coming soon",
+  "@lessonStreakComingSoon": {
+    "description": "Label for streak coming soon stub",
+    "placeholders": {}
+  },
+  "lessonStreakComingSoon": "Streak — coming soon",
+  "@lessonPracticeAgain": {
+    "description": "Button label to practice the same set again",
+    "placeholders": {}
+  },
+  "lessonPracticeAgain": "Practice again",
+  "@lessonBackToLibrary": {
+    "description": "Button label to go back to library",
+    "placeholders": {}
+  },
+  "lessonBackToLibrary": "Back to library"
 }

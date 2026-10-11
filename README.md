@@ -62,6 +62,8 @@ Intentional-failure proof: a commit with a `dart format` violation fails the
 `Check formatting` step as expected (red run URL recorded in the #018 closing
 comment); the green `main` run URL is recorded there as well.
 
+> **Format authority:** `dart format` check in CI is authoritative; `.gitattributes`/CRLF normalization is out of scope unless a CI-only format failure proves otherwise.
+
 ## Data layer (issue #002)
 
 Local-only persistence with Drift + SQLite. No accounts.

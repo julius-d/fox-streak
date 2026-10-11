@@ -93,6 +93,36 @@ abstract class AppLocalizations {
   String get errorInvalidDay;
   String get errorInvalidMonth;
   String get errorInvalidYear;
+
+  // Phone exercise (#008)
+  String get exercisePhoneDialPrompt;
+  String get exercisePhoneRevealHint;
+  String get exercisePhoneRevealHintAria;
+  String get exercisePhoneMaskedDigit;
+  String get exercisePhoneCorrect;
+  String exercisePhoneWrongAnswer(String answer);
+
+  // Lesson shell (#005)
+  String get lessonStart;
+  String get lessonTitle;
+  String get lessonQuit;
+  String get lessonProgressLabel;
+  String get lessonCorrect;
+  String lessonWrongAnswer(String answer);
+  String get lessonCheck;
+  String get lessonContinue;
+  String get lessonSkip;
+  String get lessonQuitTitle;
+  String get lessonQuitMessage;
+  String get lessonConfirmQuit;
+  String get lessonCelebrate;
+  String get lessonNoScore;
+  String lessonScoreSummary(int correct, int total, int pct);
+  String get lessonXpComingSoon;
+  String get lessonStreakComingSoon;
+  String get lessonPracticeAgain;
+  String get lessonBackToLibrary;
+  String get lessonEmptySetNote;
 }
 
 class AppLocalizationsEn extends AppLocalizations {
@@ -221,6 +251,62 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorInvalidMonth => 'Enter a month 1–12';
   @override
   String get errorInvalidYear => 'Enter a year 1900–today';
+
+  // Phone exercise (#008)
+  @override
+  String get exercisePhoneDialPrompt => 'Dial the number';
+  @override
+  String get exercisePhoneRevealHint => 'Reveal number';
+  @override
+  String get exercisePhoneRevealHintAria => 'Reveal the phone number (costs hint bonus)';
+  @override
+  String get exercisePhoneMaskedDigit => '●';
+  @override
+  String get exercisePhoneCorrect => 'Correct!';
+  @override
+  String exercisePhoneWrongAnswer(String answer) => 'The number was $answer';
+
+  // Lesson shell (#005)
+  @override
+  String get lessonStart => 'Practice';
+  @override
+  String get lessonTitle => 'Lesson';
+  @override
+  String get lessonQuit => 'Quit lesson';
+  @override
+  String get lessonProgressLabel => 'Lesson progress';
+  @override
+  String get lessonCorrect => 'Correct!';
+  @override
+  String lessonWrongAnswer(String answer) => 'The answer was $answer';
+  @override
+  String get lessonCheck => 'CHECK';
+  @override
+  String get lessonContinue => 'CONTINUE';
+  @override
+  String get lessonSkip => 'Skip';
+  @override
+  String get lessonQuitTitle => 'Quit lesson?';
+  @override
+  String get lessonQuitMessage => 'Your progress will be lost. Are you sure you want to quit?';
+  @override
+  String get lessonConfirmQuit => 'Quit';
+  @override
+  String get lessonCelebrate => 'Well done!';
+  @override
+  String get lessonNoScore => 'Keep practicing!';
+  @override
+  String lessonScoreSummary(int correct, int total, int pct) => '$correct of $total correct ($pct%)';
+  @override
+  String get lessonXpComingSoon => 'XP — coming soon';
+  @override
+  String get lessonStreakComingSoon => 'Streak — coming soon';
+  @override
+  String get lessonPracticeAgain => 'Practice again';
+  @override
+  String get lessonBackToLibrary => 'Back to library';
+  @override
+  String get lessonEmptySetNote => 'Add items to start practicing!';
 }
 
 class AppLocalizationsDe extends AppLocalizations {
@@ -351,6 +437,62 @@ class AppLocalizationsDe extends AppLocalizations {
   String get errorInvalidMonth => 'Monat 1–12 eingeben';
   @override
   String get errorInvalidYear => 'Jahr 1900–heute eingeben';
+
+  // Phone exercise (#008)
+  @override
+  String get exercisePhoneDialPrompt => 'Wähle die Nummer';
+  @override
+  String get exercisePhoneRevealHint => 'Nummer zeigen';
+  @override
+  String get exercisePhoneRevealHintAria => 'Telefonnummer anzeigen (kostet Hinweis-Bonus)';
+  @override
+  String get exercisePhoneMaskedDigit => '●';
+  @override
+  String get exercisePhoneCorrect => 'Richtig!';
+  @override
+  String exercisePhoneWrongAnswer(String answer) => 'Die Nummer war $answer';
+
+  // Lesson shell (#005)
+  @override
+  String get lessonStart => 'Üben';
+  @override
+  String get lessonTitle => 'Lektion';
+  @override
+  String get lessonQuit => 'Lektion verlassen';
+  @override
+  String get lessonProgressLabel => 'Lektionsfortschritt';
+  @override
+  String get lessonCorrect => 'Richtig!';
+  @override
+  String lessonWrongAnswer(String answer) => 'Die Antwort war $answer';
+  @override
+  String get lessonCheck => 'PRÜFEN';
+  @override
+  String get lessonContinue => 'WEITER';
+  @override
+  String get lessonSkip => 'Überspringen';
+  @override
+  String get lessonQuitTitle => 'Lektion verlassen?';
+  @override
+  String get lessonQuitMessage => 'Dein Fortschritt geht verloren. Wirklich verlassen?';
+  @override
+  String get lessonConfirmQuit => 'Verlassen';
+  @override
+  String get lessonCelebrate => 'Gut gemacht!';
+  @override
+  String get lessonNoScore => 'Weiter üben!';
+  @override
+  String lessonScoreSummary(int correct, int total, int pct) => '$correct von $total richtig ($pct%)';
+  @override
+  String get lessonXpComingSoon => 'XP — kommt bald';
+  @override
+  String get lessonStreakComingSoon => 'Serie — kommt bald';
+  @override
+  String get lessonPracticeAgain => 'Nochmal üben';
+  @override
+  String get lessonBackToLibrary => 'Zurück zur Bibliothek';
+  @override
+  String get lessonEmptySetNote => 'Füge Einträge hinzu, um zu üben!';
 }
 
 class _AppLocalizationsDelegate

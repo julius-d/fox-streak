@@ -44,5 +44,8 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Android SDK local properties (contains local SDK path)
+**/local.properties
+
 # Widget Preview related
 .widget_preview/

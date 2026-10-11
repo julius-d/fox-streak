@@ -9,6 +9,8 @@
 //
 // All strings via AppLocalizations (DE + EN). Follows #015 kit reuse only.
 
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -17,6 +19,7 @@ import '../data/database.dart';
 import '../library/library_providers.dart';
 import '../theme/fox_streak_theme.dart';
 import '../widgets/widgets.dart';
+import '../exercises/dial_pad_exercise.dart';
 import 'exercise_card.dart';
 import 'lesson_controller.dart';
 import 'lesson_result.dart';
@@ -290,8 +293,15 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
           onStateChanged: controller.updateDraft,
           l10n: l10n,
         );
+      case 'phone':
+        return buildDialPadExercise(
+          item: item,
+          onStateChanged: controller.updateDraft,
+          l10n: l10n,
+          autoAnswer: autoAnswer,
+        );
       default:
-        // Fallback to placeholder for phone/date until #007-#009
+        // Fallback to placeholder for date until #009
         return _PlaceholderExerciseCard(
           item: item,
           onStateChanged: controller.updateDraft,

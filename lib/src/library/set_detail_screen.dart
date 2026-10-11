@@ -10,7 +10,9 @@ import '../../l10n/app_localizations.dart';
 import '../data/database.dart';
 import '../data/providers.dart';
 import '../data/set_json_codec.dart';
+import '../theme/fox_streak_theme.dart';
 import '../widgets/widgets.dart';
+import '../lesson/lesson.dart';
 import 'item_editor.dart';
 import 'item_type_icons.dart';
 import 'library_providers.dart';
@@ -115,53 +117,67 @@ class SetDetailScreen extends ConsumerWidget {
           if (items.isEmpty) {
             return FoxEmptyState(
               title: l10n.setDetailEmpty,
+              message: l10n.lessonEmptySetNote,
               mascotState: FoxMascotState.empty,
+              ctaLabel: l10n.lessonBackToLibrary,
+              onCta: () => Navigator.of(context).pop(),
+              ctaKey: const Key('emptySetBackToLibraryButton'),
             );
           }
-          return ListView.builder(
-            itemCount: items.length,
-            itemBuilder: (context, index) {
-              final item = items[index];
-              final typeLabel = switch (item.type) {
-                'vocab' => l10n.typeVocab,
-                'phone' => l10n.typePhone,
-                'date' => l10n.typeDate,
-                _ => item.type,
-              };
-              return ListTile(
-                key: Key('itemTile-${item.id}'),
-                leading: Icon(
-                  iconForItemType(item.type),
-                  color: colorForItemType(context, item.type),
-                ),
-                title: Text(item.prompt),
-                subtitle: Text('$typeLabel · ${item.answer}'),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      key: Key('editItem-${item.id}'),
-                      tooltip: l10n.edit,
-                      style: IconButton.styleFrom(
-                        minimumSize: const Size(48, 48),
-                      ),
-                      icon: const Icon(Icons.edit),
-                      onPressed: () => _openItemEditor(context, ref, item),
+          return CustomScrollView(
+            slivers: [
+              SliverList(
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final item = items[index];
+                  final typeLabel = switch (item.type) {
+                    'vocab' => l10n.typeVocab,
+                    'phone' => l10n.typePhone,
+                    'date' => l10n.typeDate,
+                    _ => item.type,
+                  };
+                  return ListTile(
+                    key: Key('itemTile-${item.id}'),
+                    leading: Icon(
+                      iconForItemType(item.type),
+                      color: colorForItemType(context, item.type),
                     ),
-                    IconButton(
-                      key: Key('deleteItem-${item.id}'),
-                      tooltip: l10n.delete,
-                      style: IconButton.styleFrom(
-                        minimumSize: const Size(48, 48),
-                      ),
-                      icon: const Icon(Icons.delete_outline),
-                      onPressed: () =>
-                          _confirmDeleteItem(context, ref, item.id),
+                    title: Text(item.prompt),
+                    subtitle: Text('$typeLabel · ${item.answer}'),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          key: Key('editItem-${item.id}'),
+                          tooltip: l10n.edit,
+                          style: IconButton.styleFrom(
+                            minimumSize: const Size(48, 48),
+                          ),
+                          icon: const Icon(Icons.edit),
+                          onPressed: () => _openItemEditor(context, ref, item),
+                        ),
+                        IconButton(
+                          key: Key('deleteItem-${item.id}'),
+                          tooltip: l10n.delete,
+                          style: IconButton.styleFrom(
+                            minimumSize: const Size(48, 48),
+                          ),
+                          icon: const Icon(Icons.delete_outline),
+                          onPressed: () =>
+                              _confirmDeleteItem(context, ref, item.id),
+                        ),
+                      ],
                     ),
-                  ],
+                  );
+                }, childCount: items.length),
+              ),
+              // Lesson entry button as footer
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(FoxSpacing.lg),
+                  child: LessonEntryButton(setId: setId),
                 ),
-              );
-            },
+              ),
+            ],
           );
         },
       ),
