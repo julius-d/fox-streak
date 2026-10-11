@@ -23,9 +23,23 @@ Flutter learning app (FoxStreak). Local-only MVP, no backend/auth. Backlog lives
 
 ```powershell
 flutter analyze        # must be clean
-flutter test           # widget test: bootstrap home renders
+flutter test           # data-layer tests (test/data/) + bootstrap widget test
 dart format .          # formatter (no separate lint step; lints via flutter_lints in analysis_options.yaml)
 ```
+
+## Data layer (issue #002, done)
+
+- Drift + SQLite (`drift`, `drift_flutter`; codegen `drift_dev`+`build_runner`).
+  Generated `*.g.dart` files are committed; regenerate with:
+  ```powershell
+  dart run build_runner build --delete-conflicting-outputs
+  ```
+- `lib/src/data/`: `database.dart`, `clock.dart`, `validation.dart`,
+  `set_json_codec.dart`, `sets_repository.dart`, `stats_repository.dart`,
+  `providers.dart`, `seed_loader.dart`. Tests in `test/data/` use
+  `NativeDatabase.memory()` + overridable `Clock`.
+- Ownership: `xp_total` ← #010 only; `streak_count`/`last_active_day` ← #011
+  only; `recordAttempt` writes `attempts` rows only.
 
 ## Conventions
 

@@ -34,6 +34,36 @@ flutter build windows       # Windows release (needs VS)
 dart format .
 ```
 
+## Data layer (issue #002)
+
+Local-only persistence with Drift + SQLite. No accounts.
+
+- Schema/tables: `lib/src/data/database.dart` (`schemaVersion = 1`)
+- Repositories: `lib/src/data/sets_repository.dart`,
+  `lib/src/data/stats_repository.dart`
+- Share codec (`.foxstreak.json` v1): `lib/src/data/set_json_codec.dart`
+- Clock abstraction + day helpers: `lib/src/data/clock.dart`
+  (reused by streak logic in #011)
+- Riverpod wiring: `lib/src/data/providers.dart`
+- First-launch seeds: `assets/seed/demo_*.foxstreak.json`
+  (via `SeedLoader`; format documented in `assets/seed/README.md`)
+
+Column ownership: `xp_total` is written exclusively by #010 `XpService`;
+`streak_count`/`last_active_day` exclusively by #011 `StreakService`;
+`StatsRepository.recordAttempt` writes `attempts` rows only.
+
+Sharing deps (`share_plus`, `file_picker`) support Android/iOS/Windows;
+picker/share UI is wired in #003.
+
+## Codegen (Drift)
+
+Generated files (`*.g.dart`) are committed. After editing
+`lib/src/data/database.dart` (or any `@DriftDatabase` file), regenerate:
+
+```powershell
+dart run build_runner build --delete-conflicting-outputs
+```
+
 ## Project docs
 
 - `issues/issue-001.md` — this bootstrap issue
