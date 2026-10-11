@@ -139,7 +139,7 @@ ShareSet decodeSetFromJson(Map<dynamic, dynamic> json, {DateTime? today}) {
     throw const SetImportException('title must be a non-empty string');
   }
   if (createdBy is! String || validateCreatorName(createdBy) != null) {
-    throw SetImportException(
+    throw const SetImportException(
       'createdBy must be a non-empty name (max $kMaxCreatorNameLength chars)',
     );
   }
@@ -247,7 +247,7 @@ ShareItem _decodeItem(int index, Map<dynamic, dynamic> raw, {DateTime? today}) {
     answer: type == 'phone' ? normalizePhone(answer.trim()) : answer.trim(),
     direction: direction,
     choices: choices,
-    hint: hint ?? '',
+    hint: (hint as String?) ?? '',
   );
 }
 

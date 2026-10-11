@@ -267,11 +267,11 @@ void main() {
     });
 
     test('decode(encode(x)) round-trips incl. json string', () {
-      final original = ShareSet(
+      const original = ShareSet(
         title: 'Round',
         description: 'd',
         createdBy: 'teacher',
-        items: const [
+        items: [
           ShareItem(
             type: 'vocab',
             prompt: 'Hund',
@@ -285,7 +285,7 @@ void main() {
         ],
       );
       final viaString = decodeSetFromJson(
-        jsonDecode(original.encode()) as Map,
+        jsonDecode(original.encode()) as Map<String, dynamic>,
         today: kTestToday,
       );
       expect(viaString.toJson(), original.toJson());

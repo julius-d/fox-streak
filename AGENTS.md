@@ -1,6 +1,6 @@
 # AGENTS.md — fox-streak
 
-Flutter learning app (FoxStreak). Local-only MVP, no backend/auth. Backlog lives in `issues/` (`issue-001.md` … `issue-013.md`) — read the relevant issue before coding.
+Flutter learning app (FoxStreak). Local-only MVP, no backend/auth. Backlog lives in `issues/` (see `issues/` for the current range) — read the relevant issue before coding.
 
 ## Shell environment (Windows — read this first)
 
@@ -22,10 +22,14 @@ Flutter learning app (FoxStreak). Local-only MVP, no backend/auth. Backlog lives
 ## Verify
 
 ```powershell
-flutter analyze        # must be clean
+flutter analyze        # must be clean (includes riverpod_lint plugin)
+dart format --output=none --set-exit-if-changed .  # must be clean (or: dart format . then git diff --exit-code)
+dart fix --dry-run     # nothing auto-fixable left
 flutter test           # data-layer tests (test/data/) + bootstrap widget test
-dart format .          # formatter (no separate lint step; lints via flutter_lints in analysis_options.yaml)
 ```
+
+Lints via `flutter_lints` + `riverpod_lint` surface through `flutter analyze`;
+`dart fix --dry-run` is a fix-hygiene check, not a second ruleset.
 
 ## Data layer (issue #002, done)
 

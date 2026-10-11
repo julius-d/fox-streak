@@ -1,20 +1,41 @@
-# This file configures the analyzer, which statically analyzes Dart code to
-# check for errors, warnings, and lints.
+# FoxStreak lint baseline (issue #017).
+#
+# Base choice: stay on tightened `flutter_lints` (not `very_good_analysis`).
+# `flutter_lints` keeps fix churn small on this MVP while hand-picked extra
+# rules below cover formatting hygiene, const usage, and API clarity.
+# Riverpod guardrail: `riverpod_lint` plugin (dev-only, no runtime dep).
+# The repo does not use `riverpod_generator`, so generator-only
+# riverpod_lint rules are no-ops; value is preventive for #004-#011 UI work.
+#
+# Where to propose new rules: open a short issue (do not silently widen this
+# file). Prefer fixing code over adding `// ignore:`; where `ignore:` is
+# unavoidable, add a same-line `// reason` comment (reviewer-checked
+# convention, not analyzer-enforced). No blanket `ignore_for_file` except in
+# generated files.
 #
 # The issues identified by the analyzer are surfaced in the UI of Dart-enabled
 # IDEs (https://dart.dev/tools#ides-and-editors). The analyzer can also be
 # invoked from the command line by running `flutter analyze`.
+#
+# Additional information about this file can be found at
+# https://dart.dev/guides/language/analysis-options
 
-# The following line activates a set of recommended lints for Flutter apps,
-# packages, and plugins designed to encourage good coding practices.
 include: package:flutter_lints/flutter.yaml
 
 analyzer:
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
   exclude:
     - build/**
     - android/**
     - ios/**
     - windows/**
+    - '**/*.g.dart'
+
+plugins:
+  riverpod_lint: ^3.1.9
 
 linter:
   # The lint rules applied to this project can be customized in the
@@ -28,8 +49,28 @@ linter:
   # `// ignore_for_file: name_of_lint` syntax on the line or in the file
   # producing the lint.
   rules:
-    # avoid_print: false  # Uncomment to disable the `avoid_print` rule
-    # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
-
-# Additional information about this file can be found at
-# https://dart.dev/guides/language/analysis-options
+    # Already enabled via flutter_lints/flutter.yaml (documented here so the
+    # #017 candidate set evaluates cleanly, not duplicated below):
+    # - avoid_print (no `print` in app code; use debugPrint/logger).
+    # - use_key_in_widget_constructors (stable finders for #016 e2e).
+    # - strict_top_level_inference (covered via lints/core.yaml; the strict
+    #   language block above adds strict-casts/inference/raw-types on top).
+    #
+    # Extra rules (why each one is on):
+    # - require_trailing_commas: keeps dart-format diffs minimal on
+    #   multi-line calls (matters for the #004-#009 UI wave).
+    # - avoid_positional_boolean_parameters: forces named/typed bool params
+    #   (e.g. recordAttempt(ok:) stays readable at call sites).
+    # - prefer_single_quotes: matches current single-quote code; avoids
+    #   format friction.
+    # - prefer_const_constructors: const widgets reduce rebuild cost.
+    # - prefer_const_declarations: const locals/canonical values.
+    # Evaluated but NOT listed (already covered without a new rule):
+    # - unnecessary_import (singular): not a valid `linter.rules` entry in
+    #   the current analyzer — it is a compiler hint (like `unused_import`),
+    #   already surfaced through `flutter analyze` with zero findings.
+    - require_trailing_commas
+    - avoid_positional_boolean_parameters
+    - prefer_single_quotes
+    - prefer_const_constructors
+    - prefer_const_declarations

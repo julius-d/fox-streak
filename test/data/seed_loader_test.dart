@@ -96,9 +96,9 @@ void main() {
       for (final path in kSeedAssetPaths) {
         final raw = await File(path).readAsString();
         final decoded = jsonDecode(raw);
-        expect(decoded, isA<Map>());
+        expect(decoded, isA<Map<String, dynamic>>());
         final id = await sets.importSetFromJson(
-          Map<dynamic, dynamic>.from(decoded as Map),
+          Map<dynamic, dynamic>.from(decoded as Map<String, dynamic>),
           today: kTestToday,
         );
         expect(id, isPositive);

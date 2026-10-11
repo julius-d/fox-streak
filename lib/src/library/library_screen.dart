@@ -29,7 +29,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
 
   Future<void> _openEditor([QuestionSet? existing]) async {
     await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => SetEditorScreen(existing: existing)),
+      MaterialPageRoute<int>(
+        builder: (_) => SetEditorScreen(existing: existing),
+      ),
     );
   }
 
@@ -106,7 +108,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               return _SetCard(
                 set: set,
                 onOpen: () => Navigator.of(context).push(
-                  MaterialPageRoute(
+                  MaterialPageRoute<void>(
                     builder: (_) => SetDetailScreen(setId: set.id),
                   ),
                 ),

@@ -1,6 +1,6 @@
 # Issue 017: Code quality gates — tightened lints + Riverpod lints + format
 
-Status: open | Priority: P1 | Type: chore
+Status: done | Priority: P1 | Type: chore
 
 ## Goal
 Bring code quality to a shared, enforced baseline: tightened `flutter_lints` + strict analyzer type checks + `riverpod_lint` + `dart format` / `dart fix`, all runnable locally via `flutter analyze`. No paid tooling, no CI in this issue.
@@ -61,3 +61,37 @@ dart format --output=none --set-exit-if-changed .  # must be clean (or: dart for
 dart fix --dry-run     # nothing auto-fixable left
 flutter test           # must be green (no behavior change)
 ```
+
+## Summary (closed 2026-10-11)
+- `analysis_options.yaml`: strict `strict-casts`/`strict-inference`/`strict-raw-types`,
+  `riverpod_lint: ^3.1.9` plugin (matches `flutter_riverpod` 3.4.3; analyzer 14.5.0
+  inside its `>=13.0.0 <15.0.0` ceiling), exclude adds `**/*.g.dart`, 5 new rules
+  (`require_trailing_commas`, `avoid_positional_boolean_parameters`,
+  `prefer_single_quotes`, `prefer_const_constructors`, `prefer_const_declarations`)
+  each with rationale comments. `unnecessary_import` rejected: not a valid
+  `linter.rules` entry (compiler hint, already surfaced via analyze). `avoid_print`
+  / `use_key_in_widget_constructors` / `strict_top_level_inference` documented as
+  already-on via base (not duplicated).
+- `pubspec.yaml`: only `dev_dependencies` touched (`+riverpod_lint: ^3.1.9`,
+  pinned `3.1.9` in `pubspec.lock` as direct-dev); no runtime deps;
+  `minSdk 24` pin and `android/`+`ios/`+`windows/` untouched.
+- Fix pass (no `// ignore:` added): `const SetImportException` (createdBy),
+  `hint: (hint as String?) ?? ''` (strict-casts), `MaterialPageRoute<int>` /
+  `<void>` (strict-inference), `isA<Map<String, dynamic>>` + `as Map<String,
+  dynamic>` (strict-raw-types), `const ShareSet` round-trip test.
+- `dart format .` applied (`library_screen.dart` reflow from the strict-inference
+  fix); the two files flagged in the pre-change audit (`set_detail_screen.dart`,
+  `share_actions_test.dart`) show zero diff vs HEAD and are format-clean — the
+  initial flag was transient, no changes needed there.
+- `build_runner` regenerates clean (`database.g.dart` unchanged — schema inputs
+  untouched); note: `--delete-conflicting-outputs` is now a removed/ignored
+  option → spun out as #021 (doc fix, not done here).
+- AGENTS.md `## Verify` rewritten to the four must-tools + lint-note per spec;
+  backlog range now `see issues/` (note: #018 plans `… issue-019.md` there —
+  keep whichever lands last consistent).
+- Final gates: `flutter analyze` → No issues found; `dart format
+  --output=none --set-exit-if-changed .` → 0 changed; `dart fix --dry-run` →
+  Nothing to fix; `flutter test` → All 76 passed.
+- Env note (not a repo issue): OneDrive reparse-point dirs (`.dart_tool\build\generated`,
+  `build\unit_test_assets`) needed a manual `Remove-Item` before `build_runner`/`flutter test`
+  could write; both are gitignored caches.
