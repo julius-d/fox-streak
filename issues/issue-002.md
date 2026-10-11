@@ -53,6 +53,11 @@ Local-only storage for sets and progress. No accounts. Persistence layer only �
 ## Out of scope
 Cloud/login/server sharing (#002 is file-based only), XP formula (#010), streak counting (#011), all UI (#003+), notifications.
 
+## Follow-up (from #003 refinement 2026-10-11, per repo owner)
+- `question_sets.created_by`: change from enum (`parent|teacher|learner`, `kCreatedByValues`) to **free-text creator name** (trimmed, non-empty, max 50 chars).
+- Impact: `validation.dart` (`kCreatedByValues` check), `set_json_codec.dart` (`decode/validateShareSet`, share v1 `createdBy`), `sets_repository.dart` validation, seed JSON (`assets/seed/*.foxstreak.json`), share-format version decision (loosen v1 in place vs bump to v2 with backwards-compat read of old enum values).
+- Do this before #003 Task 2 (new-set form needs the free-text field).
+
 ## Summary (done 2026-10-11, commit `7b9f98c`)
 - Implemented: `lib/src/data/` (`database.dart` + `database.g.dart`, `clock.dart`, `validation.dart`, `set_json_codec.dart`, `sets_repository.dart`, `stats_repository.dart`, `providers.dart`, `seed_loader.dart`); seeds `assets/seed/demo_*.foxstreak.json`; tests `test/data/` (7 files).
 - Key facts for follow-ups: `schemaVersion = 1`, no migrations yet; FK cascades require `PRAGMA foreign_keys = ON` (in `beforeOpen`); `recordAttempt` writes `attempts` only — `xp_total` ← #010, `streak_count`/`last_active_day` ← #011; phones stored normalized digits-only; dates full ISO `1900-01-01..today`; import always creates new ids.
