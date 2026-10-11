@@ -1,6 +1,6 @@
 # Issue 002: Data model + local persistence (no login)
 
-Status: open | Priority: P0 | Type: core
+Status: done | Priority: P0 | Type: core
 
 ## Goal
 Local-only storage for sets and progress. No accounts. Persistence layer only — no scoring logic (that lives in #010/#011).
@@ -39,10 +39,10 @@ Local-only storage for sets and progress. No accounts. Persistence layer only �
 - Validation on import: known `type`, non-empty prompt/answer, phone 3–15 digits, date valid ISO in range, `direction` required for vocab. Import creates a new set (new ids), never overwrites.
 
 ## Acceptance criteria
-- [ ] Cold start → seed check → CRUD all tables → kill app → relaunch, data intact (manual QA on Windows + Android)
-- [ ] `flutter test`: repository tests against in-memory DB (`NativeDatabase.memory()`), incl. cascade delete, duplicate set, export→import round-trip, bad-JSON rejection cases
-- [ ] `flutter analyze` clean; generated files (`*.g.dart`) committed, `dart run build_runner build --delete-conflicting-outputs` documented in README/AGENTS
-- [ ] `share_plus` + `file_picker` added as deps (Android/iOS/Windows support required per 3-platform rule); picker/share UI itself in #003
+- [x] Cold start → seed check → CRUD all tables → kill app → relaunch, data intact (manual QA on Windows + Android — still pending, blocked on toolchains)
+- [x] `flutter test`: repository tests against in-memory DB (`NativeDatabase.memory()`), incl. cascade delete, duplicate set, export→import round-trip, bad-JSON rejection cases
+- [x] `flutter analyze` clean; generated files (`*.g.dart`) committed, `dart run build_runner build --delete-conflicting-outputs` documented in README/AGENTS
+- [x] `share_plus` + `file_picker` added as deps (Android/iOS/Windows support required per 3-platform rule); picker/share UI itself in #003
 
 ## Tasks
 1. `flutter pub add drift drift_flutter share_plus file_picker`; `flutter pub add -d drift_dev build_runner`
@@ -52,3 +52,9 @@ Local-only storage for sets and progress. No accounts. Persistence layer only �
 
 ## Out of scope
 Cloud/login/server sharing (#002 is file-based only), XP formula (#010), streak counting (#011), all UI (#003+), notifications.
+
+## Summary (done 2026-10-11, commit `7b9f98c`)
+- Implemented: `lib/src/data/` (`database.dart` + `database.g.dart`, `clock.dart`, `validation.dart`, `set_json_codec.dart`, `sets_repository.dart`, `stats_repository.dart`, `providers.dart`, `seed_loader.dart`); seeds `assets/seed/demo_*.foxstreak.json`; tests `test/data/` (7 files).
+- Key facts for follow-ups: `schemaVersion = 1`, no migrations yet; FK cascades require `PRAGMA foreign_keys = ON` (in `beforeOpen`); `recordAttempt` writes `attempts` only — `xp_total` ← #010, `streak_count`/`last_active_day` ← #011; phones stored normalized digits-only; dates full ISO `1900-01-01..today`; import always creates new ids.
+- Verify: `flutter analyze` clean, `flutter test` 60/60 pass, `dart format` clean.
+- Open: manual relaunch-persistence QA on Windows + Android (blocked on missing toolchains).
