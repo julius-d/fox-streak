@@ -28,6 +28,10 @@ final NotifierProvider<FoxHapticsEnabled, bool> foxHapticsEnabledProvider =
 /// Instant answer feedback: bright banner colors (see [FoxFeedbackBanner])
 /// plus an optional haptic tick. Call from check handlers, e.g.
 /// `FoxFeedback.success(context, ref)`.
+///
+/// The [BuildContext] params are intentionally unused today — reserved for
+/// future inline surfaces (e.g. a banner/snackbar hook). Haptics only need
+/// the [WidgetRef].
 abstract final class FoxFeedback {
   static Future<void> success(BuildContext context, WidgetRef ref) {
     return _buzz(ref, HapticFeedback.lightImpact);
