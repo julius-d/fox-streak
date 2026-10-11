@@ -15,6 +15,7 @@
 
 import 'dart:convert';
 
+import 'package:drift/drift.dart' hide isNull;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -251,6 +252,23 @@ void main() {
 
     await tester.enterText(find.byKey(const Key('itemPromptField')), 'Mama');
     await tester.enterText(find.byKey(const Key('itemAnswerField')), '12');
+    await tester.tap(find.byKey(const Key('saveItemButton')));
+    await settle(tester);
+
+    expect(find.text('Enter 3–15 digits'), findsOneWidget);
+    expect(await env.repo.getItemsForSet(env.setId), isEmpty);
+    await unmount(tester);
+  });
+
+  testWidgets('phone-letters rejected with invalid-phone error', (
+    tester,
+  ) async {
+    final clock = FakeClock(kTestToday);
+    final env = await pumpEditor(tester, clock);
+    await switchType(tester, 'Phone');
+
+    await tester.enterText(find.byKey(const Key('itemPromptField')), 'Mama');
+    await tester.enterText(find.byKey(const Key('itemAnswerField')), 'abc');
     await tester.tap(find.byKey(const Key('saveItemButton')));
     await settle(tester);
 
@@ -535,6 +553,62 @@ void main() {
       'cat',
       'mouse',
     ]);
+    await unmount(tester);
+  });
+
+  testWidgets('edit with corrupt choices JSON opens with blank fields', (
+    tester,
+  ) async {
+    final clock = FakeClock(kTestToday);
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(() async => db.close());
+    final repo = SetsRepository(db, clock);
+    final setId = await repo.createSet(title: 'Test', createdBy: 'Mama');
+    // Bypass the repository (which only writes validated JSON) to simulate
+    // out-of-band corrupt data: valid JSON that is not a string list.
+    final itemId = await db
+        .into(db.items)
+        .insert(
+          ItemsCompanion.insert(
+            setId: setId,
+            type: 'vocab',
+            prompt: 'Hund',
+            answer: 'dog',
+            direction: const Value('deEn'),
+            choices: const Value('"not-a-list"'),
+            position: 0,
+          ),
+        );
+    final existing = await repo.getItemById(itemId);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          appDatabaseProvider.overrideWithValue(db),
+          systemClockProvider.overrideWithValue(clock),
+          setsRepositoryProvider.overrideWithValue(repo),
+        ],
+        child: MaterialApp(
+          theme: FoxStreakTheme.light(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: _EditorHarness(setId: setId, existing: existing),
+        ),
+      ),
+    );
+    await settle(tester);
+    await tester.tap(find.byKey(const Key('openEditorButton')));
+    await settle(tester);
+
+    // Dialog opens instead of crashing; distractor fields start blank.
+    expect(find.byKey(const Key('itemChoice0Field')), findsOneWidget);
+    expect(
+      tester
+          .widget<TextFormField>(find.byKey(const Key('itemChoice0Field')))
+          .controller!
+          .text,
+      isEmpty,
+    );
     await unmount(tester);
   });
 

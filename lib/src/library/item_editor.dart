@@ -97,7 +97,7 @@ class _ItemEditorDialogState extends ConsumerState<ItemEditorDialog> {
         for (var i = 0; i < decoded.length && i < 3; i++) {
           _choices[i].text = decoded[i];
         }
-      } on FormatException {
+      } catch (_) {
         // Corrupt choices JSON stays untouched: fields start blank and the
         // save path below only writes what the fields contain.
       }
@@ -382,10 +382,10 @@ class _ItemEditorDialogState extends ConsumerState<ItemEditorDialog> {
       controller: _phone,
       decoration: InputDecoration(labelText: l10n.itemAnswerLabel),
       keyboardType: TextInputType.number,
-      inputFormatters: [
-        FilteringTextInputFormatter.digitsOnly,
-        PhoneGroupingFormatter(),
-      ],
+      // No digitsOnly here: PhoneGroupingFormatter already strips exactly
+      // the normalizePhone separator set and lets letters through so the
+      // validator can reject them with errorInvalidPhone.
+      inputFormatters: [PhoneGroupingFormatter()],
       validator: _validatePhone,
     );
   }
