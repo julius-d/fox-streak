@@ -31,7 +31,6 @@ Widget _foxLabel(String label, TextStyle? style) {
 /// (no animation controllers), so it stays inside the #014 animation
 /// budget. Disabled buttons drop the shadow.
 Widget _foxShadow({
-  required BuildContext context,
   required Color shadow,
   required bool enabled,
   required Widget child,
@@ -88,10 +87,13 @@ class FoxPrimaryButton extends StatelessWidget {
     final TextTheme text = Theme.of(context).textTheme;
     final bool enabled = onPressed != null && !isLoading;
     final Widget child = isLoading
-        ? const SizedBox(
+        ? SizedBox(
             width: 20,
             height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2),
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: foregroundColor ?? scheme.onPrimary,
+            ),
           )
         : Row(
             mainAxisSize: MainAxisSize.min,
@@ -115,7 +117,6 @@ class FoxPrimaryButton extends StatelessWidget {
       button: true,
       enabled: enabled,
       child: _foxShadow(
-        context: context,
         shadow: (backgroundColor ?? scheme.primary).withValues(alpha: 0.45),
         enabled: enabled,
         child: FilledButton(
@@ -155,7 +156,6 @@ class FoxSecondaryButton extends StatelessWidget {
       button: true,
       enabled: enabled,
       child: _foxShadow(
-        context: context,
         shadow: scheme.outlineVariant,
         enabled: enabled,
         child: OutlinedButton(
@@ -172,7 +172,8 @@ class FoxSecondaryButton extends StatelessWidget {
 ///
 /// Taller than the 48dp floor (56dp) for thumb reach at the screen bottom;
 /// [correctState] tints it green/red for instant bright feedback after a
-/// check (null while answering).
+/// check (null while answering). Carries the same hard shadow as the other
+/// kit buttons so the press feel stays consistent.
 class FoxCheckButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
@@ -187,6 +188,7 @@ class FoxCheckButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
     final FoxSemanticColors tokens = foxSemantics(context);
     final TextTheme text = Theme.of(context).textTheme;
     final bool enabled = onPressed != null;
@@ -208,10 +210,14 @@ class FoxCheckButton extends StatelessWidget {
     return Semantics(
       button: true,
       enabled: enabled,
-      child: FilledButton(
-        style: style,
-        onPressed: onPressed,
-        child: _foxLabel(label, text.labelLarge),
+      child: _foxShadow(
+        shadow: (bg ?? scheme.primary).withValues(alpha: 0.45),
+        enabled: enabled,
+        child: FilledButton(
+          style: style,
+          onPressed: onPressed,
+          child: _foxLabel(label, text.labelLarge),
+        ),
       ),
     );
   }

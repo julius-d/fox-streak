@@ -178,7 +178,7 @@ class FoxSemanticColors extends ThemeExtension<FoxSemanticColors> {
   }
 }
 
-/// Typography roles (system font only for MVP — no `fontFamily` anywhere).
+/// Typography roles (no custom `fontFamily` for MVP — M3 defaults).
 ///
 /// Locked roles: headings are bold (`headlineSmall`, `titleLarge`,
 /// `titleMedium` at w700–w800), buttons are bold (`labelLarge` w700), body
@@ -192,7 +192,7 @@ TextTheme _foxTextTheme(TextTheme base) {
   );
 }
 
-ButtonStyle _foxFilledButtonStyle(ColorScheme scheme) {
+ButtonStyle _foxFilledButtonStyle() {
   return FilledButton.styleFrom(
     minimumSize: const Size(FoxButtonMetrics.minSize, FoxButtonMetrics.minSize),
     padding: const EdgeInsets.symmetric(
@@ -228,72 +228,38 @@ ButtonStyle _foxTextButtonStyle() {
 /// `MaterialApp(theme: FoxStreakTheme.light(), darkTheme: FoxStreakTheme.dark())`.
 abstract final class FoxStreakTheme {
   static ThemeData light() {
-    final ColorScheme scheme = ColorScheme.fromSeed(seedColor: kFoxSeedColor);
-    return ThemeData(
-      colorScheme: scheme,
-      useMaterial3: true,
-      extensions: const <ThemeExtension<dynamic>>[FoxSemanticColors.light],
-      textTheme: _foxTextTheme(
-        ThemeData(colorScheme: scheme, useMaterial3: true).textTheme,
-      ),
-      filledButtonTheme: FilledButtonThemeData(
-        style: _foxFilledButtonStyle(scheme),
-      ),
-      outlinedButtonTheme: OutlinedButtonThemeData(
-        style: _foxOutlinedButtonStyle(),
-      ),
-      textButtonTheme: TextButtonThemeData(style: _foxTextButtonStyle()),
-      iconButtonTheme: IconButtonThemeData(
-        style: IconButton.styleFrom(
-          minimumSize: const Size(
-            FoxButtonMetrics.minSize,
-            FoxButtonMetrics.minSize,
-          ),
-        ),
-      ),
-      cardTheme: const CardThemeData(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(FoxRadius.lg)),
-        ),
-        margin: EdgeInsets.symmetric(
-          horizontal: FoxSpacing.lg,
-          vertical: FoxSpacing.sm,
-        ),
-      ),
-      dialogTheme: const DialogThemeData(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(FoxRadius.xl)),
-        ),
-      ),
-      inputDecorationTheme: const InputDecorationTheme(
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.all(Radius.circular(FoxRadius.md)),
-        ),
-      ),
-      snackBarTheme: const SnackBarThemeData(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(FoxRadius.md)),
-        ),
-        behavior: SnackBarBehavior.floating,
-      ),
+    return _build(
+      scheme: ColorScheme.fromSeed(seedColor: kFoxSeedColor),
+      semantics: FoxSemanticColors.light,
     );
   }
 
   static ThemeData dark() {
-    final ColorScheme scheme = ColorScheme.fromSeed(
-      seedColor: kFoxSeedColor,
-      brightness: Brightness.dark,
+    return _build(
+      scheme: ColorScheme.fromSeed(
+        seedColor: kFoxSeedColor,
+        brightness: Brightness.dark,
+      ),
+      semantics: FoxSemanticColors.dark,
     );
+  }
+
+  /// Shared construction so light/dark differ only by [scheme] + [semantics].
+  ///
+  /// Any structural change (button floors, radii, type roles) applies to both
+  /// modes; the parity test in `test/theme/` guards this.
+  static ThemeData _build({
+    required ColorScheme scheme,
+    required FoxSemanticColors semantics,
+  }) {
     return ThemeData(
       colorScheme: scheme,
       useMaterial3: true,
-      extensions: const <ThemeExtension<dynamic>>[FoxSemanticColors.dark],
+      extensions: <ThemeExtension<dynamic>>[semantics],
       textTheme: _foxTextTheme(
         ThemeData(colorScheme: scheme, useMaterial3: true).textTheme,
       ),
-      filledButtonTheme: FilledButtonThemeData(
-        style: _foxFilledButtonStyle(scheme),
-      ),
+      filledButtonTheme: FilledButtonThemeData(style: _foxFilledButtonStyle()),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: _foxOutlinedButtonStyle(),
       ),

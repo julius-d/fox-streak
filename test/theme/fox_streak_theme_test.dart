@@ -72,6 +72,51 @@ void main() {
     expect(ours.bodyMedium?.fontFamily, base.bodyMedium?.fontFamily);
   });
 
+  test('light and dark stay in structural parity', () {
+    final ThemeData light = FoxStreakTheme.light();
+    final ThemeData dark = FoxStreakTheme.dark();
+
+    Size? minSize(ButtonStyle? style) =>
+        style?.minimumSize?.resolve(<WidgetState>{});
+    OutlinedBorder? shape(ButtonStyle? style) =>
+        style?.shape?.resolve(<WidgetState>{});
+
+    expect(
+      minSize(dark.filledButtonTheme.style),
+      minSize(light.filledButtonTheme.style),
+    );
+    expect(
+      minSize(dark.outlinedButtonTheme.style),
+      minSize(light.outlinedButtonTheme.style),
+    );
+    expect(
+      minSize(dark.textButtonTheme.style),
+      minSize(light.textButtonTheme.style),
+    );
+    expect(
+      minSize(dark.iconButtonTheme.style),
+      minSize(light.iconButtonTheme.style),
+    );
+    expect(
+      shape(dark.filledButtonTheme.style),
+      shape(light.filledButtonTheme.style),
+    );
+    expect(
+      shape(dark.outlinedButtonTheme.style),
+      shape(light.outlinedButtonTheme.style),
+    );
+    expect(
+      dark.textTheme.labelLarge?.fontWeight,
+      light.textTheme.labelLarge?.fontWeight,
+    );
+    expect(
+      dark.textTheme.headlineSmall?.fontWeight,
+      light.textTheme.headlineSmall?.fontWeight,
+    );
+    expect(dark.dialogTheme.shape, light.dialogTheme.shape);
+    expect(dark.cardTheme.shape, light.cardTheme.shape);
+  });
+
   testWidgets('kit resolves tokens under the wired theme', (
     WidgetTester tester,
   ) async {
