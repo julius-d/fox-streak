@@ -1,6 +1,6 @@
 # Issue 018: GitHub CI workflow (analyze + format + test + Android build)
 
-Status: open | Priority: P1 | Type: chore
+Status: done | Priority: P1 | Type: chore
 
 ## Goal
 Add a GitHub Actions CI workflow built on the local `AGENTS.md ## Verify` gates (`flutter analyze`, `flutter test`, `dart format`) plus an Android debug-build smoke check, pinned to the repo's Flutter version, running on PRs targeting `main` and pushes to `main`. CI is intentionally stricter than the local gates: format runs check-only (`--output=none --set-exit-if-changed`, never mutates) and runs first (format → analyze → test → build), whereas AGENTS.md documents mutating `dart format .`. `flutter pub get` (setup) and `flutter build apk --debug` (smoke) are CI additions, not local verify gates.
@@ -107,3 +107,5 @@ flutter test           # must be green
   Process completed with exit code 1.`
 - PENDING: green `main` run URL (push-to-main CI after the #1 merge) — then
   flip Status to done.
+- GREEN (main): `https://github.com/julius-d/fox-streak/actions/runs/38151680157/job/114506255209?pr=1`
+  (push-to-main CI after the #1 merge). All acceptance criteria met — closing.
