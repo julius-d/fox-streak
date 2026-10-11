@@ -39,6 +39,9 @@ dependencies:
   drift_flutter: ^0.3.1
   share_plus: ^13.3.1
   file_picker: ^13.1.0
+  intl: ^0.20.3
+  flutter_localizations:
+    sdk: flutter
 
 dev_dependencies:
   flutter_test:

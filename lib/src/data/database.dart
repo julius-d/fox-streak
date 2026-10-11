@@ -17,7 +17,8 @@ class QuestionSets extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get title => text()();
   TextColumn get description => text().withDefault(const Constant(''))();
-  // parent|teacher|learner — enforced in Dart (validation.dart).
+  // Free-text creator name (trimmed, non-empty, max 50 chars — validated in
+  // Dart via `validateCreatorName` in validation.dart).
   TextColumn get createdBy => text()();
   // Epoch millis.
   IntColumn get createdAt => integer()();

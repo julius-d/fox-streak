@@ -61,6 +61,23 @@ void main() {
     });
   });
 
+  group('validateCreatorName', () {
+    test('accepts free-text names incl. legacy enum values', () {
+      for (final name in ['Mama', 'Ms. Smith', 'teacher', 'parent', 'x' * 50]) {
+        expect(validateCreatorName(name), isNull);
+        expect(isValidCreatorName(name), isTrue);
+      }
+    });
+
+    test('rejects empty and over-long names', () {
+      expect(validateCreatorName(null), isNotNull);
+      expect(validateCreatorName(''), isNotNull);
+      expect(validateCreatorName('   '), isNotNull);
+      expect(validateCreatorName('x' * 51), isNotNull);
+      expect(isValidCreatorName('  '), isFalse);
+    });
+  });
+
   group('validateDirection', () {
     test('vocab requires deEn|enDe', () {
       expect(validateDirection('vocab', 'deEn'), isNull);

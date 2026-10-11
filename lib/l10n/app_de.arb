@@ -1,0 +1,59 @@
+{
+  "@@locale": "de",
+  "appTitle": "FoxStreak",
+  "libraryTitle": "Meine Sets",
+  "libraryEmptyTitle": "Noch keine Sets",
+  "libraryEmptyMessage": "Erstelle dein erstes Set oder probiere das Demo-Set.",
+  "libraryTryDemo": "Demo-Set ausprobieren",
+  "libraryLoading": "Sets werden geladen…",
+  "librarySeedError": "Demo-Set konnte nicht geladen werden. Bitte erneut versuchen.",
+  "librarySeedLoading": "Demo-Set wird geladen…",
+  "@setItemCount": {
+    "description": "Item count subtitle on a set card",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "setItemCount": "{count, plural, =0{Keine Einträge} =1{1 Eintrag} other{{count} Einträge}}",
+  "newSet": "Neues Set",
+  "createSet": "Set erstellen",
+  "editSet": "Set bearbeiten",
+  "setTitleLabel": "Titel",
+  "setCreatorLabel": "Dein Name",
+  "setDescriptionLabel": "Beschreibung (optional)",
+  "cancel": "Abbrechen",
+  "save": "Speichern",
+  "edit": "Bearbeiten",
+  "create": "Erstellen",
+  "rename": "Umbenennen",
+  "duplicate": "Duplizieren",
+  "delete": "Löschen",
+  "deleteSetTitle": "Set löschen?",
+  "@deleteSetMessage": {
+    "description": "Delete confirmation body with set title",
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "deleteSetMessage": "\"{title}\" mit allen Einträgen löschen? Das kann nicht rückgängig gemacht werden.",
+  "deleteItemTitle": "Eintrag löschen?",
+  "deleteItemMessage": "Diesen Eintrag löschen? Das kann nicht rückgängig gemacht werden.",
+  "confirmDelete": "Löschen",
+  "setDetailAddItem": "Eintrag hinzufügen",
+  "setDetailEmpty": "Noch keine Einträge. Füge den ersten hinzu!",
+  "itemPromptLabel": "Frage",
+  "itemAnswerLabel": "Antwort",
+  "itemTypeLabel": "Typ",
+  "typeVocab": "Wort",
+  "typePhone": "Telefon",
+  "typeDate": "Geburtstag",
+  "directionDeEn": "Deutsch → Englisch",
+  "directionEnDe": "Englisch → Deutsch",
+  "shareSet": "Teilen",
+  "importSet": "Importieren",
+  "errorRequired": "Dieses Feld ist erforderlich",
+  "errorCreatorLength": "Max. 50 Zeichen",
+  "errorInvalidPhone": "3–15 Ziffern eingeben",
+  "errorInvalidDate": "JJJJ-MM-TT nutzen (1900-01-01…heute)",
+  "errorDirectionRequired": "Wähle eine Richtung"
+}

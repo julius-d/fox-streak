@@ -96,15 +96,26 @@ void main() {
 
     test('bad title / createdBy / items shape', () async {
       await expectRejects({...validSetJson(), 'title': '  '}, 'title');
+      await expectRejects({...validSetJson(), 'createdBy': '   '}, 'createdBy');
       await expectRejects({
         ...validSetJson(),
-        'createdBy': 'admin',
+        'createdBy': 'x' * 51,
       }, 'createdBy');
       await expectRejects({...validSetJson(), 'items': 'nope'}, 'items');
       await expectRejects({
         ...validSetJson(),
         'description': 42,
       }, 'description');
+    });
+
+    test('accepts free-text creator names', () {
+      for (final name in ['Mama', 'Ms. Smith', 'admin', 'teacher']) {
+        final set = decodeSetFromJson({
+          ...validSetJson(),
+          'createdBy': name,
+        }, today: kTestToday);
+        expect(set.createdBy, name);
+      }
     });
 
     test('unknown item type', () async {

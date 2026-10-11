@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'l10n/app_localizations.dart';
+import 'src/library/library_screen.dart';
+
 void main() {
   runApp(const ProviderScope(child: FoxStreakApp()));
 }
@@ -16,24 +19,9 @@ class FoxStreakApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.orange),
         useMaterial3: true,
       ),
-      home: const BootstrapHomePage(),
-    );
-  }
-}
-
-class BootstrapHomePage extends StatelessWidget {
-  const BootstrapHomePage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('FoxStreak')),
-      body: const Center(
-        child: Text(
-          'FoxStreak bootstrap OK\n(Android + iOS + Windows)',
-          textAlign: TextAlign.center,
-        ),
-      ),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: const LibraryScreen(),
     );
   }
 }

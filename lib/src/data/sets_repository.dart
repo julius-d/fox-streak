@@ -52,7 +52,7 @@ class SetsRepository {
           QuestionSetsCompanion.insert(
             title: title.trim(),
             description: Value(description),
-            createdBy: createdBy,
+            createdBy: createdBy.trim(),
             createdAt: nowMs,
             updatedAt: nowMs,
           ),
@@ -68,8 +68,8 @@ class SetsRepository {
     if (title != null && title.trim().isEmpty) {
       throw ArgumentError('title must be non-empty');
     }
-    if (createdBy != null && !kCreatedByValues.contains(createdBy)) {
-      throw ArgumentError('unknown createdBy "$createdBy"');
+    if (createdBy != null && validateCreatorName(createdBy) != null) {
+      throw ArgumentError(validateCreatorName(createdBy));
     }
     await (_db.update(_db.questionSets)..where((t) => t.id.equals(id))).write(
       QuestionSetsCompanion(
@@ -77,7 +77,9 @@ class SetsRepository {
         description: description == null
             ? const Value.absent()
             : Value(description),
-        createdBy: createdBy == null ? const Value.absent() : Value(createdBy),
+        createdBy: createdBy == null
+            ? const Value.absent()
+            : Value(createdBy.trim()),
         updatedAt: Value(_clock.now().millisecondsSinceEpoch),
       ),
     );
@@ -348,9 +350,8 @@ class SetsRepository {
 
   void _checkSetFields({required String title, required String createdBy}) {
     if (title.trim().isEmpty) throw ArgumentError('title must be non-empty');
-    if (!kCreatedByValues.contains(createdBy)) {
-      throw ArgumentError('unknown createdBy "$createdBy"');
-    }
+    final creatorError = validateCreatorName(createdBy);
+    if (creatorError != null) throw ArgumentError(creatorError);
   }
 
   _CleanItem _checkItemFields({

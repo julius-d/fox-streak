@@ -10,8 +10,29 @@ import 'clock.dart';
 /// Allowed `items.type` values.
 const Set<String> kItemTypes = {'vocab', 'phone', 'date'};
 
-/// Allowed `question_sets.created_by` values.
-const Set<String> kCreatedByValues = {'parent', 'teacher', 'learner'};
+/// Maximum length of a free-text creator name (`question_sets.created_by`).
+///
+/// Loosened from the old `parent|teacher|learner` enum in #003 (see #002
+/// follow-up): any trimmed non-empty name up to this length is valid, e.g.
+/// "Mama" or "Ms. Smith". Old enum values remain valid as plain names.
+/// Share format stays v1 (loosened in place — no version bump needed).
+const int kMaxCreatorNameLength = 50;
+
+/// Validates a free-text creator name; returns an error message or `null`.
+///
+/// Trims before checking: empty-after-trim and over-long names are rejected.
+String? validateCreatorName(String? value) {
+  if (value == null || value.trim().isEmpty) {
+    return 'creator name must be non-empty';
+  }
+  if (value.trim().length > kMaxCreatorNameLength) {
+    return 'creator name must be at most $kMaxCreatorNameLength characters';
+  }
+  return null;
+}
+
+/// True when [value] is a valid free-text creator name.
+bool isValidCreatorName(String value) => validateCreatorName(value) == null;
 
 /// Allowed `items.direction` values (vocab only).
 const Set<String> kDirections = {'deEn', 'enDe'};

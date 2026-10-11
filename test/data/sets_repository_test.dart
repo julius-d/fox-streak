@@ -44,13 +44,33 @@ void main() {
 
     test('create rejects bad title/createdBy', () async {
       expect(
-        () => repo.createSet(title: ' ', createdBy: 'teacher'),
+        () => repo.createSet(title: ' ', createdBy: 'Mama'),
         throwsArgumentError,
       );
       expect(
-        () => repo.createSet(title: 'T', createdBy: 'admin'),
+        () => repo.createSet(title: 'T', createdBy: '  '),
         throwsArgumentError,
       );
+      expect(
+        () => repo.createSet(title: 'T', createdBy: 'x' * 51),
+        throwsArgumentError,
+      );
+    });
+
+    test('create accepts free-text creator names', () async {
+      for (final name in [
+        'Mama',
+        'Ms. Smith',
+        'teacher',
+        'parent',
+        'learner',
+      ]) {
+        final id = await repo.createSet(title: 'T $name', createdBy: name);
+        expect((await repo.getSetById(id))?.createdBy, name);
+      }
+      // Trims whitespace.
+      final id = await repo.createSet(title: 'T', createdBy: '  Mama  ');
+      expect((await repo.getSetById(id))?.createdBy, 'Mama');
     });
 
     test('watchAllSets emits', () async {

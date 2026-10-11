@@ -6,7 +6,7 @@ Fictional first-launch content for issue #002. Real learning content ships in #0
 
 ```json
 { "format": "foxstreak-set", "version": 1, "title": "…", "description": "…",
-  "createdBy": "teacher", "items": [
+  "createdBy": "Mama", "items": [
     { "type": "vocab", "prompt": "Hund", "answer": "dog",
       "direction": "deEn", "choices": ["cat","mouse","bird"], "hint": "" },
     { "type": "phone", "prompt": "Mama", "answer": "01711234567" },
@@ -17,7 +17,8 @@ Fictional first-launch content for issue #002. Real learning content ships in #0
 Rules (enforced by `lib/src/data/set_json_codec.dart`):
 
 - `format` must be `"foxstreak-set"`, `version` must be `1`.
-- `title` non-empty; `createdBy` one of `parent|teacher|learner`.
+- `title` non-empty; `createdBy` free-text creator name (trimmed, non-empty,
+  max 50 chars, e.g. `"Mama"`).
 - Item `type` one of `vocab|phone|date`; `prompt`/`answer` non-empty.
 - `vocab`: `direction` required (`deEn|enDe`); `choices` optional list of
   non-empty strings; `hint` optional.

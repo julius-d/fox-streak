@@ -3,7 +3,7 @@
 // File extension `.foxstreak.json`, e.g.:
 // ```json
 // { "format": "foxstreak-set", "version": 1, "title": "...",
-//   "description": "...", "createdBy": "teacher", "items": [
+//   "description": "...", "createdBy": "Mama", "items": [
 //     { "type": "vocab", "prompt": "Hund", "answer": "dog",
 //       "direction": "deEn", "choices": ["cat","mouse"], "hint": "" },
 //     { "type": "phone", "prompt": "Mama", "answer": "01711234567" },
@@ -138,9 +138,9 @@ ShareSet decodeSetFromJson(Map<dynamic, dynamic> json, {DateTime? today}) {
   if (title is! String || title.trim().isEmpty) {
     throw const SetImportException('title must be a non-empty string');
   }
-  if (createdBy is! String || !kCreatedByValues.contains(createdBy)) {
+  if (createdBy is! String || validateCreatorName(createdBy) != null) {
     throw SetImportException(
-      'createdBy must be one of ${kCreatedByValues.join("|")}',
+      'createdBy must be a non-empty name (max $kMaxCreatorNameLength chars)',
     );
   }
   if (rawItems is! List) {
@@ -164,7 +164,7 @@ ShareSet decodeSetFromJson(Map<dynamic, dynamic> json, {DateTime? today}) {
   final set = ShareSet(
     title: title.trim(),
     description: (description as String?) ?? '',
-    createdBy: createdBy,
+    createdBy: createdBy.trim(),
     items: items,
   );
   validateShareSet(set, today: today);
@@ -256,8 +256,9 @@ void validateShareSet(ShareSet set, {DateTime? today}) {
   if (set.title.trim().isEmpty) {
     throw const SetImportException('title must be non-empty');
   }
-  if (!kCreatedByValues.contains(set.createdBy)) {
-    throw const SetImportException('unknown createdBy');
+  final creatorError = validateCreatorName(set.createdBy);
+  if (creatorError != null) {
+    throw SetImportException(creatorError);
   }
   for (var i = 0; i < set.items.length; i++) {
     final item = set.items[i];
