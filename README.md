@@ -1,5 +1,7 @@
 # FoxStreak
 
+[![CI](https://github.com/julius-d/fox-streak/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/julius-d/fox-streak/actions/workflows/ci.yml)
+
 Learning app with gamification (XP + streak + levels). Flutter, Android-first, iOS + Windows ready. Local-only, no login (MVP).
 
 - Package: `fox_streak_app` (`com.example.fox_streak_app`), display name `FoxStreak`
@@ -33,6 +35,30 @@ flutter build windows       # Windows release (needs VS)
 ```powershell
 dart format .
 ```
+
+## CI
+
+[![CI](https://github.com/julius-d/fox-streak/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/julius-d/fox-streak/actions/workflows/ci.yml)
+
+CI (`.github/workflows/ci.yml`) runs a single `ci` job on `ubuntu-latest`
+with Flutter `3.47.6` (stable) on `push` to `main` and `pull_request`
+targeting `main`. Concurrency cancels superseded runs on the same ref.
+Steps run in order — format → analyze → fix-hygiene → test → Android debug
+build (a failing early step hides later steps' signals; accepted tradeoff for
+one Flutter setup on this small MVP).
+
+| CI step | Rerun locally |
+|---|---|
+| `flutter pub get` | `flutter pub get` |
+| `dart format --output=none --set-exit-if-changed .` (check-only, never mutates) | same |
+| `flutter analyze` (includes `riverpod_lint` + strict casts per #017) | `flutter analyze` |
+| `dart fix --dry-run` hygiene gate (fails unless the output is `Nothing to fix!`) | `dart fix --dry-run` |
+| `flutter test` (unit/widget in `test/` only, not `integration_test/`) | `flutter test` |
+| `flutter build apk --debug` (unsigned smoke build) | same — needs the Android SDK; expected to fail locally (see AGENTS.md), CI is the gate |
+
+Intentional-failure proof: a commit with a `dart format` violation fails the
+`Check formatting` step as expected (red run URL recorded in the #018 closing
+comment); the green `main` run URL is recorded there as well.
 
 ## Data layer (issue #002)
 
