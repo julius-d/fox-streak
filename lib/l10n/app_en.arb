@@ -58,5 +58,21 @@
   "errorCreatorLength": "Max 50 characters",
   "errorInvalidPhone": "Enter 3–15 digits",
   "errorInvalidDate": "Use YYYY-MM-DD (1900-01-01…today)",
-  "errorDirectionRequired": "Pick a direction"
+  "errorDirectionRequired": "Pick a direction",
+  "@itemDistractorLabel": {
+    "description": "Label for one optional vocab distractor field",
+    "placeholders": {
+      "index": {"type": "int"}
+    }
+  },
+  "itemDistractorLabel": "Distractor {index}",
+  "itemDistractorHint": "Optional",
+  "itemDayLabel": "Day",
+  "itemMonthLabel": "Month",
+  "itemYearLabel": "Year",
+  "itemDateHint": "Enter day, month and year",
+  "errorDuplicateChoice": "Must be different from the answer",
+  "errorInvalidDay": "Enter a day 1–31",
+  "errorInvalidMonth": "Enter a month 1–12",
+  "errorInvalidYear": "Enter a year 1900–today"
 }

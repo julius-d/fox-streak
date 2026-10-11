@@ -240,10 +240,10 @@ void main() {
     await settle(tester);
 
     await tester.enterText(find.byKey(const Key('itemPromptField')), 'Future');
-    await tester.enterText(
-      find.byKey(const Key('itemAnswerField')),
-      '2026-10-12', // day after FakeClock today -> rejected
-    );
+    // New date editor (issue #004): 3 numeric fields, EN order month-day-year.
+    await tester.enterText(find.byKey(const Key('itemMonthField')), '10');
+    await tester.enterText(find.byKey(const Key('itemDayField')), '12');
+    await tester.enterText(find.byKey(const Key('itemYearField')), '2026');
     await tester.tap(find.byKey(const Key('saveItemButton')));
     await settle(tester);
 

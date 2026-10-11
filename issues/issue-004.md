@@ -1,6 +1,6 @@
 # Issue 004: Question editors for 3 content types
 
-Status: open | Priority: P0 | Type: feature | Refined-at: 2026-10-11
+Status: done | Priority: P0 | Type: feature | Refined-at: 2026-10-11
 
 ## Goal
 Replace the minimal `ItemEditorDialog` shell from #003 with tailored editors per item type (vocab DE<->EN, phone numbers, birth dates), so parents/teachers/learners can create valid items without knowing the storage format. Validation mirrors #002 `validation.dart` exactly; storage formats never change (phone digits-only, date ISO).
@@ -47,3 +47,10 @@ flutter analyze        # must be clean (includes riverpod_lint)
 dart format --output=none --set-exit-if-changed .  # must be clean
 flutter test           # new item-editor widget tests + all existing green
 ```
+
+## Summary (done 2026-10-11)
+- Implemented: `ItemEditorDialog` per-type subforms in `lib/src/library/item_editor.dart` (vocab prompt/answer + required nullable-initial direction `SegmentedButton` + 3 optional distractors with editor-only duplicate-vs-answer check; phone `itemAnswerField` with `PhoneGroupingFormatter` display-only grouping; date calendar-styled card with locale-ordered day/month/year fields, auto-advance + backspace-back, composed ISO validated by `isValidDateAnswer` with `systemClockProvider` today); new pure helpers `lib/src/library/date_display.dart` (`formatDateForDisplay`, reused by #009) + `lib/src/library/phone_formatting.dart` (`groupPhoneForDisplay`, `PhoneGroupingFormatter`); arb keys (distractor/day/month/year labels + hints, `errorDuplicateChoice`, day/month/year part errors) mirrored in hand-written `app_localizations.dart`. `hint` never touched.
+- Key facts for follow-ups: `SegmentedButton` needs `emptySelectionAllowed: true` for the nullable initial (else it asserts); pre-1900/future/impossible dates all surface `errorInvalidDate` (composed check runs even when a part field fails, alongside part errors); phone saves raw input, repo normalises; empty choices save as `null`.
+- Tests: `test/library/item_editor_test.dart` (16 widget tests, bounded-pump harness) + `test/library/formatting_test.dart` (9 unit tests); `library_screen_test` future-date case migrated to the 3-field date UI.
+- Verify: `flutter analyze` clean, `dart format` clean, `dart fix` clean, `flutter test` 121/121 pass.
+- Toolchain note: fresh worktrees must seed `.dart_tool/hooks_runner/shared/` (sqlite3.dll download cache) from an existing checkout, else the sqlite3 hook fails on network/cert; `build/` + `.dart_tool/` stay gitignored.
