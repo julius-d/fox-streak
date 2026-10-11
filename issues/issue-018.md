@@ -1,0 +1,59 @@
+# Issue 018: GitHub CI workflow (analyze + format + test + Android build)
+
+Status: open | Priority: P1 | Type: chore
+
+## Goal
+Add a GitHub Actions CI workflow that mirrors the local `AGENTS.md ## Verify` gates (`flutter analyze`, `flutter test`, `dart format` check) plus an Android debug-build smoke check, pinned to the repo's Flutter version, running on PRs targeting `main` and pushes to `main`.
+
+## Decisions (2026-10-11, with repo owner)
+- Jobs: **analyze + format-check + test + build** (single workflow; local gates plus an Android build smoke job).
+- Flutter SDK: **pin `3.47.6` stable** (matches `AGENTS.md`; reproducible CI, not floating `stable` latest).
+- Runner: **`ubuntu-latest`** (cheapest runner that can do analyze/test/format + Android debug APK; no macOS/Windows runners in this issue).
+- Build job: **Android debug APK only** (`flutter build apk --debug`, no signing) as a compile smoke check. iOS (`macos` runner) and Windows (`windows` runner, VS workload) builds are out of scope.
+- Triggers: **`push` to `main` + `pull_request` targeting `main`** (no all-branches matrix, no cron, no manual-only).
+- Drift codegen freshness check (`build_runner`) is **out** (not selected; `*.g.dart` files stay committed and are verified locally per AGENTS.md).
+
+## Acceptance criteria
+- [ ] `.github/workflows/ci.yml` exists and is the only workflow (no duplicate `dart.yml` / `flutter.yml`).
+- [ ] Trigger block is exactly: `push` on `branches: [main]` + `pull_request` on `branches: [main]`; `concurrency` cancels superseded runs on the same ref.
+- [ ] Setup uses `actions/checkout@v4` + `actions/setup-java@v4` (Temurin 17, gradle cache) + `subosito/flutter-action@v2` with `flutter-version: '3.47.6'`, `channel: stable`, `cache: true`.
+- [ ] Workflow runs these steps in order (single `ci` job, or split jobs with the same commands — pick one and document why):
+  1. `flutter pub get`
+  2. `dart format --output=none --set-exit-if-changed .` (check-only, never mutates)
+  3. `flutter analyze` (must be clean — includes `riverpod_lint` once #017 lands; until then base `flutter_lints` only)
+  4. `flutter test` (must be green)
+  5. `flutter build apk --debug` (unsigned smoke build; `minSdk 24` pin and `android/` platform untouched)
+- [ ] No new runtime dependencies; no changes to `android/`, `ios/`, `windows/` beyond what the build needs (none expected); `pubspec.lock` still committed.
+- [ ] Workflow passes on `main` (green badge run linked in the closing comment); a test PR with an intentional `dart format` violation fails the format step as expected.
+- [ ] README or AGENTS.md notes the CI badge location + how to read failures (which job = which local command to rerun).
+
+## Tasks
+1. Add `.github/workflows/ci.yml` per the acceptance criteria (single `ci` job on `ubuntu-latest` is the recommended default — one Flutter setup, fastest for a small MVP).
+2. Local dry-run of every CI command in order (`flutter pub get` → format-check → analyze → test → `flutter build apk --debug`); note that the APK build is expected to fail locally (no Android SDK, see AGENTS.md) — CI is the gate for that step.
+3. Push to a branch, open a PR, confirm green; push a format-breaking commit to the same PR, confirm the format step fails, then revert.
+4. Docs: add CI badge + "CI runs X, rerun Y locally" note to README (or AGENTS.md if README has no CI section yet).
+5. Record the green `main` run URL + the intentional-failure run URL in the closing comment.
+
+## Out of scope
+- Drift codegen freshness (`dart run build_runner build --check` / `--delete-conflicting-outputs` diff check) — rejected for this issue (local-only per AGENTS.md); follow-up if `*.g.dart` drift becomes a problem.
+- iOS (`macos` runner) and Windows (`windows` runner) builds, release signing / Play Store upload, `flutter build appbundle` / `--release` promotion — future issues if wanted.
+- Branch-protection rules / required-status-checks enforcement in repo settings — document as a manual follow-up for the repo owner, not automated here.
+- `dart fix --dry-run`, golden tests (#019), device e2e (#016), lint tightening itself (#017) — owned by their own issues; CI just runs the commands those issues define.
+- Caching beyond `flutter-action` + gradle defaults, self-hosted runners, Codecov / coverage gates.
+
+## Dependencies
+- None blocking — can land any time; best **after #017** so `flutter analyze` in CI already includes `riverpod_lint` + strict casts, otherwise CI runs base `flutter_lints` and #017 upgrades it (note which order was used when closing).
+- Blocked toolchain note: local `flutter build apk` stays red until the Android SDK is installed (AGENTS.md) — that is expected and does not block closing; the CI run is the build gate.
+
+## Verify
+```powershell
+# Local mirror of CI (build step expected to fail locally — no Android SDK):
+flutter pub get
+dart format --output=none --set-exit-if-changed .
+flutter analyze        # must be clean
+flutter test           # must be green
+# flutter build apk --debug  # local: blocked on toolchains; CI (ubuntu-latest) is the gate
+# CI gates to close (links recorded in closing comment):
+# - green run on main (.github/workflows/ci.yml)
+# - red run on a test PR with an intentional format violation
+```
