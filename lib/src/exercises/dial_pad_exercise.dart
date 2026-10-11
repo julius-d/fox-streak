@@ -145,11 +145,29 @@ class _DialPadExerciseState extends ConsumerState<DialPadExercise> {
     if (_revealingHint) {
       return widget.item.answer;
     }
+    final normalizedAnswer = normalizePhone(widget.item.answer);
+    final answerLength = normalizedAnswer.length;
+    final maskedChar = widget.l10n.exercisePhoneMaskedDigit;
+
     if (_typedDigits.isEmpty) {
-      return '';
+      // Show all masked from the beginning based on answer length
+      return maskedChar * answerLength;
     }
-    // Show masked bullets for each typed digit
-    return widget.l10n.exercisePhoneMaskedDigit * _typedDigits.length;
+
+    // Build display: typed digits replace masked ones position by position
+    final buffer = StringBuffer();
+    for (int i = 0; i < answerLength; i++) {
+      if (i < _typedDigits.length) {
+        buffer.write(_typedDigits[i]);
+      } else {
+        buffer.write(maskedChar);
+      }
+    }
+    // If user typed more than answer length, append extra digits
+    if (_typedDigits.length > answerLength) {
+      buffer.write(_typedDigits.substring(answerLength));
+    }
+    return buffer.toString();
   }
 
   @override
@@ -211,7 +229,7 @@ class _DialPadExerciseState extends ConsumerState<DialPadExercise> {
                         textAlign: TextAlign.center,
                       ),
                     ),
-                    if (!_revealingHint && _typedDigits.isNotEmpty)
+                    if (!_revealingHint)
                       IconButton(
                         key: const Key('dialPadRevealHint'),
                         icon: const Icon(Icons.visibility_outlined),
