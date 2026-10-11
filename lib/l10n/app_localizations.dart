@@ -1,11 +1,10 @@
 // Manual `AppLocalizations` (issue #003 i18n scaffold).
 //
-// `lib/l10n/app_en.arb` / `app_de.arb` are the source of truth and
-// `l10n.yaml` documents the `flutter gen-l10n` codegen for machines where it
-// runs. `flutter gen-l10n` currently fails on Windows (Dart `FileStat`
-// reports `r-xr-xr-x` for every directory, so the tool thinks nothing is
-// writable); until that is fixed this hand-written delegate mirrors the arb
-// strings 1:1 so `flutter analyze`/`flutter test` work everywhere.
+// `lib/l10n/app_en.arb` / `app_de.arb` are the source of truth and this
+// hand-written delegate mirrors them 1:1 so `flutter analyze`/`flutter test`
+// /`flutter build` work everywhere, including checkouts where `flutter
+// gen-l10n` cannot run (see `lib/l10n/README.md` for why there is no root
+// `l10n.yaml` and how to regenerate on a machine where codegen works).
 // When regenerating, verify this file matches the arb files.
 
 import 'package:flutter/material.dart';
