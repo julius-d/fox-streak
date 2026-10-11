@@ -15,3 +15,7 @@ Duolingo-style 1-of-4 choice for DE<->EN vocab.
 1. `MultipleChoiceCard` widget
 2. Distractor picker: same direction, random, exclude current
 3. Accessibility: large text, TalkBack labels
+
+## Follow-up (from #005 review 2026-10-11)
+- Implements the #005 `ExerciseCard` contract (`ExerciseDraft(hasAnswer, grade(), correctAnswerLabel, hintLabel?)` + `FakeExerciseCard` example); shell calls `grade()` on CHECK, enables CHECK iff `hasAnswer`.
+- Owns card-internal stable keys for #016 (option cards); shell keys (`checkButton`, `lessonFeedbackBanner`) stay in #005.

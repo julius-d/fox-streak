@@ -21,3 +21,6 @@ Duolingo-like XP per correct answer, levels to chase.
 
 ## Out of scope
 Streaks (#011), leaderboards (post-MVP).
+
+## Follow-up (from #005 review 2026-10-11)
+- Consumes #005 `LessonResult` (provider + Navigator return): maps each outcome (`correct`/`skipped`/`hintUsed`, `firstTry: true` in v1) to XP (10 / 5 hint / 0 wrong, +5 for 100%); sole writer of `xp_total` per #002.

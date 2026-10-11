@@ -15,3 +15,7 @@ Type-the-translation mode for DE<->EN.
 1. `FreeTextExercise` widget
 2. `gradeText(expected, actual)` pure function + unit tests (umlauts, ß, case)
 3. Decide ß/ss policy and document (suggest: accept both, store canonical)
+
+## Follow-up (from #005 review 2026-10-11)
+- Implements the #005 `ExerciseCard` contract; `gradeText` is the card's `grade()` body, `correctAnswerLabel` = expected answer, `hintLabel` = first-letter hint.
+- Owns card-internal stable keys for #016 (text field).

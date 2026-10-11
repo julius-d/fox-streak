@@ -18,3 +18,7 @@ Status: open | Priority: P0 | Type: feature
 
 ## Open question — DECIDED 2026-10-11
 Day-only vs full-date mode — rejected per #002 (full date only, ISO `YYYY-MM-DD`, range `1900-01-01..today`). No `granularity` column in schema v1.
+
+## Follow-up (from #005 review 2026-10-11)
+- Implements the #005 `ExerciseCard` contract; wrong-banner `correctAnswerLabel` reuses #004 `formatDateForDisplay` (never raw ISO).
+- Owns card-internal stable keys for #016 (calendar day cells, year jump).

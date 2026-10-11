@@ -22,7 +22,7 @@ Device-run end-to-end coverage for the four critical user journeys, using only t
 
 ## Tasks
 1. Deps + scaffold: add `integration_test` (SDK dev-dep), `integration_test/app_test.dart` entry + `integration_test/helpers.dart` (boot app in `ProviderScope` with test overrides, seed helper, finder keys doc).
-2. Testability hooks in app code (minimal, no behavior change): add `ValueKey`s to `LibraryScreen` rows/FAB, `SetDetailScreen` menu, `CheckButton`/feedback banner/`ResultScreen`, `DialPadExercise`, `DateExercise`, `StreakBadge`; expose a test boot path that injects isolated DB + `FakeClock` (reuse `test/data/test_helpers.dart` pattern).
+2. Testability hooks in app code (minimal, no behavior change): add `ValueKey`s to `LibraryScreen` rows/FAB, `SetDetailScreen` menu, `CheckButton`/feedback banner/`ResultScreen`, `DialPadExercise`, `DateExercise`, `StreakBadge`; expose a test boot path that injects isolated DB + `FakeClock` (reuse `test/data/test_helpers.dart` pattern). Shell keys owned by #005; card-internal keys (dial-pad, calendar, option cards, text field) owned by #006–#009.
 3. Write the four flow specs (one `group()` per flow in `app_test.dart`, or one file per flow if it exceeds ~300 lines).
 4. Stub `share_plus` / `file_picker` channels in-test; assert snackbar/dialog outcomes per #008 contract (real-number export warning dialog, picker-cancel no-op).
 5. Docs: README section with run commands + what is stubbed; note the device gate and the remaining Android-SDK blocker below.
