@@ -21,3 +21,4 @@ Short description of the goal of the issue.
 ```
 
 When the issue is refined, ask the user if it shall be updated with the refined version and if yes, update the issue accordingly. In case of an update add a `Refined-at` timestamp to the status line of the issue.
+Do not implement the issue yet or do any other code changes, this is only about improving the issue(s)
