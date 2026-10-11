@@ -58,3 +58,41 @@ flutter test           # must be green
 # - green run on main (.github/workflows/ci.yml)
 # - red run on a test PR with an intentional format violation
 ```
+
+## Summary (implementation complete 2026-10-11, remote verification pending)
+- Landing order: **#017 landed first** — CI `flutter analyze` already includes
+  `riverpod_lint` + strict casts, and CI runs the extra `dart fix --dry-run`
+  hygiene gate per the conditional criterion.
+- `.github/workflows/ci.yml` (only workflow): single `ci` job on
+  `ubuntu-latest`; triggers exactly `push: branches: [main]` +
+  `pull_request: branches: [main]`; `concurrency` cancels superseded runs on
+  the same ref. Setup: `actions/checkout@v4` + `actions/setup-java@v4`
+  (Temurin 17, gradle cache) + `subosito/flutter-action@v2`
+  (`flutter-version: '3.47.6'`, `channel: stable`, `cache: true`).
+  Steps in order: `flutter pub get` → `dart format --output=none
+  --set-exit-if-changed .` → `flutter analyze` → `dart fix --dry-run`
+  (grep-gated, see below) → `flutter test` → `flutter build apk --debug`.
+- `dart fix --dry-run` gate detail: the command exits 0 even when fixes are
+  proposed (verified empirically), so the step captures its output and
+  `grep -q "Nothing to fix!"` — fails the step when fixes exist.
+- README: CI badge at top + new `## CI` section (badge SVG URL
+  `actions/workflows/ci.yml/badge.svg?branch=main`, step↔command table,
+  intentional-failure proof note). AGENTS.md backlog range needed no edit:
+  #017 already changed it to `see issues/` (covers `… issue-019.md` and
+  beyond); no `android/`/`ios/`/`windows/` changes; no new deps.
+- Local gates (Flutter 3.47.6, this machine): `flutter pub get` ok;
+  format 0 changed; `flutter analyze` → No issues found;
+  `dart fix --dry-run` → Nothing to fix; `flutter test` → All 76 passed.
+  `flutter build apk --debug` not run locally (no Android SDK per AGENTS.md;
+  CI is the gate for that step).
+- Gate-logic proofs (local, probe files removed afterwards): format violation
+  → `dart format --output=none --set-exit-if-changed .` exits 1 listing the
+  file, clean tree exits 0; fix proposed → `Nothing to fix!` marker absent
+  (step would fail), clean tree → marker present (step passes).
+- PENDING (owner — no `gh` CLI in this session to open the PR): branch
+  `chore/ci-018` is pushed; open the PR at
+  `https://github.com/julius-d/fox-streak/pull/new/chore/ci-018` (targets
+  `main`; note the diff also contains the 4 unpushed #017-era commits on local
+  `main`), record the green run URL, push a format-breaking commit to confirm
+  the red format step, revert it, merge, then record the green `main` run URL
+  in the closing comment and flip Status to done.
