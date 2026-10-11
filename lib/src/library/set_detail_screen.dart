@@ -10,6 +10,7 @@ import '../../l10n/app_localizations.dart';
 import '../data/database.dart';
 import '../data/providers.dart';
 import '../data/set_json_codec.dart';
+import '../widgets/widgets.dart';
 import 'item_editor.dart';
 import 'item_type_icons.dart';
 import 'library_providers.dart';
@@ -27,25 +28,13 @@ class SetDetailScreen extends ConsumerWidget {
     int itemId,
   ) async {
     final l10n = AppLocalizations.of(context)!;
-    final confirmed = await showDialog<bool>(
+    final confirmed = await FoxConfirmDialog.show(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.deleteItemTitle),
-        content: Text(l10n.deleteItemMessage),
-        actions: [
-          TextButton(
-            style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(l10n.cancel),
-          ),
-          FilledButton(
-            key: const Key('confirmDeleteItemButton'),
-            style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text(l10n.confirmDelete),
-          ),
-        ],
-      ),
+      title: l10n.deleteItemTitle,
+      message: l10n.deleteItemMessage,
+      confirmLabel: l10n.confirmDelete,
+      cancelLabel: l10n.cancel,
+      confirmKey: const Key('confirmDeleteItemButton'),
     );
     if (confirmed == true) {
       await ref.read(setsRepositoryProvider).deleteItem(itemId);
@@ -124,7 +113,10 @@ class SetDetailScreen extends ConsumerWidget {
         error: (e, _) => Center(child: Text(e.toString())),
         data: (items) {
           if (items.isEmpty) {
-            return Center(child: Text(l10n.setDetailEmpty));
+            return FoxEmptyState(
+              title: l10n.setDetailEmpty,
+              mascotState: FoxMascotState.empty,
+            );
           }
           return ListView.builder(
             itemCount: items.length,
@@ -138,7 +130,10 @@ class SetDetailScreen extends ConsumerWidget {
               };
               return ListTile(
                 key: Key('itemTile-${item.id}'),
-                leading: Icon(iconForItemType(item.type)),
+                leading: Icon(
+                  iconForItemType(item.type),
+                  color: colorForItemType(context, item.type),
+                ),
                 title: Text(item.prompt),
                 subtitle: Text('$typeLabel · ${item.answer}'),
                 trailing: Row(

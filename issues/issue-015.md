@@ -1,6 +1,6 @@
 # Issue 015: FoxStreak design language + shared widget kit
 
-Status: open | Priority: P0 | Type: UX
+Status: done | Priority: P0 | Type: UX
 
 ## Goal
 One canonical design language — tokens + Material 3 theme + reusable widget kit — that makes the app look consistent, playful, and fun, Duolingo-style. All UI work adheres to it; evolves the current M3 orange theme instead of restyling per screen.
@@ -40,6 +40,14 @@ One canonical design language — tokens + Material 3 theme + reusable widget ki
 ## Dependencies
 - Builds on #003 (library UI + l10n scaffold) and #011 (mascot states). Should land **before** #004–#009 UI implementation to avoid retrofit churn (#003 retrofit is the accepted exception).
 - Device QA blocked: no Android SDK, no VS C++ workload, no Chrome (see #001). When unblocked, #013 device QA (rotation, dark mode, large font) runs against the #015 theme.
+
+## Summary (done 2026-10-11)
+- Theme: `lib/src/theme/fox_streak_theme.dart` — `FoxStreakTheme.light()` / `.dark()` (`ColorScheme.fromSeed`, orange seed), `FoxSemanticColors` ThemeExtension (success/error/info/flame/gold+goldInk, light + dark, all 19 pairs WCAG-AA checked 5.0–11.4:1), `FoxSpacing` / `FoxRadius` / `FoxButtonMetrics`, bold heading/button type roles, M3-default font (no bundled asset). Wired as `MaterialApp(theme:, darkTheme:, themeMode: system)` in `main.dart`.
+- Kit: `lib/src/widgets/` barrel — `FoxPrimaryButton` / `FoxSecondaryButton` / `FoxCheckButton` (48dp, bold wrap-max-3-lines labels, 4dp hard-shadow press feel), `FoxFeedbackBanner` (success/error/info/xp), `FoxProgressBar` (#010 composes on top), `FoxConfirmDialog.show` (generalizes #003 delete confirms), `FoxEmptyState` (mascot + CTA + loading/error slots), `FoxMascot` (`empty | lit | on-fire` vector placeholder, final art out of scope — no binary asset, no new deps, 3-platform rule holds), `FoxCelebration` + `FoxFeedback` haptics behind `foxHapticsEnabledProvider` (NotifierProvider, default on; #005/#012 own settings UI, sound hook reserved, no lottie dep).
+- Retrofit: all of `lib/src/library/` on the kit (confirms, empty states, save buttons w/ loading, error banners, token-tinted type icons via new `colorForItemType`); all keys stable (`tryDemoSetButton`, `saveSetButton`, `confirmDeleteSetButton`, …). One harness change: `test/library/library_screen_test.dart` `pumpLibrary` now pumps `FoxStreakTheme.light()` (kit requires the extension — production always has it via `main.dart`). No arb changes: kit takes all copy via params.
+- AGENTS.md has the Design-language section (token location, "reuse the kit, no ad-hoc styling", fox placement, "follows #015" pointer for #004–#014).
+- Verify: `flutter analyze` clean, `dart fix` clean, `dart format` clean, `flutter test` 95/95 (71 pre-existing + 24 new: `test/theme/`, `test/widgets/`). Manual dark-mode / large-font / rotation pass deferred (device blockers per #001).
+- Follow-ups for other issues: #004–#014 each need a "follows #015" acceptance line at implementation time; #012 owns per-screen a11y + copy deck; #014 owns lottie + final fox art.
 
 ## Verify
 ```powershell

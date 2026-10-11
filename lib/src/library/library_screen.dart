@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../l10n/app_localizations.dart';
 import '../data/database.dart';
 import '../data/providers.dart';
+import '../widgets/widgets.dart';
 import 'item_type_icons.dart';
 import 'library_providers.dart';
 import 'set_detail_screen.dart';
@@ -37,26 +38,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
 
   Future<void> _confirmDeleteSet(QuestionSet set) async {
     final l10n = AppLocalizations.of(context)!;
-    final confirmed = await showDialog<bool>(
+    final confirmed = await FoxConfirmDialog.show(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.deleteSetTitle),
-        content: Text(l10n.deleteSetMessage(set.title)),
-        actions: [
-          TextButton(
-            key: const Key('cancelDeleteSetButton'),
-            style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(l10n.cancel),
-          ),
-          FilledButton(
-            key: const Key('confirmDeleteSetButton'),
-            style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text(l10n.confirmDelete),
-          ),
-        ],
-      ),
+      title: l10n.deleteSetTitle,
+      message: l10n.deleteSetMessage(set.title),
+      confirmLabel: l10n.confirmDelete,
+      cancelLabel: l10n.cancel,
+      confirmKey: const Key('confirmDeleteSetButton'),
+      cancelKey: const Key('cancelDeleteSetButton'),
     );
     if (confirmed == true) {
       await ref.read(setsRepositoryProvider).deleteSet(set.id);
@@ -124,47 +113,19 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   }
 
   Widget _buildEmpty(BuildContext context, AppLocalizations l10n) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              l10n.libraryEmptyTitle,
-              key: const Key('libraryEmptyTitle'),
-              style: Theme.of(context).textTheme.headlineSmall,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(l10n.libraryEmptyMessage, textAlign: TextAlign.center),
-            const SizedBox(height: 20),
-            if (_seeding)
-              Text(
-                l10n.librarySeedLoading,
-                key: const Key('librarySeedLoading'),
-              )
-            else
-              FilledButton(
-                key: const Key('tryDemoSetButton'),
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 48),
-                ),
-                onPressed: _seedDemo,
-                child: Text(l10n.libraryTryDemo),
-              ),
-            if (_seedError != null) ...[
-              const SizedBox(height: 12),
-              Text(
-                l10n.librarySeedError,
-                key: const Key('librarySeedError'),
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ],
-        ),
-      ),
+    return FoxEmptyState(
+      title: l10n.libraryEmptyTitle,
+      message: l10n.libraryEmptyMessage,
+      ctaLabel: l10n.libraryTryDemo,
+      onCta: _seedDemo,
+      isLoading: _seeding,
+      loadingLabel: l10n.librarySeedLoading,
+      errorMessage: _seedError != null ? l10n.librarySeedError : null,
+      mascotState: FoxMascotState.empty,
+      titleKey: const Key('libraryEmptyTitle'),
+      ctaKey: const Key('tryDemoSetButton'),
+      errorKey: const Key('librarySeedError'),
+      loadingKey: const Key('librarySeedLoading'),
     );
   }
 }
@@ -203,7 +164,11 @@ class _SetCard extends ConsumerWidget {
           for (final t in types)
             Padding(
               padding: const EdgeInsets.only(left: 4),
-              child: Icon(iconForItemType(t), size: 18),
+              child: Icon(
+                iconForItemType(t),
+                size: 18,
+                color: colorForItemType(context, t),
+              ),
             ),
         ];
       },

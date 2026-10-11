@@ -16,6 +16,7 @@ import '../../l10n/app_localizations.dart';
 import '../data/database.dart';
 import '../data/providers.dart';
 import '../data/validation.dart';
+import '../widgets/widgets.dart';
 
 /// Dialog form that creates or edits a single [Item].
 ///
@@ -173,32 +174,22 @@ class _ItemEditorDialogState extends ConsumerState<ItemEditorDialog> {
               ],
               if (_saveError != null) ...[
                 const SizedBox(height: 12),
-                Text(
-                  _saveError!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
+                FoxFeedbackBanner.error(message: _saveError!),
               ],
             ],
           ),
         ),
       ),
       actions: [
-        TextButton(
-          style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+        FoxSecondaryButton(
           onPressed: _saving ? null : () => Navigator.of(context).pop(false),
-          child: Text(l10n.cancel),
+          label: l10n.cancel,
         ),
-        FilledButton(
+        FoxPrimaryButton(
           key: const Key('saveItemButton'),
-          style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
+          label: l10n.save,
+          isLoading: _saving,
           onPressed: _saving ? null : _save,
-          child: _saving
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Text(l10n.save),
         ),
       ],
     );

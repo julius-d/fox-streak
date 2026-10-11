@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'l10n/app_localizations.dart';
 import 'src/library/library_screen.dart';
+import 'src/theme/fox_streak_theme.dart';
 
 void main() {
   runApp(const ProviderScope(child: FoxStreakApp()));
@@ -15,10 +16,9 @@ class FoxStreakApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'FoxStreak',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.orange),
-        useMaterial3: true,
-      ),
+      theme: FoxStreakTheme.light(),
+      darkTheme: FoxStreakTheme.dark(),
+      themeMode: ThemeMode.system,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: const LibraryScreen(),

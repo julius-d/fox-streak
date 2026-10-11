@@ -23,6 +23,7 @@ import 'package:fox_streak_app/src/data/database.dart';
 import 'package:fox_streak_app/src/data/providers.dart';
 import 'package:fox_streak_app/src/data/sets_repository.dart';
 import 'package:fox_streak_app/src/library/library_screen.dart';
+import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
 
 import '../data/test_helpers.dart';
 
@@ -52,10 +53,11 @@ Future<AppDatabase> pumpLibrary(WidgetTester tester, FakeClock clock) async {
         appDatabaseProvider.overrideWithValue(db),
         systemClockProvider.overrideWithValue(clock),
       ],
-      child: const MaterialApp(
+      child: MaterialApp(
+        theme: FoxStreakTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: LibraryScreen(),
+        home: const LibraryScreen(),
       ),
     ),
   );

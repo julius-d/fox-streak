@@ -11,6 +11,7 @@ import '../../l10n/app_localizations.dart';
 import '../data/database.dart';
 import '../data/providers.dart';
 import '../data/validation.dart';
+import '../widgets/widgets.dart';
 
 /// Form for creating a set (when [existing] is null) or renaming/editing it.
 class SetEditorScreen extends ConsumerStatefulWidget {
@@ -126,25 +127,15 @@ class _SetEditorScreenState extends ConsumerState<SetEditorScreen> {
             ),
             if (_saveError != null) ...[
               const SizedBox(height: 12),
-              Text(
-                _saveError!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
+              FoxFeedbackBanner.error(message: _saveError!),
             ],
             const SizedBox(height: 20),
-            FilledButton(
+            FoxPrimaryButton(
               key: const Key('saveSetButton'),
-              style: FilledButton.styleFrom(
-                minimumSize: const Size(double.infinity, 48),
-              ),
+              label: isEdit ? l10n.save : l10n.create,
+              expanded: true,
+              isLoading: _saving,
               onPressed: _saving ? null : _save,
-              child: _saving
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(isEdit ? l10n.save : l10n.create),
             ),
           ],
         ),
