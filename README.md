@@ -12,8 +12,9 @@ Learning app with gamification (XP + streak + levels). Flutter, Android-first, i
 ## Prerequisites
 
 - Flutter stable (3.47.6 verified) on PATH: `C:\Users\juliu\coding-tools\flutter\bin`
-- For Android builds: Android Studio + Android SDK (`flutter doctor` must show Android toolchain ✓)
-- For Windows builds: Visual Studio with "Desktop development with C++" workload
+- For Android builds: Android Studio + Android SDK (`flutter doctor` must show Android toolchain ✓ — still missing on this machine, CI is the gate)
+- For Windows builds: Visual Studio with "Desktop development with C++" workload (installed ✓ — Community 2026 18.10.3, verified 2026-10-11)
+- For web runs: Chrome (installed ✓)
 - For iOS builds: Xcode on macOS
 
 ## Commands
@@ -24,10 +25,11 @@ flutter doctor
 flutter pub get
 flutter analyze
 flutter test
-flutter run -d windows      # Windows (needs VS)
-flutter run                 # Android device/emulator (needs Android SDK)
-flutter build apk --debug   # Android APK (needs Android SDK)
-flutter build windows       # Windows release (needs VS)
+flutter run -d windows      # Windows (VS ✓, works locally)
+flutter run -d chrome       # Web (Chrome ✓, works locally)
+flutter run                 # Android device/emulator (needs Android SDK — still missing)
+flutter build apk --debug   # Android APK (needs Android SDK — still missing; CI is the gate)
+flutter build windows       # Windows release (VS ✓, works locally)
 ```
 
 ## Formatting

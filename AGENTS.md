@@ -13,11 +13,18 @@ Flutter learning app (FoxStreak). Local-only MVP, no backend/auth. Backlog lives
 - `winget` `msstore` source prompts interactively and fails headless — always pass `--source winget`.
 - PowerShell surfaces git's stderr (`To https://…`) as `NativeCommandError` — a push is successful if output shows `main -> main`, regardless of that noise.
 
-## Toolchains (know what's missing)
+## Toolchains (verified 2026-10-11 via `flutter doctor -v`)
 
-- `flutter doctor`: Android toolchain ✗ (no Android SDK), Visual Studio ✗, Chrome ✗. Windows device attached ✓.
-- What works without them: `flutter analyze`, `flutter test`, `flutter create --platforms=…`, `dart format`.
-- Blocked until user installs: `flutter run`/`build apk` (needs Android Studio + SDK), `flutter build windows` (needs VS + C++ workload).
+- `flutter doctor`: Flutter 3.47.6 ✓, Windows 11 ✓, **Android toolchain ✗
+  (no Android SDK — the only missing piece)**, Chrome ✓, Visual Studio ✓
+  (Community 2026 18.10.3 + Windows 10 SDK 10.0.26100.0), connected devices
+  Windows + Chrome + Edge ✓, network ✓.
+- What works: `flutter analyze`, `flutter test`, `dart format`,
+  `flutter create --platforms=…`, `flutter run -d windows`,
+  `flutter build windows`, `flutter run -d chrome` (web).
+- Still blocked until user installs Android Studio + SDK: `flutter run` on an
+  Android device/emulator and `flutter build apk` / `appbundle`
+  (CI on `ubuntu-latest` is the build gate until then).
 
 ## Verify
 

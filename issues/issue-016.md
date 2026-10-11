@@ -25,7 +25,7 @@ Device-run end-to-end coverage for the four critical user journeys, using only t
 2. Testability hooks in app code (minimal, no behavior change): add `ValueKey`s to `LibraryScreen` rows/FAB, `SetDetailScreen` menu, `CheckButton`/feedback banner/`ResultScreen`, `DialPadExercise`, `DateExercise`, `StreakBadge`; expose a test boot path that injects isolated DB + `FakeClock` (reuse `test/data/test_helpers.dart` pattern).
 3. Write the four flow specs (one `group()` per flow in `app_test.dart`, or one file per flow if it exceeds ~300 lines).
 4. Stub `share_plus` / `file_picker` channels in-test; assert snackbar/dialog outcomes per #008 contract (real-number export warning dialog, picker-cancel no-op).
-5. Docs: README section with run commands + what is stubbed; note the device gate and current toolchain blocker below.
+5. Docs: README section with run commands + what is stubbed; note the device gate and the remaining Android-SDK blocker below.
 
 ## Out of scope
 - Per-widget unit tests (each stays in its feature issue: #003 Task 4, #006–#011 grading/formula tests).
@@ -34,14 +34,14 @@ Device-run end-to-end coverage for the four critical user journeys, using only t
 
 ## Dependencies / Blocked
 - Needs UI from #003–#005 (library + lesson shell) at minimum before flows 1–2 are writable; flows 3–4 need #008–#011 widgets. Scaffold (Task 1) can land first; flow specs fill in as screens land.
-- Device gate currently BLOCKED: `flutter doctor` has no Android SDK, no VS C++ workload, no Chrome (see #001). Primary gate is an Android emulator (`flutter test integration_test` / `flutter run integration_test/app_test.dart`); Windows desktop run is a nice-to-have second signal once VS exists. Do not close before one of these passes.
+- Device gate partially unblocked 2026-10-11: VS + Chrome installed (`flutter build windows --debug` succeeds), so the Windows desktop run below works now; Android emulator still BLOCKED on missing SDK (see #001). Primary gate stays an Android emulator (`flutter test integration_test` / `flutter run integration_test/app_test.dart`); Windows desktop run is a working second signal. Do not close before one of these passes.
 
 ## Verify
 ```powershell
 flutter analyze        # must be clean
 dart format .          # must be clean
-flutter test integration_test   # HOST CHECK only — real gate is a device run below, currently blocked on toolchains
+flutter test integration_test   # HOST CHECK only — real gate is a device run below (Android run still blocked on missing SDK; Windows run works since 2026-10-11)
 # Gate to close (one required):
-# flutter test integration_test -d <android-emulator-id>   (Android-first, preferred)
-# or: flutter run integration_test/app_test.dart -d windows (once VS C++ workload installed)
+# flutter test integration_test -d <android-emulator-id>   (Android-first, preferred — still needs Android SDK)
+# or: flutter run integration_test/app_test.dart -d windows (WORKS since VS installed; `flutter build windows --debug` verified 2026-10-11)
 ```
