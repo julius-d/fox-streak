@@ -83,6 +83,16 @@ abstract class AppLocalizations {
   String get errorInvalidPhone;
   String get errorInvalidDate;
   String get errorDirectionRequired;
+  String itemDistractorLabel(int index);
+  String get itemDistractorHint;
+  String get itemDayLabel;
+  String get itemMonthLabel;
+  String get itemYearLabel;
+  String get itemDateHint;
+  String get errorDuplicateChoice;
+  String get errorInvalidDay;
+  String get errorInvalidMonth;
+  String get errorInvalidYear;
 }
 
 class AppLocalizationsEn extends AppLocalizations {
@@ -191,6 +201,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorInvalidDate => 'Use YYYY-MM-DD (1900-01-01…today)';
   @override
   String get errorDirectionRequired => 'Pick a direction';
+  @override
+  String itemDistractorLabel(int index) => 'Distractor $index';
+  @override
+  String get itemDistractorHint => 'Optional';
+  @override
+  String get itemDayLabel => 'Day';
+  @override
+  String get itemMonthLabel => 'Month';
+  @override
+  String get itemYearLabel => 'Year';
+  @override
+  String get itemDateHint => 'Enter day, month and year';
+  @override
+  String get errorDuplicateChoice => 'Must be different from the answer';
+  @override
+  String get errorInvalidDay => 'Enter a day 1–31';
+  @override
+  String get errorInvalidMonth => 'Enter a month 1–12';
+  @override
+  String get errorInvalidYear => 'Enter a year 1900–today';
 }
 
 class AppLocalizationsDe extends AppLocalizations {
@@ -301,6 +331,26 @@ class AppLocalizationsDe extends AppLocalizations {
   String get errorInvalidDate => 'JJJJ-MM-TT nutzen (1900-01-01…heute)';
   @override
   String get errorDirectionRequired => 'Wähle eine Richtung';
+  @override
+  String itemDistractorLabel(int index) => 'Distraktor $index';
+  @override
+  String get itemDistractorHint => 'Optional';
+  @override
+  String get itemDayLabel => 'Tag';
+  @override
+  String get itemMonthLabel => 'Monat';
+  @override
+  String get itemYearLabel => 'Jahr';
+  @override
+  String get itemDateHint => 'Tag, Monat und Jahr eingeben';
+  @override
+  String get errorDuplicateChoice => 'Muss sich von der Antwort unterscheiden';
+  @override
+  String get errorInvalidDay => 'Tag 1–31 eingeben';
+  @override
+  String get errorInvalidMonth => 'Monat 1–12 eingeben';
+  @override
+  String get errorInvalidYear => 'Jahr 1900–heute eingeben';
 }
 
 class _AppLocalizationsDelegate
