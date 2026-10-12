@@ -75,11 +75,14 @@ class _MultipleChoiceCardState extends State<MultipleChoiceCard> {
     // Take up to 3 distractors, pad with placeholders if needed.
     final selectedDistractors = filteredDistractors.take(3).toList();
     while (selectedDistractors.length < 3) {
-      selectedDistractors.add(_placeholderDistractor(selectedDistractors.length + 1));
+      selectedDistractors.add(
+        _placeholderDistractor(selectedDistractors.length + 1),
+      );
     }
 
     // Combine answer + 3 distractors and shuffle.
-    final allOptions = <String>[answer, ...selectedDistractors]..shuffle(Random());
+    final allOptions = <String>[answer, ...selectedDistractors]
+      ..shuffle(Random());
 
     setState(() {
       _options = allOptions;
@@ -123,7 +126,8 @@ class _MultipleChoiceCardState extends State<MultipleChoiceCard> {
     widget.onStateChanged(
       ExerciseDraft(
         hasAnswer: true,
-        grade: () => _normalize(_selectedOption!) == _normalize(widget.item.answer),
+        grade: () =>
+            _normalize(_selectedOption!) == _normalize(widget.item.answer),
         correctAnswerLabel: widget.item.answer,
         hintLabel: null,
       ),
@@ -188,7 +192,9 @@ class _MultipleChoiceCardState extends State<MultipleChoiceCard> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(FoxSpacing.md),
                   decoration: BoxDecoration(
-                    color: backgroundColor ?? theme.colorScheme.surfaceContainerHighest,
+                    color:
+                        backgroundColor ??
+                        theme.colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(FoxRadius.lg),
                     border: Border.all(
                       color: borderColor ?? theme.colorScheme.outlineVariant,

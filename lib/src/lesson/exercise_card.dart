@@ -28,6 +28,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:fox_streak_app/src/data/database.dart';
+import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
 
 /// Draft state reported by an exercise card while the user is answering.
 ///
@@ -38,18 +39,37 @@ import 'package:fox_streak_app/src/data/database.dart';
 ///   formatDateForDisplay from #004), never a raw ISO string.
 /// [hintLabel] — optional hint shown alongside the correct answer in the error
 ///   banner (e.g. first-letter hint from #007). Null if not applicable.
+/// [hintUsed] — whether the card's reveal-hint affordance (#008 phone,
+///   #009 date) was used for this item; the shell copies it onto the
+///   recorded [LessonItemOutcome] for the future #010 5-XP tier.
 class ExerciseDraft {
   final bool hasAnswer;
   final bool Function() grade;
   final String correctAnswerLabel;
   final String? hintLabel;
+  final bool hintUsed;
 
   const ExerciseDraft({
     required this.hasAnswer,
     required this.grade,
     required this.correctAnswerLabel,
     this.hintLabel,
+    this.hintUsed = false,
   });
+}
+
+/// Minimum height for a card's scrollable content so short answers (a
+/// masked phone display, 3 date fields) still center vertically in the
+/// space left by the lesson shell's app bar + bottom button, instead of
+/// hugging the top. Shared by #008's dial pad and #009's date exercise
+/// (`IntrinsicHeight` + `ConstrainedBox(minHeight: ...)`).
+double exerciseCardMinHeight(BuildContext context) {
+  return MediaQuery.of(context).size.height -
+      MediaQuery.of(context).padding.top -
+      MediaQuery.of(context).padding.bottom -
+      kToolbarHeight -
+      FoxButtonMetrics.minSize -
+      FoxSpacing.xxl * 2;
 }
 
 /// Widget signature that all exercise cards (#006–#009) must match.
@@ -100,7 +120,9 @@ typedef ExerciseCardBuilder = Widget Function({
 /// [correct] — true if the user's answer was correct.
 /// [skipped] — true if the user pressed SKIP (counts as wrong).
 /// [firstTry] — always true in v1 (reserved for #010 second-try XP tier).
-/// [hintUsed] — always false in v1 (reserved for #008 reveal-hint → #010 5-XP tier).
+/// [hintUsed] — true if the card's reveal-hint was used (#008 phone, #009
+///   date) before CHECK or SKIP, copied from the card's current
+///   [ExerciseDraft.hintUsed] at that moment. Reserved for #010's 5-XP tier.
 class LessonItemOutcome {
   final int itemId;
   final bool correct;

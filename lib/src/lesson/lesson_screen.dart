@@ -17,6 +17,7 @@ import '../data/database.dart';
 import '../library/library_providers.dart';
 import '../theme/fox_streak_theme.dart';
 import '../widgets/widgets.dart';
+import '../exercises/date_exercise.dart';
 import '../exercises/dial_pad_exercise.dart';
 import 'exercise_card.dart';
 import 'lesson_controller.dart';
@@ -71,7 +72,8 @@ class LessonScreen extends ConsumerStatefulWidget {
     required void Function(ExerciseDraft) onStateChanged,
     required AppLocalizations l10n,
     bool autoAnswer,
-  })? cardBuilder;
+  })?
+  cardBuilder;
 
   const LessonScreen({
     super.key,
@@ -180,8 +182,8 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
         body: items.isEmpty
             ? Center(child: Text(l10n.libraryLoading))
             : state.isDone
-                ? _buildResultScreen(context, l10n, controller)
-                : _buildLessonBody(context, ref, l10n, state, controller),
+            ? _buildResultScreen(context, l10n, controller)
+            : _buildLessonBody(context, ref, l10n, state, controller),
       ),
     );
   }
@@ -289,8 +291,8 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
     AppLocalizations l10n,
   ) {
     // Dispatch by item.type to the appropriate exercise card.
-    // #006 provides MultipleChoiceCard for vocab.
-    // #007-#009 will provide cards for phone/date.
+    // #006 provides MultipleChoiceCard for vocab, #008 the dial pad for
+    // phone, #009 the calendar-styled fields for date.
     // Auto-answer for test items that have choices (vocab with distractors).
     final autoAnswer =
         item.type == 'vocab' &&
@@ -322,8 +324,14 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
           l10n: l10n,
           autoAnswer: autoAnswer,
         );
+      case 'date':
+        return buildDateExercise(
+          item: item,
+          onStateChanged: controller.updateDraft,
+          l10n: l10n,
+          autoAnswer: autoAnswer,
+        );
       default:
-        // Fallback to placeholder for date until #009
         return _PlaceholderExerciseCard(
           item: item,
           onStateChanged: controller.updateDraft,

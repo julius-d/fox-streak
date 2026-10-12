@@ -31,7 +31,8 @@ class PlaceholderExerciseCard extends StatefulWidget {
   });
 
   @override
-  State<PlaceholderExerciseCard> createState() => _PlaceholderExerciseCardState();
+  State<PlaceholderExerciseCard> createState() =>
+      _PlaceholderExerciseCardState();
 }
 
 class _PlaceholderExerciseCardState extends State<PlaceholderExerciseCard> {

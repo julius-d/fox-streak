@@ -64,19 +64,20 @@ Widget buildTestLessonScreen({
   return LessonScreen(
     setId: setId,
     items: items,
-    cardBuilder: ({
-      required Item item,
-      required void Function(ExerciseDraft) onStateChanged,
-      required AppLocalizations l10n,
-      bool autoAnswer = false,
-    }) {
-      return PlaceholderExerciseCard(
-        item: item,
-        onStateChanged: onStateChanged,
-        l10n: l10n,
-        autoAnswer: autoAnswer,
-      );
-    },
+    cardBuilder:
+        ({
+          required Item item,
+          required void Function(ExerciseDraft) onStateChanged,
+          required AppLocalizations l10n,
+          bool autoAnswer = false,
+        }) {
+          return PlaceholderExerciseCard(
+            item: item,
+            onStateChanged: onStateChanged,
+            l10n: l10n,
+            autoAnswer: autoAnswer,
+          );
+        },
   );
 }
 
@@ -195,19 +196,20 @@ void main() {
         LessonScreen(
           setId: 1,
           items: items,
-          cardBuilder: ({
-            required Item item,
-            required void Function(ExerciseDraft) onStateChanged,
-            required AppLocalizations l10n,
-            bool autoAnswer = false,
-          }) {
-            return PlaceholderExerciseCard(
-              item: item,
-              onStateChanged: onStateChanged,
-              l10n: l10n,
-              autoAnswer: autoAnswer,
-            );
-          },
+          cardBuilder:
+              ({
+                required Item item,
+                required void Function(ExerciseDraft) onStateChanged,
+                required AppLocalizations l10n,
+                bool autoAnswer = false,
+              }) {
+                return PlaceholderExerciseCard(
+                  item: item,
+                  onStateChanged: onStateChanged,
+                  l10n: l10n,
+                  autoAnswer: autoAnswer,
+                );
+              },
         ),
         database: db,
         clock: fakeClock,
@@ -233,19 +235,20 @@ void main() {
         LessonScreen(
           setId: 1,
           items: items,
-          cardBuilder: ({
-            required Item item,
-            required void Function(ExerciseDraft) onStateChanged,
-            required AppLocalizations l10n,
-            bool autoAnswer = false,
-          }) {
-            return PlaceholderExerciseCard(
-              item: item,
-              onStateChanged: onStateChanged,
-              l10n: l10n,
-              autoAnswer: autoAnswer,
-            );
-          },
+          cardBuilder:
+              ({
+                required Item item,
+                required void Function(ExerciseDraft) onStateChanged,
+                required AppLocalizations l10n,
+                bool autoAnswer = false,
+              }) {
+                return PlaceholderExerciseCard(
+                  item: item,
+                  onStateChanged: onStateChanged,
+                  l10n: l10n,
+                  autoAnswer: autoAnswer,
+                );
+              },
         ),
         database: db,
         clock: fakeClock,
@@ -277,19 +280,20 @@ void main() {
           LessonScreen(
             setId: 1,
             items: items,
-            cardBuilder: ({
-              required Item item,
-              required void Function(ExerciseDraft) onStateChanged,
-              required AppLocalizations l10n,
-              bool autoAnswer = false,
-            }) {
-              return PlaceholderExerciseCard(
-                item: item,
-                onStateChanged: onStateChanged,
-                l10n: l10n,
-                autoAnswer: autoAnswer,
-              );
-            },
+            cardBuilder:
+                ({
+                  required Item item,
+                  required void Function(ExerciseDraft) onStateChanged,
+                  required AppLocalizations l10n,
+                  bool autoAnswer = false,
+                }) {
+                  return PlaceholderExerciseCard(
+                    item: item,
+                    onStateChanged: onStateChanged,
+                    l10n: l10n,
+                    autoAnswer: autoAnswer,
+                  );
+                },
           ),
           database: db,
           clock: fakeClock,
@@ -332,18 +336,19 @@ void main() {
         LessonScreen(
           setId: 1,
           items: items,
-          cardBuilder: ({
-            required Item item,
-            required void Function(ExerciseDraft) onStateChanged,
-            required AppLocalizations l10n,
-            bool autoAnswer = false,
-          }) {
-            return PlaceholderExerciseCard(
-              item: item,
-              onStateChanged: onStateChanged,
-              l10n: l10n,
-            );
-          },
+          cardBuilder:
+              ({
+                required Item item,
+                required void Function(ExerciseDraft) onStateChanged,
+                required AppLocalizations l10n,
+                bool autoAnswer = false,
+              }) {
+                return PlaceholderExerciseCard(
+                  item: item,
+                  onStateChanged: onStateChanged,
+                  l10n: l10n,
+                );
+              },
         ),
         database: db,
         clock: fakeClock,
@@ -382,19 +387,20 @@ void main() {
         LessonScreen(
           setId: 1,
           items: items,
-          cardBuilder: ({
-            required Item item,
-            required void Function(ExerciseDraft) onStateChanged,
-            required AppLocalizations l10n,
-            bool autoAnswer = false,
-          }) {
-            return PlaceholderExerciseCard(
-              item: item,
-              onStateChanged: onStateChanged,
-              l10n: l10n,
-              autoAnswer: autoAnswer,
-            );
-          },
+          cardBuilder:
+              ({
+                required Item item,
+                required void Function(ExerciseDraft) onStateChanged,
+                required AppLocalizations l10n,
+                bool autoAnswer = false,
+              }) {
+                return PlaceholderExerciseCard(
+                  item: item,
+                  onStateChanged: onStateChanged,
+                  l10n: l10n,
+                  autoAnswer: autoAnswer,
+                );
+              },
         ),
         database: db,
         clock: fakeClock,
@@ -421,19 +427,20 @@ void main() {
         LessonScreen(
           setId: 1,
           items: items,
-          cardBuilder: ({
-            required Item item,
-            required void Function(ExerciseDraft) onStateChanged,
-            required AppLocalizations l10n,
-            bool autoAnswer = false,
-          }) {
-            return PlaceholderExerciseCard(
-              item: item,
-              onStateChanged: onStateChanged,
-              l10n: l10n,
-              autoAnswer: autoAnswer,
-            );
-          },
+          cardBuilder:
+              ({
+                required Item item,
+                required void Function(ExerciseDraft) onStateChanged,
+                required AppLocalizations l10n,
+                bool autoAnswer = false,
+              }) {
+                return PlaceholderExerciseCard(
+                  item: item,
+                  onStateChanged: onStateChanged,
+                  l10n: l10n,
+                  autoAnswer: autoAnswer,
+                );
+              },
         ),
         database: db,
         clock: fakeClock,
@@ -468,19 +475,20 @@ void main() {
         LessonScreen(
           setId: 1,
           items: items,
-          cardBuilder: ({
-            required Item item,
-            required void Function(ExerciseDraft) onStateChanged,
-            required AppLocalizations l10n,
-            bool autoAnswer = false,
-          }) {
-            return PlaceholderExerciseCard(
-              item: item,
-              onStateChanged: onStateChanged,
-              l10n: l10n,
-              autoAnswer: autoAnswer,
-            );
-          },
+          cardBuilder:
+              ({
+                required Item item,
+                required void Function(ExerciseDraft) onStateChanged,
+                required AppLocalizations l10n,
+                bool autoAnswer = false,
+              }) {
+                return PlaceholderExerciseCard(
+                  item: item,
+                  onStateChanged: onStateChanged,
+                  l10n: l10n,
+                  autoAnswer: autoAnswer,
+                );
+              },
         ),
         database: db,
         clock: fakeClock,
@@ -511,19 +519,20 @@ void main() {
         LessonScreen(
           setId: 1,
           items: items,
-          cardBuilder: ({
-            required Item item,
-            required void Function(ExerciseDraft) onStateChanged,
-            required AppLocalizations l10n,
-            bool autoAnswer = false,
-          }) {
-            return PlaceholderExerciseCard(
-              item: item,
-              onStateChanged: onStateChanged,
-              l10n: l10n,
-              autoAnswer: autoAnswer,
-            );
-          },
+          cardBuilder:
+              ({
+                required Item item,
+                required void Function(ExerciseDraft) onStateChanged,
+                required AppLocalizations l10n,
+                bool autoAnswer = false,
+              }) {
+                return PlaceholderExerciseCard(
+                  item: item,
+                  onStateChanged: onStateChanged,
+                  l10n: l10n,
+                  autoAnswer: autoAnswer,
+                );
+              },
         ),
         database: db,
         clock: fakeClock,
@@ -560,19 +569,20 @@ void main() {
         LessonScreen(
           setId: 1,
           items: items,
-          cardBuilder: ({
-            required Item item,
-            required void Function(ExerciseDraft) onStateChanged,
-            required AppLocalizations l10n,
-            bool autoAnswer = false,
-          }) {
-            return PlaceholderExerciseCard(
-              item: item,
-              onStateChanged: onStateChanged,
-              l10n: l10n,
-              autoAnswer: autoAnswer,
-            );
-          },
+          cardBuilder:
+              ({
+                required Item item,
+                required void Function(ExerciseDraft) onStateChanged,
+                required AppLocalizations l10n,
+                bool autoAnswer = false,
+              }) {
+                return PlaceholderExerciseCard(
+                  item: item,
+                  onStateChanged: onStateChanged,
+                  l10n: l10n,
+                  autoAnswer: autoAnswer,
+                );
+              },
         ),
         database: db,
         clock: fakeClock,
@@ -605,19 +615,20 @@ void main() {
         LessonScreen(
           setId: 1,
           items: items,
-          cardBuilder: ({
-            required Item item,
-            required void Function(ExerciseDraft) onStateChanged,
-            required AppLocalizations l10n,
-            bool autoAnswer = false,
-          }) {
-            return PlaceholderExerciseCard(
-              item: item,
-              onStateChanged: onStateChanged,
-              l10n: l10n,
-              autoAnswer: autoAnswer,
-            );
-          },
+          cardBuilder:
+              ({
+                required Item item,
+                required void Function(ExerciseDraft) onStateChanged,
+                required AppLocalizations l10n,
+                bool autoAnswer = false,
+              }) {
+                return PlaceholderExerciseCard(
+                  item: item,
+                  onStateChanged: onStateChanged,
+                  l10n: l10n,
+                  autoAnswer: autoAnswer,
+                );
+              },
         ),
         database: db,
         clock: fakeClock,
@@ -651,19 +662,20 @@ void main() {
         LessonScreen(
           setId: 1,
           items: items,
-          cardBuilder: ({
-            required Item item,
-            required void Function(ExerciseDraft) onStateChanged,
-            required AppLocalizations l10n,
-            bool autoAnswer = false,
-          }) {
-            return PlaceholderExerciseCard(
-              item: item,
-              onStateChanged: onStateChanged,
-              l10n: l10n,
-              autoAnswer: autoAnswer,
-            );
-          },
+          cardBuilder:
+              ({
+                required Item item,
+                required void Function(ExerciseDraft) onStateChanged,
+                required AppLocalizations l10n,
+                bool autoAnswer = false,
+              }) {
+                return PlaceholderExerciseCard(
+                  item: item,
+                  onStateChanged: onStateChanged,
+                  l10n: l10n,
+                  autoAnswer: autoAnswer,
+                );
+              },
         ),
         database: db,
         clock: fakeClock,
@@ -723,20 +735,21 @@ void main() {
                         builder: (_) => LessonScreen(
                           setId: 1,
                           items: items,
-                          cardBuilder: ({
-                            required Item item,
-                            required void Function(ExerciseDraft)
-                            onStateChanged,
-                            required AppLocalizations l10n,
-                            bool autoAnswer = false,
-                          }) {
-                            return PlaceholderExerciseCard(
-                              item: item,
-                              onStateChanged: onStateChanged,
-                              l10n: l10n,
-                              autoAnswer: autoAnswer,
-                            );
-                          },
+                          cardBuilder:
+                              ({
+                                required Item item,
+                                required void Function(ExerciseDraft)
+                                onStateChanged,
+                                required AppLocalizations l10n,
+                                bool autoAnswer = false,
+                              }) {
+                                return PlaceholderExerciseCard(
+                                  item: item,
+                                  onStateChanged: onStateChanged,
+                                  l10n: l10n,
+                                  autoAnswer: autoAnswer,
+                                );
+                              },
                         ),
                       ),
                     ),
@@ -804,18 +817,19 @@ void main() {
         LessonScreen(
           setId: 1,
           items: items,
-          cardBuilder: ({
-            required Item item,
-            required void Function(ExerciseDraft) onStateChanged,
-            required AppLocalizations l10n,
-            bool autoAnswer = false,
-          }) {
-            return PlaceholderExerciseCard(
-              item: item,
-              onStateChanged: onStateChanged,
-              l10n: l10n,
-            );
-          },
+          cardBuilder:
+              ({
+                required Item item,
+                required void Function(ExerciseDraft) onStateChanged,
+                required AppLocalizations l10n,
+                bool autoAnswer = false,
+              }) {
+                return PlaceholderExerciseCard(
+                  item: item,
+                  onStateChanged: onStateChanged,
+                  l10n: l10n,
+                );
+              },
         ),
         database: db,
         clock: fakeClock,
@@ -863,18 +877,19 @@ void main() {
         LessonScreen(
           setId: 1,
           items: items,
-          cardBuilder: ({
-            required Item item,
-            required void Function(ExerciseDraft) onStateChanged,
-            required AppLocalizations l10n,
-            bool autoAnswer = false,
-          }) {
-            return PlaceholderExerciseCard(
-              item: item,
-              onStateChanged: onStateChanged,
-              l10n: l10n,
-            );
-          },
+          cardBuilder:
+              ({
+                required Item item,
+                required void Function(ExerciseDraft) onStateChanged,
+                required AppLocalizations l10n,
+                bool autoAnswer = false,
+              }) {
+                return PlaceholderExerciseCard(
+                  item: item,
+                  onStateChanged: onStateChanged,
+                  l10n: l10n,
+                );
+              },
         ),
         database: db,
         clock: fakeClock,
@@ -935,18 +950,19 @@ void main() {
                 body: LessonScreen(
                   setId: 1,
                   items: items,
-                  cardBuilder: ({
-                    required Item item,
-                    required void Function(ExerciseDraft) onStateChanged,
-                    required AppLocalizations l10n,
-                    bool autoAnswer = false,
-                  }) {
-                    return PlaceholderExerciseCard(
-                      item: item,
-                      onStateChanged: onStateChanged,
-                      l10n: l10n,
-                    );
-                  },
+                  cardBuilder:
+                      ({
+                        required Item item,
+                        required void Function(ExerciseDraft) onStateChanged,
+                        required AppLocalizations l10n,
+                        bool autoAnswer = false,
+                      }) {
+                        return PlaceholderExerciseCard(
+                          item: item,
+                          onStateChanged: onStateChanged,
+                          l10n: l10n,
+                        );
+                      },
                 ),
               ),
             ),

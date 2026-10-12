@@ -101,6 +101,7 @@ abstract class AppLocalizations {
   String get exercisePhoneMaskedDigit;
   String get exercisePhoneCorrect;
   String exercisePhoneWrongAnswer(String answer);
+  String get exerciseDateRevealHintAria;
 
   // Lesson shell (#005)
   String get lessonStart;
@@ -258,13 +259,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get exercisePhoneRevealHint => 'Reveal number';
   @override
-  String get exercisePhoneRevealHintAria => 'Reveal the phone number (costs hint bonus)';
+  String get exercisePhoneRevealHintAria =>
+      'Reveal the phone number (costs hint bonus)';
   @override
   String get exercisePhoneMaskedDigit => '●';
   @override
   String get exercisePhoneCorrect => 'Correct!';
   @override
   String exercisePhoneWrongAnswer(String answer) => 'The number was $answer';
+  @override
+  String get exerciseDateRevealHintAria => 'Reveal the date (costs hint bonus)';
 
   // Lesson shell (#005)
   @override
@@ -288,7 +292,8 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get lessonQuitTitle => 'Quit lesson?';
   @override
-  String get lessonQuitMessage => 'Your progress will be lost. Are you sure you want to quit?';
+  String get lessonQuitMessage =>
+      'Your progress will be lost. Are you sure you want to quit?';
   @override
   String get lessonConfirmQuit => 'Quit';
   @override
@@ -296,7 +301,8 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get lessonNoScore => 'Keep practicing!';
   @override
-  String lessonScoreSummary(int correct, int total, int pct) => '$correct of $total correct ($pct%)';
+  String lessonScoreSummary(int correct, int total, int pct) =>
+      '$correct of $total correct ($pct%)';
   @override
   String get lessonXpComingSoon => 'XP — coming soon';
   @override
@@ -444,13 +450,17 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get exercisePhoneRevealHint => 'Nummer zeigen';
   @override
-  String get exercisePhoneRevealHintAria => 'Telefonnummer anzeigen (kostet Hinweis-Bonus)';
+  String get exercisePhoneRevealHintAria =>
+      'Telefonnummer anzeigen (kostet Hinweis-Bonus)';
   @override
   String get exercisePhoneMaskedDigit => '●';
   @override
   String get exercisePhoneCorrect => 'Richtig!';
   @override
   String exercisePhoneWrongAnswer(String answer) => 'Die Nummer war $answer';
+  @override
+  String get exerciseDateRevealHintAria =>
+      'Datum anzeigen (kostet Hinweis-Bonus)';
 
   // Lesson shell (#005)
   @override
@@ -474,7 +484,8 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get lessonQuitTitle => 'Lektion verlassen?';
   @override
-  String get lessonQuitMessage => 'Dein Fortschritt geht verloren. Wirklich verlassen?';
+  String get lessonQuitMessage =>
+      'Dein Fortschritt geht verloren. Wirklich verlassen?';
   @override
   String get lessonConfirmQuit => 'Verlassen';
   @override
@@ -482,7 +493,8 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get lessonNoScore => 'Weiter üben!';
   @override
-  String lessonScoreSummary(int correct, int total, int pct) => '$correct von $total richtig ($pct%)';
+  String lessonScoreSummary(int correct, int total, int pct) =>
+      '$correct von $total richtig ($pct%)';
   @override
   String get lessonXpComingSoon => 'XP — kommt bald';
   @override

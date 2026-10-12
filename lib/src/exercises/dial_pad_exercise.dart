@@ -55,6 +55,7 @@ class DialPadExercise extends ConsumerStatefulWidget {
 class _DialPadExerciseState extends ConsumerState<DialPadExercise> {
   String _typedDigits = '';
   bool _revealingHint = false;
+  bool _hintWasUsed = false;
   Timer? _hintRevealTimer;
 
   // Keypad layout: 1-9, then 0 with backspace
@@ -110,6 +111,7 @@ class _DialPadExerciseState extends ConsumerState<DialPadExercise> {
 
     setState(() {
       _revealingHint = true;
+      _hintWasUsed = true;
     });
     _reportDraft();
 
@@ -137,6 +139,7 @@ class _DialPadExerciseState extends ConsumerState<DialPadExercise> {
         grade: () => normalizedTyped == normalizedAnswer,
         correctAnswerLabel: widget.item.answer,
         hintLabel: null,
+        hintUsed: _hintWasUsed,
       ),
     );
   }
@@ -179,14 +182,7 @@ class _DialPadExerciseState extends ConsumerState<DialPadExercise> {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(vertical: FoxSpacing.md),
       child: ConstrainedBox(
-        constraints: BoxConstraints(
-          minHeight: MediaQuery.of(context).size.height -
-              MediaQuery.of(context).padding.top -
-              MediaQuery.of(context).padding.bottom -
-              kToolbarHeight -
-              FoxButtonMetrics.minSize -
-              FoxSpacing.xxl * 2,
-        ),
+        constraints: BoxConstraints(minHeight: exerciseCardMinHeight(context)),
         child: IntrinsicHeight(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -224,7 +220,9 @@ class _DialPadExerciseState extends ConsumerState<DialPadExercise> {
                         style: text.headlineLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                           letterSpacing: 4,
-                          color: _revealingHint ? tokens.success : scheme.onSurface,
+                          color: _revealingHint
+                              ? tokens.success
+                              : scheme.onSurface,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -255,7 +253,9 @@ class _DialPadExerciseState extends ConsumerState<DialPadExercise> {
                           return const SizedBox(width: 72, height: 72);
                         }
                         return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: FoxSpacing.xs),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: FoxSpacing.xs,
+                          ),
                           child: _DialPadKey(
                             key: Key('dialPadKey$key'),
                             label: key,
@@ -293,7 +293,8 @@ class _DialPadKey extends StatefulWidget {
   State<_DialPadKey> createState() => _DialPadKeyState();
 }
 
-class _DialPadKeyState extends State<_DialPadKey> with SingleTickerProviderStateMixin {
+class _DialPadKeyState extends State<_DialPadKey>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _pressController;
   late final Animation<double> _scaleAnimation;
   bool _isPressed = false;
@@ -305,9 +306,10 @@ class _DialPadKeyState extends State<_DialPadKey> with SingleTickerProviderState
       duration: const Duration(milliseconds: 100),
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.92).animate(
-      CurvedAnimation(parent: _pressController, curve: Curves.easeOut),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.92,
+    ).animate(CurvedAnimation(parent: _pressController, curve: Curves.easeOut));
   }
 
   @override
@@ -342,10 +344,9 @@ class _DialPadKeyState extends State<_DialPadKey> with SingleTickerProviderState
     final Color fgColor = widget.isBackspace
         ? scheme.onSurfaceVariant
         : scheme.onSurface;
-    final Color shadowColor = (widget.isBackspace
-            ? scheme.surfaceContainerHighest
-            : scheme.surface)
-        .withValues(alpha: 0.4);
+    final Color shadowColor =
+        (widget.isBackspace ? scheme.surfaceContainerHighest : scheme.surface)
+            .withValues(alpha: 0.4);
 
     return ScaleTransition(
       scale: _scaleAnimation,
@@ -374,11 +375,7 @@ class _DialPadKeyState extends State<_DialPadKey> with SingleTickerProviderState
             ),
             child: Center(
               child: widget.isBackspace
-                  ? Icon(
-                      Icons.backspace_outlined,
-                      size: 28,
-                      color: fgColor,
-                    )
+                  ? Icon(Icons.backspace_outlined, size: 28, color: fgColor)
                   : Text(
                       widget.label,
                       style: TextStyle(

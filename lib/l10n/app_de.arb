@@ -107,6 +107,11 @@
     }
   },
   "exercisePhoneWrongAnswer": "Die Nummer war {answer}",
+  "@exerciseDateRevealHintAria": {
+    "description": "Accessibility label for the date exercise reveal hint button",
+    "placeholders": {}
+  },
+  "exerciseDateRevealHintAria": "Datum anzeigen (kostet Hinweis-Bonus)",
   "@lessonEmptySetNote": {
     "description": "Empty state message for set with no items, prompting to add items",
     "placeholders": {}

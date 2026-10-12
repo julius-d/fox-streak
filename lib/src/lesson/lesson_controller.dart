@@ -190,7 +190,7 @@ class LessonController extends Notifier<LessonState> {
       correct: correct,
       skipped: false,
       firstTry: true,
-      hintUsed: false,
+      hintUsed: draft.hintUsed,
     );
 
     // Write attempt row immediately (ownership: attempts only).
@@ -222,7 +222,7 @@ class LessonController extends Notifier<LessonState> {
       correct: false,
       skipped: true,
       firstTry: true,
-      hintUsed: false,
+      hintUsed: state.currentDraft?.hintUsed ?? false,
     );
 
     // Write attempt row immediately (ownership: attempts only).
