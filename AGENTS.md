@@ -66,5 +66,5 @@ Lints via `flutter_lints` + `riverpod_lint` surface through `flutter analyze`;
 - Never commit `local.properties`, `.dart_tool/`, `.idea/`, `*.iml` — root `.gitignore` already excludes them; check `git status` before committing.
 - State management: **Riverpod** (`flutter_riverpod`) with `ProviderScope` at root. Do not introduce Bloc.
 - Package `fox_streak_app` (`com.example.fox_streak_app`); Android `minSdk 24` is pinned in `android/app/build.gradle.kts` — keep the pin, don't revert to `flutter.minSdkVersion`.
-- Platforms in repo: `android/`, `ios/`, `windows/`. Keep all three; never add a plugin without iOS + Windows support.
+- Platforms in repo: `android/`, `ios/`, `windows/`, `macos/`. Keep all four; never add a plugin without iOS + Windows + macOS support.
 - One tool call per message; batch independent calls as parallel messages in one turn.
