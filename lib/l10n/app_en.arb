@@ -112,6 +112,23 @@
     "placeholders": {}
   },
   "exerciseDateRevealHintAria": "Reveal the date (costs hint bonus)",
+  "@exerciseFreeTextPlaceholder": {
+    "description": "Placeholder shown in the empty free-text answer field",
+    "placeholders": {}
+  },
+  "exerciseFreeTextPlaceholder": "Type the answer",
+  "@exerciseFreeTextRevealHintAria": {
+    "description": "Accessibility label/tooltip for the free-text reveal hint button",
+    "placeholders": {}
+  },
+  "exerciseFreeTextRevealHintAria": "Reveal the first letter (costs hint bonus)",
+  "@exerciseFreeTextHintLabel": {
+    "description": "Hint shown after reveal-hint is used, with the expected answer's first letter",
+    "placeholders": {
+      "letter": {"type": "String"}
+    }
+  },
+  "exerciseFreeTextHintLabel": "Starts with: {letter}",
   "@lessonEmptySetNote": {
     "description": "Empty state message for set with no items, prompting to add items",
     "placeholders": {}

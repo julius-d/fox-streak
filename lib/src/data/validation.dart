@@ -80,6 +80,26 @@ bool isValidDateAnswer(String answer, {DateTime? today}) {
 /// True for non-empty (after trim) prompt/answer strings.
 bool isNonEmptyContent(String s) => s.trim().isNotEmpty;
 
+/// Sentence-ending marks stripped (at most one, trailing) before grading.
+const String kFreeTextTrailingPunctuation = '.,!?';
+
+/// Grades a free-text answer (#007): trims whitespace, strips at most one
+/// trailing sentence-ending mark (`. , ! ?`), then compares
+/// case-insensitively. Umlauts (ä/ö/ü) and ß are never normalized — they
+/// must match exactly like any other character (`toLowerCase()` folds case
+/// without merging distinct letters).
+bool gradeText(String expected, String actual) =>
+    _normalizeForGrading(expected) == _normalizeForGrading(actual);
+
+String _normalizeForGrading(String s) {
+  var trimmed = s.trim();
+  if (trimmed.isNotEmpty &&
+      kFreeTextTrailingPunctuation.contains(trimmed[trimmed.length - 1])) {
+    trimmed = trimmed.substring(0, trimmed.length - 1).trimRight();
+  }
+  return trimmed.toLowerCase();
+}
+
 /// Validates a vocab [direction]; returns an error message or `null` if ok.
 ///
 /// Vocab items require `deEn|enDe`; all other types must leave it `null`.

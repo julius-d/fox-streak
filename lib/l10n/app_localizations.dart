@@ -103,6 +103,11 @@ abstract class AppLocalizations {
   String exercisePhoneWrongAnswer(String answer);
   String get exerciseDateRevealHintAria;
 
+  // Free-text exercise (#007)
+  String get exerciseFreeTextPlaceholder;
+  String get exerciseFreeTextRevealHintAria;
+  String exerciseFreeTextHintLabel(String letter);
+
   // Lesson shell (#005)
   String get lessonStart;
   String get lessonTitle;
@@ -269,6 +274,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String exercisePhoneWrongAnswer(String answer) => 'The number was $answer';
   @override
   String get exerciseDateRevealHintAria => 'Reveal the date (costs hint bonus)';
+
+  // Free-text exercise (#007)
+  @override
+  String get exerciseFreeTextPlaceholder => 'Type the answer';
+  @override
+  String get exerciseFreeTextRevealHintAria =>
+      'Reveal the first letter (costs hint bonus)';
+  @override
+  String exerciseFreeTextHintLabel(String letter) => 'Starts with: $letter';
 
   // Lesson shell (#005)
   @override
@@ -461,6 +475,15 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get exerciseDateRevealHintAria =>
       'Datum anzeigen (kostet Hinweis-Bonus)';
+
+  // Free-text exercise (#007)
+  @override
+  String get exerciseFreeTextPlaceholder => 'Antwort eingeben';
+  @override
+  String get exerciseFreeTextRevealHintAria =>
+      'Ersten Buchstaben anzeigen (kostet Hinweis-Bonus)';
+  @override
+  String exerciseFreeTextHintLabel(String letter) => 'Beginnt mit: $letter';
 
   // Lesson shell (#005)
   @override

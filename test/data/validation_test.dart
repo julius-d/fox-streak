@@ -95,6 +95,45 @@ void main() {
     });
   });
 
+  group('gradeText', () {
+    test('trims whitespace and ignores case', () {
+      expect(gradeText('Hallo', '  hallo  '), isTrue);
+      expect(gradeText('Hallo', 'HALLO'), isTrue);
+    });
+
+    test('strips at most one trailing sentence-ending mark', () {
+      expect(gradeText('Hallo.', 'Hallo'), isTrue);
+      expect(gradeText('Hallo', 'Hallo!'), isTrue);
+      expect(gradeText('Hallo?', 'Hallo,'), isTrue);
+      expect(gradeText('Hallo!!', 'Hallo!'), isFalse);
+    });
+
+    test('internal punctuation must match exactly', () {
+      expect(gradeText("Rock'n'Roll", "Rock'n'Roll"), isTrue);
+      expect(gradeText("Rock'n'Roll", 'Rocknroll'), isFalse);
+      expect(gradeText('Auf-Wiedersehen', 'Auf Wiedersehen'), isFalse);
+    });
+
+    test('umlauts never normalize (strict)', () {
+      expect(gradeText('Mädchen', 'Mädchen'), isTrue);
+      expect(gradeText('Mädchen', 'Madchen'), isFalse);
+      expect(gradeText('für', 'fuer'), isFalse);
+      expect(gradeText('schön', 'schon'), isFalse);
+    });
+
+    test('ß never normalizes to ss (strict)', () {
+      expect(gradeText('Straße', 'Straße'), isTrue);
+      expect(gradeText('Straße', 'Strasse'), isFalse);
+      expect(gradeText('groß', 'gross'), isFalse);
+    });
+
+    test('generic (direction-independent) comparisons work the same way', () {
+      expect(gradeText('Paris', '  paris. '), isTrue);
+      expect(gradeText('42', '42'), isTrue);
+      expect(gradeText('42', '43'), isFalse);
+    });
+  });
+
   group('validateChoices', () {
     test('vocab accepts absent list, rejects bad entries', () {
       expect(validateChoices('vocab', null), isNull);

@@ -1,6 +1,6 @@
 # Issue 007: Vocab exercise — free text input
 
-Status: open | Priority: P0 | Type: feature | Refined-at: 2026-10-12
+Status: done | Priority: P0 | Type: feature | Refined-at: 2026-10-12 | Completed-at: 2026-10-12
 
 ## Goal
 Type-the-answer mode: learner sees a prompt and types the full answer into a text field, graded tolerantly on whitespace/case/trailing punctuation but strictly on umlauts and ß. Originally vocab-only (DE<->EN); generified per the Decisions below so the same `freeText` exercise type can host non-vocab recall prompts later, not just translations.
@@ -15,12 +15,12 @@ Type-the-answer mode: learner sees a prompt and types the full answer into a tex
 - Keyboard locale hint: dropped. Flutter's `TextField` can't force IME locale without extra plugins (would violate #015's no-new-deps spirit); the prompt text already signals the expected answer language via `direction` when present.
 
 ## Acceptance criteria
-- [ ] `TextField` with autocorrect OFF; CHECK enabled only when the field is non-empty (`hasAnswer`)
-- [ ] Tolerant grading via `gradeText(expected, actual)`: trim, case-insensitive, strip at most one trailing `. , ! ?`; umlauts (ä/ö/ü) and ß must match exactly, no normalization
-- [ ] Reveal-hint: eye-icon button (pre-check, available regardless of `hasAnswer`) shows the first letter of the expected answer, sets `hintUsed: true` via the `ExerciseDraft` outcome hook (future #010 5-XP tier), same affordance as #008/#009
-- [ ] On wrong: feedback banner shows `correctAnswerLabel = item.answer` (full expected answer)
-- [ ] Vocab-flavored items (`direction` present) work both directions (DE→EN and EN→DE); non-vocab items (`direction` null) just show `prompt` with no direction framing
-- [ ] Follows #015: kit tokens only, min 48dp target, no ad-hoc styling, all strings via `lib/l10n` arb params (DE + EN)
+- [x] `TextField` with autocorrect OFF; CHECK enabled only when the field is non-empty (`hasAnswer`)
+- [x] Tolerant grading via `gradeText(expected, actual)`: trim, case-insensitive, strip at most one trailing `. , ! ?`; umlauts (ä/ö/ü) and ß must match exactly, no normalization
+- [x] Reveal-hint: eye-icon button (pre-check, available regardless of `hasAnswer`) shows the first letter of the expected answer, sets `hintUsed: true` via the `ExerciseDraft` outcome hook (future #010 5-XP tier), same affordance as #008/#009
+- [x] On wrong: feedback banner shows `correctAnswerLabel = item.answer` (full expected answer)
+- [x] Vocab-flavored items (`direction` present) work both directions (DE→EN and EN→DE); non-vocab items (`direction` null) just show `prompt` with no direction framing
+- [x] Follows #015: kit tokens only, min 48dp target, no ad-hoc styling, all strings via `lib/l10n` arb params (DE + EN)
 
 ## Tasks
 1. schema migration: split `vocab` into `choice`/`freeText` type values, make `direction` nullable-and-optional-for-non-vocab, migration + test for existing data
@@ -50,3 +50,12 @@ flutter analyze        # must be clean (includes riverpod_lint)
 dart format --output=none --set-exit-if-changed .  # must be clean
 flutter test           # new free-text exercise tests + all existing green
 ```
+
+## Summary (2026-10-12)
+- **New widget**: `lib/src/exercises/free_text_exercise.dart` (`FreeTextExercise` / `buildFreeTextExercise`), standalone — not wired into `LessonScreen`'s `item.type` dispatch, since that needs #002's `vocab`→`choice`/`freeText` schema migration (out of scope here, see Dependencies).
+- **Grading**: `gradeText(expected, actual)` added to `lib/src/data/validation.dart` (trim, strip ≤1 trailing `. , ! ?`, case-insensitive; umlauts/ß never normalized), with unit tests in `test/data/validation_test.dart`.
+- **Reveal-hint**: eye icon sets `hintLabel` (first letter) on `ExerciseDraft` — the contract's actual hook for this (`ExerciseDraft` has no separate `hintUsed` bool; `exercise_card.dart`'s own doc comment already names this as "#007 first-letter hint").
+- **l10n**: 3 new keys (`exerciseFreeTextPlaceholder`, `exerciseFreeTextRevealHintAria`, `exerciseFreeTextHintLabel`) in `app_en.arb`/`app_de.arb` + hand-written delegate; direction framing reuses existing `directionDeEn`/`directionEnDe`.
+- **Tests**: `test/exercises/free_text_exercise_test.dart` — 7 widget tests pumping the real widget (hasAnswer gating, grading, autocorrect-off, reveal-hint, direction framing deEn/enDe/null). All 151 repo tests pass; `flutter analyze` and `dart format` clean.
+- **Stable keys** (#016): `freeTextAnswerField`, `freeTextRevealHintButton`, `freeTextHintLabel`.
+- **Code review fixes applied**: first-letter hint now uses `answer.runes.first` (Unicode code point) instead of `answer[0]` (UTF-16 code unit, breaks on surrogate pairs); layout now uses the same `ConstrainedBox`+`IntrinsicHeight` centering pattern as #008 so it actually centers in a scroll view. Filed #027 for two cross-cutting cleanups found during review (not fixed here): per-item exercise-card state reset, and de-duplicating the reveal-hint button into a shared #015 kit widget.
