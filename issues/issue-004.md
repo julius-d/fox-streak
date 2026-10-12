@@ -35,7 +35,7 @@ Replace the minimal `ItemEditorDialog` shell from #003 with tailored editors per
 
 ## Dependencies
 - Builds on #002 (`validation.dart`: `isValidPhoneAnswer`/`normalizePhone`, `isValidDateAnswer`, `validateDirection`/`validateChoices` for non-empty; duplicate-vs-answer stays editor-only, storage contracts unchanged) and #003 (`ItemEditorDialog` shell, arb scaffold, stable keys).
-- Follows #015 (kit reuse). Intentional divergence from #009: the *editor* uses fast-typing 3-field input while the *exercise* uses a month-view calendar — creation vs. recall contexts.
+- Follows #015 (kit reuse). #009 (updated 2026-10-12) reuses this same 3-field auto-advance pattern for the exercise, wrapped in a calendar-styled card — no divergence between editor and exercise input mode.
 - Needs #006 to consume `choices` (blank-tolerant).
 
 ## Notes
