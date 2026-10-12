@@ -23,11 +23,12 @@ Type-the-answer mode: learner sees a prompt and types the full answer into a tex
 - [ ] Follows #015: kit tokens only, min 48dp target, no ad-hoc styling, all strings via `lib/l10n` arb params (DE + EN)
 
 ## Tasks
-1. `FreeTextExercise` widget (`lib/src/exercises/free_text_exercise.dart`)
-2. `gradeText(expected, actual)` pure function in `lib/src/data/validation.dart` + unit tests (umlauts, ß, case, trailing punctuation, whitespace, direction-null generic case)
-3. Reveal-hint eye-icon wired to the `ExerciseDraft` contract (`hintLabel` = first letter, outcome `hintUsed: true` on use), mirroring #008/#009
-4. l10n: arb keys for the text-field placeholder, reveal-hint label/tooltip (reuse #008/#009 wording where identical)
-5. Stable keys for #016: text field, reveal-hint button (card-internal; shell keys stay in #005)
+1. schema migration: split `vocab` into `choice`/`freeText` type values, make `direction` nullable-and-optional-for-non-vocab, migration + test for existing data
+2. `FreeTextExercise` widget (`lib/src/exercises/free_text_exercise.dart`)
+3. `gradeText(expected, actual)` pure function in `lib/src/data/validation.dart` + unit tests (umlauts, ß, case, trailing punctuation, whitespace, direction-null generic case)
+4. Reveal-hint eye-icon wired to the `ExerciseDraft` contract (`hintLabel` = first letter, outcome `hintUsed: true` on use), mirroring #008/#009
+5. l10n: arb keys for the text-field placeholder, reveal-hint label/tooltip (reuse #008/#009 wording where identical)
+6. Stable keys for #016: text field, reveal-hint button (card-internal; shell keys stay in #005)
 
 ## Out of scope
 - The actual #002 schema migration (`vocab` → `choice`/`freeText` type values, schema version bump + migration test) — flagged as a Dependency below, not implemented here.
@@ -35,7 +36,6 @@ Type-the-answer mode: learner sees a prompt and types the full answer into a tex
 - XP math (#010), streak (#011).
 
 ## Dependencies
-- **Blocked on a new #002 follow-up** (schema migration: split `vocab` into `choice`/`freeText` type values, make `direction` nullable-and-optional-for-non-vocab, migration + test for existing data). #002 is `Status: done`; this needs its own issue/task rather than an in-place edit, since it's a breaking change to shipped schema.
 - Implements the #005 `ExerciseCard` contract (`ExerciseDraft(hasAnswer, grade(), correctAnswerLabel, hintLabel?)`); reveal-hint sets `hintUsed: true` in the #005 outcome hook, consumed later by #010's 5-XP tier (same pattern #008/#009 already established).
 - Follows #015 (kit reuse).
 
