@@ -33,6 +33,10 @@ class LessonState {
   final LessonPhase phase;
   final ExerciseDraft? currentDraft;
   final bool? lastCorrect;
+  // Snapshot of the graded draft's correctAnswerLabel, taken at grade time —
+  // currentDraft itself is cleared on grade, but the feedback banner still
+  // needs this label while showing the wrong-answer message.
+  final String? lastCorrectAnswerLabel;
 
   const LessonState({
     this.sourceItems = const [],
@@ -42,6 +46,7 @@ class LessonState {
     this.phase = LessonPhase.answering,
     this.currentDraft,
     this.lastCorrect,
+    this.lastCorrectAnswerLabel,
   });
 
   LessonState copyWith({
@@ -52,6 +57,7 @@ class LessonState {
     LessonPhase? phase,
     ExerciseDraft? currentDraft,
     bool? lastCorrect,
+    String? lastCorrectAnswerLabel,
     bool clearDraft = false,
     bool clearLastCorrect = false,
   }) {
@@ -63,6 +69,9 @@ class LessonState {
       phase: phase ?? this.phase,
       currentDraft: clearDraft ? null : (currentDraft ?? this.currentDraft),
       lastCorrect: clearLastCorrect ? null : (lastCorrect ?? this.lastCorrect),
+      lastCorrectAnswerLabel: clearLastCorrect
+          ? null
+          : (lastCorrectAnswerLabel ?? this.lastCorrectAnswerLabel),
     );
   }
 
@@ -97,7 +106,8 @@ class LessonState {
           other.outcomes.every((e) => outcomes.contains(e)) &&
           other.phase == phase &&
           other.currentDraft == currentDraft &&
-          other.lastCorrect == lastCorrect);
+          other.lastCorrect == lastCorrect &&
+          other.lastCorrectAnswerLabel == lastCorrectAnswerLabel);
 
   @override
   int get hashCode => Object.hash(
@@ -108,6 +118,7 @@ class LessonState {
     phase,
     currentDraft,
     lastCorrect,
+    lastCorrectAnswerLabel,
   );
 }
 
@@ -193,6 +204,7 @@ class LessonController extends Notifier<LessonState> {
       outcomes: [...state.outcomes, outcome],
       phase: LessonPhase.feedback,
       lastCorrect: correct,
+      lastCorrectAnswerLabel: draft.correctAnswerLabel,
       clearDraft: true,
     );
   }

@@ -11,6 +11,7 @@
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -92,6 +93,12 @@ class _TestLocalizationsDelegate
 
   @override
   bool shouldReload(_TestLocalizationsDelegate old) => false;
+}
+
+/// Overrides [foxHapticsEnabledProvider] to off, for the haptics-suppressed test.
+class _DisabledHaptics extends FoxHapticsEnabled {
+  @override
+  bool build() => false;
 }
 
 /// Helper to create test items in the database.
@@ -318,11 +325,7 @@ void main() {
         1,
         choicesJson: vocabChoicesJson,
       );
-      final item = items.first;
-      // Override the answer to something specific
-      await (db.update(db.items)..where((t) => t.id.equals(item.id))).write(
-        const ItemsCompanion(answer: Value('correct_answer')),
-      );
+      final correctAnswer = items.first.answer;
 
       await pumpLessonShell(
         tester,
@@ -339,7 +342,6 @@ void main() {
               item: item,
               onStateChanged: onStateChanged,
               l10n: l10n,
-              autoAnswer: autoAnswer,
             );
           },
         ),
@@ -347,25 +349,24 @@ void main() {
         clock: fakeClock,
       );
       await tester.pump();
-      // Extra pump to process microtask from auto-answer
-      await tester.pump();
 
-      // The placeholder card auto-answers correctly by default.
-      // For wrong flow, we need a custom card. Let's use the scripted fake.
-      // But for simplicity, we'll test that the flow works with correct answer.
+      // Pick a distractor (not the correct answer) to genuinely answer wrong.
+      await tester.tap(find.byKey(const Key('choice-distractor1')));
+      await tester.pump();
       await tester.tap(find.byKey(const Key('checkButton')));
       await tester.pump();
 
-      // Should show success banner (since auto-answer is correct)
+      // Should show the error banner naming the correct answer.
       expect(find.byKey(const Key('lessonFeedbackBanner')), findsOneWidget);
-      expect(find.text('Correct!'), findsOneWidget);
+      expect(find.textContaining(correctAnswer), findsWidgets);
 
       // Tap CONTINUE -> result screen
       await tester.tap(find.byKey(const Key('checkButton')));
       await tester.pump();
 
-      // Should show result screen
+      // Should show result screen, 0% score (one wrong outcome).
       expect(find.byKey(const Key('lessonResultScreen')), findsOneWidget);
+      expect(find.textContaining('0%'), findsOneWidget);
     });
 
     testWidgets('skip-counts-wrong', (WidgetTester tester) async {
@@ -687,5 +688,280 @@ void main() {
       expect(profile.xpTotal, 0);
       expect(profile.streakCount, 0);
     });
+
+    testWidgets(
+      'result screen stays put until the user taps a button when pushed '
+      'onto a real navigator stack (regression: result screen must not '
+      'auto-pop itself)',
+      (WidgetTester tester) async {
+        final items = await setupTestItems(
+          db,
+          1,
+          1,
+          choicesJson: vocabChoicesJson,
+        );
+
+        // Push LessonScreen for real (Navigator.push), the way
+        // LessonEntryButton does — unlike pumpLessonShell's `home:`, this
+        // gives Navigator.pop() a previous route to actually pop to.
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              appDatabaseProvider.overrideWithValue(db),
+              systemClockProvider.overrideWithValue(fakeClock),
+            ],
+            child: MaterialApp(
+              theme: FoxStreakTheme.light(),
+              darkTheme: FoxStreakTheme.dark(),
+              localizationsDelegates: const [_TestLocalizationsDelegate()],
+              supportedLocales: const [Locale('en')],
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => ElevatedButton(
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => LessonScreen(
+                          setId: 1,
+                          items: items,
+                          cardBuilder: ({
+                            required Item item,
+                            required void Function(ExerciseDraft)
+                            onStateChanged,
+                            required AppLocalizations l10n,
+                            bool autoAnswer = false,
+                          }) {
+                            return PlaceholderExerciseCard(
+                              item: item,
+                              onStateChanged: onStateChanged,
+                              l10n: l10n,
+                              autoAnswer: autoAnswer,
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    child: const Text('go'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.text('go'));
+        await tester.pumpAndSettle();
+
+        // Finish the single-item lesson: CHECK then CONTINUE -> done.
+        await tester.tap(find.byKey(const Key('checkButton')));
+        await tester.pump();
+        await tester.tap(find.byKey(const Key('checkButton')));
+        await tester.pumpAndSettle();
+
+        // The result screen must still be showing — it must not have
+        // auto-popped itself before the user did anything.
+        expect(find.byKey(const Key('lessonResultScreen')), findsOneWidget);
+        expect(find.byKey(const Key('practiceAgainButton')), findsOneWidget);
+
+        // Only an explicit tap pops it back to the caller.
+        await tester.tap(find.byKey(const Key('backToLibraryButton')));
+        await tester.pumpAndSettle();
+        expect(find.text('go'), findsOneWidget);
+        expect(find.byKey(const Key('lessonResultScreen')), findsNothing);
+      },
+    );
+
+    testWidgets('haptics: correct CHECK fires a light impact buzz', (
+      WidgetTester tester,
+    ) async {
+      final items = await setupTestItems(
+        db,
+        1,
+        1,
+        choicesJson: vocabChoicesJson,
+      );
+      final correctAnswer = items.first.answer;
+
+      final hapticCalls = <String?>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (MethodCall call) async {
+          if (call.method == 'HapticFeedback.vibrate') {
+            hapticCalls.add(call.arguments as String?);
+          }
+          return null;
+        },
+      );
+      addTearDown(() {
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        );
+      });
+
+      await pumpLessonShell(
+        tester,
+        LessonScreen(
+          setId: 1,
+          items: items,
+          cardBuilder: ({
+            required Item item,
+            required void Function(ExerciseDraft) onStateChanged,
+            required AppLocalizations l10n,
+            bool autoAnswer = false,
+          }) {
+            return PlaceholderExerciseCard(
+              item: item,
+              onStateChanged: onStateChanged,
+              l10n: l10n,
+            );
+          },
+        ),
+        database: db,
+        clock: fakeClock,
+      );
+      await tester.pump();
+
+      await tester.tap(find.byKey(Key('choice-$correctAnswer')));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('checkButton')));
+      await tester.pump();
+
+      expect(hapticCalls, contains('HapticFeedbackType.lightImpact'));
+      expect(hapticCalls, isNot(contains('HapticFeedbackType.heavyImpact')));
+    });
+
+    testWidgets('haptics: wrong CHECK fires a heavy impact buzz', (
+      WidgetTester tester,
+    ) async {
+      final items = await setupTestItems(
+        db,
+        1,
+        1,
+        choicesJson: vocabChoicesJson,
+      );
+
+      final hapticCalls = <String?>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (MethodCall call) async {
+          if (call.method == 'HapticFeedback.vibrate') {
+            hapticCalls.add(call.arguments as String?);
+          }
+          return null;
+        },
+      );
+      addTearDown(() {
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        );
+      });
+
+      await pumpLessonShell(
+        tester,
+        LessonScreen(
+          setId: 1,
+          items: items,
+          cardBuilder: ({
+            required Item item,
+            required void Function(ExerciseDraft) onStateChanged,
+            required AppLocalizations l10n,
+            bool autoAnswer = false,
+          }) {
+            return PlaceholderExerciseCard(
+              item: item,
+              onStateChanged: onStateChanged,
+              l10n: l10n,
+            );
+          },
+        ),
+        database: db,
+        clock: fakeClock,
+      );
+      await tester.pump();
+
+      // Pick a distractor (not the correct answer).
+      await tester.tap(find.byKey(const Key('choice-distractor1')));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('checkButton')));
+      await tester.pump();
+
+      expect(hapticCalls, contains('HapticFeedbackType.heavyImpact'));
+      expect(hapticCalls, isNot(contains('HapticFeedbackType.lightImpact')));
+    });
+
+    testWidgets(
+      'haptics: suppressed entirely when foxHapticsEnabledProvider is off',
+      (WidgetTester tester) async {
+        final items = await setupTestItems(
+          db,
+          1,
+          1,
+          choicesJson: vocabChoicesJson,
+        );
+        final correctAnswer = items.first.answer;
+
+        final hapticCalls = <String?>[];
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          (MethodCall call) async {
+            if (call.method == 'HapticFeedback.vibrate') {
+              hapticCalls.add(call.arguments as String?);
+            }
+            return null;
+          },
+        );
+        addTearDown(() {
+          tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+            SystemChannels.platform,
+            null,
+          );
+        });
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              appDatabaseProvider.overrideWithValue(db),
+              systemClockProvider.overrideWithValue(fakeClock),
+              foxHapticsEnabledProvider.overrideWith(_DisabledHaptics.new),
+            ],
+            child: MaterialApp(
+              theme: FoxStreakTheme.light(),
+              darkTheme: FoxStreakTheme.dark(),
+              localizationsDelegates: const [_TestLocalizationsDelegate()],
+              supportedLocales: const [Locale('en')],
+              home: Scaffold(
+                body: LessonScreen(
+                  setId: 1,
+                  items: items,
+                  cardBuilder: ({
+                    required Item item,
+                    required void Function(ExerciseDraft) onStateChanged,
+                    required AppLocalizations l10n,
+                    bool autoAnswer = false,
+                  }) {
+                    return PlaceholderExerciseCard(
+                      item: item,
+                      onStateChanged: onStateChanged,
+                      l10n: l10n,
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        await tester.tap(find.byKey(Key('choice-$correctAnswer')));
+        await tester.pump();
+        await tester.tap(find.byKey(const Key('checkButton')));
+        await tester.pump();
+
+        expect(hapticCalls, isEmpty);
+      },
+    );
   });
 }

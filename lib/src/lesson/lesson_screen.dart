@@ -9,8 +9,6 @@
 //
 // All strings via AppLocalizations (DE + EN). Follows #015 kit reuse only.
 
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -134,15 +132,25 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
     final state = ref.watch(lessonControllerProvider);
     final controller = ref.read(lessonControllerProvider.notifier);
 
-    // Handle back button / system back: show quit confirm.
+    // Once the lesson is done there's nothing left to lose: back nav (system
+    // back or the X) pops straight to detail with the result, no confirm.
+    // Mid-lesson, back nav goes through the quit-confirm dialog instead.
+    Future<void> handleBack() async {
+      if (state.isDone) {
+        Navigator.of(context).pop(controller.buildResult());
+        return;
+      }
+      final shouldQuit = await _showQuitDialog(context, l10n);
+      if (shouldQuit == true && context.mounted) {
+        Navigator.of(context).pop();
+      }
+    }
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
-        final shouldQuit = await _showQuitDialog(context, l10n);
-        if (shouldQuit == true && context.mounted) {
-          Navigator.of(context).pop();
-        }
+        await handleBack();
       },
       child: Scaffold(
         appBar: AppBar(
@@ -153,12 +161,7 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
               key: const Key('quitLessonButton'),
               icon: const Icon(Icons.close),
               tooltip: l10n.lessonQuit,
-              onPressed: () async {
-                final shouldQuit = await _showQuitDialog(context, l10n);
-                if (shouldQuit == true && context.mounted) {
-                  Navigator.of(context).pop();
-                }
-              },
+              onPressed: handleBack,
             ),
           ],
           bottom: PreferredSize(
@@ -177,7 +180,7 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
         body: items.isEmpty
             ? Center(child: Text(l10n.libraryLoading))
             : state.isDone
-                ? _buildResultScreen(context, ref, l10n, controller)
+                ? _buildResultScreen(context, l10n, controller)
                 : _buildLessonBody(context, ref, l10n, state, controller),
       ),
     );
@@ -223,7 +226,7 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
                 message: state.lastCorrect!
                     ? l10n.lessonCorrect
                     : l10n.lessonWrongAnswer(
-                        state.currentDraft!.correctAnswerLabel,
+                        state.lastCorrectAnswerLabel ?? '',
                       ),
               ),
             ),
@@ -239,7 +242,9 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
                   label: isFeedback ? l10n.lessonContinue : l10n.lessonCheck,
                   onPressed: isFeedback
                       ? () => controller.next()
-                      : (hasAnswer ? () => controller.submitGrade() : null),
+                      : (hasAnswer
+                            ? () => _submitAndBuzz(context, ref, controller)
+                            : null),
                   correctState: isFeedback ? state.lastCorrect : null,
                 ),
                 // Skip button (pre-check only)
@@ -259,6 +264,23 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
         ],
       ),
     );
+  }
+
+  /// Grades the current answer, then fires the correct/wrong haptic moment
+  /// (behind [foxHapticsEnabledProvider]) once the result is known.
+  Future<void> _submitAndBuzz(
+    BuildContext context,
+    WidgetRef ref,
+    LessonController controller,
+  ) async {
+    await controller.submitGrade();
+    final correct = ref.read(lessonControllerProvider).lastCorrect;
+    if (correct == null || !context.mounted) return;
+    if (correct) {
+      await FoxFeedback.success(context, ref);
+    } else {
+      await FoxFeedback.error(context, ref);
+    }
   }
 
   Widget _buildExerciseCard(
@@ -324,26 +346,20 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
 
   Widget _buildResultScreen(
     BuildContext context,
-    WidgetRef ref,
     AppLocalizations l10n,
     LessonController controller,
   ) {
     final result = controller.buildResult();
     if (result == null) return const SizedBox.shrink();
 
-    // Pop with result so #010/#011 can consume it via Navigator return.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (context.mounted) {
-        Navigator.of(context).pop(result);
-      }
-    });
-
+    // Pop with result (user-initiated) so #010/#011 can consume it via
+    // Navigator return; also exposed via lessonResultProvider.
     return LessonResultScreen(
       key: const Key('lessonResultScreen'),
       result: result,
       l10n: l10n,
       onPracticeAgain: () => controller.restart(),
-      onBackToLibrary: () => Navigator.of(context).pop(),
+      onBackToLibrary: () => Navigator.of(context).pop(result),
     );
   }
 }
