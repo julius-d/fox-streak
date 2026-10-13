@@ -134,7 +134,11 @@ abstract class AppLocalizations {
   String get lessonCelebrate;
   String get lessonNoScore;
   String lessonScoreSummary(int correct, int total, int pct);
-  String get lessonXpComingSoon;
+  String xpEarnedLabel(int xp);
+  String lessonXpBonusCallout(int bonus);
+  String levelLabel(int level);
+  String get levelProgressLabel;
+  String levelProgressText(int xpIntoLevel, int xpForNextLevel);
   String get lessonStreakComingSoon;
   String get lessonPracticeAgain;
   String get lessonBackToLibrary;
@@ -342,7 +346,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String lessonScoreSummary(int correct, int total, int pct) =>
       '$correct of $total correct ($pct%)';
   @override
-  String get lessonXpComingSoon => 'XP — coming soon';
+  String xpEarnedLabel(int xp) => '+$xp XP';
+  @override
+  String lessonXpBonusCallout(int bonus) => '+$bonus Perfect!';
+  @override
+  String levelLabel(int level) => 'Level $level';
+  @override
+  String get levelProgressLabel => 'Progress to next level';
+  @override
+  String levelProgressText(int xpIntoLevel, int xpForNextLevel) =>
+      '$xpIntoLevel / $xpForNextLevel XP to next level';
   @override
   String get lessonStreakComingSoon => 'Streak — coming soon';
   @override
@@ -557,7 +570,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String lessonScoreSummary(int correct, int total, int pct) =>
       '$correct von $total richtig ($pct%)';
   @override
-  String get lessonXpComingSoon => 'XP — kommt bald';
+  String xpEarnedLabel(int xp) => '+$xp XP';
+  @override
+  String lessonXpBonusCallout(int bonus) => '+$bonus Perfekt!';
+  @override
+  String levelLabel(int level) => 'Level $level';
+  @override
+  String get levelProgressLabel => 'Fortschritt zum nächsten Level';
+  @override
+  String levelProgressText(int xpIntoLevel, int xpForNextLevel) =>
+      '$xpIntoLevel / $xpForNextLevel XP bis zum nächsten Level';
   @override
   String get lessonStreakComingSoon => 'Serie — kommt bald';
   @override

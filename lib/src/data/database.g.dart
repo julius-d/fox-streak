@@ -1298,6 +1298,18 @@ class $ProfileStatsTable extends ProfileStats
     requiredDuringInsert: false,
     defaultValue: const Constant(30),
   );
+  static const VerificationMeta _todayXpMeta = const VerificationMeta(
+    'todayXp',
+  );
+  @override
+  late final GeneratedColumn<int> todayXp = GeneratedColumn<int>(
+    'today_xp',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1305,6 +1317,7 @@ class $ProfileStatsTable extends ProfileStats
     streakCount,
     lastActiveDay,
     dailyGoalXp,
+    todayXp,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1354,6 +1367,12 @@ class $ProfileStatsTable extends ProfileStats
         ),
       );
     }
+    if (data.containsKey('today_xp')) {
+      context.handle(
+        _todayXpMeta,
+        todayXp.isAcceptableOrUnknown(data['today_xp']!, _todayXpMeta),
+      );
+    }
     return context;
   }
 
@@ -1383,6 +1402,10 @@ class $ProfileStatsTable extends ProfileStats
         DriftSqlType.int,
         data['${effectivePrefix}daily_goal_xp'],
       )!,
+      todayXp: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}today_xp'],
+      )!,
     );
   }
 
@@ -1398,12 +1421,14 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
   final int streakCount;
   final String? lastActiveDay;
   final int dailyGoalXp;
+  final int todayXp;
   const ProfileStat({
     required this.id,
     required this.xpTotal,
     required this.streakCount,
     this.lastActiveDay,
     required this.dailyGoalXp,
+    required this.todayXp,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1415,6 +1440,7 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
       map['last_active_day'] = Variable<String>(lastActiveDay);
     }
     map['daily_goal_xp'] = Variable<int>(dailyGoalXp);
+    map['today_xp'] = Variable<int>(todayXp);
     return map;
   }
 
@@ -1427,6 +1453,7 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
           ? const Value.absent()
           : Value(lastActiveDay),
       dailyGoalXp: Value(dailyGoalXp),
+      todayXp: Value(todayXp),
     );
   }
 
@@ -1441,6 +1468,7 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
       streakCount: serializer.fromJson<int>(json['streakCount']),
       lastActiveDay: serializer.fromJson<String?>(json['lastActiveDay']),
       dailyGoalXp: serializer.fromJson<int>(json['dailyGoalXp']),
+      todayXp: serializer.fromJson<int>(json['todayXp']),
     );
   }
   @override
@@ -1452,6 +1480,7 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
       'streakCount': serializer.toJson<int>(streakCount),
       'lastActiveDay': serializer.toJson<String?>(lastActiveDay),
       'dailyGoalXp': serializer.toJson<int>(dailyGoalXp),
+      'todayXp': serializer.toJson<int>(todayXp),
     };
   }
 
@@ -1461,6 +1490,7 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
     int? streakCount,
     Value<String?> lastActiveDay = const Value.absent(),
     int? dailyGoalXp,
+    int? todayXp,
   }) => ProfileStat(
     id: id ?? this.id,
     xpTotal: xpTotal ?? this.xpTotal,
@@ -1469,6 +1499,7 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
         ? lastActiveDay.value
         : this.lastActiveDay,
     dailyGoalXp: dailyGoalXp ?? this.dailyGoalXp,
+    todayXp: todayXp ?? this.todayXp,
   );
   ProfileStat copyWithCompanion(ProfileStatsCompanion data) {
     return ProfileStat(
@@ -1483,6 +1514,7 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
       dailyGoalXp: data.dailyGoalXp.present
           ? data.dailyGoalXp.value
           : this.dailyGoalXp,
+      todayXp: data.todayXp.present ? data.todayXp.value : this.todayXp,
     );
   }
 
@@ -1493,14 +1525,21 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
           ..write('xpTotal: $xpTotal, ')
           ..write('streakCount: $streakCount, ')
           ..write('lastActiveDay: $lastActiveDay, ')
-          ..write('dailyGoalXp: $dailyGoalXp')
+          ..write('dailyGoalXp: $dailyGoalXp, ')
+          ..write('todayXp: $todayXp')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, xpTotal, streakCount, lastActiveDay, dailyGoalXp);
+  int get hashCode => Object.hash(
+    id,
+    xpTotal,
+    streakCount,
+    lastActiveDay,
+    dailyGoalXp,
+    todayXp,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1509,7 +1548,8 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
           other.xpTotal == this.xpTotal &&
           other.streakCount == this.streakCount &&
           other.lastActiveDay == this.lastActiveDay &&
-          other.dailyGoalXp == this.dailyGoalXp);
+          other.dailyGoalXp == this.dailyGoalXp &&
+          other.todayXp == this.todayXp);
 }
 
 class ProfileStatsCompanion extends UpdateCompanion<ProfileStat> {
@@ -1518,12 +1558,14 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStat> {
   final Value<int> streakCount;
   final Value<String?> lastActiveDay;
   final Value<int> dailyGoalXp;
+  final Value<int> todayXp;
   const ProfileStatsCompanion({
     this.id = const Value.absent(),
     this.xpTotal = const Value.absent(),
     this.streakCount = const Value.absent(),
     this.lastActiveDay = const Value.absent(),
     this.dailyGoalXp = const Value.absent(),
+    this.todayXp = const Value.absent(),
   });
   ProfileStatsCompanion.insert({
     this.id = const Value.absent(),
@@ -1531,6 +1573,7 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStat> {
     this.streakCount = const Value.absent(),
     this.lastActiveDay = const Value.absent(),
     this.dailyGoalXp = const Value.absent(),
+    this.todayXp = const Value.absent(),
   });
   static Insertable<ProfileStat> custom({
     Expression<int>? id,
@@ -1538,6 +1581,7 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStat> {
     Expression<int>? streakCount,
     Expression<String>? lastActiveDay,
     Expression<int>? dailyGoalXp,
+    Expression<int>? todayXp,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1545,6 +1589,7 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStat> {
       if (streakCount != null) 'streak_count': streakCount,
       if (lastActiveDay != null) 'last_active_day': lastActiveDay,
       if (dailyGoalXp != null) 'daily_goal_xp': dailyGoalXp,
+      if (todayXp != null) 'today_xp': todayXp,
     });
   }
 
@@ -1554,6 +1599,7 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStat> {
     Value<int>? streakCount,
     Value<String?>? lastActiveDay,
     Value<int>? dailyGoalXp,
+    Value<int>? todayXp,
   }) {
     return ProfileStatsCompanion(
       id: id ?? this.id,
@@ -1561,6 +1607,7 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStat> {
       streakCount: streakCount ?? this.streakCount,
       lastActiveDay: lastActiveDay ?? this.lastActiveDay,
       dailyGoalXp: dailyGoalXp ?? this.dailyGoalXp,
+      todayXp: todayXp ?? this.todayXp,
     );
   }
 
@@ -1582,6 +1629,9 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStat> {
     if (dailyGoalXp.present) {
       map['daily_goal_xp'] = Variable<int>(dailyGoalXp.value);
     }
+    if (todayXp.present) {
+      map['today_xp'] = Variable<int>(todayXp.value);
+    }
     return map;
   }
 
@@ -1592,7 +1642,8 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStat> {
           ..write('xpTotal: $xpTotal, ')
           ..write('streakCount: $streakCount, ')
           ..write('lastActiveDay: $lastActiveDay, ')
-          ..write('dailyGoalXp: $dailyGoalXp')
+          ..write('dailyGoalXp: $dailyGoalXp, ')
+          ..write('todayXp: $todayXp')
           ..write(')'))
         .toString();
   }
@@ -2703,6 +2754,7 @@ typedef $$ProfileStatsTableCreateCompanionBuilder =
       Value<int> streakCount,
       Value<String?> lastActiveDay,
       Value<int> dailyGoalXp,
+      Value<int> todayXp,
     });
 typedef $$ProfileStatsTableUpdateCompanionBuilder =
     ProfileStatsCompanion Function({
@@ -2711,6 +2763,7 @@ typedef $$ProfileStatsTableUpdateCompanionBuilder =
       Value<int> streakCount,
       Value<String?> lastActiveDay,
       Value<int> dailyGoalXp,
+      Value<int> todayXp,
     });
 
 class $$ProfileStatsTableFilterComposer
@@ -2744,6 +2797,11 @@ class $$ProfileStatsTableFilterComposer
 
   ColumnFilters<int> get dailyGoalXp => $composableBuilder(
     column: $table.dailyGoalXp,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get todayXp => $composableBuilder(
+    column: $table.todayXp,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -2781,6 +2839,11 @@ class $$ProfileStatsTableOrderingComposer
     column: $table.dailyGoalXp,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get todayXp => $composableBuilder(
+    column: $table.todayXp,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ProfileStatsTableAnnotationComposer
@@ -2812,6 +2875,9 @@ class $$ProfileStatsTableAnnotationComposer
     column: $table.dailyGoalXp,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get todayXp =>
+      $composableBuilder(column: $table.todayXp, builder: (column) => column);
 }
 
 class $$ProfileStatsTableTableManager
@@ -2850,12 +2916,14 @@ class $$ProfileStatsTableTableManager
                 Value<int> streakCount = const Value.absent(),
                 Value<String?> lastActiveDay = const Value.absent(),
                 Value<int> dailyGoalXp = const Value.absent(),
+                Value<int> todayXp = const Value.absent(),
               }) => ProfileStatsCompanion(
                 id: id,
                 xpTotal: xpTotal,
                 streakCount: streakCount,
                 lastActiveDay: lastActiveDay,
                 dailyGoalXp: dailyGoalXp,
+                todayXp: todayXp,
               ),
           createCompanionCallback:
               ({
@@ -2864,12 +2932,14 @@ class $$ProfileStatsTableTableManager
                 Value<int> streakCount = const Value.absent(),
                 Value<String?> lastActiveDay = const Value.absent(),
                 Value<int> dailyGoalXp = const Value.absent(),
+                Value<int> todayXp = const Value.absent(),
               }) => ProfileStatsCompanion.insert(
                 id: id,
                 xpTotal: xpTotal,
                 streakCount: streakCount,
                 lastActiveDay: lastActiveDay,
                 dailyGoalXp: dailyGoalXp,
+                todayXp: todayXp,
               ),
           withReferenceMapper: (p0) => p0
               .map(

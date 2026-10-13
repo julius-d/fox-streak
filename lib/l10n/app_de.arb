@@ -237,11 +237,40 @@
     }
   },
   "lessonScoreSummary": "{correct} von {total} richtig ({pct}%)",
-  "@lessonXpComingSoon": {
-    "description": "Label for XP coming soon stub",
+  "@xpEarnedLabel": {
+    "description": "XP-earned count-up label on the lesson result screen (issue #010)",
+    "placeholders": {
+      "xp": {"type": "int"}
+    }
+  },
+  "xpEarnedLabel": "+{xp} XP",
+  "@lessonXpBonusCallout": {
+    "description": "Separate callout shown when the lesson's perfect-score XP bonus applies (issue #010)",
+    "placeholders": {
+      "bonus": {"type": "int"}
+    }
+  },
+  "lessonXpBonusCallout": "+{bonus} Perfekt!",
+  "@levelLabel": {
+    "description": "Current level label on the level-progress widget (issue #010)",
+    "placeholders": {
+      "level": {"type": "int"}
+    }
+  },
+  "levelLabel": "Level {level}",
+  "@levelProgressLabel": {
+    "description": "Screen-reader label for the level-progress bar (issue #010)",
     "placeholders": {}
   },
-  "lessonXpComingSoon": "XP — kommt bald",
+  "levelProgressLabel": "Fortschritt zum nächsten Level",
+  "@levelProgressText": {
+    "description": "Numeric XP-into-level / XP-needed-for-level text under the level-progress bar (issue #010)",
+    "placeholders": {
+      "xpIntoLevel": {"type": "int"},
+      "xpForNextLevel": {"type": "int"}
+    }
+  },
+  "levelProgressText": "{xpIntoLevel} / {xpForNextLevel} XP bis zum nächsten Level",
   "@lessonStreakComingSoon": {
     "description": "Label for streak coming soon stub",
     "placeholders": {}

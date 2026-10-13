@@ -14,7 +14,8 @@ const int kDefaultDailyGoalXp = 30;
 /// Repository for `profile_stats` + `attempts`.
 ///
 /// Ownership rules (see #010/#011):
-/// - `xpTotal` is written exclusively by #010 `XpService` (sole writer).
+/// - `xpTotal`/`todayXp` are written exclusively by #010 `XpService` (sole
+///   caller of [addXp]).
 /// - `streakCount` / `lastActiveDay` are written exclusively by #011
 ///   `StreakService`.
 /// - [recordAttempt] writes an `attempts` row only (+ ensures the profile row
@@ -43,6 +44,7 @@ class StatsRepository {
             streakCount: Value(0),
             lastActiveDay: Value(null),
             dailyGoalXp: Value(kDefaultDailyGoalXp),
+            todayXp: Value(0),
           ),
         );
     return const ProfileStat(
@@ -51,6 +53,7 @@ class StatsRepository {
       streakCount: 0,
       lastActiveDay: null,
       dailyGoalXp: kDefaultDailyGoalXp,
+      todayXp: 0,
     );
   }
 
@@ -66,6 +69,7 @@ class StatsRepository {
             streakCount: 0,
             lastActiveDay: null,
             dailyGoalXp: kDefaultDailyGoalXp,
+            todayXp: 0,
           ),
     );
   }
@@ -76,6 +80,28 @@ class StatsRepository {
     await getProfile();
     await (_db.update(_db.profileStats)..where((t) => t.id.equals(kProfileId)))
         .write(ProfileStatsCompanion(dailyGoalXp: Value(xp)));
+  }
+
+  /// Adds [delta] XP to the lifetime `xpTotal` and the day-scoped `todayXp`,
+  /// returning the resulting lifetime `xpTotal`.
+  ///
+  /// `todayXp` resets to [delta] when `lastActiveDay` isn't today's day
+  /// (fresh day or first-ever lesson), otherwise accumulates. Sole caller:
+  /// #010 `XpService.applyLessonResult`.
+  Future<int> addXp(int delta, {DateTime? now}) async {
+    final profile = await getProfile();
+    final today = toLocalDayString(now ?? _clock.now());
+    final sameDay = profile.lastActiveDay == today;
+    final newXpTotal = profile.xpTotal + delta;
+    await (_db.update(
+      _db.profileStats,
+    )..where((t) => t.id.equals(kProfileId))).write(
+      ProfileStatsCompanion(
+        xpTotal: Value(newXpTotal),
+        todayXp: Value(sameDay ? profile.todayXp + delta : delta),
+      ),
+    );
+    return newXpTotal;
   }
 
   /// Records a graded answer.

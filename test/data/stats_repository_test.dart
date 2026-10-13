@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fox_streak_app/src/data/database.dart';
 import 'package:fox_streak_app/src/data/sets_repository.dart';
@@ -40,6 +41,7 @@ void main() {
       expect(first.streakCount, 0);
       expect(first.lastActiveDay, isNull);
       expect(first.dailyGoalXp, kDefaultDailyGoalXp);
+      expect(first.todayXp, 0);
 
       final second = await repo.getProfile();
       expect(second.id, kProfileId);
@@ -57,6 +59,48 @@ void main() {
       await repo.updateDailyGoal(50);
       expect((await repo.getProfile()).dailyGoalXp, 50);
       expect(() => repo.updateDailyGoal(-1), throwsArgumentError);
+    });
+  });
+
+  group('addXp', () {
+    test(
+      'adds delta to lifetime xpTotal and sets todayXp on first use',
+      () async {
+        await repo.addXp(10, now: kTestToday);
+        final profile = await repo.getProfile();
+        expect(profile.xpTotal, 10);
+        expect(profile.todayXp, 10);
+      },
+    );
+
+    test('resets todayXp when lastActiveDay is not today (e.g. #011 hasn\'t '
+        'marked today active yet)', () async {
+      await repo.addXp(10, now: kTestToday);
+      await repo.addXp(5, now: kTestToday);
+      final profile = await repo.getProfile();
+      expect(profile.xpTotal, 15); // lifetime total always accumulates
+      expect(profile.todayXp, 5); // todayXp resets: lastActiveDay stays null
+    });
+
+    test('accumulates todayXp once lastActiveDay is marked as today '
+        '(#011 writes it after #010\'s XP write, per the two issues\' '
+        'ordering)', () async {
+      await repo.addXp(10, now: kTestToday);
+      await (db.update(
+        db.profileStats,
+      )..where((t) => t.id.equals(kProfileId))).write(
+        ProfileStatsCompanion(lastActiveDay: Value(clock.todayDayString())),
+      );
+      await repo.addXp(5, now: kTestToday);
+      final profile = await repo.getProfile();
+      expect(profile.xpTotal, 15);
+      expect(profile.todayXp, 15);
+    });
+
+    test('uses clock when now omitted', () async {
+      clock.setNow(kTestToday);
+      await repo.addXp(10);
+      expect((await repo.getProfile()).xpTotal, 10);
     });
   });
 
@@ -88,6 +132,7 @@ void main() {
         await repo.recordAttempt(itemId: itemId, ok: true);
         final after = await repo.getProfile();
         expect(after.xpTotal, before.xpTotal);
+        expect(after.todayXp, before.todayXp);
         expect(after.streakCount, before.streakCount);
         expect(after.lastActiveDay, before.lastActiveDay);
       },

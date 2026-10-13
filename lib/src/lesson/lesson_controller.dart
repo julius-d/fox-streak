@@ -13,6 +13,7 @@ import '../data/clock.dart';
 import '../data/database.dart';
 import '../data/providers.dart';
 import '../data/stats_repository.dart';
+import '../stats/xp_service.dart';
 import 'exercise_card.dart';
 
 /// Internal state held by the lesson controller.
@@ -25,6 +26,12 @@ import 'exercise_card.dart';
 /// [currentDraft] holds the latest ExerciseDraft from the active card
 ///   so the shell can call grade() on CHECK.
 /// [lastCorrect] remembers the last grade result for the FoxCheckButton tint.
+/// [xpApplied] guards #010's XP write so rebuild/rotation (which replays
+///   this same state) can never re-apply it.
+/// [xpTotalAfterLesson] is the lifetime `xpTotal` returned by that write,
+///   handed to the result screen so it never has to re-query the database
+///   (and never has to hold open a `watch()` stream of its own) to show
+///   the level-progress bar.
 class LessonState {
   final List<Item> sourceItems;
   final List<Item> queue;
@@ -37,6 +44,8 @@ class LessonState {
   // currentDraft itself is cleared on grade, but the feedback banner still
   // needs this label while showing the wrong-answer message.
   final String? lastCorrectAnswerLabel;
+  final bool xpApplied;
+  final int? xpTotalAfterLesson;
 
   const LessonState({
     this.sourceItems = const [],
@@ -47,6 +56,8 @@ class LessonState {
     this.currentDraft,
     this.lastCorrect,
     this.lastCorrectAnswerLabel,
+    this.xpApplied = false,
+    this.xpTotalAfterLesson,
   });
 
   LessonState copyWith({
@@ -58,6 +69,8 @@ class LessonState {
     ExerciseDraft? currentDraft,
     bool? lastCorrect,
     String? lastCorrectAnswerLabel,
+    bool? xpApplied,
+    int? xpTotalAfterLesson,
     bool clearDraft = false,
     bool clearLastCorrect = false,
   }) {
@@ -72,6 +85,8 @@ class LessonState {
       lastCorrectAnswerLabel: clearLastCorrect
           ? null
           : (lastCorrectAnswerLabel ?? this.lastCorrectAnswerLabel),
+      xpApplied: xpApplied ?? this.xpApplied,
+      xpTotalAfterLesson: xpTotalAfterLesson ?? this.xpTotalAfterLesson,
     );
   }
 
@@ -107,7 +122,9 @@ class LessonState {
           other.phase == phase &&
           other.currentDraft == currentDraft &&
           other.lastCorrect == lastCorrect &&
-          other.lastCorrectAnswerLabel == lastCorrectAnswerLabel);
+          other.lastCorrectAnswerLabel == lastCorrectAnswerLabel &&
+          other.xpApplied == xpApplied &&
+          other.xpTotalAfterLesson == xpTotalAfterLesson);
 
   @override
   int get hashCode => Object.hash(
@@ -119,6 +136,8 @@ class LessonState {
     currentDraft,
     lastCorrect,
     lastCorrectAnswerLabel,
+    xpApplied,
+    xpTotalAfterLesson,
   );
 }
 
@@ -130,12 +149,14 @@ class LessonState {
 class LessonController extends Notifier<LessonState> {
   late final StatsRepository _statsRepo;
   late final Clock _clock;
+  late final XpService _xpService;
   Random? _random;
 
   @override
   LessonState build() {
     _statsRepo = ref.read(statsRepositoryProvider);
     _clock = ref.read(systemClockProvider);
+    _xpService = ref.read(xpServiceProvider);
     return const LessonState();
   }
 
@@ -232,14 +253,14 @@ class LessonController extends Notifier<LessonState> {
       now: _clock.now(),
     );
 
-    _advanceAfterOutcome(outcome);
+    await _advanceAfterOutcome(outcome);
   }
 
   /// Advances from feedback phase to next item or done (CONTINUE pressed).
-  void next() {
+  Future<void> next() async {
     if (state.phase != LessonPhase.feedback) return;
     if (state.index + 1 >= state.queue.length) {
-      state = state.copyWith(phase: LessonPhase.done, clearLastCorrect: true);
+      await _completeLesson(state.outcomes);
     } else {
       state = state.copyWith(
         index: state.index + 1,
@@ -251,14 +272,10 @@ class LessonController extends Notifier<LessonState> {
   }
 
   /// Internal: advances after skip or submit when not using feedback phase.
-  void _advanceAfterOutcome(LessonItemOutcome outcome) {
+  Future<void> _advanceAfterOutcome(LessonItemOutcome outcome) async {
     final newOutcomes = [...state.outcomes, outcome];
     if (state.index + 1 >= state.queue.length) {
-      state = state.copyWith(
-        outcomes: newOutcomes,
-        phase: LessonPhase.done,
-        clearLastCorrect: true,
-      );
+      await _completeLesson(newOutcomes);
     } else {
       state = state.copyWith(
         index: state.index + 1,
@@ -270,19 +287,58 @@ class LessonController extends Notifier<LessonState> {
     }
   }
 
+  /// Transitions to `phase: done` and applies this lesson's XP (issue #010)
+  /// as one atomic step.
+  ///
+  /// Deliberately does *not* flip `phase` to `done` until the XP write (and
+  /// its resulting `xpTotal`) is known: setting `phase` first and
+  /// `xpTotalAfterLesson` only after a later `await` would let the result
+  /// screen render in between on a transient pre-XP level/progress (e.g.
+  /// "Level 1" at 0 XP for a learner who is actually much further along).
+  /// [LessonState.xpApplied], flipped synchronously before the `await`,
+  /// still guards against double-apply on repeated calls.
+  Future<void> _completeLesson(List<LessonItemOutcome> outcomes) async {
+    if (state.xpApplied) {
+      // Already completed by a prior (possibly overlapping) call — just
+      // make sure this one also lands on `done` without re-applying XP.
+      state = state.copyWith(
+        outcomes: outcomes,
+        phase: LessonPhase.done,
+        clearLastCorrect: true,
+      );
+      return;
+    }
+    state = state.copyWith(xpApplied: true);
+    final result = _buildResultFromOutcomes(outcomes);
+    final xpTotal = result == null
+        ? null
+        : (await _xpService.applyLessonResult(result)).xpTotal;
+    state = state.copyWith(
+      outcomes: outcomes,
+      phase: LessonPhase.done,
+      clearLastCorrect: true,
+      xpTotalAfterLesson: xpTotal,
+    );
+  }
+
   /// Builds the [LessonResult] for the completed session.
   ///
   /// Returns null if the lesson hasn't been started or isn't done.
   LessonResult? buildResult() {
-    if (state.queue.isEmpty || !state.isDone) return null;
-    final correctCount = state.outcomes.where((o) => o.correct).length;
+    if (!state.isDone) return null;
+    return _buildResultFromOutcomes(state.outcomes);
+  }
+
+  LessonResult? _buildResultFromOutcomes(List<LessonItemOutcome> outcomes) {
+    if (state.queue.isEmpty) return null;
+    final correctCount = outcomes.where((o) => o.correct).length;
     final scorePct = state.total == 0
         ? 0
         : ((correctCount / state.total) * 100).round();
     return LessonResult(
       setId: state.queue.first.setId,
       itemIds: state.queue.map((i) => i.id).toList(),
-      outcomes: state.outcomes,
+      outcomes: outcomes,
       correctCount: correctCount,
       scorePct: scorePct,
     );

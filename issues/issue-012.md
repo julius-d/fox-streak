@@ -25,8 +25,8 @@ Duolingo-home feel: what to do next in 5 seconds.
 - [ ] Manual a11y pass: contrast, min 48dp targets, screen-reader labels on every new Home widget (`FoxGoalRing`, Continue button, greeting, onboarding slides)
 
 ## Tasks
-1. Schema migration v2→v3: `profile_stats.today_xp INTEGER DEFAULT 0`, `display_name TEXT NULL`, `has_onboarded INTEGER DEFAULT 0` (mirrors #026's migration pattern)
-2. Flag for #010: extend `XpService`/`StatsRepository.addXp` call site to also maintain `today_xp` (reset-on-new-day, else accumulate) — tracked here, implemented as part of #010's scope
+1. Schema migration v3→v4: `profile_stats.display_name TEXT NULL`, `has_onboarded INTEGER DEFAULT 0` (mirrors #026's migration pattern). `today_xp` is **already live** — #010 shipped it as v2→v3 (schemaVersion is 3, not 2, as of #010), so this migration only needs the two remaining columns.
+2. ~~Flag for #010: extend `XpService`/`StatsRepository.addXp` call site to also maintain `today_xp`~~ — done, shipped by #010 (`StatsRepository.addXp` resets/accumulates `today_xp` against `lastActiveDay`).
 3. `FoxGoalRing` widget (new #015-kit widget: circular, token-driven, a11y label)
 4. `StatsRepository`: `setDisplayName(String? name)`, `setOnboarded()`, `getLastPracticedSetId()` (derived query over `attempts` ⋈ `items`, no new column)
 5. `HomeScreen`: composes greeting + `StreakBadge` (#011) + level-progress widget (#010) + `FoxGoalRing` + Continue button + "Browse sets" button; wired as `main.dart`'s new `home:`

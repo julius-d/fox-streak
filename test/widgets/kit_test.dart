@@ -148,6 +148,43 @@ void main() {
     expect(semantics.properties.label, 'Lesson progress');
   });
 
+  testWidgets('level progress bar shows level label, gold fill, and '
+      'progress text (issue #010)', (WidgetTester tester) async {
+    await pumpKit(
+      tester,
+      const FoxLevelProgressBar(
+        level: 3,
+        progress: 0.25,
+        levelLabel: 'Level 3',
+        progressText: '75 / 300 XP to next level',
+        semanticsLabel: 'Progress to next level',
+      ),
+    );
+
+    expect(find.text('Level 3'), findsOneWidget);
+    expect(find.text('75 / 300 XP to next level'), findsOneWidget);
+
+    final Semantics semantics = tester.widget<Semantics>(
+      find
+          .ancestor(
+            of: find.byType(LinearProgressIndicator),
+            matching: find.byType(Semantics),
+          )
+          .first,
+    );
+    expect(semantics.properties.label, 'Progress to next level');
+    expect(semantics.properties.value, '75 / 300 XP to next level');
+
+    final LinearProgressIndicator indicator = tester.widget(
+      find.byType(LinearProgressIndicator),
+    );
+    expect(indicator.value, closeTo(0.25, 1e-9));
+    expect(
+      (indicator.valueColor as AlwaysStoppedAnimation<Color>).value,
+      FoxSemanticColors.light.gold,
+    );
+  });
+
   testWidgets('confirm dialog resolves true on confirm', (
     WidgetTester tester,
   ) async {

@@ -1,6 +1,6 @@
 # Issue 010: XP + levels system
 
-Status: open | Priority: P1 | Type: gamification | Refined-at: 2026-10-13
+Status: done | Priority: P1 | Type: gamification | Refined-at: 2026-10-13
 
 ## Goal
 Duolingo-like XP per correct answer, levels to chase — gives learners a number that goes up every lesson, without punishing wrong answers.
@@ -20,14 +20,14 @@ Duolingo-like XP per correct answer, levels to chase — gives learners a number
 - Daily XP tracking (added 2026-10-13, flagged by #012): `profile_stats` gains a `today_xp` column (schema migration v2→v3, part of #012's Task 1 migration). `XpService`'s call into `StatsRepository` must also maintain it: reset `today_xp` to this lesson's earned XP when `last_active_day` shows the day has rolled over, otherwise accumulate — same call site, same guard flag as the `xp_total` write. #012's `FoxGoalRing` reads `today_xp` read-only; #010 remains its sole writer.
 
 ## Acceptance criteria
-- [ ] XP formula: 10 XP per correct answer with no hint; 5 XP per correct answer with `hintUsed: true`; 0 XP for wrong or skipped; +5 flat lesson bonus when `scorePct == 100`
-- [ ] Level formula: `level = floor(sqrt(xpTotal / 100)) + 1`; thresholds `xpForLevel(n) = (n-1)^2 * 100`; progress-to-next = `(xpTotal - xpForLevel(level)) / (xpForLevel(level+1) - xpForLevel(level))`
-- [ ] `XpService.applyLessonResult(LessonResult)` is the sole writer of `xp_total` (via new `StatsRepository.addXp`), called exactly once per completed lesson by `LessonController` on reaching `phase: done`; a `LessonState` guard flag prevents double-apply on rebuild/rotation
-- [ ] `LessonResultScreen`'s XP/level stub rows replaced with: animated XP-earned count-up (no lottie dep) + a separate "+5 Perfect!" bonus callout shown only when `scorePct == 100` + level-progress widget (gold fill, "Level N", progress-to-next; composed on `FoxProgressBar` per #015)
-- [ ] `xp_total` is a lifetime accumulator — no daily reset; accumulates correctly across multiple lessons/sessions same day and across days
-- [ ] `today_xp` (per #012) resets to the lesson's earned XP on a day change and accumulates across same-day lessons, written at the same call site/guard as `xp_total`
-- [ ] Unit tests: XP per tier (10/5/0 + bonus), level formula edge cases (xp=0, exact thresholds, large values), accumulation across multiple `applyLessonResult` calls, no double-apply on repeated calls / simulated rebuild
-- [ ] Follows #015: level-progress widget reuses `FoxProgressBar` + XP-gold semantic token, no ad-hoc styling; all strings via `lib/l10n` arb params (DE + EN)
+- [x] XP formula: 10 XP per correct answer with no hint; 5 XP per correct answer with `hintUsed: true`; 0 XP for wrong or skipped; +5 flat lesson bonus when `scorePct == 100`
+- [x] Level formula: `level = floor(sqrt(xpTotal / 100)) + 1`; thresholds `xpForLevel(n) = (n-1)^2 * 100`; progress-to-next = `(xpTotal - xpForLevel(level)) / (xpForLevel(level+1) - xpForLevel(level))`
+- [x] `XpService.applyLessonResult(LessonResult)` is the sole writer of `xp_total` (via new `StatsRepository.addXp`), called exactly once per completed lesson by `LessonController` on reaching `phase: done`; a `LessonState` guard flag prevents double-apply on rebuild/rotation
+- [x] `LessonResultScreen`'s XP/level stub rows replaced with: animated XP-earned count-up (no lottie dep) + a separate "+5 Perfect!" bonus callout shown only when `scorePct == 100` + level-progress widget (gold fill, "Level N", progress-to-next; composed on `FoxProgressBar` per #015)
+- [x] `xp_total` is a lifetime accumulator — no daily reset; accumulates correctly across multiple lessons/sessions same day and across days
+- [x] `today_xp` (per #012) resets to the lesson's earned XP on a day change and accumulates across same-day lessons, written at the same call site/guard as `xp_total`
+- [x] Unit tests: XP per tier (10/5/0 + bonus), level formula edge cases (xp=0, exact thresholds, large values), accumulation across multiple `applyLessonResult` calls, no double-apply on repeated calls / simulated rebuild
+- [x] Follows #015: level-progress widget reuses `FoxProgressBar` + XP-gold semantic token, no ad-hoc styling; all strings via `lib/l10n` arb params (DE + EN)
 
 ## Tasks
 1. `StatsRepository.addXp(int delta)` (mirrors `updateDailyGoal`)
@@ -62,3 +62,12 @@ flutter analyze
 dart format --output=none --set-exit-if-changed .
 flutter test
 ```
+
+## Summary (implemented 2026-10-13)
+- `profile_stats.today_xp` added via schema v2→v3 (`m.addColumn`); #012's own migration must now target v3→v4 for `display_name`/`has_onboarded` (updated in issue-012.md).
+- Caveat (found in review): `today_xp`'s same-day-accumulate-vs-reset check compares against `lastActiveDay`, which only #011's `StreakService` writes. Until #011 ships, `lastActiveDay` stays `null` forever, so every lesson looks like a day rollover and `today_xp` resets instead of accumulating across same-day lessons — the formula/accumulate logic itself is correct and unit-tested (by directly setting `lastActiveDay`, simulating #011 having run), but true same-day accumulation in the running app is blocked on #011 landing, exactly as this issue's "Unblocks #011" dependency note anticipated.
+- `StatsRepository.addXp(delta, {now})` returns the new lifetime `xpTotal`; `XpService` (`lib/src/stats/xp_service.dart`) holds the pure formulas plus `applyLessonResult` → `XpApplication(earned, xpTotal)`.
+- `LessonController._completeLesson()` (called from `next()`/`skip()`) applies XP and transitions to `phase: done` as one atomic state update, guarded by `LessonState.xpApplied` (flipped synchronously before the write); `xpTotalAfterLesson` is set in that same update, not a later one — fixed a review finding where setting `phase: done` and `xpTotalAfterLesson` in two separate `state =` writes let the result screen render in between on a transient pre-XP level/progress (e.g. "Level 1" at 0 XP). `LessonResultScreen` reads `xpTotalAfterLesson` straight from the controller instead of watching the database (also avoids a drift `watch()`-stream/flutter_test teardown interaction that otherwise hangs/fails widget tests on the result screen).
+- New kit widget `FoxLevelProgressBar` (composed on `FoxProgressBar`); new widget keys `xpEarnedLabel`, `xpBonusCallout`, `levelProgressBar`.
+- Tests: `test/stats/xp_service_test.dart`, `test/lesson/lesson_controller_xp_test.dart` (incl. a regression test asserting `done` is never emitted with `xpTotalAfterLesson` still null), extended `stats_repository_test.dart`/`migration_test.dart`/`kit_test.dart`, updated `lesson_shell_test.dart`'s now-obsolete "xp untouched" assertion, new `integration_test/xp_level_result_test.dart`. Full suite (230 tests) + 4 integration tests pass.
+- Follow-up filed: #031 (pre-existing double-tap race on Skip/Check, not introduced by #010 but widened slightly by making the completion path `async`) — out of scope for #010 to fix, needs a UI-level in-flight guard.

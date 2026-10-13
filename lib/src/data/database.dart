@@ -56,7 +56,10 @@ class Attempts extends Table {
 /// Single-row profile (id fixed to 0).
 ///
 /// Column ownership (do not cross-write):
-/// - `xpTotal` — written exclusively by #010 `XpService`.
+/// - `xpTotal` / `todayXp` — written exclusively by #010 `XpService`, via
+///   `StatsRepository.addXp` (same call site, same done-guard). `todayXp`
+///   resets to the lesson's earned XP on a day change (vs. `lastActiveDay`)
+///   and accumulates otherwise; #012's `FoxGoalRing` reads it read-only.
 /// - `streakCount` / `lastActiveDay` — written exclusively by #011
 ///   `StreakService`. [StatsRepository.recordAttempt] must NOT touch them.
 /// - `dailyGoalXp` — editable (see #012), written by [StatsRepository].
@@ -67,6 +70,8 @@ class ProfileStats extends Table {
   // YYYY-MM-DD in local tz, NULL until first activity.
   TextColumn get lastActiveDay => text().nullable()();
   IntColumn get dailyGoalXp => integer().withDefault(const Constant(30))();
+  // v3 (#010): XP earned on the current `lastActiveDay`, day-scoped.
+  IntColumn get todayXp => integer().withDefault(const Constant(0))();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -81,7 +86,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -95,6 +100,10 @@ class AppDatabase extends _$AppDatabase {
           "UPDATE items SET type = 'choice' WHERE type = 'vocab'",
         );
       }
+      // v3 (#010): adds the day-scoped `todayXp` counter.
+      if (from < 3) {
+        await m.addColumn(profileStats, profileStats.todayXp);
+      }
     },
     beforeOpen: (details) async {
       // SQLite disables FK enforcement by default; without this,
@@ -103,7 +112,8 @@ class AppDatabase extends _$AppDatabase {
     },
   );
 
-  // v1 had no migrations; v2 (#026) added the vocab->choice rewrite above.
+  // v1 had no migrations; v2 (#026) added the vocab->choice rewrite above;
+  // v3 (#010) added `profileStats.todayXp`.
 }
 
 DatabaseConnection _openConnection() => driftDatabase(name: 'fox_streak');
