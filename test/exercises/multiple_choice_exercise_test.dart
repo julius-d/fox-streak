@@ -39,11 +39,13 @@ Item _item({
 class _Harness extends StatelessWidget {
   final Item item;
   final List<Item> otherSetItems;
+  final bool revealed;
   final void Function(ExerciseDraft) onDraft;
 
   const _Harness({
     required this.item,
     this.otherSetItems = const [],
+    this.revealed = false,
     required this.onDraft,
   });
 
@@ -61,6 +63,7 @@ class _Harness extends StatelessWidget {
               otherSetItems: otherSetItems,
               onStateChanged: onDraft,
               l10n: l10n,
+              revealed: revealed,
             );
           },
         ),
@@ -176,9 +179,8 @@ void main() {
       },
     );
 
-    testWidgets('options are locked after an answer is selected', (
-      tester,
-    ) async {
+    testWidgets('tapping a different option pre-check changes the selection '
+        '(reselect pre-check, #006 Decisions)', (tester) async {
       ExerciseDraft? draft;
       await tester.pumpWidget(
         _Harness(
@@ -192,8 +194,32 @@ void main() {
       await tester.pump();
       expect(draft!.grade(), isFalse);
 
-      // Tapping a different option post-answer must not change the
-      // already-reported (wrong) selection.
+      // Still pre-check (not revealed): tapping the correct option now
+      // must update the reported selection, not stay locked onto 'cat'.
+      await tester.tap(find.text('dog'));
+      await tester.pump();
+      expect(draft!.grade(), isTrue);
+    });
+
+    testWidgets('revealed locks input and shows correct/wrong coloring', (
+      tester,
+    ) async {
+      ExerciseDraft? draft;
+      final item = _item(choices: ['cat', 'mouse', 'bird']);
+      await tester.pumpWidget(_Harness(item: item, onDraft: (d) => draft = d));
+      await tester.pump();
+
+      await tester.tap(find.text('cat'));
+      await tester.pump();
+      expect(draft!.grade(), isFalse);
+
+      // Shell flips to feedback phase (revealed: true) once CHECK grades.
+      await tester.pumpWidget(
+        _Harness(item: item, revealed: true, onDraft: (d) => draft = d),
+      );
+      await tester.pump();
+
+      // Locked: tapping another option no longer changes the selection.
       await tester.tap(find.text('dog'));
       await tester.pump();
       expect(draft!.grade(), isFalse);

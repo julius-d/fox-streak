@@ -235,6 +235,7 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
                 controller,
                 l10n,
                 state.sourceItems,
+                isFeedback,
               ),
             ),
           ),
@@ -304,6 +305,7 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
     LessonController controller,
     AppLocalizations l10n,
     List<Item> otherSetItems,
+    bool isFeedback,
   ) {
     // Dispatch by item.type to the appropriate exercise card.
     // #006 provides MultipleChoiceCard for 'choice', #007 the free-text
@@ -342,6 +344,7 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
           otherSetItems: otherSetItems,
           onStateChanged: controller.updateDraft,
           l10n: l10n,
+          revealed: isFeedback,
         );
       case 'freeText':
         return buildFreeTextExercise(

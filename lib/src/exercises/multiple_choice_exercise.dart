@@ -21,12 +21,15 @@ import 'choice_options.dart';
 /// (free text, dial pad, date). [otherSetItems] should be the full set of
 /// items in the current lesson (the current item may be included; it is
 /// excluded by id internally) — used as the fallback distractor pool.
+/// [revealed] should be true once the shell has graded the answer (CHECK
+/// pressed, feedback phase) — see [MultipleChoiceCard].
 Widget buildMultipleChoiceExercise({
   Key? key,
   required Item item,
   required List<Item> otherSetItems,
   required void Function(ExerciseDraft draft) onStateChanged,
   required AppLocalizations l10n,
+  bool revealed = false,
 }) {
   return MultipleChoiceCard(
     key: key,
@@ -34,15 +37,24 @@ Widget buildMultipleChoiceExercise({
     otherSetItems: otherSetItems,
     onStateChanged: onStateChanged,
     l10n: l10n,
+    revealed: revealed,
   );
 }
 
 /// Internal stateful widget for the multiple-choice exercise.
+///
+/// Tap selects/reselects freely before CHECK — [_selected] only tracks the
+/// current pick, it does not lock input. [revealed] (driven by the shell's
+/// feedback phase, true once CHECK has graded the answer) is what locks
+/// taps and reveals the correct/wrong coloring; before that, tapping a
+/// different option simply changes the selection (#006 Decisions: "Tap
+/// selects/reselects pre-check").
 class MultipleChoiceCard extends StatefulWidget {
   final Item item;
   final List<Item> otherSetItems;
   final void Function(ExerciseDraft) onStateChanged;
   final AppLocalizations l10n;
+  final bool revealed;
 
   const MultipleChoiceCard({
     super.key,
@@ -50,6 +62,7 @@ class MultipleChoiceCard extends StatefulWidget {
     this.otherSetItems = const [],
     required this.onStateChanged,
     required this.l10n,
+    this.revealed = false,
   });
 
   @override
@@ -59,7 +72,6 @@ class MultipleChoiceCard extends StatefulWidget {
 class _MultipleChoiceCardState extends State<MultipleChoiceCard> {
   late final List<ChoiceOption> _options;
   ChoiceOption? _selected;
-  bool _answered = false;
 
   @override
   void initState() {
@@ -75,11 +87,10 @@ class _MultipleChoiceCardState extends State<MultipleChoiceCard> {
   }
 
   void _onOptionSelected(ChoiceOption option) {
-    if (_answered) return;
+    if (widget.revealed) return;
 
     setState(() {
       _selected = option;
-      _answered = true;
     });
 
     widget.onStateChanged(
@@ -154,8 +165,8 @@ class _MultipleChoiceCardState extends State<MultipleChoiceCard> {
   ) {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
-    final isSelected = _answered && _selected == option;
-    final showFeedback = _answered;
+    final isSelected = _selected == option;
+    final showFeedback = widget.revealed;
 
     Color? backgroundColor;
     Color? borderColor;
@@ -171,19 +182,23 @@ class _MultipleChoiceCardState extends State<MultipleChoiceCard> {
         borderColor = theme.colorScheme.error;
         textColor = theme.colorScheme.onErrorContainer;
       }
+    } else if (isSelected) {
+      // Picked but not yet graded: outline only, no fill — reveal colors
+      // (above) are reserved for after CHECK.
+      borderColor = theme.colorScheme.primary;
     }
 
     return Semantics(
       button: true,
       selected: isSelected,
-      enabled: !_answered,
+      enabled: !widget.revealed,
       label: widget.l10n.exerciseChoiceOptionSemanticLabel(
         option.label,
         index + 1,
         _options.length,
       ),
       child: InkWell(
-        onTap: _answered ? null : () => _onOptionSelected(option),
+        onTap: widget.revealed ? null : () => _onOptionSelected(option),
         borderRadius: BorderRadius.circular(FoxRadius.lg),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
@@ -197,7 +212,7 @@ class _MultipleChoiceCardState extends State<MultipleChoiceCard> {
             borderRadius: BorderRadius.circular(FoxRadius.lg),
             border: Border.all(
               color: borderColor ?? theme.colorScheme.outlineVariant,
-              width: showFeedback ? 3 : 1.5,
+              width: (showFeedback || isSelected) ? 3 : 1.5,
             ),
           ),
           alignment: Alignment.center,
