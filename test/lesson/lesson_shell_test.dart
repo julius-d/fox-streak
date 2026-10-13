@@ -725,7 +725,7 @@ void main() {
       // Progress should still be ~33%
     });
 
-    testWidgets('attempts-written-and-xp-applied-but-streak-untouched', (
+    testWidgets('attempts-written-and-xp-and-streak-applied', (
       WidgetTester tester,
     ) async {
       final items = await setupTestItems(
@@ -776,11 +776,11 @@ void main() {
       expect(attempts.first.ok, true);
 
       // Verify xpTotal was applied once by #010 (10 correct + 5 perfect
-      // bonus for this single-item 100% lesson) but streakCount — #011's
-      // column — is still untouched.
+      // bonus for this single-item 100% lesson) and streakCount — #011's
+      // column — was applied once too (first-ever activity -> 1).
       final profile = await statsRepo.getProfile();
       expect(profile.xpTotal, 15);
-      expect(profile.streakCount, 0);
+      expect(profile.streakCount, 1);
     });
 
     testWidgets(

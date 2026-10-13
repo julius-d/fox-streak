@@ -1,15 +1,17 @@
-// Lesson result screen (issue #005, XP/level wiring from #010).
+// Lesson result screen (issue #005, XP/level wiring from #010, streak
+// wiring from #011).
 //
-// Shows score % + correct/total, FoxMascot celebration (lit if score > 0,
-// empty on 0 — never on-fire; that belongs to #011 streak moments),
+// Shows score % + correct/total, FoxMascot celebration (on-fire when this
+// lesson just hit a streak milestone, else lit if score > 0, empty on 0),
 // FoxCelebration micro-moment, XP-earned count-up + perfect-score bonus
-// callout + level-progress bar (#010), Practice again + Back to library
-// buttons. Streak row stays a stub ("coming soon") — that's #011's job.
+// callout + level-progress bar (#010), streak headline + StreakBadge
+// (#011), Practice again + Back to library buttons.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../stats/streak_service.dart';
 import '../stats/xp_service.dart';
 import '../theme/fox_streak_theme.dart';
 import '../widgets/widgets.dart';
@@ -33,18 +35,23 @@ class LessonResultScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final mascotState = result.scorePct > 0
-        ? FoxMascotState.lit
-        : FoxMascotState.empty;
     final xpEarned = XpService.xpEarned(result);
     final bonus = XpService.lessonBonus(result);
     // Read straight from the controller's state (set alongside xpApplied by
-    // LessonController._applyXpOnce) rather than watching the database:
+    // LessonController._completeLesson) rather than watching the database:
     // this is a one-shot result snapshot, not a live-updating dashboard, so
     // it doesn't need (and shouldn't hold open) a drift watch() stream.
     final xpTotal = ref.watch(
       lessonControllerProvider.select((s) => s.xpTotalAfterLesson),
     );
+    final streakCount = ref.watch(
+      lessonControllerProvider.select((s) => s.streakCountAfterLesson),
+    );
+    final isMilestone =
+        streakCount != null && StreakService.isMilestone(streakCount);
+    final mascotState = isMilestone
+        ? FoxMascotState.onFire
+        : (result.scorePct > 0 ? FoxMascotState.lit : FoxMascotState.empty);
 
     return SafeArea(
       child: Center(
@@ -58,9 +65,11 @@ class LessonResultScreen extends ConsumerWidget {
                 child: FoxMascot(
                   state: mascotState,
                   size: 120,
-                  semanticLabel: result.scorePct > 0
-                      ? l10n.lessonCelebrate
-                      : l10n.lessonNoScore,
+                  semanticLabel: isMilestone
+                      ? l10n.lessonStreakResultText(streakCount)
+                      : (result.scorePct > 0
+                            ? l10n.lessonCelebrate
+                            : l10n.lessonNoScore),
                 ),
               ),
               const SizedBox(height: FoxSpacing.xl),
@@ -102,13 +111,31 @@ class LessonResultScreen extends ConsumerWidget {
               ],
               const SizedBox(height: FoxSpacing.md),
               _buildLevelProgress(context, xpTotal ?? 0),
-              const SizedBox(height: FoxSpacing.sm),
-              // Streak stub (coming soon — #011 builds the real moment)
-              _buildComingSoonRow(
-                context,
-                Icons.local_fire_department,
-                l10n.lessonStreakComingSoon,
-              ),
+              const SizedBox(height: FoxSpacing.lg),
+              // Streak section (#011)
+              if (streakCount != null) ...[
+                FoxCelebration(
+                  child: Text(
+                    l10n.lessonStreakResultText(streakCount),
+                    key: const Key('streakResultText'),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: foxSemantics(context).flame,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: FoxSpacing.sm),
+                StreakBadge(
+                  key: const Key('streakBadge'),
+                  streakCount: streakCount,
+                  todayDone: true,
+                  streakCountLabel: l10n.streakCountLabel(streakCount),
+                  todayDoneLabel: l10n.streakTodayDoneLabel,
+                  semanticsLabel:
+                      '${l10n.lessonStreakResultText(streakCount)} '
+                      '${l10n.streakTodayDoneLabel}',
+                ),
+              ],
               const SizedBox(height: FoxSpacing.xxl),
               // Practice again button
               FoxPrimaryButton(
@@ -144,28 +171,6 @@ class LessonResultScreen extends ConsumerWidget {
       levelLabel: l10n.levelLabel(level),
       progressText: l10n.levelProgressText(xpTotal - lo, hi - lo),
       semanticsLabel: l10n.levelProgressLabel,
-    );
-  }
-
-  Widget _buildComingSoonRow(
-    BuildContext context,
-    IconData icon,
-    String label,
-  ) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(icon, size: 20, color: Theme.of(context).colorScheme.outline),
-        const SizedBox(width: FoxSpacing.sm),
-        Flexible(
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.bodyMedium
-                ?.copyWith(color: Theme.of(context).colorScheme.outline),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
     );
   }
 }

@@ -104,6 +104,31 @@ void main() {
     });
   });
 
+  group('setStreak', () {
+    test('overwrites streakCount and lastActiveDay', () async {
+      await repo.setStreak(streakCount: 3, lastActiveDay: '2026-10-11');
+      final profile = await repo.getProfile();
+      expect(profile.streakCount, 3);
+      expect(profile.lastActiveDay, '2026-10-11');
+    });
+
+    test('a later call fully overwrites the prior values', () async {
+      await repo.setStreak(streakCount: 3, lastActiveDay: '2026-10-11');
+      await repo.setStreak(streakCount: 1, lastActiveDay: '2026-10-20');
+      final profile = await repo.getProfile();
+      expect(profile.streakCount, 1);
+      expect(profile.lastActiveDay, '2026-10-20');
+    });
+
+    test('never touches xpTotal/todayXp', () async {
+      await repo.addXp(10, now: kTestToday);
+      await repo.setStreak(streakCount: 1, lastActiveDay: '2026-10-11');
+      final profile = await repo.getProfile();
+      expect(profile.xpTotal, 10);
+      expect(profile.todayXp, 10);
+    });
+  });
+
   group('recordAttempt', () {
     test('writes one attempts row with ok/at', () async {
       final itemId = await seedItem();

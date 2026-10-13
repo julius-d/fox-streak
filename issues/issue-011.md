@@ -1,6 +1,6 @@
 # Issue 011: Streak system (fox-streak core)
 
-Status: open | Priority: P1 | Type: gamification | Refined-at: 2026-10-13
+Status: done | Priority: P1 | Type: gamification | Refined-at: 2026-10-13
 
 ## Goal
 Daily streak = retention hook and namesake of fox-streak.
@@ -21,14 +21,14 @@ Streak counts consecutive days with ≥1 lesson; Duolingo uses streak freeze/rep
 - Notifications/reminders: dropped from this issue's tasks entirely — no notification issue exists, and #002 already lists notifications as fully out of scope for the app. Moved to `Out of scope` below rather than left as a dangling "hook point".
 
 ## Acceptance criteria
-- [ ] Streak +1 when the first lesson of a new calendar day (local tz) completes — any outcome, including a lesson with 0 correct answers; same-day replays never double-count
-- [ ] Day algorithm exactly as decided above: no prior day → 1; same day → unchanged; consecutive day → +1; gap of ≥2 days → resets to 1
-- [ ] Mascot/badge state: `empty` (streak 0, no activity today), `lit` (active/streak>0, not a milestone), `on-fire` (today's `streak_count` ∈ `{3, 7, 14, 30, 50, 100}`)
-- [ ] `StreakService.recordActivity` is the sole writer of `streak_count`/`last_active_day` (via new `StatsRepository` method), called exactly once per completed lesson by `LessonController`, after #010's XP write, reusing its `phase: done` guard — no double-apply on rebuild/rotation
-- [ ] `StreakBadge` widget: flame icon (`FoxSemanticColors.flame` token) + streak count + "today done" indicator, composed on #015's kit (no ad-hoc styling)
-- [ ] `LessonResultScreen`'s `lessonStreakComingSoon` stub replaced with real streak info; mascot shows `on-fire` when this lesson just hit a milestone, else existing lit/empty-by-score behavior holds
-- [ ] Unit tests: day-boundary matrix (no-prior-day / same-day / consecutive-day / gap-day, local-tz edges) with fake clock, milestone detection for all six values, no double-apply on repeated calls / simulated rebuild
-- [ ] Follows #015: `FoxMascot` on-fire state + `flame` semantic token reused, no ad-hoc styling; all strings via `lib/l10n` arb params (DE + EN)
+- [x] Streak +1 when the first lesson of a new calendar day (local tz) completes — any outcome, including a lesson with 0 correct answers; same-day replays never double-count
+- [x] Day algorithm exactly as decided above: no prior day → 1; same day → unchanged; consecutive day → +1; gap of ≥2 days → resets to 1
+- [x] Mascot/badge state: `empty` (streak 0, no activity today), `lit` (active/streak>0, not a milestone), `on-fire` (today's `streak_count` ∈ `{3, 7, 14, 30, 50, 100}`)
+- [x] `StreakService.recordActivity` is the sole writer of `streak_count`/`last_active_day` (via new `StatsRepository` method), called exactly once per completed lesson by `LessonController`, after #010's XP write, reusing its `phase: done` guard — no double-apply on rebuild/rotation
+- [x] `StreakBadge` widget: flame icon (`FoxSemanticColors.flame` token) + streak count + "today done" indicator, composed on #015's kit (no ad-hoc styling)
+- [x] `LessonResultScreen`'s `lessonStreakComingSoon` stub replaced with real streak info; mascot shows `on-fire` when this lesson just hit a milestone, else existing lit/empty-by-score behavior holds
+- [x] Unit tests: day-boundary matrix (no-prior-day / same-day / consecutive-day / gap-day, local-tz edges) with fake clock, milestone detection for all six values, no double-apply on repeated calls / simulated rebuild
+- [x] Follows #015: `FoxMascot` on-fire state + `flame` semantic token reused, no ad-hoc styling; all strings via `lib/l10n` arb params (DE + EN)
 
 ## Tasks
 1. `StatsRepository.setStreak({required int streakCount, required String lastActiveDay})` (mirrors #010's `addXp`)
@@ -59,3 +59,12 @@ flutter analyze
 dart format --output=none --set-exit-if-changed .
 flutter test
 ```
+
+## Summary (implemented 2026-10-13)
+- `StreakService` (`lib/src/stats/streak_service.dart`) holds the pure day algorithm (`computeNext`), `isMilestone` (fixed `{3,7,14,30,50,100}` set), and `recordActivity()` — reads the profile, runs `computeNext` against the clock's current time, and persists via the new `StatsRepository.setStreak(streakCount, lastActiveDay)` (full overwrite, mirrors #010's `addXp`).
+- `LessonController._completeLesson()` now calls `_streakService.recordActivity()` right after `_xpService.applyLessonResult(result)`, reusing the single `xpApplied` guard — no second guard flag. New `LessonState.streakCountAfterLesson` field (parallel to `xpTotalAfterLesson`) is set in the same atomic state update as `phase: done`, for the same "no transient pre-write render" reason #010 fixed.
+- `LessonResultScreen`: mascot is `on-fire` whenever `StreakService.isMilestone(streakCountAfterLesson)`, else falls back to the existing lit/empty-by-score behavior; `lessonStreakComingSoon` stub replaced with a streak headline (`lessonStreakResultText`) + the new `StreakBadge` widget (keys `streakBadge`, `streakCountLabel`).
+- New kit widget `StreakBadge` (`lib/src/widgets/streak_badge.dart`): dumb/display-only, flame icon + count + optional "today done" check, token-driven via `FoxSemanticColors.flame`.
+- l10n: 3 new arb keys (`lessonStreakResultText`, `streakCountLabel`, `streakTodayDoneLabel`), DE+EN; removed the now-dead `lessonStreakComingSoon` key.
+- Tests: `test/stats/streak_service_test.dart` (day-boundary matrix incl. local-tz edges, milestone detection, `recordActivity` persistence/idempotence), `test/lesson/lesson_controller_streak_test.dart` (controller wiring: exactly-once via CONTINUE/SKIP, 0-correct-answer lesson still extends streak, shared-guard no-double-apply, restart), extended `stats_repository_test.dart`/`kit_test.dart`, updated `lesson_shell_test.dart`'s now-obsolete "streak untouched" assertion, new `integration_test/streak_result_test.dart` (drives a real milestone lesson, asserts on-fire mascot + badge render + exactly-once DB write). Full suite (255 tests) + integration tests pass; `flutter analyze`/`dart format`/`dart fix --dry-run` clean.
+- Fixed in review: `computeNext`'s "yesterday" was computed via `now.subtract(Duration(days: 1))`, absolute-time arithmetic that lands on the wrong local calendar date across a DST transition (a civil "day" isn't always 24 wall-clock hours) — a user active the day before a spring-forward could get their streak wrongly reset instead of incremented. Fixed to calendar-field subtraction (`DateTime(now.year, now.month, now.day - 1)`), which is TZ-independent; added a regression test documenting the EU 2026-03-29 spring-forward case.

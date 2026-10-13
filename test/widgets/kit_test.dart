@@ -185,6 +185,46 @@ void main() {
     );
   });
 
+  testWidgets('streak badge shows flame, count, and the done check '
+      '(issue #011)', (WidgetTester tester) async {
+    await pumpKit(
+      tester,
+      const StreakBadge(
+        streakCount: 7,
+        todayDone: true,
+        streakCountLabel: '7',
+        todayDoneLabel: "Today's lesson counted",
+        semanticsLabel: "7-day streak, today's lesson counted",
+      ),
+    );
+
+    expect(find.text('7'), findsOneWidget);
+    expect(find.byIcon(Icons.local_fire_department), findsOneWidget);
+    expect(find.byIcon(Icons.check_circle), findsOneWidget);
+
+    final Semantics semantics = tester.widget<Semantics>(
+      find.ancestor(of: find.text('7'), matching: find.byType(Semantics)).first,
+    );
+    expect(semantics.properties.label, "7-day streak, today's lesson counted");
+  });
+
+  testWidgets('streak badge hides the done check when today is not done '
+      '(issue #011)', (WidgetTester tester) async {
+    await pumpKit(
+      tester,
+      const StreakBadge(
+        streakCount: 2,
+        todayDone: false,
+        streakCountLabel: '2',
+        semanticsLabel: '2-day streak',
+      ),
+    );
+
+    expect(find.text('2'), findsOneWidget);
+    expect(find.byIcon(Icons.local_fire_department), findsOneWidget);
+    expect(find.byIcon(Icons.check_circle), findsNothing);
+  });
+
   testWidgets('confirm dialog resolves true on confirm', (
     WidgetTester tester,
   ) async {

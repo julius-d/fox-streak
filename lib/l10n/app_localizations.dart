@@ -139,7 +139,9 @@ abstract class AppLocalizations {
   String levelLabel(int level);
   String get levelProgressLabel;
   String levelProgressText(int xpIntoLevel, int xpForNextLevel);
-  String get lessonStreakComingSoon;
+  String lessonStreakResultText(int streakCount);
+  String streakCountLabel(int streakCount);
+  String get streakTodayDoneLabel;
   String get lessonPracticeAgain;
   String get lessonBackToLibrary;
   String get lessonEmptySetNote;
@@ -357,7 +359,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String levelProgressText(int xpIntoLevel, int xpForNextLevel) =>
       '$xpIntoLevel / $xpForNextLevel XP to next level';
   @override
-  String get lessonStreakComingSoon => 'Streak — coming soon';
+  String lessonStreakResultText(int streakCount) => '$streakCount-day streak!';
+  @override
+  String streakCountLabel(int streakCount) => '$streakCount';
+  @override
+  String get streakTodayDoneLabel => "Today's lesson counted";
   @override
   String get lessonPracticeAgain => 'Practice again';
   @override
@@ -581,7 +587,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String levelProgressText(int xpIntoLevel, int xpForNextLevel) =>
       '$xpIntoLevel / $xpForNextLevel XP bis zum nächsten Level';
   @override
-  String get lessonStreakComingSoon => 'Serie — kommt bald';
+  String lessonStreakResultText(int streakCount) => '$streakCount Tage Serie!';
+  @override
+  String streakCountLabel(int streakCount) => '$streakCount';
+  @override
+  String get streakTodayDoneLabel => 'Heutige Lektion gezählt';
   @override
   String get lessonPracticeAgain => 'Nochmal üben';
   @override

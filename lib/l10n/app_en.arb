@@ -271,11 +271,25 @@
     }
   },
   "levelProgressText": "{xpIntoLevel} / {xpForNextLevel} XP to next level",
-  "@lessonStreakComingSoon": {
-    "description": "Label for streak coming soon stub",
+  "@lessonStreakResultText": {
+    "description": "Headline announcing the streak on the lesson result screen (issue #011)",
+    "placeholders": {
+      "streakCount": {"type": "int"}
+    }
+  },
+  "lessonStreakResultText": "{streakCount}-day streak!",
+  "@streakCountLabel": {
+    "description": "Streak-count label shown inside StreakBadge, next to the flame icon (issue #011)",
+    "placeholders": {
+      "streakCount": {"type": "int"}
+    }
+  },
+  "streakCountLabel": "{streakCount}",
+  "@streakTodayDoneLabel": {
+    "description": "Accessibility label for StreakBadge's \"today done\" check indicator (issue #011)",
     "placeholders": {}
   },
-  "lessonStreakComingSoon": "Streak — coming soon",
+  "streakTodayDoneLabel": "Today's lesson counted",
   "@lessonPracticeAgain": {
     "description": "Button label to practice the same set again",
     "placeholders": {}

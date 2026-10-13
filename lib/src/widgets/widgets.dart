@@ -12,3 +12,4 @@ export 'fox_empty_state.dart';
 export 'fox_level_progress_bar.dart';
 export 'fox_mascot.dart';
 export 'fox_progress_bar.dart';
+export 'streak_badge.dart';

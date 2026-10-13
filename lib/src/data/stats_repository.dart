@@ -104,6 +104,23 @@ class StatsRepository {
     return newXpTotal;
   }
 
+  /// Overwrites `streak_count`/`last_active_day` with [streakCount] /
+  /// [lastActiveDay]. Sole caller: #011 `StreakService.recordActivity`.
+  Future<void> setStreak({
+    required int streakCount,
+    required String lastActiveDay,
+  }) async {
+    await getProfile();
+    await (_db.update(
+      _db.profileStats,
+    )..where((t) => t.id.equals(kProfileId))).write(
+      ProfileStatsCompanion(
+        streakCount: Value(streakCount),
+        lastActiveDay: Value(lastActiveDay),
+      ),
+    );
+  }
+
   /// Records a graded answer.
   ///
   /// Writes exactly one `attempts` row and ensures the profile row exists.

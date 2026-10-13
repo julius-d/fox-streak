@@ -13,6 +13,7 @@ import '../data/clock.dart';
 import '../data/database.dart';
 import '../data/providers.dart';
 import '../data/stats_repository.dart';
+import '../stats/streak_service.dart';
 import '../stats/xp_service.dart';
 import 'exercise_card.dart';
 
@@ -27,11 +28,15 @@ import 'exercise_card.dart';
 ///   so the shell can call grade() on CHECK.
 /// [lastCorrect] remembers the last grade result for the FoxCheckButton tint.
 /// [xpApplied] guards #010's XP write so rebuild/rotation (which replays
-///   this same state) can never re-apply it.
+///   this same state) can never re-apply it; #011's streak write reuses the
+///   same gate instead of adding a second one.
 /// [xpTotalAfterLesson] is the lifetime `xpTotal` returned by that write,
 ///   handed to the result screen so it never has to re-query the database
 ///   (and never has to hold open a `watch()` stream of its own) to show
 ///   the level-progress bar.
+/// [streakCountAfterLesson] is the `streak_count` returned by #011's streak
+///   write, handed to the result screen the same way for `StreakBadge` /
+///   the mascot's on-fire check.
 class LessonState {
   final List<Item> sourceItems;
   final List<Item> queue;
@@ -46,6 +51,7 @@ class LessonState {
   final String? lastCorrectAnswerLabel;
   final bool xpApplied;
   final int? xpTotalAfterLesson;
+  final int? streakCountAfterLesson;
 
   const LessonState({
     this.sourceItems = const [],
@@ -58,6 +64,7 @@ class LessonState {
     this.lastCorrectAnswerLabel,
     this.xpApplied = false,
     this.xpTotalAfterLesson,
+    this.streakCountAfterLesson,
   });
 
   LessonState copyWith({
@@ -71,6 +78,7 @@ class LessonState {
     String? lastCorrectAnswerLabel,
     bool? xpApplied,
     int? xpTotalAfterLesson,
+    int? streakCountAfterLesson,
     bool clearDraft = false,
     bool clearLastCorrect = false,
   }) {
@@ -87,6 +95,8 @@ class LessonState {
           : (lastCorrectAnswerLabel ?? this.lastCorrectAnswerLabel),
       xpApplied: xpApplied ?? this.xpApplied,
       xpTotalAfterLesson: xpTotalAfterLesson ?? this.xpTotalAfterLesson,
+      streakCountAfterLesson:
+          streakCountAfterLesson ?? this.streakCountAfterLesson,
     );
   }
 
@@ -124,7 +134,8 @@ class LessonState {
           other.lastCorrect == lastCorrect &&
           other.lastCorrectAnswerLabel == lastCorrectAnswerLabel &&
           other.xpApplied == xpApplied &&
-          other.xpTotalAfterLesson == xpTotalAfterLesson);
+          other.xpTotalAfterLesson == xpTotalAfterLesson &&
+          other.streakCountAfterLesson == streakCountAfterLesson);
 
   @override
   int get hashCode => Object.hash(
@@ -137,6 +148,7 @@ class LessonState {
     lastCorrect,
     lastCorrectAnswerLabel,
     xpApplied,
+    streakCountAfterLesson,
     xpTotalAfterLesson,
   );
 }
@@ -150,6 +162,7 @@ class LessonController extends Notifier<LessonState> {
   late final StatsRepository _statsRepo;
   late final Clock _clock;
   late final XpService _xpService;
+  late final StreakService _streakService;
   Random? _random;
 
   @override
@@ -157,6 +170,7 @@ class LessonController extends Notifier<LessonState> {
     _statsRepo = ref.read(statsRepositoryProvider);
     _clock = ref.read(systemClockProvider);
     _xpService = ref.read(xpServiceProvider);
+    _streakService = ref.read(streakServiceProvider);
     return const LessonState();
   }
 
@@ -288,19 +302,20 @@ class LessonController extends Notifier<LessonState> {
   }
 
   /// Transitions to `phase: done` and applies this lesson's XP (issue #010)
-  /// as one atomic step.
+  /// and streak (issue #011) writes as one atomic step.
   ///
-  /// Deliberately does *not* flip `phase` to `done` until the XP write (and
-  /// its resulting `xpTotal`) is known: setting `phase` first and
-  /// `xpTotalAfterLesson` only after a later `await` would let the result
-  /// screen render in between on a transient pre-XP level/progress (e.g.
-  /// "Level 1" at 0 XP for a learner who is actually much further along).
-  /// [LessonState.xpApplied], flipped synchronously before the `await`,
-  /// still guards against double-apply on repeated calls.
+  /// Deliberately does *not* flip `phase` to `done` until both writes (and
+  /// their resulting `xpTotal`/`streakCount`) are known: setting `phase`
+  /// first and the `*AfterLesson` fields only after a later `await` would
+  /// let the result screen render in between on transient pre-write values
+  /// (e.g. "Level 1" at 0 XP for a learner who is actually much further
+  /// along). [LessonState.xpApplied], flipped synchronously before the
+  /// `await`s, guards both writes against double-apply on repeated calls —
+  /// #011 reuses this single gate rather than adding a second one.
   Future<void> _completeLesson(List<LessonItemOutcome> outcomes) async {
     if (state.xpApplied) {
       // Already completed by a prior (possibly overlapping) call — just
-      // make sure this one also lands on `done` without re-applying XP.
+      // make sure this one also lands on `done` without re-applying XP/streak.
       state = state.copyWith(
         outcomes: outcomes,
         phase: LessonPhase.done,
@@ -313,11 +328,15 @@ class LessonController extends Notifier<LessonState> {
     final xpTotal = result == null
         ? null
         : (await _xpService.applyLessonResult(result)).xpTotal;
+    final streakCount = result == null
+        ? null
+        : (await _streakService.recordActivity()).streakCount;
     state = state.copyWith(
       outcomes: outcomes,
       phase: LessonPhase.done,
       clearLastCorrect: true,
       xpTotalAfterLesson: xpTotal,
+      streakCountAfterLesson: streakCount,
     );
   }
 
