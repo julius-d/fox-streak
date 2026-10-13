@@ -37,6 +37,11 @@ import 'exercise_card.dart';
 /// [streakCountAfterLesson] is the `streak_count` returned by #011's streak
 ///   write, handed to the result screen the same way for `StreakBadge` /
 ///   the mascot's on-fire check.
+/// [busy] mirrors the controller's in-flight guard (issue #031) so the
+///   shell can disable CHECK/CONTINUE and hide Skip while a prior
+///   submitGrade/skip/next call hasn't resolved yet — otherwise e.g. a
+///   Skip tap landing while CHECK's write is still in flight would be
+///   silently dropped by the guard with no visible affordance.
 class LessonState {
   final List<Item> sourceItems;
   final List<Item> queue;
@@ -52,6 +57,7 @@ class LessonState {
   final bool xpApplied;
   final int? xpTotalAfterLesson;
   final int? streakCountAfterLesson;
+  final bool busy;
 
   const LessonState({
     this.sourceItems = const [],
@@ -65,6 +71,7 @@ class LessonState {
     this.xpApplied = false,
     this.xpTotalAfterLesson,
     this.streakCountAfterLesson,
+    this.busy = false,
   });
 
   LessonState copyWith({
@@ -79,6 +86,7 @@ class LessonState {
     bool? xpApplied,
     int? xpTotalAfterLesson,
     int? streakCountAfterLesson,
+    bool? busy,
     bool clearDraft = false,
     bool clearLastCorrect = false,
   }) {
@@ -97,6 +105,7 @@ class LessonState {
       xpTotalAfterLesson: xpTotalAfterLesson ?? this.xpTotalAfterLesson,
       streakCountAfterLesson:
           streakCountAfterLesson ?? this.streakCountAfterLesson,
+      busy: busy ?? this.busy,
     );
   }
 
@@ -135,7 +144,8 @@ class LessonState {
           other.lastCorrectAnswerLabel == lastCorrectAnswerLabel &&
           other.xpApplied == xpApplied &&
           other.xpTotalAfterLesson == xpTotalAfterLesson &&
-          other.streakCountAfterLesson == streakCountAfterLesson);
+          other.streakCountAfterLesson == streakCountAfterLesson &&
+          other.busy == busy);
 
   @override
   int get hashCode => Object.hash(
@@ -150,6 +160,7 @@ class LessonState {
     xpApplied,
     streakCountAfterLesson,
     xpTotalAfterLesson,
+    busy,
   );
 }
 
@@ -164,6 +175,34 @@ class LessonController extends Notifier<LessonState> {
   late final XpService _xpService;
   late final StreakService _streakService;
   Random? _random;
+
+  // Guards submitGrade/skip/next against a double-tap (or two
+  // near-simultaneous calls) firing before the first call's `await` resumes:
+  // both would otherwise read the same `state.currentItem`/`state.outcomes`
+  // and each write an `attempts` row/`outcomes` entry for the same item
+  // (issue #031). Shared across all three: CHECK and Skip are both live UI
+  // targets during the `answering` phase, so a CHECK-then-Skip sequence
+  // landing in this same window is exactly as unsafe as a same-action
+  // double-tap and must be dropped the same way. `state.busy` mirrors this
+  // flag so the shell can disable CHECK/hide Skip while it's set, instead
+  // of silently swallowing the second tap with no visible affordance.
+  bool _actionInFlight = false;
+
+  /// Runs [action] under the [_actionInFlight] guard, mirroring it onto
+  /// [LessonState.busy] so the shell can disable/hide the affected buttons
+  /// for the duration — shared by [submitGrade], [skip], [next] so the
+  /// guard/reset bookkeeping lives in one place.
+  Future<void> _guarded(Future<void> Function() action) async {
+    if (_actionInFlight) return;
+    _actionInFlight = true;
+    state = state.copyWith(busy: true);
+    try {
+      await action();
+    } finally {
+      _actionInFlight = false;
+      state = state.copyWith(busy: false);
+    }
+  }
 
   @override
   LessonState build() {
@@ -214,7 +253,7 @@ class LessonController extends Notifier<LessonState> {
   /// Calls the stored grade function once, records the outcome immediately
   /// via StatsRepository.recordAttempt, updates phase to feedback, and
   /// remembers the result for the button tint.
-  Future<void> submitGrade() async {
+  Future<void> submitGrade() => _guarded(() async {
     final draft = state.currentDraft;
     final item = state.currentItem;
     if (draft == null || item == null) return;
@@ -242,13 +281,13 @@ class LessonController extends Notifier<LessonState> {
       lastCorrectAnswerLabel: draft.correctAnswerLabel,
       clearDraft: true,
     );
-  }
+  });
 
   /// Skips the current item (SKIP pressed).
   ///
   /// Counts as wrong (skipped=true). Records attempt immediately.
   /// Advances to next item or done phase.
-  Future<void> skip() async {
+  Future<void> skip() => _guarded(() async {
     final item = state.currentItem;
     if (item == null) return;
 
@@ -268,10 +307,10 @@ class LessonController extends Notifier<LessonState> {
     );
 
     await _advanceAfterOutcome(outcome);
-  }
+  });
 
   /// Advances from feedback phase to next item or done (CONTINUE pressed).
-  Future<void> next() async {
+  Future<void> next() => _guarded(() async {
     if (state.phase != LessonPhase.feedback) return;
     if (state.index + 1 >= state.queue.length) {
       await _completeLesson(state.outcomes);
@@ -283,7 +322,7 @@ class LessonController extends Notifier<LessonState> {
         clearLastCorrect: true,
       );
     }
-  }
+  });
 
   /// Internal: advances after skip or submit when not using feedback phase.
   Future<void> _advanceAfterOutcome(LessonItemOutcome outcome) async {
@@ -314,8 +353,11 @@ class LessonController extends Notifier<LessonState> {
   /// #011 reuses this single gate rather than adding a second one.
   Future<void> _completeLesson(List<LessonItemOutcome> outcomes) async {
     if (state.xpApplied) {
-      // Already completed by a prior (possibly overlapping) call — just
-      // make sure this one also lands on `done` without re-applying XP/streak.
+      // #031's `_actionInFlight` guard now stops `skip`/`next` from
+      // overlapping, so this path is mainly reached via rebuild/rotation
+      // replaying the same state (see class doc) — kept as defense-in-depth
+      // regardless. Just make sure this call also lands on `done` without
+      // re-applying XP/streak.
       state = state.copyWith(
         outcomes: outcomes,
         phase: LessonPhase.done,

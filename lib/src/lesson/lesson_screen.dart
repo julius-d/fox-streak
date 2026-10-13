@@ -177,7 +177,11 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
                   key: const Key('quitLessonMenuItem'),
                   child: Text(l10n.lessonQuit),
                 ),
-                if (state.phase == LessonPhase.answering)
+                // Hidden while busy too: Skip would otherwise be a live UI
+                // target during a still-in-flight CHECK, and the shared
+                // in-flight guard (#031) silently drops it rather than
+                // risking a double outcome for the same item.
+                if (state.phase == LessonPhase.answering && !state.busy)
                   PopupMenuItem(
                     value: 'skip',
                     key: const Key('skipItemMenuItem'),
@@ -268,11 +272,14 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
                 FoxCheckButton(
                   key: const Key('checkButton'),
                   label: isFeedback ? l10n.lessonContinue : l10n.lessonCheck,
-                  onPressed: isFeedback
-                      ? () => controller.next()
-                      : (hasAnswer
-                            ? () => _submitAndBuzz(context, ref, controller)
-                            : null),
+                  onPressed: state.busy
+                      ? null
+                      : (isFeedback
+                            ? () => controller.next()
+                            : (hasAnswer
+                                  ? () =>
+                                        _submitAndBuzz(context, ref, controller)
+                                  : null)),
                   correctState: isFeedback ? state.lastCorrect : null,
                 ),
               ],
