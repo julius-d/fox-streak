@@ -63,9 +63,12 @@ one Flutter setup on this small MVP).
 | `flutter test` (unit/widget in `test/` only, not `integration_test/`) | `flutter test` |
 | `flutter build apk --debug` (unsigned smoke build) | same — needs the Android SDK; expected to fail locally (see AGENTS.md), CI is the gate |
 
-Intentional-failure proof: a commit with a `dart format` violation fails the
-`Check formatting` step as expected (red run URL recorded in the #018 closing
-comment); the green `main` run URL is recorded there as well.
+Closing-proof convention: an issue closed on CI evidence records a green run
+whose URL cites a `push`-triggered run with its `headSha` actually on `main`
+(not a PR-branch check run), a red run URL that names the specific failing
+step (not just "job failed"), and — if the red proof needed a revert — the
+revert's own run must be green before the revert merges. See the #018
+closing comment for the recorded proof (and its #020 correction).
 
 > **Format authority:** `dart format` check in CI is authoritative; `.gitattributes`/CRLF normalization is out of scope unless a CI-only format failure proves otherwise.
 

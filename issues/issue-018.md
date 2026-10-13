@@ -109,3 +109,25 @@ flutter test           # must be green
   flip Status to done.
 - GREEN (main): `https://github.com/julius-d/fox-streak/actions/runs/38151680157/job/114506255209?pr=1`
   (push-to-main CI after the #1 merge). All acceptance criteria met — closing.
+
+## Closing-proof correction (via #020, 2026-10-13)
+- **Convention:** a green run cited as proof must link a run whose `headSha`
+  is actually on `main` (not a PR-branch check); a red run must show the
+  specific failing step; if a red proof requires a revert, the revert's own
+  run must be green before the revert is merged.
+- The GREEN entry above does not meet this: `gh run view 38151680157` shows
+  `event: pull_request`, `headBranch: chore/ci-018`, `headSha: e60c74d8…` —
+  it ran on the PR branch, not `main`. The actual post-merge push run on
+  `main` (`38153310480`, SHA `e85872c7…`) was `cancelled`, superseded by the
+  concurrency group as several more commits landed on `main` right after.
+- Corrected SHA-linked green `main` run — the first non-`cancelled` push run
+  immediately after the merge (3.5 min later, before the ones in between got
+  superseded), not an arbitrary later one:
+  `https://github.com/julius-d/fox-streak/actions/runs/38153545683/job/114511812415`
+  — `event: push`, `headBranch: main`, `headSha: f795e24443044194a14f01ac07e7baf92e3d9012`
+  (`refactor: address #015 review…`, one commit after the `e85872c` merge),
+  `conclusion: success`.
+- The RED entry already meets the convention as-is (job step `Check
+  formatting` failing is named explicitly); no revert was needed since that
+  PR was abandoned/deleted rather than merged, so the "revert must be green"
+  clause doesn't apply here.
