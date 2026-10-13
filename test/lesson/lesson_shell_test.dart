@@ -117,7 +117,7 @@ Future<List<Item>> setupTestItems(
   AppDatabase db,
   int setId,
   int count, {
-  String type = 'vocab',
+  String type = 'choice',
   String? choicesJson,
 }) async {
   // Ensure the question set exists
@@ -190,7 +190,7 @@ void main() {
     });
 
     // Choices JSON for vocab items (3 distractors + answer will be added by card)
-    const vocabChoicesJson = '["distractor1","distractor2","distractor3"]';
+    const distractorsJson = '["distractor1","distractor2","distractor3"]';
 
     testWidgets('start-shuffles-and-caps-20', (WidgetTester tester) async {
       // Insert 25 items into DB and pass them directly
@@ -198,7 +198,7 @@ void main() {
         db,
         1,
         25,
-        choicesJson: vocabChoicesJson,
+        choicesJson: distractorsJson,
       );
 
       await pumpLessonShell(
@@ -239,7 +239,7 @@ void main() {
         db,
         1,
         3,
-        choicesJson: vocabChoicesJson,
+        choicesJson: distractorsJson,
       );
 
       await pumpLessonShell(
@@ -286,7 +286,7 @@ void main() {
           db,
           1,
           2,
-          choicesJson: vocabChoicesJson,
+          choicesJson: distractorsJson,
         );
 
         await pumpLessonShell(
@@ -343,7 +343,7 @@ void main() {
         db,
         1,
         1,
-        choicesJson: vocabChoicesJson,
+        choicesJson: distractorsJson,
       );
       final correctAnswer = items.first.answer;
 
@@ -397,7 +397,7 @@ void main() {
         db,
         1,
         2,
-        choicesJson: vocabChoicesJson,
+        choicesJson: distractorsJson,
       );
 
       await pumpLessonShell(
@@ -442,7 +442,7 @@ void main() {
         db,
         1,
         2,
-        choicesJson: vocabChoicesJson,
+        choicesJson: distractorsJson,
       );
 
       await pumpLessonShell(
@@ -482,7 +482,7 @@ void main() {
         db,
         1,
         2,
-        choicesJson: vocabChoicesJson,
+        choicesJson: distractorsJson,
       );
 
       await pumpLessonShell(
@@ -533,7 +533,7 @@ void main() {
         db,
         1,
         2,
-        choicesJson: vocabChoicesJson,
+        choicesJson: distractorsJson,
       );
 
       await pumpLessonShell(
@@ -580,7 +580,7 @@ void main() {
         db,
         1,
         5,
-        choicesJson: vocabChoicesJson,
+        choicesJson: distractorsJson,
       );
 
       await pumpLessonShell(
@@ -633,7 +633,7 @@ void main() {
         db,
         1,
         4,
-        choicesJson: vocabChoicesJson,
+        choicesJson: distractorsJson,
       );
 
       await pumpLessonShell(
@@ -682,7 +682,7 @@ void main() {
         db,
         1,
         3,
-        choicesJson: vocabChoicesJson,
+        choicesJson: distractorsJson,
       );
 
       await pumpLessonShell(
@@ -732,7 +732,7 @@ void main() {
         db,
         1,
         1,
-        choicesJson: vocabChoicesJson,
+        choicesJson: distractorsJson,
       );
 
       await pumpLessonShell(
@@ -790,7 +790,7 @@ void main() {
           db,
           1,
           1,
-          choicesJson: vocabChoicesJson,
+          choicesJson: distractorsJson,
         );
 
         // Push LessonScreen for real (Navigator.push), the way
@@ -873,7 +873,7 @@ void main() {
         db,
         1,
         1,
-        choicesJson: vocabChoicesJson,
+        choicesJson: distractorsJson,
       );
       final correctAnswer = items.first.answer;
 
@@ -936,7 +936,7 @@ void main() {
         db,
         1,
         1,
-        choicesJson: vocabChoicesJson,
+        choicesJson: distractorsJson,
       );
 
       final hapticCalls = <String?>[];
@@ -999,7 +999,7 @@ void main() {
           db,
           1,
           1,
-          choicesJson: vocabChoicesJson,
+          choicesJson: distractorsJson,
         );
         final correctAnswer = items.first.answer;
 
@@ -1069,7 +1069,7 @@ void main() {
     );
 
     testWidgets(
-      'real vocab cards get fresh per-item state (regression: #024 key fix)',
+      'real choice cards get fresh per-item state (regression: #024 key fix)',
       (WidgetTester tester) async {
         // No cardBuilder override: dispatches to the real MultipleChoiceCard,
         // which caches its shuffled options in initState — without a

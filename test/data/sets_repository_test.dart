@@ -91,7 +91,7 @@ void main() {
       final setId = await repo.createSet(title: 'S', createdBy: 'teacher');
       final a = await repo.addItem(
         setId: setId,
-        type: 'vocab',
+        type: 'choice',
         prompt: 'Hund',
         answer: 'dog',
         direction: 'deEn',
@@ -132,7 +132,7 @@ void main() {
       expect(
         () => repo.addItem(
           setId: setId,
-          type: 'vocab',
+          type: 'choice',
           prompt: ' ',
           answer: 'a',
           direction: 'deEn',
@@ -140,8 +140,12 @@ void main() {
         throwsArgumentError,
       );
       expect(
-        () =>
-            repo.addItem(setId: setId, type: 'vocab', prompt: 'p', answer: 'a'),
+        () => repo.addItem(
+          setId: setId,
+          type: 'choice',
+          prompt: 'p',
+          answer: 'a',
+        ),
         throwsArgumentError,
       );
       expect(
@@ -172,6 +176,60 @@ void main() {
         ),
         throwsArgumentError,
       );
+    });
+
+    test(
+      'freeText accepts direction present or absent; forbids choices',
+      () async {
+        final setId = await repo.createSet(title: 'S', createdBy: 'teacher');
+        final withoutDirection = await repo.addItem(
+          setId: setId,
+          type: 'freeText',
+          prompt: 'p',
+          answer: 'a',
+        );
+        expect((await repo.getItemById(withoutDirection))?.direction, isNull);
+
+        final withDirection = await repo.addItem(
+          setId: setId,
+          type: 'freeText',
+          prompt: 'p',
+          answer: 'a',
+          direction: 'deEn',
+        );
+        expect((await repo.getItemById(withDirection))?.direction, 'deEn');
+
+        expect(
+          () => repo.addItem(
+            setId: setId,
+            type: 'freeText',
+            prompt: 'p',
+            answer: 'a',
+            choices: const ['x'],
+          ),
+          throwsArgumentError,
+        );
+      },
+    );
+
+    test('updateItem: switching type to choice without direction throws; '
+        'switching to freeText does not', () async {
+      final setId = await repo.createSet(title: 'S', createdBy: 'teacher');
+      final itemId = await repo.addItem(
+        setId: setId,
+        type: 'phone',
+        prompt: 'p',
+        answer: '0171234',
+      );
+
+      expect(
+        () => repo.updateItem(id: itemId, type: 'choice'),
+        throwsArgumentError,
+      );
+
+      await repo.updateItem(id: itemId, type: 'freeText');
+      expect((await repo.getItemById(itemId))?.type, 'freeText');
+      expect((await repo.getItemById(itemId))?.direction, isNull);
     });
 
     test('reorder persists new positions; rejects mismatched ids', () async {
@@ -269,7 +327,7 @@ void main() {
       );
       await repo.addItem(
         setId: setId,
-        type: 'vocab',
+        type: 'choice',
         prompt: 'Hund',
         answer: 'dog',
         direction: 'deEn',
@@ -307,7 +365,7 @@ void main() {
       );
       await repo.addItem(
         setId: setId,
-        type: 'vocab',
+        type: 'choice',
         prompt: 'Hund',
         answer: 'dog',
         direction: 'deEn',

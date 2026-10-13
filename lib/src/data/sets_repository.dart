@@ -164,11 +164,12 @@ class SetsRepository {
     String? newDirection = existing.direction;
     if (directionUpdate != null) newDirection = directionUpdate();
     if (type != null && directionUpdate == null && type != existing.type) {
-      // Changing type without explicit direction: vocab requires one.
-      if (newType == 'vocab' && newDirection == null) {
-        throw ArgumentError('direction is required for vocab items');
+      // Changing type without explicit direction: choice requires one;
+      // freeText leaves it as-is (optional either way); phone/date clear it.
+      if (newType == 'choice' && newDirection == null) {
+        throw ArgumentError('direction is required for choice items');
       }
-      if (newType != 'vocab') newDirection = null;
+      if (newType != 'choice' && newType != 'freeText') newDirection = null;
     }
 
     List<String>? newChoices = existing.choices == null
@@ -178,7 +179,7 @@ class SetsRepository {
           );
     if (choicesUpdate != null) newChoices = choicesUpdate();
     if (type != null && choicesUpdate == null && type != existing.type) {
-      if (newType != 'vocab') newChoices = null;
+      if (newType != 'choice') newChoices = null;
     }
 
     final clean = _checkItemFields(

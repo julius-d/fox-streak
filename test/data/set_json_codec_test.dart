@@ -13,7 +13,7 @@ Map<dynamic, dynamic> validSetJson() => {
   'createdBy': 'teacher',
   'items': <dynamic>[
     {
-      'type': 'vocab',
+      'type': 'choice',
       'prompt': 'Hund',
       'answer': 'dog',
       'direction': 'deEn',
@@ -57,7 +57,7 @@ void main() {
         'createdBy': 'parent',
         'items': [
           {
-            'type': 'vocab',
+            'type': 'choice',
             'prompt': 'Hund',
             'answer': 'dog',
             'direction': 'enDe',
@@ -131,7 +131,7 @@ void main() {
     test('empty prompt / answer', () async {
       final noPrompt = validSetJson();
       (noPrompt['items'] as List)[0] = {
-        'type': 'vocab',
+        'type': 'choice',
         'prompt': ' ',
         'answer': 'dog',
         'direction': 'deEn',
@@ -147,7 +147,7 @@ void main() {
       await expectRejects(noAnswer, 'answer');
     });
 
-    test('vocab without direction; phone with direction', () async {
+    test('choice without direction; phone with direction', () async {
       final missingDir = validSetJson();
       ((missingDir['items'] as List)[0] as Map).remove('direction');
       await expectRejects(missingDir, 'direction');
@@ -159,7 +159,39 @@ void main() {
         'answer': '01711234567',
         'direction': 'deEn',
       };
-      await expectRejects(phoneDir, 'vocab-only');
+      await expectRejects(phoneDir, 'not allowed');
+    });
+
+    test('freeText accepts direction present or absent', () {
+      final withDirection = validSetJson();
+      (withDirection['items'] as List)[0] = {
+        'type': 'freeText',
+        'prompt': 'Hund',
+        'answer': 'dog',
+        'direction': 'deEn',
+      };
+      final set1 = decodeSetFromJson(withDirection, today: kTestToday);
+      expect(set1.items[0].direction, 'deEn');
+
+      final withoutDirection = validSetJson();
+      (withoutDirection['items'] as List)[0] = {
+        'type': 'freeText',
+        'prompt': 'Capital of France',
+        'answer': 'Paris',
+      };
+      final set2 = decodeSetFromJson(withoutDirection, today: kTestToday);
+      expect(set2.items[0].direction, isNull);
+    });
+
+    test('freeText with choices is rejected', () async {
+      final json = validSetJson();
+      (json['items'] as List)[0] = {
+        'type': 'freeText',
+        'prompt': 'Hund',
+        'answer': 'dog',
+        'choices': ['cat'],
+      };
+      await expectRejects(json, 'choice-only');
     });
 
     test('bad phone answers', () async {
@@ -207,7 +239,7 @@ void main() {
 
       final badHint = validSetJson();
       (badHint['items'] as List)[0] = {
-        'type': 'vocab',
+        'type': 'choice',
         'prompt': 'Hund',
         'answer': 'dog',
         'direction': 'deEn',
@@ -219,7 +251,7 @@ void main() {
     test('non-list choices and choices on phone', () async {
       final json = validSetJson();
       (json['items'] as List)[0] = {
-        'type': 'vocab',
+        'type': 'choice',
         'prompt': 'Hund',
         'answer': 'dog',
         'direction': 'deEn',
@@ -234,7 +266,7 @@ void main() {
         'answer': '01711234567',
         'choices': ['x'],
       };
-      await expectRejects(phoneChoices, 'vocab-only');
+      await expectRejects(phoneChoices, 'choice-only');
     });
   });
 
@@ -245,7 +277,7 @@ void main() {
         createdBy: 'learner',
         items: const [
           ShareItem(
-            type: 'vocab',
+            type: 'choice',
             prompt: 'Hund',
             answer: 'dog',
             direction: 'deEn',
@@ -273,7 +305,7 @@ void main() {
         createdBy: 'teacher',
         items: [
           ShareItem(
-            type: 'vocab',
+            type: 'choice',
             prompt: 'Hund',
             answer: 'dog',
             direction: 'deEn',

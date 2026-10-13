@@ -75,17 +75,19 @@ double exerciseCardMinHeight(BuildContext context) {
 /// Widget signature that all exercise cards (#006–#009) must match.
 ///
 /// The shell instantiates the appropriate card based on [item.type]
-/// (vocab/phone/date) and passes the [item] plus an [onStateChanged] callback.
-/// Cards must call [onStateChanged] whenever their draft state changes so the
-/// shell can enable/disable CHECK and capture the grade function.
+/// (choice/freeText/phone/date — #026 split `choice`/`freeText` out of the
+/// original `vocab` type) and passes the [item] plus an [onStateChanged]
+/// callback. Cards must call [onStateChanged] whenever their draft state
+/// changes so the shell can enable/disable CHECK and capture the grade
+/// function.
 ///
-/// Example (pseudo-implementation for a vocab choice card):
+/// Example (pseudo-implementation for a multiple-choice card):
 /// ```dart
-/// class VocabChoiceCard extends StatelessWidget {
+/// class ChoiceCard extends StatelessWidget {
 ///   final Item item;
 ///   final void Function(ExerciseDraft) onStateChanged;
 ///
-///   const VocabChoiceCard({super.key, required this.item, required this.onStateChanged});
+///   const ChoiceCard({super.key, required this.item, required this.onStateChanged});
 ///
 ///   @override
 ///   Widget build(BuildContext context) {

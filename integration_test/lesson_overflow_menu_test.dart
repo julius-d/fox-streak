@@ -50,7 +50,7 @@ void main() {
             .insert(
               ItemsCompanion.insert(
                 setId: setId,
-                type: 'vocab',
+                type: 'choice',
                 prompt: prompt,
                 answer: answer,
                 position: position,
@@ -59,7 +59,7 @@ void main() {
         itemsByAnswer[answer] = Item(
           id: id,
           setId: setId,
-          type: 'vocab',
+          type: 'choice',
           prompt: prompt,
           answer: answer,
           position: position,

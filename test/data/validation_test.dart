@@ -4,6 +4,13 @@ import 'package:fox_streak_app/src/data/validation.dart';
 import 'test_helpers.dart';
 
 void main() {
+  group('kItemTypes', () {
+    test('is the #026 split (vocab -> choice/freeText)', () {
+      expect(kItemTypes, {'choice', 'freeText', 'phone', 'date'});
+      expect(kItemTypes.contains('vocab'), isFalse);
+    });
+  });
+
   group('normalizePhone', () {
     test('strips separators and plus', () {
       expect(normalizePhone('0171 123-4567'), '01711234567');
@@ -79,15 +86,23 @@ void main() {
   });
 
   group('validateDirection', () {
-    test('vocab requires deEn|enDe', () {
-      expect(validateDirection('vocab', 'deEn'), isNull);
-      expect(validateDirection('vocab', 'enDe'), isNull);
-      expect(validateDirection('vocab', null), isNotNull);
-      expect(validateDirection('vocab', ''), isNotNull);
-      expect(validateDirection('vocab', 'enFr'), isNotNull);
+    test('choice requires deEn|enDe', () {
+      expect(validateDirection('choice', 'deEn'), isNull);
+      expect(validateDirection('choice', 'enDe'), isNull);
+      expect(validateDirection('choice', null), isNotNull);
+      expect(validateDirection('choice', ''), isNotNull);
+      expect(validateDirection('choice', 'enFr'), isNotNull);
     });
 
-    test('non-vocab must omit direction', () {
+    test('freeText direction is optional but must be valid when present', () {
+      expect(validateDirection('freeText', null), isNull);
+      expect(validateDirection('freeText', ''), isNull);
+      expect(validateDirection('freeText', 'deEn'), isNull);
+      expect(validateDirection('freeText', 'enDe'), isNull);
+      expect(validateDirection('freeText', 'enFr'), isNotNull);
+    });
+
+    test('phone/date must omit direction', () {
       expect(validateDirection('phone', null), isNull);
       expect(validateDirection('date', null), isNull);
       expect(validateDirection('phone', 'deEn'), isNotNull);
@@ -135,15 +150,17 @@ void main() {
   });
 
   group('validateChoices', () {
-    test('vocab accepts absent list, rejects bad entries', () {
-      expect(validateChoices('vocab', null), isNull);
-      expect(validateChoices('vocab', ['a', 'b']), isNull);
-      expect(validateChoices('vocab', []), isNull);
-      expect(validateChoices('vocab', ['a', '']), isNotNull);
-      expect(validateChoices('vocab', ['a', 1]), isNotNull);
+    test('choice accepts absent list, rejects bad entries', () {
+      expect(validateChoices('choice', null), isNull);
+      expect(validateChoices('choice', ['a', 'b']), isNull);
+      expect(validateChoices('choice', []), isNull);
+      expect(validateChoices('choice', ['a', '']), isNotNull);
+      expect(validateChoices('choice', ['a', 1]), isNotNull);
     });
 
-    test('non-vocab must omit choices', () {
+    test('freeText/phone/date must omit choices', () {
+      expect(validateChoices('freeText', null), isNull);
+      expect(validateChoices('freeText', ['a']), isNotNull);
       expect(validateChoices('phone', null), isNull);
       expect(validateChoices('phone', ['a']), isNotNull);
       expect(validateChoices('date', ['a']), isNotNull);

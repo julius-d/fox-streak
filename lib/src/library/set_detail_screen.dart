@@ -130,7 +130,8 @@ class SetDetailScreen extends ConsumerWidget {
                 delegate: SliverChildBuilderDelegate((context, index) {
                   final item = items[index];
                   final typeLabel = switch (item.type) {
-                    'vocab' => l10n.typeVocab,
+                    'choice' => l10n.typeChoice,
+                    'freeText' => l10n.typeFreeText,
                     'phone' => l10n.typePhone,
                     'date' => l10n.typeDate,
                     _ => item.type,

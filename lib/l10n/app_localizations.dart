@@ -68,7 +68,8 @@ abstract class AppLocalizations {
   String get itemPromptLabel;
   String get itemAnswerLabel;
   String get itemTypeLabel;
-  String get typeVocab;
+  String get typeChoice;
+  String get typeFreeText;
   String get typePhone;
   String get typeDate;
   String get directionDeEn;
@@ -209,7 +210,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get itemTypeLabel => 'Type';
   @override
-  String get typeVocab => 'Word';
+  String get typeChoice => 'Word (choice)';
+  @override
+  String get typeFreeText => 'Word (type answer)';
   @override
   String get typePhone => 'Phone';
   @override
@@ -410,7 +413,9 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get itemTypeLabel => 'Typ';
   @override
-  String get typeVocab => 'Wort';
+  String get typeChoice => 'Wort (Auswahl)';
+  @override
+  String get typeFreeText => 'Wort (eintippen)';
   @override
   String get typePhone => 'Telefon';
   @override

@@ -17,7 +17,7 @@ Item _item({String? direction, String answer = 'Hund', String prompt = 'dog'}) {
   return Item(
     id: 1,
     setId: 1,
-    type: 'vocab',
+    type: 'freeText',
     prompt: prompt,
     answer: answer,
     direction: direction,

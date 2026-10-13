@@ -8,7 +8,11 @@
 import 'clock.dart';
 
 /// Allowed `items.type` values.
-const Set<String> kItemTypes = {'vocab', 'phone', 'date'};
+///
+/// `vocab` (#002) was split by #026 into `choice` (#006 multiple-choice) and
+/// `freeText` (#007 type-the-answer); existing `vocab` rows are migrated to
+/// `choice` by `database.dart`'s schema v2 upgrade.
+const Set<String> kItemTypes = {'choice', 'freeText', 'phone', 'date'};
 
 /// Maximum length of a free-text creator name (`question_sets.created_by`).
 ///
@@ -34,7 +38,7 @@ String? validateCreatorName(String? value) {
 /// True when [value] is a valid free-text creator name.
 bool isValidCreatorName(String value) => validateCreatorName(value) == null;
 
-/// Allowed `items.direction` values (vocab only).
+/// Allowed `items.direction` values (`choice`/`freeText` only).
 const Set<String> kDirections = {'deEn', 'enDe'};
 
 /// Share-format marker + version (see `set_json_codec.dart`).
@@ -100,32 +104,42 @@ String _normalizeForGrading(String s) {
   return trimmed.toLowerCase();
 }
 
-/// Validates a vocab [direction]; returns an error message or `null` if ok.
+/// Validates an item [direction]; returns an error message or `null` if ok.
 ///
-/// Vocab items require `deEn|enDe`; all other types must leave it `null`.
+/// `choice` items require `deEn|enDe`. `freeText` items may omit it
+/// (non-vocab-flavored free-text prompts) or set it (vocab-flavored ones).
+/// `phone`/`date` must leave it `null`.
 String? validateDirection(String type, String? direction) {
-  if (type == 'vocab') {
+  if (type == 'choice') {
     if (direction == null || direction.isEmpty) {
-      return 'direction is required for vocab items';
+      return 'direction is required for choice items';
     }
     if (!kDirections.contains(direction)) {
       return 'unknown direction "$direction"';
     }
     return null;
   }
+  if (type == 'freeText') {
+    if (direction == null || direction.isEmpty) return null;
+    if (!kDirections.contains(direction)) {
+      return 'unknown direction "$direction"';
+    }
+    return null;
+  }
   if (direction != null) {
-    return 'direction is vocab-only (type "$type" must omit it)';
+    return 'direction is not allowed for type "$type"';
   }
   return null;
 }
 
-/// Validates vocab [choices]; returns an error message or `null` if ok.
+/// Validates item [choices]; returns an error message or `null` if ok.
 ///
-/// `null` (absent) is always fine. Non-vocab types must leave it `null`.
+/// `null` (absent) is always fine. Only `choice` items may populate it;
+/// `freeText`/`phone`/`date` must leave it `null`.
 String? validateChoices(String type, List<dynamic>? choices) {
-  if (type != 'vocab') {
+  if (type != 'choice') {
     if (choices != null) {
-      return 'choices is vocab-only (type "$type" must omit it)';
+      return 'choices is choice-only (type "$type" must omit it)';
     }
     return null;
   }

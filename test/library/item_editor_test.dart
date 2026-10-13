@@ -1,13 +1,14 @@
 // Widget tests for the per-type item editors (issue #004).
 //
 // Pumps `ItemEditorDialog` through a harness button with an in-memory DB +
-// `FakeClock` overrides. Covers: vocab-valid with 3 distractors,
-// vocab-missing-direction-blocked (nullable initial),
+// `FakeClock` overrides. Covers: choice-valid with 3 distractors,
+// choice-missing-direction-blocked (nullable initial),
 // distractor-duplicating-answer-blocked (editor-only),
+// freeText-valid-without-direction (#026 non-rejecting path),
 // phone-grouping-display-but-digits-stored, phone-paste-with-separators,
 // phone-too-short rejected, date-auto-advance (+ backspace-back),
 // date-future / pre-1900 / 30.02 rejected, edit-prefill (phone grouped,
-// date split, vocab choices kept), no-save-on-invalid.
+// date split, choice choices kept), no-save-on-invalid.
 //
 // Pumping note (from #003): never use `pumpAndSettle()` with drift `watch()`
 // streams under fake async — use bounded 100ms pumps capped at 50 (`settle`).
@@ -122,7 +123,7 @@ bool hasFocus(WidgetTester tester, String key) =>
     };
 
 void main() {
-  testWidgets('vocab-valid with 3 distractors saves direction and choices', (
+  testWidgets('choice-valid with 3 distractors saves direction and choices', (
     tester,
   ) async {
     final clock = FakeClock(kTestToday);
@@ -140,6 +141,7 @@ void main() {
 
     final items = await env.repo.getItemsForSet(env.setId);
     expect(items, hasLength(1));
+    expect(items.single.type, 'choice');
     expect(items.single.direction, 'deEn');
     expect((jsonDecode(items.single.choices!) as List).cast<String>(), [
       'cat',
@@ -149,7 +151,29 @@ void main() {
     await unmount(tester);
   });
 
-  testWidgets('vocab-missing-direction-blocked starts with nothing selected', (
+  testWidgets(
+    'freeText-valid-without-direction saves (#026 non-rejecting path)',
+    (tester) async {
+      final clock = FakeClock(kTestToday);
+      final env = await pumpEditor(tester, clock);
+      await switchType(tester, 'Word (type answer)');
+
+      await tester.enterText(find.byKey(const Key('itemPromptField')), 'Hund');
+      await tester.enterText(find.byKey(const Key('itemAnswerField')), 'dog');
+      await tester.tap(find.byKey(const Key('saveItemButton')));
+      await settle(tester);
+
+      final items = await env.repo.getItemsForSet(env.setId);
+      expect(items, hasLength(1));
+      expect(items.single.type, 'freeText');
+      expect(items.single.answer, 'dog');
+      expect(items.single.direction, isNull);
+      expect(items.single.choices, isNull);
+      await unmount(tester);
+    },
+  );
+
+  testWidgets('choice-missing-direction-blocked starts with nothing selected', (
     tester,
   ) async {
     final clock = FakeClock(kTestToday);
@@ -486,7 +510,9 @@ void main() {
     await unmount(tester);
   });
 
-  testWidgets('edit-prefill vocab keeps direction and choices', (tester) async {
+  testWidgets('edit-prefill choice keeps direction and choices', (
+    tester,
+  ) async {
     final clock = FakeClock(kTestToday);
     final db = AppDatabase.forTesting(NativeDatabase.memory());
     addTearDown(() async => db.close());
@@ -494,7 +520,7 @@ void main() {
     final setId = await repo.createSet(title: 'Test', createdBy: 'Mama');
     final itemId = await repo.addItem(
       setId: setId,
-      type: 'vocab',
+      type: 'choice',
       prompt: 'Hund',
       answer: 'dog',
       direction: 'enDe',
@@ -571,7 +597,7 @@ void main() {
         .insert(
           ItemsCompanion.insert(
             setId: setId,
-            type: 'vocab',
+            type: 'choice',
             prompt: 'Hund',
             answer: 'dog',
             direction: const Value('deEn'),

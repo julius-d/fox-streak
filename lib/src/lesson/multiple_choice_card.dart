@@ -1,11 +1,11 @@
-// Multiple choice vocab exercise card (issue #006).
+// Multiple choice exercise card (issue #006, type renamed by #026).
 //
 // Implements the ExerciseCard contract from exercise_card.dart.
 // Shows prompt word + 4 tappable option cards (1 correct + 3 distractors).
 // Distractors: from same set (item.choices), else auto-generated placeholder;
-// never duplicate correct answer. Tap selects, CHECK grades; wrong shows
-// correct answer. Case/whitespace-insensitive grading, umlauts must match
-// exactly (ä ≠ a). Accessibility: large text, TalkBack labels.
+// never duplicate correct answer. Tap selects, CHECK grades by reading the
+// selected option's isCorrect flag (assigned once at build time) — never a
+// string re-comparison. Accessibility: large text, TalkBack labels.
 
 import 'dart:convert';
 import 'dart:math';
@@ -17,9 +17,18 @@ import '../data/database.dart';
 import '../theme/fox_streak_theme.dart';
 import 'exercise_card.dart';
 
-/// Multiple choice exercise card for vocab items (deEn / enDe).
+/// One rendered option: its label and whether it is the correct answer,
+/// assigned once when the options are built (#026: replaces the old
+/// per-render string comparison).
+class _ChoiceOption {
+  final String label;
+  final bool isCorrect;
+  const _ChoiceOption(this.label, {required this.isCorrect});
+}
+
+/// Multiple choice exercise card for `choice` items (deEn / enDe).
 ///
-/// Dispatches to this card when item.type == 'vocab'.
+/// Dispatches to this card when item.type == 'choice'.
 /// Uses item.direction to determine prompt/answer language.
 /// Uses item.choices (JSON array of 3 distractors) if provided,
 /// otherwise generates placeholder distractors.
@@ -40,8 +49,8 @@ class MultipleChoiceCard extends StatefulWidget {
 }
 
 class _MultipleChoiceCardState extends State<MultipleChoiceCard> {
-  String? _selectedOption;
-  List<String> _options = [];
+  _ChoiceOption? _selectedOption;
+  List<_ChoiceOption> _options = [];
   bool _answered = false;
 
   @override
@@ -50,7 +59,8 @@ class _MultipleChoiceCardState extends State<MultipleChoiceCard> {
     _buildOptions();
   }
 
-  /// Builds the 4 options (1 correct + 3 distractors).
+  /// Builds the 4 options (1 correct + 3 distractors) once, each tagged with
+  /// its [_ChoiceOption.isCorrect] flag at build time.
   ///
   /// Distractors come from item.choices (JSON array). If missing or
   /// insufficient, generates placeholder distractors. Ensures no duplicate
@@ -80,12 +90,14 @@ class _MultipleChoiceCardState extends State<MultipleChoiceCard> {
       );
     }
 
-    // Combine answer + 3 distractors and shuffle.
-    final allOptions = <String>[answer, ...selectedDistractors]
-      ..shuffle(Random());
+    // Combine answer + 3 distractors (each tagged isCorrect) and shuffle.
+    final built = <_ChoiceOption>[
+      _ChoiceOption(answer, isCorrect: true),
+      for (final d in selectedDistractors) _ChoiceOption(d, isCorrect: false),
+    ]..shuffle(Random());
 
     setState(() {
-      _options = allOptions;
+      _options = built;
     });
   }
 
@@ -110,11 +122,7 @@ class _MultipleChoiceCardState extends State<MultipleChoiceCard> {
     return 'Option $index';
   }
 
-  /// Normalizes a string for grading: trims whitespace, lowercases.
-  /// Umlauts are preserved (ä ≠ a) because toLowerCase() preserves them.
-  String _normalize(String s) => s.trim().toLowerCase();
-
-  void _onOptionSelected(String option) {
+  void _onOptionSelected(_ChoiceOption option) {
     if (_answered) return;
 
     setState(() {
@@ -122,14 +130,15 @@ class _MultipleChoiceCardState extends State<MultipleChoiceCard> {
       _answered = true;
     });
 
-    // Report draft state with grade function.
+    // Report draft state; grade() just reads the selected option's flag —
+    // no string re-comparison (#026).
     widget.onStateChanged(
       ExerciseDraft(
         hasAnswer: true,
-        grade: () =>
-            _normalize(_selectedOption!) == _normalize(widget.item.answer),
+        grade: () => _selectedOption!.isCorrect,
         correctAnswerLabel: widget.item.answer,
         hintLabel: null,
+        hintUsed: false,
       ),
     );
   }
@@ -158,7 +167,6 @@ class _MultipleChoiceCardState extends State<MultipleChoiceCard> {
         // 4 option cards
         ..._options.map((option) {
           final isSelected = _answered && _selectedOption == option;
-          final isCorrect = _normalize(option) == _normalize(item.answer);
           final showFeedback = _answered;
 
           Color? backgroundColor;
@@ -166,7 +174,7 @@ class _MultipleChoiceCardState extends State<MultipleChoiceCard> {
           Color? textColor;
 
           if (showFeedback) {
-            if (isCorrect) {
+            if (option.isCorrect) {
               backgroundColor = theme.colorScheme.primaryContainer;
               borderColor = theme.colorScheme.primary;
               textColor = theme.colorScheme.onPrimaryContainer;
@@ -183,7 +191,7 @@ class _MultipleChoiceCardState extends State<MultipleChoiceCard> {
               button: true,
               selected: isSelected,
               enabled: !_answered,
-              label: '$option${isSelected ? ', selected' : ''}',
+              label: '${option.label}${isSelected ? ', selected' : ''}',
               child: InkWell(
                 onTap: _answered ? null : () => _onOptionSelected(option),
                 borderRadius: BorderRadius.circular(FoxRadius.lg),
@@ -202,7 +210,7 @@ class _MultipleChoiceCardState extends State<MultipleChoiceCard> {
                     ),
                   ),
                   child: Text(
-                    option,
+                    option.label,
                     textAlign: TextAlign.center,
                     style: textTheme.titleMedium?.copyWith(
                       color: textColor,

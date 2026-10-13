@@ -1,10 +1,12 @@
-// JSON share format v1 for question sets (issue #002).
+// JSON share format v1 for question sets (issue #002; item `type` enum
+// split from `vocab` into `choice`/`freeText` by #026 — share format stays
+// v1, only the known-type set changed).
 //
 // File extension `.foxstreak.json`, e.g.:
 // ```json
 // { "format": "foxstreak-set", "version": 1, "title": "...",
 //   "description": "...", "createdBy": "Mama", "items": [
-//     { "type": "vocab", "prompt": "Hund", "answer": "dog",
+//     { "type": "choice", "prompt": "Hund", "answer": "dog",
 //       "direction": "deEn", "choices": ["cat","mouse"], "hint": "" },
 //     { "type": "phone", "prompt": "Mama", "answer": "01711234567" },
 //     { "type": "date", "prompt": "Mamas Geburtstag",

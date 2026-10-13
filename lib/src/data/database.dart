@@ -30,13 +30,14 @@ class Items extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get setId =>
       integer().references(QuestionSets, #id, onDelete: KeyAction.cascade)();
-  // vocab|phone|date — enforced in Dart.
+  // choice|freeText|phone|date — enforced in Dart. `choice`/`freeText` are
+  // the #026 split of #002's original `vocab` type.
   TextColumn get type => text()();
   TextColumn get prompt => text()();
   TextColumn get answer => text()();
-  // deEn|enDe, vocab only, NULL otherwise.
+  // deEn|enDe: required for choice, optional for freeText, NULL otherwise.
   TextColumn get direction => text().nullable()();
-  // JSON array of distractors, vocab only, NULL otherwise.
+  // JSON array of distractors, choice only, NULL otherwise.
   TextColumn get choices => text().nullable()();
   TextColumn get hint => text().nullable().withDefault(const Constant(''))();
   IntColumn get position => integer()();
@@ -80,11 +81,21 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async => m.createAll(),
+    onUpgrade: (m, from, to) async {
+      // v2 (#026): vocab's multiple-choice half becomes `choice` (the only
+      // vocab exercise ever practiced via #006's MCQ card to date);
+      // `freeText` is purely additive for items created after this lands.
+      if (from < 2) {
+        await customStatement(
+          "UPDATE items SET type = 'choice' WHERE type = 'vocab'",
+        );
+      }
+    },
     beforeOpen: (details) async {
       // SQLite disables FK enforcement by default; without this,
       // ON DELETE CASCADE on items/attempts is silently ignored.
@@ -92,7 +103,7 @@ class AppDatabase extends _$AppDatabase {
     },
   );
 
-  // v1 has no migrations; later versions add `migration` + migration test.
+  // v1 had no migrations; v2 (#026) added the vocab->choice rewrite above.
 }
 
 DatabaseConnection _openConnection() => driftDatabase(name: 'fox_streak');

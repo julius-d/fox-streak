@@ -4,11 +4,9 @@
 // `gradeText` (validation.dart): trim, case-insensitive, strip at most one
 // trailing `. , ! ?`; umlauts and ß must match exactly.
 //
-// Not wired into the lesson shell's `item.type` dispatch — that requires the
-// #002 `vocab` -> `choice`/`freeText` schema migration, which is explicitly
-// out of scope for #007 (see issue). This widget implements the #005
-// `ExerciseCard` contract standalone so it can be plugged in once that
-// migration lands.
+// Wired into the lesson shell's `item.type == 'freeText'` dispatch by #026
+// (the `vocab` -> `choice`/`freeText` schema migration this issue originally
+// deferred).
 
 import 'package:flutter/material.dart';
 
@@ -23,11 +21,13 @@ import '../theme/fox_streak_theme.dart';
 /// Mirrors the [ExerciseCardBuilder] signature from the lesson shell
 /// contract (`item` + `onStateChanged`), plus `l10n` like the other cards.
 Widget buildFreeTextExercise({
+  Key? key,
   required Item item,
   required void Function(ExerciseDraft draft) onStateChanged,
   required AppLocalizations l10n,
 }) {
   return FreeTextExercise(
+    key: key,
     item: item,
     onStateChanged: onStateChanged,
     l10n: l10n,

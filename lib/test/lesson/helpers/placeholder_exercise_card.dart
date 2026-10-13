@@ -82,7 +82,7 @@ class _PlaceholderExerciseCardState extends State<PlaceholderExerciseCard> {
         ),
         const SizedBox(height: FoxSpacing.xl),
         // Answer input (simplified per type)
-        if (item.type == 'vocab' &&
+        if (item.type == 'choice' &&
             item.choices != null &&
             item.choices!.isNotEmpty)
           _buildChoices(item)

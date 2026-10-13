@@ -19,6 +19,7 @@ import '../theme/fox_streak_theme.dart';
 import '../widgets/widgets.dart';
 import '../exercises/date_exercise.dart';
 import '../exercises/dial_pad_exercise.dart';
+import '../exercises/free_text_exercise.dart';
 import 'exercise_card.dart';
 import 'lesson_controller.dart';
 import 'lesson_result.dart';
@@ -299,11 +300,13 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
     AppLocalizations l10n,
   ) {
     // Dispatch by item.type to the appropriate exercise card.
-    // #006 provides MultipleChoiceCard for vocab, #008 the dial pad for
-    // phone, #009 the calendar-styled fields for date.
-    // Auto-answer for test items that have choices (vocab with distractors).
+    // #006 provides MultipleChoiceCard for 'choice', #007 the free-text
+    // card for 'freeText', #008 the dial pad for 'phone', #009 the
+    // calendar-styled fields for 'date' (#026 renamed vocab -> choice and
+    // wired freeText into this dispatch).
+    // Auto-answer for test items that have choices ('choice' with distractors).
     final autoAnswer =
-        item.type == 'vocab' &&
+        item.type == 'choice' &&
         item.choices != null &&
         item.choices!.isNotEmpty;
 
@@ -326,8 +329,15 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
 
     // Real card implementations.
     switch (item.type) {
-      case 'vocab':
+      case 'choice':
         return MultipleChoiceCard(
+          key: cardKey,
+          item: item,
+          onStateChanged: controller.updateDraft,
+          l10n: l10n,
+        );
+      case 'freeText':
+        return buildFreeTextExercise(
           key: cardKey,
           item: item,
           onStateChanged: controller.updateDraft,

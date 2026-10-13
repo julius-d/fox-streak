@@ -1,14 +1,19 @@
-// Per-type item add/edit form (issue #004).
+// Per-type item add/edit form (issue #004; type picker split vocab into
+// choice/freeText by #026).
 //
 // Replaces the #003 minimal shell with tailored subforms switching on the
-// picked type (vocab DE<->EN, phone numbers, birth dates). Validation mirrors
-// #002 `validation.dart` exactly; storage formats never change (phone
-// digits-only, date ISO `YYYY-MM-DD`).
+// picked type (vocab-flavored DE<->EN choice/freeText, phone numbers, birth
+// dates). Validation mirrors #002 `validation.dart` exactly; storage formats
+// never change (phone digits-only, date ISO `YYYY-MM-DD`).
 //
-// - Vocab: prompt + answer (trim-then-require), required direction toggle
+// - Choice: prompt + answer (trim-then-require), required direction toggle
 //   (`SegmentedButton`, nullable initial for new items), 3 optional
 //   distractor fields (blank allowed; non-blank validated by
 //   `validateChoices` plus an editor-only duplicate-vs-answer check).
+// - FreeText: prompt + answer, optional direction toggle (#007's grading
+//   doesn't need it); no distractor fields (choices forbidden). The
+//   freeText-specific exercise-authoring UI (hint reveal, etc.) stays #007's
+//   job — this is the minimal non-rejecting editor path from #026.
 // - Phone: name label + digit-only field with live display-only grouping
 //   (see `phone_formatting.dart`); the repository normalises on save.
 // - Date: calendar-styled card with 3 numeric fields (see
@@ -51,7 +56,7 @@ class _ItemEditorDialogState extends ConsumerState<ItemEditorDialog> {
   final _formKey = GlobalKey<FormState>();
   late String _type;
   late final TextEditingController _prompt;
-  late final TextEditingController _vocabAnswer;
+  late final TextEditingController _answerText;
   late final TextEditingController _phone;
   late final TextEditingController _day;
   late final TextEditingController _month;
@@ -69,10 +74,12 @@ class _ItemEditorDialogState extends ConsumerState<ItemEditorDialog> {
   void initState() {
     super.initState();
     final existing = widget.existing;
-    _type = existing?.type ?? 'vocab';
+    _type = existing?.type ?? 'choice';
     _prompt = TextEditingController(text: existing?.prompt ?? '');
-    _vocabAnswer = TextEditingController(
-      text: _type == 'vocab' ? existing?.answer ?? '' : '',
+    _answerText = TextEditingController(
+      text: (_type == 'choice' || _type == 'freeText')
+          ? existing?.answer ?? ''
+          : '',
     );
     _phone = TextEditingController(
       text: _type == 'phone' && existing != null
@@ -91,7 +98,7 @@ class _ItemEditorDialogState extends ConsumerState<ItemEditorDialog> {
       }
     }
     _choices = List.generate(3, (_) => TextEditingController());
-    if (_type == 'vocab' && existing?.choices != null) {
+    if (_type == 'choice' && existing?.choices != null) {
       try {
         final decoded = (jsonDecode(existing!.choices!) as List).cast<String>();
         for (var i = 0; i < decoded.length && i < 3; i++) {
@@ -113,7 +120,7 @@ class _ItemEditorDialogState extends ConsumerState<ItemEditorDialog> {
   @override
   void dispose() {
     _prompt.dispose();
-    _vocabAnswer.dispose();
+    _answerText.dispose();
     _phone.dispose();
     _day.dispose();
     _month.dispose();
@@ -150,7 +157,7 @@ class _ItemEditorDialogState extends ConsumerState<ItemEditorDialog> {
   String? _validateChoice(String? v) {
     if (v == null || v.trim().isEmpty) return null;
     final l10n = AppLocalizations.of(context)!;
-    if (v.trim().toLowerCase() == _vocabAnswer.text.trim().toLowerCase()) {
+    if (v.trim().toLowerCase() == _answerText.text.trim().toLowerCase()) {
       return l10n.errorDuplicateChoice;
     }
     return null;
@@ -267,7 +274,7 @@ class _ItemEditorDialogState extends ConsumerState<ItemEditorDialog> {
       dateOk = isValidDateAnswer(_composedIso(), today: today);
     }
     final directionOk =
-        _type != 'vocab' || validateDirection(_type, _direction) == null;
+        _type != 'choice' || validateDirection(_type, _direction) == null;
     if (!formValid || !dateOk || !directionOk) {
       // Inline direction error is always visible while null; just block.
       setState(() {
@@ -276,7 +283,7 @@ class _ItemEditorDialogState extends ConsumerState<ItemEditorDialog> {
       return;
     }
     List<String>? choicesForSave;
-    if (_type == 'vocab') {
+    if (_type == 'choice') {
       final picks = _nonBlankChoices;
       final choicesError = validateChoices(_type, picks);
       if (choicesError != null) {
@@ -285,6 +292,12 @@ class _ItemEditorDialogState extends ConsumerState<ItemEditorDialog> {
       }
       choicesForSave = picks.isEmpty ? null : picks;
     }
+    // freeText direction is optional: pass through whatever (if anything)
+    // was picked; phone/date never have one.
+    final directionForSave = switch (_type) {
+      'choice' || 'freeText' => _direction,
+      _ => null,
+    };
     setState(() {
       _saving = true;
       _saveError = null;
@@ -295,7 +308,7 @@ class _ItemEditorDialogState extends ConsumerState<ItemEditorDialog> {
       final answer = switch (_type) {
         'phone' => _phone.text,
         'date' => _composedIso(),
-        _ => _vocabAnswer.text,
+        _ => _answerText.text,
       };
       if (widget.existing == null) {
         await repo.addItem(
@@ -303,7 +316,7 @@ class _ItemEditorDialogState extends ConsumerState<ItemEditorDialog> {
           type: _type,
           prompt: prompt,
           answer: answer,
-          direction: _type == 'vocab' ? _direction : null,
+          direction: directionForSave,
           choices: choicesForSave,
         );
       } else {
@@ -312,7 +325,7 @@ class _ItemEditorDialogState extends ConsumerState<ItemEditorDialog> {
           type: _type,
           prompt: prompt,
           answer: answer,
-          directionUpdate: () => _type == 'vocab' ? _direction : null,
+          directionUpdate: () => directionForSave,
           choicesUpdate: () => choicesForSave,
         );
       }
@@ -326,17 +339,12 @@ class _ItemEditorDialogState extends ConsumerState<ItemEditorDialog> {
     }
   }
 
-  Widget _vocabFields(AppLocalizations l10n) {
+  /// Direction `SegmentedButton`, shared by `choice` (required) and
+  /// `freeText` (optional — no inline required-error).
+  Widget _directionPicker(AppLocalizations l10n, {required bool required}) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        TextFormField(
-          key: const Key('itemAnswerField'),
-          controller: _vocabAnswer,
-          decoration: InputDecoration(labelText: l10n.itemAnswerLabel),
-          validator: _validateRequired,
-        ),
-        const SizedBox(height: FoxSpacing.md),
         SegmentedButton<String>(
           key: const Key('itemDirectionField'),
           segments: [
@@ -350,7 +358,7 @@ class _ItemEditorDialogState extends ConsumerState<ItemEditorDialog> {
             minimumSize: WidgetStateProperty.all(const Size(48, 48)),
           ),
         ),
-        if (_direction == null) ...[
+        if (required && _direction == null) ...[
           const SizedBox(height: FoxSpacing.xs),
           Text(
             l10n.errorDirectionRequired,
@@ -359,6 +367,28 @@ class _ItemEditorDialogState extends ConsumerState<ItemEditorDialog> {
                 ?.copyWith(color: Theme.of(context).colorScheme.error),
           ),
         ],
+      ],
+    );
+  }
+
+  /// Answer field shared by `choice` and `freeText` (both use the same
+  /// `_answerText` controller/key/validator).
+  Widget _answerField(AppLocalizations l10n) {
+    return TextFormField(
+      key: const Key('itemAnswerField'),
+      controller: _answerText,
+      decoration: InputDecoration(labelText: l10n.itemAnswerLabel),
+      validator: _validateRequired,
+    );
+  }
+
+  Widget _choiceFields(AppLocalizations l10n) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _answerField(l10n),
+        const SizedBox(height: FoxSpacing.md),
+        _directionPicker(l10n, required: true),
         const SizedBox(height: FoxSpacing.md),
         for (var i = 0; i < 3; i++) ...[
           if (i > 0) const SizedBox(height: FoxSpacing.md),
@@ -372,6 +402,21 @@ class _ItemEditorDialogState extends ConsumerState<ItemEditorDialog> {
             validator: _validateChoice,
           ),
         ],
+      ],
+    );
+  }
+
+  /// `freeText` type-the-answer fields: answer + optional direction, no
+  /// distractors (choices are forbidden for this type). The dedicated
+  /// freeText-authoring UI stays #007's job — this is the minimal
+  /// non-rejecting editor path #026 requires.
+  Widget _freeTextFields(AppLocalizations l10n) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _answerField(l10n),
+        const SizedBox(height: FoxSpacing.md),
+        _directionPicker(l10n, required: false),
       ],
     );
   }
@@ -540,12 +585,19 @@ class _ItemEditorDialogState extends ConsumerState<ItemEditorDialog> {
                 initialValue: _type,
                 decoration: InputDecoration(labelText: l10n.itemTypeLabel),
                 items: [
-                  DropdownMenuItem(value: 'vocab', child: Text(l10n.typeVocab)),
+                  DropdownMenuItem(
+                    value: 'choice',
+                    child: Text(l10n.typeChoice),
+                  ),
+                  DropdownMenuItem(
+                    value: 'freeText',
+                    child: Text(l10n.typeFreeText),
+                  ),
                   DropdownMenuItem(value: 'phone', child: Text(l10n.typePhone)),
                   DropdownMenuItem(value: 'date', child: Text(l10n.typeDate)),
                 ],
                 onChanged: (v) => setState(() {
-                  _type = v ?? 'vocab';
+                  _type = v ?? 'choice';
                   _dateError = null;
                 }),
               ),
@@ -560,7 +612,8 @@ class _ItemEditorDialogState extends ConsumerState<ItemEditorDialog> {
               switch (_type) {
                 'phone' => _phoneField(l10n),
                 'date' => _dateFields(l10n),
-                _ => _vocabFields(l10n),
+                'freeText' => _freeTextFields(l10n),
+                _ => _choiceFields(l10n),
               },
               if (_saveError != null) ...[
                 const SizedBox(height: FoxSpacing.md),

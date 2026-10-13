@@ -1,6 +1,6 @@
 // Home library: list of sets + FAB (issue #003).
 //
-// Lists title, item count, type icons (vocab/phone/date). No "last score" —
+// Lists title, item count, type icons (choice/freeText/phone/date). No "last score" —
 // moved to #005/#012. Watches `watchAllSets` via [allSetsProvider];
 // counts/icons via [itemsForSetProvider].
 
