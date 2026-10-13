@@ -1,11 +1,12 @@
 # Issue 016: Device e2e via integration_test (built-in stack)
 
-Status: open | Priority: P1 | Type: test
+Status: open | Priority: P1 | Type: test | Reviewed-at: 2026-10-13
 
 ## Goal
 Device-run end-to-end coverage for the four critical user journeys, using only the Flutter SDK `integration_test` + `flutter_test` stack. No widget-unit-test work here (owned per-feature by #003–#011) — this issue is the on-device harness + four flow specs.
 
 ## Decisions (2026-10-11, with repo owner)
+- **(2026-10-13) Absorbs #028, now closed as superseded:** #028's one-line ask ("every issue implementation needs a corresponding integration test") is satisfied by this issue's four-flow harness being the single source of truth for integration/e2e coverage — no separate per-issue `integration_test` work is tracked outside this issue. Per-feature widget-test coverage gaps (not integration-test-level) stay tracked individually where found (e.g. #029's `SetDetailScreen` gap).
 - Scope: **`integration_test` only** (not `flutter_test` widget tests — those stay per-feature in #003–#011).
 - Framework: **built-in stack only** (`integration_test` SDK package + `flutter_test`). Patrol rejected: extra native setup, risks the iOS + Windows support rule (AGENTS.md).
 - Flows (all four): Library CRUD (#003/#004), lesson play-through (#005–#009), XP + streak (#010/#011), share import/export (#002/#008).
