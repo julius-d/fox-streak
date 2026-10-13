@@ -2,39 +2,44 @@
 
 [![CI](https://github.com/julius-d/fox-streak/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/julius-d/fox-streak/actions/workflows/ci.yml)
 
-Learning app with gamification (XP + streak + levels). Flutter, Android-first, iOS + Windows ready. Local-only, no login (MVP).
+Learning app with gamification (XP + streak + levels). Flutter, Android-first, iOS + Windows + macOS ready. Local-only, no login (MVP). Developed on both Windows and macOS.
 
 - Package: `fox_streak_app` (`com.example.fox_streak_app`), display name `FoxStreak`
 - State management: **Riverpod** (`flutter_riverpod`)
-- Platforms: `android/`, `ios/`, `windows/` (from `flutter create`)
+- Platforms: `android/`, `ios/`, `windows/`, `macos/` (from `flutter create`)
 - Android: `minSdk 24`, Java 17, Kotlin JVM 17
 
 ## Prerequisites
 
-- Flutter stable (3.47.6 verified) on PATH: `C:\Users\juliu\coding-tools\flutter\bin`
-- For Android builds: Android Studio + Android SDK (`flutter doctor` must show Android toolchain ✓ — still missing on this machine, CI is the gate)
-- For Windows builds: Visual Studio with "Desktop development with C++" workload (installed ✓ — Community 2026 18.10.3, verified 2026-10-11)
-- For web runs: Chrome (installed ✓)
-- For iOS builds: Xcode on macOS
+- Flutter stable (3.47.6 verified) on `PATH`
+- For Android builds: Android Studio + Android SDK (`flutter doctor` must show Android toolchain ✓)
+- For Windows builds: Visual Studio with "Desktop development with C++" workload (Windows only)
+- For macOS/iOS builds: Xcode (macOS only)
+- For web runs: Chrome
 
 ## Commands
 
-```powershell
-$env:Path = [Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [Environment]::GetEnvironmentVariable('Path','User')
+```shell
 flutter doctor
 flutter pub get
 flutter analyze
 flutter test
-flutter run -d windows      # Windows (VS ✓, works locally)
-flutter run -d chrome       # Web (Chrome ✓, works locally)
-flutter run                 # Android device/emulator (needs Android SDK — still missing)
-flutter build apk --debug   # Android APK (needs Android SDK — still missing; CI is the gate)
-flutter build windows       # Windows release (VS ✓, works locally)
+flutter run -d windows      # Windows desktop (Windows only)
+flutter run -d macos        # macOS desktop (macOS only)
+flutter run -d chrome       # Web
+flutter run                 # Android device/emulator (needs Android SDK)
+flutter build apk --debug   # Android APK (needs Android SDK; CI is the gate otherwise)
+flutter build windows       # Windows release (Windows only)
 ```
+
+> **Windows (PowerShell) note:** if a fresh shell doesn't inherit `flutter`/`git` on `PATH`, prefix the commands above with:
+> ```powershell
+> $env:Path = [Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [Environment]::GetEnvironmentVariable('Path','User')
+> ```
 
 ## Formatting
 
-```powershell
+```shell
 dart format .
 ```
 
@@ -90,7 +95,7 @@ picker/share UI is wired in #003.
 Generated files (`*.g.dart`) are committed. After editing
 `lib/src/data/database.dart` (or any `@DriftDatabase` file), regenerate:
 
-```powershell
+```shell
 dart run build_runner build --delete-conflicting-outputs
 ```
 

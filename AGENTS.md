@@ -2,33 +2,38 @@
 
 Flutter learning app (FoxStreak). Local-only MVP, no backend/auth. Backlog lives in `issues/` (see `issues/` for the current range) — read the relevant issue before coding.
 
-## Shell environment (Windows — read this first)
+## Shell environment
 
-- Commands run in **PowerShell**, but `flutter`/`git` are **not** on the inherited `PATH`.
-  Prefix every shell command with:
+Developers work on both Windows and macOS. Commands below are plain
+`flutter`/`dart`/`git` and run the same on either — assuming those are on
+`PATH`.
+
+- **Windows (PowerShell)**: if a fresh shell doesn't inherit `flutter`/`git`
+  on `PATH`, prefix the command:
   ```powershell
   $env:Path = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')
   ```
-- Flutter SDK: `C:\Users\juliu\coding-tools\flutter\bin\flutter.bat` (3.47.6, stable). Git: `C:\Program Files\Git\cmd\git.exe`.
-- `winget` `msstore` source prompts interactively and fails headless — always pass `--source winget`.
-- PowerShell surfaces git's stderr (`To https://…`) as `NativeCommandError` — a push is successful if output shows `main -> main`, regardless of that noise.
+  `winget`'s `msstore` source prompts interactively and fails headless —
+  always pass `--source winget`. PowerShell surfaces git's stderr
+  (`To https://…`) as `NativeCommandError` — a push is successful if output
+  shows `main -> main`, regardless of that noise.
+- **macOS (zsh/bash)**: Flutter/git are normally on `PATH` already (Homebrew
+  or the SDK installer); no prefix needed.
 
-## Toolchains (verified 2026-10-11 via `flutter doctor -v`)
+## Toolchains
 
-- `flutter doctor`: Flutter 3.47.6 ✓, Windows 11 ✓, **Android toolchain ✗
-  (no Android SDK — the only missing piece)**, Chrome ✓, Visual Studio ✓
-  (Community 2026 18.10.3 + Windows 10 SDK 10.0.26100.0), connected devices
-  Windows + Chrome + Edge ✓, network ✓.
-- What works: `flutter analyze`, `flutter test`, `dart format`,
-  `flutter create --platforms=…`, `flutter run -d windows`,
-  `flutter build windows`, `flutter run -d chrome` (web).
-- Still blocked until user installs Android Studio + SDK: `flutter run` on an
-  Android device/emulator and `flutter build apk` / `appbundle`
-  (CI on `ubuntu-latest` is the build gate until then).
+Toolchain status is per-machine — run `flutter doctor -v` locally rather than
+trusting a stale snapshot. As a reference, a Windows dev machine verified
+2026-10-11: Flutter 3.47.6 ✓, Android toolchain ✗ (no Android SDK), Chrome ✓,
+Visual Studio ✓ (C++ workload, for `flutter build windows`). macOS machines
+additionally need Xcode for iOS/macOS runs and builds, and don't have a
+Windows target. Android builds (`flutter build apk`/`appbundle`) need the
+Android SDK on either OS; CI (`ubuntu-latest`) is the build gate until a dev
+machine has it.
 
 ## Verify
 
-```powershell
+```shell
 flutter analyze        # must be clean (includes riverpod_lint plugin)
 dart format --output=none --set-exit-if-changed .  # must be clean (or: dart format . then git diff --exit-code)
 dart fix --dry-run     # nothing auto-fixable left
@@ -42,7 +47,7 @@ Lints via `flutter_lints` + `riverpod_lint` surface through `flutter analyze`;
 
 - Drift + SQLite (`drift`, `drift_flutter`; codegen `drift_dev`+`build_runner`).
   Generated `*.g.dart` files are committed; regenerate with:
-  ```powershell
+  ```shell
   dart run build_runner build --delete-conflicting-outputs
   ```
 - `lib/src/data/`: `database.dart`, `clock.dart`, `validation.dart`,
