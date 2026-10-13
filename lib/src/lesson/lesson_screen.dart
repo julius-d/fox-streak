@@ -1,10 +1,10 @@
 // Lesson shell UI (issue #005).
 //
-// Top: FoxProgressBar + quit-X (FoxConfirmDialog).
+// Top: FoxProgressBar + overflow menu (Quit via FoxConfirmDialog, Skip
+// pre-check only — issue #024).
 // Middle: ExerciseCard slot (dispatched by item.type).
 // Feedback: FoxFeedbackBanner (success/error with correct answer).
-// Bottom: FoxCheckButton (CHECK→CONTINUE, same key, tinted by correctState)
-//         + FoxSecondaryButton Skip (pre-check only).
+// Bottom: FoxCheckButton (CHECK→CONTINUE, same key, tinted by correctState).
 // Result: LessonResultScreen (score, mascot, celebrate, Practice again / Back).
 //
 // All strings via AppLocalizations (DE + EN). Follows #015 kit reuse only.
@@ -68,6 +68,7 @@ class LessonScreen extends ConsumerStatefulWidget {
   // Test-only: custom card builder for exercise cards.
   // If null, uses the default placeholder (throws in prod, works in tests).
   final Widget Function({
+    Key? key,
     required Item item,
     required void Function(ExerciseDraft) onStateChanged,
     required AppLocalizations l10n,
@@ -159,11 +160,29 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
           title: Text(l10n.lessonTitle),
           automaticallyImplyLeading: false,
           actions: [
-            IconButton(
-              key: const Key('quitLessonButton'),
-              icon: const Icon(Icons.close),
-              tooltip: l10n.lessonQuit,
-              onPressed: handleBack,
+            PopupMenuButton<String>(
+              key: const Key('lessonOverflowMenu'),
+              tooltip: l10n.lessonActions,
+              onSelected: (value) {
+                if (value == 'quit') {
+                  handleBack();
+                } else if (value == 'skip') {
+                  controller.skip();
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'quit',
+                  key: const Key('quitLessonMenuItem'),
+                  child: Text(l10n.lessonQuit),
+                ),
+                if (state.phase == LessonPhase.answering)
+                  PopupMenuItem(
+                    value: 'skip',
+                    key: const Key('skipItemMenuItem'),
+                    child: Text(l10n.lessonSkip),
+                  ),
+              ],
             ),
           ],
           bottom: PreferredSize(
@@ -249,17 +268,6 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
                             : null),
                   correctState: isFeedback ? state.lastCorrect : null,
                 ),
-                // Skip button (pre-check only)
-                if (!isFeedback)
-                  Padding(
-                    padding: const EdgeInsets.only(top: FoxSpacing.md),
-                    child: FoxSecondaryButton(
-                      key: const Key('skipItemButton'),
-                      label: l10n.lessonSkip,
-                      expanded: true,
-                      onPressed: () => controller.skip(),
-                    ),
-                  ),
               ],
             ),
           ),
@@ -299,9 +307,16 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
         item.choices != null &&
         item.choices!.isNotEmpty;
 
+    // Keyed by item.id: these cards cache per-question state (e.g.
+    // MultipleChoiceCard's shuffled options) in initState, so without a
+    // per-item key Flutter would reuse the same State — and its stale
+    // options/answer — across different items of the same type.
+    final cardKey = ValueKey(item.id);
+
     // Use custom card builder if provided (for tests), otherwise use real cards.
     if (widget.cardBuilder != null) {
       return widget.cardBuilder!(
+        key: cardKey,
         item: item,
         onStateChanged: controller.updateDraft,
         l10n: l10n,
@@ -309,16 +324,18 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
       );
     }
 
-    // Real card implementations
+    // Real card implementations.
     switch (item.type) {
       case 'vocab':
         return MultipleChoiceCard(
+          key: cardKey,
           item: item,
           onStateChanged: controller.updateDraft,
           l10n: l10n,
         );
       case 'phone':
         return buildDialPadExercise(
+          key: cardKey,
           item: item,
           onStateChanged: controller.updateDraft,
           l10n: l10n,
@@ -326,6 +343,7 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
         );
       case 'date':
         return buildDateExercise(
+          key: cardKey,
           item: item,
           onStateChanged: controller.updateDraft,
           l10n: l10n,
@@ -333,6 +351,7 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
         );
       default:
         return _PlaceholderExerciseCard(
+          key: cardKey,
           item: item,
           onStateChanged: controller.updateDraft,
           l10n: l10n,
@@ -383,6 +402,7 @@ class _PlaceholderExerciseCard extends StatelessWidget {
   final bool autoAnswer; // For tests: immediately report a correct answer
 
   const _PlaceholderExerciseCard({
+    super.key,
     required this.item,
     required this.onStateChanged,
     required this.l10n,

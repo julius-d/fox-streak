@@ -27,12 +27,14 @@ import '../../l10n/app_localizations.dart';
 /// This implements the [ExerciseCardBuilder] signature from the lesson shell.
 /// The shell passes the [item] and [onStateChanged] callback.
 Widget buildDateExercise({
+  Key? key,
   required Item item,
   required void Function(ExerciseDraft draft) onStateChanged,
   required AppLocalizations l10n,
   bool autoAnswer = false,
 }) {
   return DateExercise(
+    key: key,
     item: item,
     onStateChanged: onStateChanged,
     l10n: l10n,

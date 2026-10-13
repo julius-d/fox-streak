@@ -1,9 +1,11 @@
 // Lesson shell widget tests (issue #005).
 //
 // Covers: start-shuffles-and-caps-20, check-disabled-until-answer,
-// correct-flow, wrong-flow, skip-counts-wrong, quit-confirm-cancel-is-noop
-// / quit-confirm-pops, restart-reshuffles, result-score-math, rotation-safe
-// (pump with new surface size, index preserved), attempts-written-but-xp/streak-untouched.
+// correct-flow, wrong-flow, skip-counts-wrong, skip-absent-from-menu-post-check,
+// quit-confirm-cancel-is-noop / quit-confirm-pops, restart-reshuffles,
+// result-score-math, rotation-safe (pump with new surface size, index
+// preserved), attempts-written-but-xp/streak-untouched.
+// Quit/Skip are reached via the lesson AppBar overflow menu (issue #024).
 //
 // Uses NativeDatabase.memory() + FakeClock overrides via ProviderScope.
 // Bounded pumps per #003 harness learning — never pumpAndSettle on watch() streams.
@@ -66,12 +68,14 @@ Widget buildTestLessonScreen({
     items: items,
     cardBuilder:
         ({
+          Key? key,
           required Item item,
           required void Function(ExerciseDraft) onStateChanged,
           required AppLocalizations l10n,
           bool autoAnswer = false,
         }) {
           return PlaceholderExerciseCard(
+            key: key,
             item: item,
             onStateChanged: onStateChanged,
             l10n: l10n,
@@ -79,6 +83,12 @@ Widget buildTestLessonScreen({
           );
         },
   );
+}
+
+/// Opens the lesson AppBar's overflow menu (issue #024).
+Future<void> openLessonMenu(WidgetTester tester) async {
+  await tester.tap(find.byKey(const Key('lessonOverflowMenu')));
+  await tester.pumpAndSettle();
 }
 
 /// Minimal localizations delegate for tests.
@@ -198,12 +208,14 @@ void main() {
           items: items,
           cardBuilder:
               ({
+                Key? key,
                 required Item item,
                 required void Function(ExerciseDraft) onStateChanged,
                 required AppLocalizations l10n,
                 bool autoAnswer = false,
               }) {
                 return PlaceholderExerciseCard(
+                  key: key,
                   item: item,
                   onStateChanged: onStateChanged,
                   l10n: l10n,
@@ -237,12 +249,14 @@ void main() {
           items: items,
           cardBuilder:
               ({
+                Key? key,
                 required Item item,
                 required void Function(ExerciseDraft) onStateChanged,
                 required AppLocalizations l10n,
                 bool autoAnswer = false,
               }) {
                 return PlaceholderExerciseCard(
+                  key: key,
                   item: item,
                   onStateChanged: onStateChanged,
                   l10n: l10n,
@@ -282,12 +296,14 @@ void main() {
             items: items,
             cardBuilder:
                 ({
+                  Key? key,
                   required Item item,
                   required void Function(ExerciseDraft) onStateChanged,
                   required AppLocalizations l10n,
                   bool autoAnswer = false,
                 }) {
                   return PlaceholderExerciseCard(
+                    key: key,
                     item: item,
                     onStateChanged: onStateChanged,
                     l10n: l10n,
@@ -338,12 +354,14 @@ void main() {
           items: items,
           cardBuilder:
               ({
+                Key? key,
                 required Item item,
                 required void Function(ExerciseDraft) onStateChanged,
                 required AppLocalizations l10n,
                 bool autoAnswer = false,
               }) {
                 return PlaceholderExerciseCard(
+                  key: key,
                   item: item,
                   onStateChanged: onStateChanged,
                   l10n: l10n,
@@ -389,12 +407,14 @@ void main() {
           items: items,
           cardBuilder:
               ({
+                Key? key,
                 required Item item,
                 required void Function(ExerciseDraft) onStateChanged,
                 required AppLocalizations l10n,
                 bool autoAnswer = false,
               }) {
                 return PlaceholderExerciseCard(
+                  key: key,
                   item: item,
                   onStateChanged: onStateChanged,
                   l10n: l10n,
@@ -407,11 +427,54 @@ void main() {
       );
       await tester.pump();
 
-      // Tap SKIP (pre-check only)
-      await tester.tap(find.byKey(const Key('skipItemButton')));
+      // Open overflow menu and tap SKIP (pre-check only)
+      await openLessonMenu(tester);
+      await tester.tap(find.byKey(const Key('skipItemMenuItem')));
       await tester.pump();
 
       // Should advance to next question
+    });
+
+    testWidgets('skip-absent-from-menu-post-check', (
+      WidgetTester tester,
+    ) async {
+      final items = await setupTestItems(
+        db,
+        1,
+        2,
+        choicesJson: vocabChoicesJson,
+      );
+
+      await pumpLessonShell(
+        tester,
+        buildTestLessonScreen(
+          setId: 1,
+          items: items,
+          l10n: AppLocalizationsEn(),
+        ),
+        database: db,
+        clock: fakeClock,
+      );
+      await tester.pump();
+      // Extra pump to process microtask from auto-answer
+      await tester.pump();
+
+      // Pre-check: both menu entries are present.
+      await openLessonMenu(tester);
+      expect(find.byKey(const Key('quitLessonMenuItem')), findsOneWidget);
+      expect(find.byKey(const Key('skipItemMenuItem')), findsOneWidget);
+      // Close the menu without selecting anything.
+      await tester.tapAt(const Offset(1, 1));
+      await tester.pumpAndSettle();
+
+      // Move to feedback phase.
+      await tester.tap(find.byKey(const Key('checkButton')));
+      await tester.pump();
+
+      // Post-check: Skip is gone, Quit remains.
+      await openLessonMenu(tester);
+      expect(find.byKey(const Key('quitLessonMenuItem')), findsOneWidget);
+      expect(find.byKey(const Key('skipItemMenuItem')), findsNothing);
     });
 
     testWidgets('quit-confirm-cancel-is-noop', (WidgetTester tester) async {
@@ -429,12 +492,14 @@ void main() {
           items: items,
           cardBuilder:
               ({
+                Key? key,
                 required Item item,
                 required void Function(ExerciseDraft) onStateChanged,
                 required AppLocalizations l10n,
                 bool autoAnswer = false,
               }) {
                 return PlaceholderExerciseCard(
+                  key: key,
                   item: item,
                   onStateChanged: onStateChanged,
                   l10n: l10n,
@@ -447,8 +512,9 @@ void main() {
       );
       await tester.pump();
 
-      // Tap quit button
-      await tester.tap(find.byKey(const Key('quitLessonButton')));
+      // Open overflow menu and tap quit
+      await openLessonMenu(tester);
+      await tester.tap(find.byKey(const Key('quitLessonMenuItem')));
       await tester.pump();
 
       // Confirm dialog should appear
@@ -477,12 +543,14 @@ void main() {
           items: items,
           cardBuilder:
               ({
+                Key? key,
                 required Item item,
                 required void Function(ExerciseDraft) onStateChanged,
                 required AppLocalizations l10n,
                 bool autoAnswer = false,
               }) {
                 return PlaceholderExerciseCard(
+                  key: key,
                   item: item,
                   onStateChanged: onStateChanged,
                   l10n: l10n,
@@ -495,8 +563,9 @@ void main() {
       );
       await tester.pump();
 
-      // Tap quit button
-      await tester.tap(find.byKey(const Key('quitLessonButton')));
+      // Open overflow menu and tap quit
+      await openLessonMenu(tester);
+      await tester.tap(find.byKey(const Key('quitLessonMenuItem')));
       await tester.pump();
 
       // Tap confirm
@@ -521,12 +590,14 @@ void main() {
           items: items,
           cardBuilder:
               ({
+                Key? key,
                 required Item item,
                 required void Function(ExerciseDraft) onStateChanged,
                 required AppLocalizations l10n,
                 bool autoAnswer = false,
               }) {
                 return PlaceholderExerciseCard(
+                  key: key,
                   item: item,
                   onStateChanged: onStateChanged,
                   l10n: l10n,
@@ -541,7 +612,8 @@ void main() {
 
       // Complete the lesson quickly by skipping all
       for (int i = 0; i < 5; i++) {
-        await tester.tap(find.byKey(const Key('skipItemButton')));
+        await openLessonMenu(tester);
+        await tester.tap(find.byKey(const Key('skipItemMenuItem')));
         await tester.pump();
       }
 
@@ -571,12 +643,14 @@ void main() {
           items: items,
           cardBuilder:
               ({
+                Key? key,
                 required Item item,
                 required void Function(ExerciseDraft) onStateChanged,
                 required AppLocalizations l10n,
                 bool autoAnswer = false,
               }) {
                 return PlaceholderExerciseCard(
+                  key: key,
                   item: item,
                   onStateChanged: onStateChanged,
                   l10n: l10n,
@@ -591,7 +665,8 @@ void main() {
 
       // Skip all 4 questions (0% score)
       for (int i = 0; i < 4; i++) {
-        await tester.tap(find.byKey(const Key('skipItemButton')));
+        await openLessonMenu(tester);
+        await tester.tap(find.byKey(const Key('skipItemMenuItem')));
         await tester.pump();
       }
 
@@ -617,12 +692,14 @@ void main() {
           items: items,
           cardBuilder:
               ({
+                Key? key,
                 required Item item,
                 required void Function(ExerciseDraft) onStateChanged,
                 required AppLocalizations l10n,
                 bool autoAnswer = false,
               }) {
                 return PlaceholderExerciseCard(
+                  key: key,
                   item: item,
                   onStateChanged: onStateChanged,
                   l10n: l10n,
@@ -636,7 +713,8 @@ void main() {
       await tester.pump();
 
       // Advance to question 2
-      await tester.tap(find.byKey(const Key('skipItemButton')));
+      await openLessonMenu(tester);
+      await tester.tap(find.byKey(const Key('skipItemMenuItem')));
       await tester.pump();
 
       // Simulate rotation by pumping with new size
@@ -664,12 +742,14 @@ void main() {
           items: items,
           cardBuilder:
               ({
+                Key? key,
                 required Item item,
                 required void Function(ExerciseDraft) onStateChanged,
                 required AppLocalizations l10n,
                 bool autoAnswer = false,
               }) {
                 return PlaceholderExerciseCard(
+                  key: key,
                   item: item,
                   onStateChanged: onStateChanged,
                   l10n: l10n,
@@ -737,6 +817,7 @@ void main() {
                           items: items,
                           cardBuilder:
                               ({
+                                Key? key,
                                 required Item item,
                                 required void Function(ExerciseDraft)
                                 onStateChanged,
@@ -744,6 +825,7 @@ void main() {
                                 bool autoAnswer = false,
                               }) {
                                 return PlaceholderExerciseCard(
+                                  key: key,
                                   item: item,
                                   onStateChanged: onStateChanged,
                                   l10n: l10n,
@@ -819,12 +901,14 @@ void main() {
           items: items,
           cardBuilder:
               ({
+                Key? key,
                 required Item item,
                 required void Function(ExerciseDraft) onStateChanged,
                 required AppLocalizations l10n,
                 bool autoAnswer = false,
               }) {
                 return PlaceholderExerciseCard(
+                  key: key,
                   item: item,
                   onStateChanged: onStateChanged,
                   l10n: l10n,
@@ -879,12 +963,14 @@ void main() {
           items: items,
           cardBuilder:
               ({
+                Key? key,
                 required Item item,
                 required void Function(ExerciseDraft) onStateChanged,
                 required AppLocalizations l10n,
                 bool autoAnswer = false,
               }) {
                 return PlaceholderExerciseCard(
+                  key: key,
                   item: item,
                   onStateChanged: onStateChanged,
                   l10n: l10n,
@@ -952,12 +1038,14 @@ void main() {
                   items: items,
                   cardBuilder:
                       ({
+                        Key? key,
                         required Item item,
                         required void Function(ExerciseDraft) onStateChanged,
                         required AppLocalizations l10n,
                         bool autoAnswer = false,
                       }) {
                         return PlaceholderExerciseCard(
+                          key: key,
                           item: item,
                           onStateChanged: onStateChanged,
                           l10n: l10n,
@@ -977,6 +1065,42 @@ void main() {
         await tester.pump();
 
         expect(hapticCalls, isEmpty);
+      },
+    );
+
+    testWidgets(
+      'real vocab cards get fresh per-item state (regression: #024 key fix)',
+      (WidgetTester tester) async {
+        // No cardBuilder override: dispatches to the real MultipleChoiceCard,
+        // which caches its shuffled options in initState — without a
+        // per-item key (lesson_screen.dart's `_buildExerciseCard`), the
+        // second item would wrongly keep showing the first item's answer.
+        final items = await setupTestItems(db, 1, 2);
+
+        await pumpLessonShell(
+          tester,
+          LessonScreen(setId: 1, items: items),
+          database: db,
+          clock: fakeClock,
+        );
+        await tester.pump();
+
+        // LessonController.start() shuffles the queue, so determine which
+        // item actually renders first rather than assuming items[0].
+        final shownFirst = items
+            .map((i) => i.answer)
+            .firstWhere((a) => find.text(a).evaluate().isNotEmpty);
+        final shownSecond = items
+            .map((i) => i.answer)
+            .firstWhere((a) => a != shownFirst);
+        expect(find.text(shownFirst), findsOneWidget);
+
+        await openLessonMenu(tester);
+        await tester.tap(find.byKey(const Key('skipItemMenuItem')));
+        await tester.pump();
+
+        expect(find.text(shownSecond), findsOneWidget);
+        expect(find.text(shownFirst), findsNothing);
       },
     );
   });

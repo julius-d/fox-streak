@@ -111,6 +111,7 @@ abstract class AppLocalizations {
   // Lesson shell (#005)
   String get lessonStart;
   String get lessonTitle;
+  String get lessonActions;
   String get lessonQuit;
   String get lessonProgressLabel;
   String get lessonCorrect;
@@ -289,6 +290,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lessonStart => 'Practice';
   @override
   String get lessonTitle => 'Lesson';
+  @override
+  String get lessonActions => 'Lesson actions';
   @override
   String get lessonQuit => 'Quit lesson';
   @override
@@ -490,6 +493,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get lessonStart => 'Üben';
   @override
   String get lessonTitle => 'Lektion';
+  @override
+  String get lessonActions => 'Lektionsaktionen';
   @override
   String get lessonQuit => 'Lektion verlassen';
   @override

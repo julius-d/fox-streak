@@ -144,6 +144,11 @@
     "placeholders": {}
   },
   "lessonTitle": "Lesson",
+  "@lessonActions": {
+    "description": "Tooltip for the lesson overflow menu button",
+    "placeholders": {}
+  },
+  "lessonActions": "Lesson actions",
   "@lessonQuit": {
     "description": "Tooltip for the quit button in lesson app bar",
     "placeholders": {}
