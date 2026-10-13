@@ -11,7 +11,7 @@ import 'validation.dart';
 
 /// Repository for `question_sets` + `items`.
 ///
-/// All writes are validated in Dart (phone/date/direction rules from
+/// All writes are validated in Dart (phone/date/language-pair rules from
 /// `validation.dart`); the DB enforces FK cascades. Timestamps come from the
 /// injected [Clock] so tests can freeze time.
 ///
@@ -111,7 +111,8 @@ class SetsRepository {
     required String type,
     required String prompt,
     required String answer,
-    String? direction,
+    String? promptLang,
+    String? answerLang,
     List<String>? choices,
     String? hint,
   }) async {
@@ -121,7 +122,8 @@ class SetsRepository {
       type: type,
       prompt: prompt,
       answer: answer,
-      direction: direction,
+      promptLang: promptLang,
+      answerLang: answerLang,
       choices: choices,
     );
     final siblings = await getItemsForSet(setId);
@@ -136,7 +138,8 @@ class SetsRepository {
             type: type,
             prompt: clean.prompt,
             answer: clean.answer,
-            direction: Value(clean.direction),
+            promptLang: Value(clean.promptLang),
+            answerLang: Value(clean.answerLang),
             choices: Value(clean.choicesJson),
             hint: Value(hint ?? ''),
             position: nextPos,
@@ -151,7 +154,7 @@ class SetsRepository {
     String? type,
     String? prompt,
     String? answer,
-    String? Function()? directionUpdate,
+    ({String? promptLang, String? answerLang})? Function()? languagePairUpdate,
     List<String>? Function()? choicesUpdate,
     String? hint,
   }) async {
@@ -161,15 +164,22 @@ class SetsRepository {
     if (existing == null) throw ArgumentError('unknown item id $id');
 
     final newType = type ?? existing.type;
-    String? newDirection = existing.direction;
-    if (directionUpdate != null) newDirection = directionUpdate();
-    if (type != null && directionUpdate == null && type != existing.type) {
-      // Changing type without explicit direction: choice requires one;
-      // freeText leaves it as-is (optional either way); phone/date clear it.
-      if (newType == 'choice' && newDirection == null) {
-        throw ArgumentError('direction is required for choice items');
-      }
-      if (newType != 'choice' && newType != 'freeText') newDirection = null;
+    String? newPromptLang = existing.promptLang;
+    String? newAnswerLang = existing.answerLang;
+    if (languagePairUpdate != null) {
+      final pair = languagePairUpdate();
+      newPromptLang = pair?.promptLang;
+      newAnswerLang = pair?.answerLang;
+    }
+    if (type != null &&
+        languagePairUpdate == null &&
+        type != existing.type &&
+        newType != 'choice' &&
+        newType != 'freeText') {
+      // Switching to phone/date without an explicit pair: the new type
+      // forbids one, so clear it.
+      newPromptLang = null;
+      newAnswerLang = null;
     }
 
     List<String>? newChoices = existing.choices == null
@@ -186,7 +196,8 @@ class SetsRepository {
       type: newType,
       prompt: prompt ?? existing.prompt,
       answer: answer ?? existing.answer,
-      direction: newDirection,
+      promptLang: newPromptLang,
+      answerLang: newAnswerLang,
       choices: newChoices,
     );
     await (_db.update(_db.items)..where((t) => t.id.equals(id))).write(
@@ -194,9 +205,12 @@ class SetsRepository {
         type: type == null ? const Value.absent() : Value(type),
         prompt: prompt == null ? const Value.absent() : Value(clean.prompt),
         answer: answer == null ? const Value.absent() : Value(clean.answer),
-        direction: directionUpdate == null && type == null
+        promptLang: languagePairUpdate == null && type == null
             ? const Value.absent()
-            : Value(clean.direction),
+            : Value(clean.promptLang),
+        answerLang: languagePairUpdate == null && type == null
+            ? const Value.absent()
+            : Value(clean.answerLang),
         choices: choicesUpdate == null && type == null
             ? const Value.absent()
             : Value(clean.choicesJson),
@@ -259,7 +273,8 @@ class SetsRepository {
                 type: item.type,
                 prompt: item.prompt,
                 answer: item.answer,
-                direction: Value(item.direction),
+                promptLang: Value(item.promptLang),
+                answerLang: Value(item.answerLang),
                 choices: Value(item.choices),
                 hint: Value(item.hint ?? ''),
                 position: item.position,
@@ -290,7 +305,8 @@ class SetsRepository {
             type: item.type,
             prompt: item.prompt,
             answer: item.answer,
-            direction: item.direction,
+            promptLang: item.promptLang,
+            answerLang: item.answerLang,
             choices: item.choices == null
                 ? null
                 : List<String>.from(
@@ -334,7 +350,8 @@ class SetsRepository {
                 type: item.type,
                 prompt: item.prompt,
                 answer: item.answer,
-                direction: Value(item.direction),
+                promptLang: Value(item.promptLang),
+                answerLang: Value(item.answerLang),
                 choices: Value(
                   item.choices == null ? null : jsonEncode(item.choices),
                 ),
@@ -359,7 +376,8 @@ class SetsRepository {
     required String type,
     required String prompt,
     required String answer,
-    String? direction,
+    String? promptLang,
+    String? answerLang,
     List<String>? choices,
   }) {
     if (!kItemTypes.contains(type)) {
@@ -371,8 +389,8 @@ class SetsRepository {
     if (!isNonEmptyContent(answer)) {
       throw ArgumentError('answer must be non-empty');
     }
-    final directionError = validateDirection(type, direction);
-    if (directionError != null) throw ArgumentError(directionError);
+    final languageError = validateLanguagePair(type, promptLang, answerLang);
+    if (languageError != null) throw ArgumentError(languageError);
     final choicesError = validateChoices(type, choices);
     if (choicesError != null) throw ArgumentError(choicesError);
     if (type == 'phone' && !isValidPhoneAnswer(answer)) {
@@ -391,7 +409,8 @@ class SetsRepository {
     return _CleanItem(
       prompt: prompt.trim(),
       answer: cleanAnswer,
-      direction: direction,
+      promptLang: promptLang,
+      answerLang: answerLang,
       choicesJson: choices == null ? null : jsonEncode(choices),
     );
   }
@@ -410,12 +429,14 @@ class SetsRepository {
 class _CleanItem {
   final String prompt;
   final String answer;
-  final String? direction;
+  final String? promptLang;
+  final String? answerLang;
   final String? choicesJson;
   _CleanItem({
     required this.prompt,
     required this.answer,
-    required this.direction,
+    required this.promptLang,
+    required this.answerLang,
     required this.choicesJson,
   });
 }

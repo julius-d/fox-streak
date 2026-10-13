@@ -40,7 +40,8 @@ Future<Item> _persistSingleItem(
   required String type,
   required String prompt,
   required String answer,
-  String? direction,
+  String? promptLang,
+  String? answerLang,
 }) async {
   final setId = await db
       .into(db.questionSets)
@@ -60,9 +61,12 @@ Future<Item> _persistSingleItem(
           type: type,
           prompt: prompt,
           answer: answer,
-          direction: direction == null
+          promptLang: promptLang == null
               ? const Value.absent()
-              : Value(direction),
+              : Value(promptLang),
+          answerLang: answerLang == null
+              ? const Value.absent()
+              : Value(answerLang),
           position: 0,
         ),
       );
@@ -72,7 +76,8 @@ Future<Item> _persistSingleItem(
     type: type,
     prompt: prompt,
     answer: answer,
-    direction: direction,
+    promptLang: promptLang,
+    answerLang: answerLang,
     position: 0,
   );
 }
@@ -105,7 +110,8 @@ void main() {
       type: 'choice',
       prompt: 'Hund',
       answer: 'dog',
-      direction: 'deEn',
+      promptLang: 'de',
+      answerLang: 'en',
     );
 
     await tester.pumpWidget(_singleItemLesson(db, item));

@@ -21,7 +21,8 @@ Item _item({
   List<String>? choices,
   String answer = 'dog',
   String prompt = 'Hund',
-  String? direction = 'deEn',
+  String? promptLang = 'de',
+  String? answerLang = 'en',
 }) {
   return Item(
     id: id,
@@ -29,7 +30,8 @@ Item _item({
     type: 'choice',
     prompt: prompt,
     answer: answer,
-    direction: direction,
+    promptLang: promptLang,
+    answerLang: answerLang,
     choices: choices == null ? null : '["${choices.join('","')}"]',
     hint: '',
     position: 0,
@@ -129,7 +131,11 @@ void main() {
     testWidgets('shows direction-aware prompt framing', (tester) async {
       await tester.pumpWidget(
         _Harness(
-          item: _item(choices: ['cat', 'mouse', 'bird'], direction: 'deEn'),
+          item: _item(
+            choices: ['cat', 'mouse', 'bird'],
+            promptLang: 'de',
+            answerLang: 'en',
+          ),
           onDraft: (_) {},
         ),
       );
@@ -137,6 +143,26 @@ void main() {
 
       expect(find.text('German → English'), findsOneWidget);
     });
+
+    testWidgets(
+      'non-vocab item (no language pair) shows no direction framing (#022)',
+      (tester) async {
+        await tester.pumpWidget(
+          _Harness(
+            item: _item(
+              choices: ['cat', 'mouse', 'bird'],
+              promptLang: null,
+              answerLang: null,
+            ),
+            onDraft: (_) {},
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('German → English'), findsNothing);
+        expect(find.text('English → German'), findsNothing);
+      },
+    );
 
     testWidgets('tapping the correct option: hasAnswer true, grade() true', (
       tester,

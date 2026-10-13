@@ -94,7 +94,8 @@ void main() {
         type: 'choice',
         prompt: 'Hund',
         answer: 'dog',
-        direction: 'deEn',
+        promptLang: 'de',
+        answerLang: 'en',
         choices: const ['cat'],
       );
       await repo.addItem(
@@ -118,7 +119,7 @@ void main() {
       expect(items, hasLength(1));
     });
 
-    test('add validates type/prompt/answer/phone/date/direction', () async {
+    test('add validates type/prompt/answer/phone/date/language pair', () async {
       final setId = await repo.createSet(title: 'S', createdBy: 'teacher');
       expect(
         () => repo.addItem(
@@ -135,7 +136,8 @@ void main() {
           type: 'choice',
           prompt: ' ',
           answer: 'a',
-          direction: 'deEn',
+          promptLang: 'de',
+          answerLang: 'en',
         ),
         throwsArgumentError,
       );
@@ -145,6 +147,7 @@ void main() {
           type: 'choice',
           prompt: 'p',
           answer: 'a',
+          promptLang: 'de',
         ),
         throwsArgumentError,
       );
@@ -172,32 +175,64 @@ void main() {
           type: 'phone',
           prompt: 'p',
           answer: '0171',
-          direction: 'deEn',
+          promptLang: 'de',
+          answerLang: 'en',
         ),
         throwsArgumentError,
       );
     });
 
+    test('choice accepts a language pair present or absent (#022); forbids '
+        'an unpaired single language', () async {
+      final setId = await repo.createSet(title: 'S', createdBy: 'teacher');
+      final withoutPair = await repo.addItem(
+        setId: setId,
+        type: 'choice',
+        prompt: 'Capital of France',
+        answer: 'Paris',
+      );
+      final withoutPairItem = await repo.getItemById(withoutPair);
+      expect(withoutPairItem?.promptLang, isNull);
+      expect(withoutPairItem?.answerLang, isNull);
+
+      final withPair = await repo.addItem(
+        setId: setId,
+        type: 'choice',
+        prompt: 'Hund',
+        answer: 'dog',
+        promptLang: 'de',
+        answerLang: 'en',
+      );
+      final withPairItem = await repo.getItemById(withPair);
+      expect(withPairItem?.promptLang, 'de');
+      expect(withPairItem?.answerLang, 'en');
+    });
+
     test(
-      'freeText accepts direction present or absent; forbids choices',
+      'freeText accepts language pair present or absent; forbids choices',
       () async {
         final setId = await repo.createSet(title: 'S', createdBy: 'teacher');
-        final withoutDirection = await repo.addItem(
+        final withoutPair = await repo.addItem(
           setId: setId,
           type: 'freeText',
           prompt: 'p',
           answer: 'a',
         );
-        expect((await repo.getItemById(withoutDirection))?.direction, isNull);
+        final withoutPairItem = await repo.getItemById(withoutPair);
+        expect(withoutPairItem?.promptLang, isNull);
+        expect(withoutPairItem?.answerLang, isNull);
 
-        final withDirection = await repo.addItem(
+        final withPair = await repo.addItem(
           setId: setId,
           type: 'freeText',
           prompt: 'p',
           answer: 'a',
-          direction: 'deEn',
+          promptLang: 'de',
+          answerLang: 'en',
         );
-        expect((await repo.getItemById(withDirection))?.direction, 'deEn');
+        final withPairItem = await repo.getItemById(withPair);
+        expect(withPairItem?.promptLang, 'de');
+        expect(withPairItem?.answerLang, 'en');
 
         expect(
           () => repo.addItem(
@@ -212,8 +247,8 @@ void main() {
       },
     );
 
-    test('updateItem: switching type to choice without direction throws; '
-        'switching to freeText does not', () async {
+    test('updateItem: switching type to choice/freeText never requires a '
+        'language pair (#022); switching to phone/date clears it', () async {
       final setId = await repo.createSet(title: 'S', createdBy: 'teacher');
       final itemId = await repo.addItem(
         setId: setId,
@@ -222,14 +257,22 @@ void main() {
         answer: '0171234',
       );
 
-      expect(
-        () => repo.updateItem(id: itemId, type: 'choice'),
-        throwsArgumentError,
-      );
+      await repo.updateItem(id: itemId, type: 'choice');
+      expect((await repo.getItemById(itemId))?.type, 'choice');
+      expect((await repo.getItemById(itemId))?.promptLang, isNull);
 
-      await repo.updateItem(id: itemId, type: 'freeText');
-      expect((await repo.getItemById(itemId))?.type, 'freeText');
-      expect((await repo.getItemById(itemId))?.direction, isNull);
+      await repo.updateItem(
+        id: itemId,
+        languagePairUpdate: () => (promptLang: 'de', answerLang: 'en'),
+      );
+      expect((await repo.getItemById(itemId))?.promptLang, 'de');
+
+      // Phone's own answer-format check still applies: the stored answer
+      // ('0171234') is already phone-valid, so only the pair is cleared.
+      await repo.updateItem(id: itemId, type: 'phone');
+      expect((await repo.getItemById(itemId))?.type, 'phone');
+      expect((await repo.getItemById(itemId))?.promptLang, isNull);
+      expect((await repo.getItemById(itemId))?.answerLang, isNull);
     });
 
     test('reorder persists new positions; rejects mismatched ids', () async {
@@ -330,7 +373,8 @@ void main() {
         type: 'choice',
         prompt: 'Hund',
         answer: 'dog',
-        direction: 'deEn',
+        promptLang: 'de',
+        answerLang: 'en',
         choices: const ['cat'],
       );
       await repo.addItem(
@@ -368,7 +412,8 @@ void main() {
         type: 'choice',
         prompt: 'Hund',
         answer: 'dog',
-        direction: 'deEn',
+        promptLang: 'de',
+        answerLang: 'en',
         choices: const ['cat', 'mouse'],
       );
       await repo.addItem(

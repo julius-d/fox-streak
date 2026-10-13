@@ -1,14 +1,18 @@
-// Widget tests for the per-type item editors (issue #004).
+// Widget tests for the per-type item editors (issue #004; #022 replaced the
+// required `direction` SegmentedButton with an optional language-pair
+// toggle shared by choice/freeText).
 //
 // Pumps `ItemEditorDialog` through a harness button with an in-memory DB +
-// `FakeClock` overrides. Covers: choice-valid with 3 distractors,
-// choice-missing-direction-blocked (nullable initial),
+// `FakeClock` overrides. Covers: choice-valid with language pair + 3
+// distractors, choice-valid-without-language-pair (#022 non-rejecting
+// path), language-pair-toggle-off-by-default,
+// language-pair-same-language-blocked,
 // distractor-duplicating-answer-blocked (editor-only),
-// freeText-valid-without-direction (#026 non-rejecting path),
+// freeText-valid-without-language-pair (#026/#022 non-rejecting path),
 // phone-grouping-display-but-digits-stored, phone-paste-with-separators,
 // phone-too-short rejected, date-auto-advance (+ backspace-back),
 // date-future / pre-1900 / 30.02 rejected, edit-prefill (phone grouped,
-// date split, choice choices kept), no-save-on-invalid.
+// date split, choice choices + language pair kept), no-save-on-invalid.
 //
 // Pumping note (from #003): never use `pumpAndSettle()` with drift `watch()`
 // streams under fake async — use bounded 100ms pumps capped at 50 (`settle`).
@@ -122,37 +126,88 @@ bool hasFocus(WidgetTester tester, String key) =>
       _ => key,
     };
 
+/// Taps the language-pair toggle, then picks [promptLang]/[answerLang] from
+/// the two dropdowns it reveals.
+Future<void> enableLanguagePair(
+  WidgetTester tester,
+  String promptLang,
+  String answerLang,
+) async {
+  await tester.tap(find.byKey(const Key('itemLanguagePairToggle')));
+  await settle(tester);
+  await tester.tap(find.byKey(const Key('itemPromptLangField')));
+  await settle(tester);
+  await tester.tap(find.text(promptLang).last);
+  await settle(tester);
+  await tester.tap(find.byKey(const Key('itemAnswerLangField')));
+  await settle(tester);
+  await tester.tap(find.text(answerLang).last);
+  await settle(tester);
+}
+
 void main() {
-  testWidgets('choice-valid with 3 distractors saves direction and choices', (
-    tester,
-  ) async {
-    final clock = FakeClock(kTestToday);
-    final env = await pumpEditor(tester, clock);
+  testWidgets(
+    'choice-valid with a language pair saves promptLang/answerLang + choices',
+    (tester) async {
+      final clock = FakeClock(kTestToday);
+      final env = await pumpEditor(tester, clock);
 
-    await tester.enterText(find.byKey(const Key('itemPromptField')), 'Hund');
-    await tester.enterText(find.byKey(const Key('itemAnswerField')), 'dog');
-    await tester.tap(find.text('German → English'));
-    await settle(tester);
-    await tester.enterText(find.byKey(const Key('itemChoice0Field')), 'cat');
-    await tester.enterText(find.byKey(const Key('itemChoice1Field')), 'mouse');
-    await tester.enterText(find.byKey(const Key('itemChoice2Field')), 'bird');
-    await tester.tap(find.byKey(const Key('saveItemButton')));
-    await settle(tester);
+      await tester.enterText(find.byKey(const Key('itemPromptField')), 'Hund');
+      await tester.enterText(find.byKey(const Key('itemAnswerField')), 'dog');
+      await enableLanguagePair(tester, 'German', 'English');
+      await tester.enterText(find.byKey(const Key('itemChoice0Field')), 'cat');
+      await tester.enterText(
+        find.byKey(const Key('itemChoice1Field')),
+        'mouse',
+      );
+      await tester.enterText(find.byKey(const Key('itemChoice2Field')), 'bird');
+      await tester.tap(find.byKey(const Key('saveItemButton')));
+      await settle(tester);
 
-    final items = await env.repo.getItemsForSet(env.setId);
-    expect(items, hasLength(1));
-    expect(items.single.type, 'choice');
-    expect(items.single.direction, 'deEn');
-    expect((jsonDecode(items.single.choices!) as List).cast<String>(), [
-      'cat',
-      'mouse',
-      'bird',
-    ]);
-    await unmount(tester);
-  });
+      final items = await env.repo.getItemsForSet(env.setId);
+      expect(items, hasLength(1));
+      expect(items.single.type, 'choice');
+      expect(items.single.promptLang, 'de');
+      expect(items.single.answerLang, 'en');
+      expect((jsonDecode(items.single.choices!) as List).cast<String>(), [
+        'cat',
+        'mouse',
+        'bird',
+      ]);
+      await unmount(tester);
+    },
+  );
 
   testWidgets(
-    'freeText-valid-without-direction saves (#026 non-rejecting path)',
+    'choice-valid-without-language-pair saves (#022 non-rejecting path, '
+    'toggle off by default)',
+    (tester) async {
+      final clock = FakeClock(kTestToday);
+      final env = await pumpEditor(tester, clock);
+
+      // Toggle off by default for new items: no dropdowns shown.
+      expect(find.byKey(const Key('itemPromptLangField')), findsNothing);
+
+      await tester.enterText(
+        find.byKey(const Key('itemPromptField')),
+        'Capital of France',
+      );
+      await tester.enterText(find.byKey(const Key('itemAnswerField')), 'Paris');
+      await tester.tap(find.byKey(const Key('saveItemButton')));
+      await settle(tester);
+
+      final items = await env.repo.getItemsForSet(env.setId);
+      expect(items, hasLength(1));
+      expect(items.single.type, 'choice');
+      expect(items.single.promptLang, isNull);
+      expect(items.single.answerLang, isNull);
+      await unmount(tester);
+    },
+  );
+
+  testWidgets(
+    'freeText-valid-without-language-pair saves (#026/#022 non-rejecting '
+    'path)',
     (tester) async {
       final clock = FakeClock(kTestToday);
       final env = await pumpEditor(tester, clock);
@@ -167,13 +222,14 @@ void main() {
       expect(items, hasLength(1));
       expect(items.single.type, 'freeText');
       expect(items.single.answer, 'dog');
-      expect(items.single.direction, isNull);
+      expect(items.single.promptLang, isNull);
+      expect(items.single.answerLang, isNull);
       expect(items.single.choices, isNull);
       await unmount(tester);
     },
   );
 
-  testWidgets('choice-missing-direction-blocked starts with nothing selected', (
+  testWidgets('language-pair-same-language-blocked shows inline error', (
     tester,
   ) async {
     final clock = FakeClock(kTestToday);
@@ -181,24 +237,12 @@ void main() {
 
     await tester.enterText(find.byKey(const Key('itemPromptField')), 'Hund');
     await tester.enterText(find.byKey(const Key('itemAnswerField')), 'dog');
-
-    // Nullable initial: no segment pre-selected, inline error until picked.
-    expect(
-      tester
-          .widget<SegmentedButton<String>>(
-            find.byKey(const Key('itemDirectionField')),
-          )
-          .selected,
-      isEmpty,
-    );
-    expect(find.text('Pick a direction'), findsOneWidget);
-
+    await enableLanguagePair(tester, 'German', 'German');
     await tester.tap(find.byKey(const Key('saveItemButton')));
     await settle(tester);
 
-    expect(find.text('Pick a direction'), findsOneWidget);
+    expect(find.text('Languages must differ'), findsOneWidget);
     expect(await env.repo.getItemsForSet(env.setId), isEmpty);
-    expect(find.byKey(const Key('itemPromptField')), findsOneWidget);
     await unmount(tester);
   });
 
@@ -210,8 +254,6 @@ void main() {
 
     await tester.enterText(find.byKey(const Key('itemPromptField')), 'Hund');
     await tester.enterText(find.byKey(const Key('itemAnswerField')), 'dog');
-    await tester.tap(find.text('German → English'));
-    await settle(tester);
     // Trim/case-insensitive duplicate of the answer.
     await tester.enterText(find.byKey(const Key('itemChoice0Field')), ' Dog ');
     await tester.tap(find.byKey(const Key('saveItemButton')));
@@ -221,6 +263,42 @@ void main() {
     expect(await env.repo.getItemsForSet(env.setId), isEmpty);
     await unmount(tester);
   });
+
+  testWidgets(
+    'switching from choice (half-picked language pair) to phone saves '
+    '(regression: stale toggle state must not block a type it does not '
+    'apply to)',
+    (tester) async {
+      final clock = FakeClock(kTestToday);
+      final env = await pumpEditor(tester, clock);
+
+      // Enable the toggle but pick only one side, then abandon choice for
+      // phone — the half-picked pair must not survive the type switch.
+      await tester.tap(find.byKey(const Key('itemLanguagePairToggle')));
+      await settle(tester);
+      await tester.tap(find.byKey(const Key('itemPromptLangField')));
+      await settle(tester);
+      await tester.tap(find.text('German').last);
+      await settle(tester);
+
+      await switchType(tester, 'Phone');
+
+      await tester.enterText(find.byKey(const Key('itemPromptField')), 'Mama');
+      await tester.enterText(
+        find.byKey(const Key('itemAnswerField')),
+        '01711234567',
+      );
+      await tester.tap(find.byKey(const Key('saveItemButton')));
+      await settle(tester);
+
+      final items = await env.repo.getItemsForSet(env.setId);
+      expect(items, hasLength(1));
+      expect(items.single.type, 'phone');
+      expect(items.single.promptLang, isNull);
+      expect(items.single.answerLang, isNull);
+      await unmount(tester);
+    },
+  );
 
   testWidgets('phone-grouping-display-but-digits-stored', (tester) async {
     final clock = FakeClock(kTestToday);
@@ -510,7 +588,7 @@ void main() {
     await unmount(tester);
   });
 
-  testWidgets('edit-prefill choice keeps direction and choices', (
+  testWidgets('edit-prefill choice keeps language pair and choices', (
     tester,
   ) async {
     final clock = FakeClock(kTestToday);
@@ -523,7 +601,8 @@ void main() {
       type: 'choice',
       prompt: 'Hund',
       answer: 'dog',
-      direction: 'enDe',
+      promptLang: 'en',
+      answerLang: 'de',
       choices: ['cat', 'mouse'],
     );
     final existing = await repo.getItemById(itemId);
@@ -547,13 +626,30 @@ void main() {
     await tester.tap(find.byKey(const Key('openEditorButton')));
     await settle(tester);
 
+    // Toggle on by default when editing an item with an existing pair.
     expect(
       tester
-          .widget<SegmentedButton<String>>(
-            find.byKey(const Key('itemDirectionField')),
+          .widget<SwitchListTile>(
+            find.byKey(const Key('itemLanguagePairToggle')),
           )
-          .selected,
-      {'enDe'},
+          .value,
+      isTrue,
+    );
+    expect(
+      tester
+          .widget<DropdownButtonFormField<String>>(
+            find.byKey(const Key('itemPromptLangField')),
+          )
+          .initialValue,
+      'en',
+    );
+    expect(
+      tester
+          .widget<DropdownButtonFormField<String>>(
+            find.byKey(const Key('itemAnswerLangField')),
+          )
+          .initialValue,
+      'de',
     );
     expect(
       tester
@@ -574,7 +670,8 @@ void main() {
     await tester.tap(find.byKey(const Key('saveItemButton')));
     await settle(tester);
     final updated = await repo.getItemById(itemId);
-    expect(updated?.direction, 'enDe');
+    expect(updated?.promptLang, 'en');
+    expect(updated?.answerLang, 'de');
     expect((jsonDecode(updated!.choices!) as List).cast<String>(), [
       'cat',
       'mouse',
@@ -600,7 +697,8 @@ void main() {
             type: 'choice',
             prompt: 'Hund',
             answer: 'dog',
-            direction: const Value('deEn'),
+            promptLang: const Value('de'),
+            answerLang: const Value('en'),
             choices: const Value('"not-a-list"'),
             position: 0,
           ),
@@ -637,6 +735,45 @@ void main() {
     );
     await unmount(tester);
   });
+
+  testWidgets(
+    'language-pair-toggle reveals dropdowns on, hides+clears off (#022)',
+    (tester) async {
+      final clock = FakeClock(kTestToday);
+      await pumpEditor(tester, clock);
+
+      expect(find.byKey(const Key('itemLanguagePairToggle')), findsOneWidget);
+      expect(find.byKey(const Key('itemPromptLangField')), findsNothing);
+      expect(find.byKey(const Key('itemAnswerLangField')), findsNothing);
+
+      await tester.tap(find.byKey(const Key('itemLanguagePairToggle')));
+      await settle(tester);
+      expect(find.byKey(const Key('itemPromptLangField')), findsOneWidget);
+      expect(find.byKey(const Key('itemAnswerLangField')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('itemPromptLangField')));
+      await settle(tester);
+      await tester.tap(find.text('German').last);
+      await settle(tester);
+
+      // Toggling back off hides the dropdowns again (and clears the pick,
+      // verified indirectly: re-enabling starts from nothing selected).
+      await tester.tap(find.byKey(const Key('itemLanguagePairToggle')));
+      await settle(tester);
+      expect(find.byKey(const Key('itemPromptLangField')), findsNothing);
+
+      await tester.tap(find.byKey(const Key('itemLanguagePairToggle')));
+      await settle(tester);
+      expect(
+        tester
+            .widget<DropdownButtonFormField<String>>(
+              find.byKey(const Key('itemPromptLangField')),
+            )
+            .initialValue,
+        isNull,
+      );
+    },
+  );
 
   testWidgets('no-save-on-invalid keeps the dialog open', (tester) async {
     final clock = FakeClock(kTestToday);

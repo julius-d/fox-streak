@@ -461,12 +461,23 @@ class $ItemsTable extends Items with TableInfo<$ItemsTable, Item> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _directionMeta = const VerificationMeta(
-    'direction',
+  static const VerificationMeta _promptLangMeta = const VerificationMeta(
+    'promptLang',
   );
   @override
-  late final GeneratedColumn<String> direction = GeneratedColumn<String>(
-    'direction',
+  late final GeneratedColumn<String> promptLang = GeneratedColumn<String>(
+    'prompt_lang',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _answerLangMeta = const VerificationMeta(
+    'answerLang',
+  );
+  @override
+  late final GeneratedColumn<String> answerLang = GeneratedColumn<String>(
+    'answer_lang',
     aliasedName,
     true,
     type: DriftSqlType.string,
@@ -511,7 +522,8 @@ class $ItemsTable extends Items with TableInfo<$ItemsTable, Item> {
     type,
     prompt,
     answer,
-    direction,
+    promptLang,
+    answerLang,
     choices,
     hint,
     position,
@@ -563,10 +575,16 @@ class $ItemsTable extends Items with TableInfo<$ItemsTable, Item> {
     } else if (isInserting) {
       context.missing(_answerMeta);
     }
-    if (data.containsKey('direction')) {
+    if (data.containsKey('prompt_lang')) {
       context.handle(
-        _directionMeta,
-        direction.isAcceptableOrUnknown(data['direction']!, _directionMeta),
+        _promptLangMeta,
+        promptLang.isAcceptableOrUnknown(data['prompt_lang']!, _promptLangMeta),
+      );
+    }
+    if (data.containsKey('answer_lang')) {
+      context.handle(
+        _answerLangMeta,
+        answerLang.isAcceptableOrUnknown(data['answer_lang']!, _answerLangMeta),
       );
     }
     if (data.containsKey('choices')) {
@@ -618,9 +636,13 @@ class $ItemsTable extends Items with TableInfo<$ItemsTable, Item> {
         DriftSqlType.string,
         data['${effectivePrefix}answer'],
       )!,
-      direction: attachedDatabase.typeMapping.read(
+      promptLang: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}direction'],
+        data['${effectivePrefix}prompt_lang'],
+      ),
+      answerLang: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}answer_lang'],
       ),
       choices: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -649,7 +671,8 @@ class Item extends DataClass implements Insertable<Item> {
   final String type;
   final String prompt;
   final String answer;
-  final String? direction;
+  final String? promptLang;
+  final String? answerLang;
   final String? choices;
   final String? hint;
   final int position;
@@ -659,7 +682,8 @@ class Item extends DataClass implements Insertable<Item> {
     required this.type,
     required this.prompt,
     required this.answer,
-    this.direction,
+    this.promptLang,
+    this.answerLang,
     this.choices,
     this.hint,
     required this.position,
@@ -672,8 +696,11 @@ class Item extends DataClass implements Insertable<Item> {
     map['type'] = Variable<String>(type);
     map['prompt'] = Variable<String>(prompt);
     map['answer'] = Variable<String>(answer);
-    if (!nullToAbsent || direction != null) {
-      map['direction'] = Variable<String>(direction);
+    if (!nullToAbsent || promptLang != null) {
+      map['prompt_lang'] = Variable<String>(promptLang);
+    }
+    if (!nullToAbsent || answerLang != null) {
+      map['answer_lang'] = Variable<String>(answerLang);
     }
     if (!nullToAbsent || choices != null) {
       map['choices'] = Variable<String>(choices);
@@ -692,9 +719,12 @@ class Item extends DataClass implements Insertable<Item> {
       type: Value(type),
       prompt: Value(prompt),
       answer: Value(answer),
-      direction: direction == null && nullToAbsent
+      promptLang: promptLang == null && nullToAbsent
           ? const Value.absent()
-          : Value(direction),
+          : Value(promptLang),
+      answerLang: answerLang == null && nullToAbsent
+          ? const Value.absent()
+          : Value(answerLang),
       choices: choices == null && nullToAbsent
           ? const Value.absent()
           : Value(choices),
@@ -714,7 +744,8 @@ class Item extends DataClass implements Insertable<Item> {
       type: serializer.fromJson<String>(json['type']),
       prompt: serializer.fromJson<String>(json['prompt']),
       answer: serializer.fromJson<String>(json['answer']),
-      direction: serializer.fromJson<String?>(json['direction']),
+      promptLang: serializer.fromJson<String?>(json['promptLang']),
+      answerLang: serializer.fromJson<String?>(json['answerLang']),
       choices: serializer.fromJson<String?>(json['choices']),
       hint: serializer.fromJson<String?>(json['hint']),
       position: serializer.fromJson<int>(json['position']),
@@ -729,7 +760,8 @@ class Item extends DataClass implements Insertable<Item> {
       'type': serializer.toJson<String>(type),
       'prompt': serializer.toJson<String>(prompt),
       'answer': serializer.toJson<String>(answer),
-      'direction': serializer.toJson<String?>(direction),
+      'promptLang': serializer.toJson<String?>(promptLang),
+      'answerLang': serializer.toJson<String?>(answerLang),
       'choices': serializer.toJson<String?>(choices),
       'hint': serializer.toJson<String?>(hint),
       'position': serializer.toJson<int>(position),
@@ -742,7 +774,8 @@ class Item extends DataClass implements Insertable<Item> {
     String? type,
     String? prompt,
     String? answer,
-    Value<String?> direction = const Value.absent(),
+    Value<String?> promptLang = const Value.absent(),
+    Value<String?> answerLang = const Value.absent(),
     Value<String?> choices = const Value.absent(),
     Value<String?> hint = const Value.absent(),
     int? position,
@@ -752,7 +785,8 @@ class Item extends DataClass implements Insertable<Item> {
     type: type ?? this.type,
     prompt: prompt ?? this.prompt,
     answer: answer ?? this.answer,
-    direction: direction.present ? direction.value : this.direction,
+    promptLang: promptLang.present ? promptLang.value : this.promptLang,
+    answerLang: answerLang.present ? answerLang.value : this.answerLang,
     choices: choices.present ? choices.value : this.choices,
     hint: hint.present ? hint.value : this.hint,
     position: position ?? this.position,
@@ -764,7 +798,12 @@ class Item extends DataClass implements Insertable<Item> {
       type: data.type.present ? data.type.value : this.type,
       prompt: data.prompt.present ? data.prompt.value : this.prompt,
       answer: data.answer.present ? data.answer.value : this.answer,
-      direction: data.direction.present ? data.direction.value : this.direction,
+      promptLang: data.promptLang.present
+          ? data.promptLang.value
+          : this.promptLang,
+      answerLang: data.answerLang.present
+          ? data.answerLang.value
+          : this.answerLang,
       choices: data.choices.present ? data.choices.value : this.choices,
       hint: data.hint.present ? data.hint.value : this.hint,
       position: data.position.present ? data.position.value : this.position,
@@ -779,7 +818,8 @@ class Item extends DataClass implements Insertable<Item> {
           ..write('type: $type, ')
           ..write('prompt: $prompt, ')
           ..write('answer: $answer, ')
-          ..write('direction: $direction, ')
+          ..write('promptLang: $promptLang, ')
+          ..write('answerLang: $answerLang, ')
           ..write('choices: $choices, ')
           ..write('hint: $hint, ')
           ..write('position: $position')
@@ -794,7 +834,8 @@ class Item extends DataClass implements Insertable<Item> {
     type,
     prompt,
     answer,
-    direction,
+    promptLang,
+    answerLang,
     choices,
     hint,
     position,
@@ -808,7 +849,8 @@ class Item extends DataClass implements Insertable<Item> {
           other.type == this.type &&
           other.prompt == this.prompt &&
           other.answer == this.answer &&
-          other.direction == this.direction &&
+          other.promptLang == this.promptLang &&
+          other.answerLang == this.answerLang &&
           other.choices == this.choices &&
           other.hint == this.hint &&
           other.position == this.position);
@@ -820,7 +862,8 @@ class ItemsCompanion extends UpdateCompanion<Item> {
   final Value<String> type;
   final Value<String> prompt;
   final Value<String> answer;
-  final Value<String?> direction;
+  final Value<String?> promptLang;
+  final Value<String?> answerLang;
   final Value<String?> choices;
   final Value<String?> hint;
   final Value<int> position;
@@ -830,7 +873,8 @@ class ItemsCompanion extends UpdateCompanion<Item> {
     this.type = const Value.absent(),
     this.prompt = const Value.absent(),
     this.answer = const Value.absent(),
-    this.direction = const Value.absent(),
+    this.promptLang = const Value.absent(),
+    this.answerLang = const Value.absent(),
     this.choices = const Value.absent(),
     this.hint = const Value.absent(),
     this.position = const Value.absent(),
@@ -841,7 +885,8 @@ class ItemsCompanion extends UpdateCompanion<Item> {
     required String type,
     required String prompt,
     required String answer,
-    this.direction = const Value.absent(),
+    this.promptLang = const Value.absent(),
+    this.answerLang = const Value.absent(),
     this.choices = const Value.absent(),
     this.hint = const Value.absent(),
     required int position,
@@ -856,7 +901,8 @@ class ItemsCompanion extends UpdateCompanion<Item> {
     Expression<String>? type,
     Expression<String>? prompt,
     Expression<String>? answer,
-    Expression<String>? direction,
+    Expression<String>? promptLang,
+    Expression<String>? answerLang,
     Expression<String>? choices,
     Expression<String>? hint,
     Expression<int>? position,
@@ -867,7 +913,8 @@ class ItemsCompanion extends UpdateCompanion<Item> {
       if (type != null) 'type': type,
       if (prompt != null) 'prompt': prompt,
       if (answer != null) 'answer': answer,
-      if (direction != null) 'direction': direction,
+      if (promptLang != null) 'prompt_lang': promptLang,
+      if (answerLang != null) 'answer_lang': answerLang,
       if (choices != null) 'choices': choices,
       if (hint != null) 'hint': hint,
       if (position != null) 'position': position,
@@ -880,7 +927,8 @@ class ItemsCompanion extends UpdateCompanion<Item> {
     Value<String>? type,
     Value<String>? prompt,
     Value<String>? answer,
-    Value<String?>? direction,
+    Value<String?>? promptLang,
+    Value<String?>? answerLang,
     Value<String?>? choices,
     Value<String?>? hint,
     Value<int>? position,
@@ -891,7 +939,8 @@ class ItemsCompanion extends UpdateCompanion<Item> {
       type: type ?? this.type,
       prompt: prompt ?? this.prompt,
       answer: answer ?? this.answer,
-      direction: direction ?? this.direction,
+      promptLang: promptLang ?? this.promptLang,
+      answerLang: answerLang ?? this.answerLang,
       choices: choices ?? this.choices,
       hint: hint ?? this.hint,
       position: position ?? this.position,
@@ -916,8 +965,11 @@ class ItemsCompanion extends UpdateCompanion<Item> {
     if (answer.present) {
       map['answer'] = Variable<String>(answer.value);
     }
-    if (direction.present) {
-      map['direction'] = Variable<String>(direction.value);
+    if (promptLang.present) {
+      map['prompt_lang'] = Variable<String>(promptLang.value);
+    }
+    if (answerLang.present) {
+      map['answer_lang'] = Variable<String>(answerLang.value);
     }
     if (choices.present) {
       map['choices'] = Variable<String>(choices.value);
@@ -939,7 +991,8 @@ class ItemsCompanion extends UpdateCompanion<Item> {
           ..write('type: $type, ')
           ..write('prompt: $prompt, ')
           ..write('answer: $answer, ')
-          ..write('direction: $direction, ')
+          ..write('promptLang: $promptLang, ')
+          ..write('answerLang: $answerLang, ')
           ..write('choices: $choices, ')
           ..write('hint: $hint, ')
           ..write('position: $position')
@@ -2008,7 +2061,8 @@ typedef $$ItemsTableCreateCompanionBuilder = ItemsCompanion Function({
   required String type,
   required String prompt,
   required String answer,
-  Value<String?> direction,
+  Value<String?> promptLang,
+  Value<String?> answerLang,
   Value<String?> choices,
   Value<String?> hint,
   required int position,
@@ -2019,7 +2073,8 @@ typedef $$ItemsTableUpdateCompanionBuilder = ItemsCompanion Function({
   Value<String> type,
   Value<String> prompt,
   Value<String> answer,
-  Value<String?> direction,
+  Value<String?> promptLang,
+  Value<String?> answerLang,
   Value<String?> choices,
   Value<String?> hint,
   Value<int> position,
@@ -2094,8 +2149,13 @@ class $$ItemsTableFilterComposer extends Composer<_$AppDatabase, $ItemsTable> {
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get direction => $composableBuilder(
-    column: $table.direction,
+  ColumnFilters<String> get promptLang => $composableBuilder(
+    column: $table.promptLang,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get answerLang => $composableBuilder(
+    column: $table.answerLang,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2192,8 +2252,13 @@ class $$ItemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get direction => $composableBuilder(
-    column: $table.direction,
+  ColumnOrderings<String> get promptLang => $composableBuilder(
+    column: $table.promptLang,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get answerLang => $composableBuilder(
+    column: $table.answerLang,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -2257,8 +2322,15 @@ class $$ItemsTableAnnotationComposer
   GeneratedColumn<String> get answer =>
       $composableBuilder(column: $table.answer, builder: (column) => column);
 
-  GeneratedColumn<String> get direction =>
-      $composableBuilder(column: $table.direction, builder: (column) => column);
+  GeneratedColumn<String> get promptLang => $composableBuilder(
+    column: $table.promptLang,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get answerLang => $composableBuilder(
+    column: $table.answerLang,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get choices =>
       $composableBuilder(column: $table.choices, builder: (column) => column);
@@ -2351,7 +2423,8 @@ class $$ItemsTableTableManager
                 Value<String> type = const Value.absent(),
                 Value<String> prompt = const Value.absent(),
                 Value<String> answer = const Value.absent(),
-                Value<String?> direction = const Value.absent(),
+                Value<String?> promptLang = const Value.absent(),
+                Value<String?> answerLang = const Value.absent(),
                 Value<String?> choices = const Value.absent(),
                 Value<String?> hint = const Value.absent(),
                 Value<int> position = const Value.absent(),
@@ -2361,7 +2434,8 @@ class $$ItemsTableTableManager
                 type: type,
                 prompt: prompt,
                 answer: answer,
-                direction: direction,
+                promptLang: promptLang,
+                answerLang: answerLang,
                 choices: choices,
                 hint: hint,
                 position: position,
@@ -2373,7 +2447,8 @@ class $$ItemsTableTableManager
                 required String type,
                 required String prompt,
                 required String answer,
-                Value<String?> direction = const Value.absent(),
+                Value<String?> promptLang = const Value.absent(),
+                Value<String?> answerLang = const Value.absent(),
                 Value<String?> choices = const Value.absent(),
                 Value<String?> hint = const Value.absent(),
                 required int position,
@@ -2383,7 +2458,8 @@ class $$ItemsTableTableManager
                 type: type,
                 prompt: prompt,
                 answer: answer,
-                direction: direction,
+                promptLang: promptLang,
+                answerLang: answerLang,
                 choices: choices,
                 hint: hint,
                 position: position,

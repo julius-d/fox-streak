@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../data/database.dart';
+import '../data/language_display.dart';
 import '../data/validation.dart';
 import '../lesson/exercise_card.dart';
 import '../theme/fox_streak_theme.dart';
@@ -104,11 +105,11 @@ class _FreeTextExerciseState extends State<FreeTextExercise> {
   Widget build(BuildContext context) {
     final ColorScheme scheme = Theme.of(context).colorScheme;
     final TextTheme text = Theme.of(context).textTheme;
-    final String? directionLabel = switch (widget.item.direction) {
-      'deEn' => widget.l10n.directionDeEn,
-      'enDe' => widget.l10n.directionEnDe,
-      _ => null,
-    };
+    final String? directionLabel = languagePairLabel(
+      widget.item.promptLang,
+      widget.item.answerLang,
+      widget.l10n,
+    );
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(vertical: FoxSpacing.md),

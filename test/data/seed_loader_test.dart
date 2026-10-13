@@ -103,7 +103,28 @@ void main() {
         );
         expect(id, isPositive);
       }
-      expect(await sets.getAllSets(), hasLength(2));
+      expect(await sets.getAllSets(), hasLength(3));
     });
+
+    test(
+      'demo_bundeslaender seed is 16 non-vocab choice items (#022)',
+      () async {
+        final raw = await File('assets/seed/demo_bundeslaender.foxstreak.json')
+            .readAsString();
+        final decoded = jsonDecode(raw) as Map<String, dynamic>;
+        final id = await sets.importSetFromJson(
+          Map<dynamic, dynamic>.from(decoded),
+          today: kTestToday,
+        );
+        final items = await sets.getItemsForSet(id);
+        expect(items, hasLength(16));
+        for (final item in items) {
+          expect(item.type, 'choice');
+          expect(item.promptLang, isNull);
+          expect(item.answerLang, isNull);
+          expect(item.choices, isNull);
+        }
+      },
+    );
   });
 }

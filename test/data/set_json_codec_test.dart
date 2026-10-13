@@ -16,7 +16,8 @@ Map<dynamic, dynamic> validSetJson() => {
       'type': 'choice',
       'prompt': 'Hund',
       'answer': 'dog',
-      'direction': 'deEn',
+      'promptLang': 'de',
+      'answerLang': 'en',
       'choices': ['cat', 'mouse', 'bird'],
       'hint': '',
     },
@@ -32,7 +33,8 @@ void main() {
       expect(set.title, 'Demo');
       expect(set.createdBy, 'teacher');
       expect(set.items, hasLength(3));
-      expect(set.items[0].direction, 'deEn');
+      expect(set.items[0].promptLang, 'de');
+      expect(set.items[0].answerLang, 'en');
       expect(set.items[0].choices, ['cat', 'mouse', 'bird']);
       expect(set.items[1].answer, '01711234567');
     });
@@ -60,7 +62,8 @@ void main() {
             'type': 'choice',
             'prompt': 'Hund',
             'answer': 'dog',
-            'direction': 'enDe',
+            'promptLang': 'en',
+            'answerLang': 'de',
           },
         ],
       }, today: kTestToday);
@@ -134,7 +137,8 @@ void main() {
         'type': 'choice',
         'prompt': ' ',
         'answer': 'dog',
-        'direction': 'deEn',
+        'promptLang': 'de',
+        'answerLang': 'en',
       };
       await expectRejects(noPrompt, 'prompt');
 
@@ -147,40 +151,52 @@ void main() {
       await expectRejects(noAnswer, 'answer');
     });
 
-    test('choice without direction; phone with direction', () async {
-      final missingDir = validSetJson();
-      ((missingDir['items'] as List)[0] as Map).remove('direction');
-      await expectRejects(missingDir, 'direction');
+    test('choice tolerates a missing pair (#022); rejects only-one-set and '
+        'phone with a pair', () async {
+      final missingPair = validSetJson();
+      ((missingPair['items'] as List)[0] as Map).remove('promptLang');
+      ((missingPair['items'] as List)[0] as Map).remove('answerLang');
+      final set = decodeSetFromJson(missingPair, today: kTestToday);
+      expect(set.items[0].promptLang, isNull);
+      expect(set.items[0].answerLang, isNull);
 
-      final phoneDir = validSetJson();
-      (phoneDir['items'] as List)[1] = {
+      final onlyOne = validSetJson();
+      ((onlyOne['items'] as List)[0] as Map).remove('answerLang');
+      await expectRejects(onlyOne, 'together');
+
+      final phonePair = validSetJson();
+      (phonePair['items'] as List)[1] = {
         'type': 'phone',
         'prompt': 'Mama',
         'answer': '01711234567',
-        'direction': 'deEn',
+        'promptLang': 'de',
+        'answerLang': 'en',
       };
-      await expectRejects(phoneDir, 'not allowed');
+      await expectRejects(phonePair, 'not allowed');
     });
 
-    test('freeText accepts direction present or absent', () {
-      final withDirection = validSetJson();
-      (withDirection['items'] as List)[0] = {
+    test('freeText accepts a language pair present or absent', () {
+      final withPair = validSetJson();
+      (withPair['items'] as List)[0] = {
         'type': 'freeText',
         'prompt': 'Hund',
         'answer': 'dog',
-        'direction': 'deEn',
+        'promptLang': 'de',
+        'answerLang': 'en',
       };
-      final set1 = decodeSetFromJson(withDirection, today: kTestToday);
-      expect(set1.items[0].direction, 'deEn');
+      final set1 = decodeSetFromJson(withPair, today: kTestToday);
+      expect(set1.items[0].promptLang, 'de');
+      expect(set1.items[0].answerLang, 'en');
 
-      final withoutDirection = validSetJson();
-      (withoutDirection['items'] as List)[0] = {
+      final withoutPair = validSetJson();
+      (withoutPair['items'] as List)[0] = {
         'type': 'freeText',
         'prompt': 'Capital of France',
         'answer': 'Paris',
       };
-      final set2 = decodeSetFromJson(withoutDirection, today: kTestToday);
-      expect(set2.items[0].direction, isNull);
+      final set2 = decodeSetFromJson(withoutPair, today: kTestToday);
+      expect(set2.items[0].promptLang, isNull);
+      expect(set2.items[0].answerLang, isNull);
     });
 
     test('freeText with choices is rejected', () async {
@@ -242,7 +258,8 @@ void main() {
         'type': 'choice',
         'prompt': 'Hund',
         'answer': 'dog',
-        'direction': 'deEn',
+        'promptLang': 'de',
+        'answerLang': 'en',
         'hint': 42,
       };
       await expectRejects(badHint, 'hint');
@@ -254,7 +271,8 @@ void main() {
         'type': 'choice',
         'prompt': 'Hund',
         'answer': 'dog',
-        'direction': 'deEn',
+        'promptLang': 'de',
+        'answerLang': 'en',
         'choices': 'cat',
       };
       await expectRejects(json, 'choices');
@@ -280,7 +298,8 @@ void main() {
             type: 'choice',
             prompt: 'Hund',
             answer: 'dog',
-            direction: 'deEn',
+            promptLang: 'de',
+            answerLang: 'en',
           ),
         ],
         today: kTestToday,
@@ -308,7 +327,8 @@ void main() {
             type: 'choice',
             prompt: 'Hund',
             answer: 'dog',
-            direction: 'deEn',
+            promptLang: 'de',
+            answerLang: 'en',
             choices: ['cat', 'mouse'],
             hint: 'h',
           ),

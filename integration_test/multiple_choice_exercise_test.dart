@@ -50,7 +50,8 @@ Future<List<Item>> _persistSet(AppDatabase db) async {
             type: 'choice',
             prompt: prompt,
             answer: answer,
-            direction: const Value('deEn'),
+            promptLang: const Value('de'),
+            answerLang: const Value('en'),
             position: i,
           ),
         );
@@ -61,7 +62,8 @@ Future<List<Item>> _persistSet(AppDatabase db) async {
         type: 'choice',
         prompt: prompt,
         answer: answer,
-        direction: 'deEn',
+        promptLang: 'de',
+        answerLang: 'en',
         position: i,
       ),
     );

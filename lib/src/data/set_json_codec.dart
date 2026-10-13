@@ -7,7 +7,8 @@
 // { "format": "foxstreak-set", "version": 1, "title": "...",
 //   "description": "...", "createdBy": "Mama", "items": [
 //     { "type": "choice", "prompt": "Hund", "answer": "dog",
-//       "direction": "deEn", "choices": ["cat","mouse"], "hint": "" },
+//       "promptLang": "de", "answerLang": "en", "choices": ["cat","mouse"],
+//       "hint": "" },
 //     { "type": "phone", "prompt": "Mama", "answer": "01711234567" },
 //     { "type": "date", "prompt": "Mamas Geburtstag",
 //       "answer": "1985-05-14" } ] }
@@ -35,7 +36,8 @@ class ShareItem {
   final String type;
   final String prompt;
   final String answer;
-  final String? direction;
+  final String? promptLang;
+  final String? answerLang;
   final List<String>? choices;
   final String hint;
 
@@ -43,7 +45,8 @@ class ShareItem {
     required this.type,
     required this.prompt,
     required this.answer,
-    this.direction,
+    this.promptLang,
+    this.answerLang,
     this.choices,
     this.hint = '',
   });
@@ -54,7 +57,8 @@ class ShareItem {
       'prompt': prompt,
       'answer': answer,
     };
-    if (direction != null) map['direction'] = direction;
+    if (promptLang != null) map['promptLang'] = promptLang;
+    if (answerLang != null) map['answerLang'] = answerLang;
     if (choices != null) map['choices'] = choices;
     if (hint.isNotEmpty) map['hint'] = hint;
     return map;
@@ -197,13 +201,21 @@ ShareItem _decodeItem(int index, Map<dynamic, dynamic> raw, {DateTime? today}) {
     throw SetImportException('$prefix: answer must be non-empty');
   }
 
-  final direction = m['direction'];
-  if (direction != null && direction is! String) {
-    throw SetImportException('$prefix: direction must be a string');
+  final promptLang = m['promptLang'];
+  if (promptLang != null && promptLang is! String) {
+    throw SetImportException('$prefix: promptLang must be a string');
   }
-  final directionError = validateDirection(type, direction as String?);
-  if (directionError != null) {
-    throw SetImportException('$prefix: $directionError');
+  final answerLang = m['answerLang'];
+  if (answerLang != null && answerLang is! String) {
+    throw SetImportException('$prefix: answerLang must be a string');
+  }
+  final languageError = validateLanguagePair(
+    type,
+    promptLang as String?,
+    answerLang as String?,
+  );
+  if (languageError != null) {
+    throw SetImportException('$prefix: $languageError');
   }
 
   List<String>? choices;
@@ -247,7 +259,8 @@ ShareItem _decodeItem(int index, Map<dynamic, dynamic> raw, {DateTime? today}) {
     // Phones are stored normalised (digits-only, German style keeps
     // leading 0, e.g. 0171...). Other types keep the trimmed literal.
     answer: type == 'phone' ? normalizePhone(answer.trim()) : answer.trim(),
-    direction: direction,
+    promptLang: promptLang,
+    answerLang: answerLang,
     choices: choices,
     hint: (hint as String?) ?? '',
   );
@@ -274,9 +287,13 @@ void validateShareSet(ShareSet set, {DateTime? today}) {
     if (!isNonEmptyContent(item.answer)) {
       throw SetImportException('$prefix: answer must be non-empty');
     }
-    final directionError = validateDirection(item.type, item.direction);
-    if (directionError != null) {
-      throw SetImportException('$prefix: $directionError');
+    final languageError = validateLanguagePair(
+      item.type,
+      item.promptLang,
+      item.answerLang,
+    );
+    if (languageError != null) {
+      throw SetImportException('$prefix: $languageError');
     }
     final choicesError = validateChoices(item.type, item.choices);
     if (choicesError != null) {

@@ -85,28 +85,38 @@ void main() {
     });
   });
 
-  group('validateDirection', () {
-    test('choice requires deEn|enDe', () {
-      expect(validateDirection('choice', 'deEn'), isNull);
-      expect(validateDirection('choice', 'enDe'), isNull);
-      expect(validateDirection('choice', null), isNotNull);
-      expect(validateDirection('choice', ''), isNotNull);
-      expect(validateDirection('choice', 'enFr'), isNotNull);
+  group('kSupportedLanguages', () {
+    test('is de/en for now (#022)', () {
+      expect(kSupportedLanguages, {'de', 'en'});
+    });
+  });
+
+  group('validateLanguagePair', () {
+    test('choice accepts a valid pair, both-null, or neither being set', () {
+      expect(validateLanguagePair('choice', 'de', 'en'), isNull);
+      expect(validateLanguagePair('choice', 'en', 'de'), isNull);
+      expect(validateLanguagePair('choice', null, null), isNull);
     });
 
-    test('freeText direction is optional but must be valid when present', () {
-      expect(validateDirection('freeText', null), isNull);
-      expect(validateDirection('freeText', ''), isNull);
-      expect(validateDirection('freeText', 'deEn'), isNull);
-      expect(validateDirection('freeText', 'enDe'), isNull);
-      expect(validateDirection('freeText', 'enFr'), isNotNull);
+    test('choice rejects only-one-set, same-language, and unknown codes', () {
+      expect(validateLanguagePair('choice', 'de', null), isNotNull);
+      expect(validateLanguagePair('choice', null, 'en'), isNotNull);
+      expect(validateLanguagePair('choice', 'de', 'de'), isNotNull);
+      expect(validateLanguagePair('choice', 'fr', 'en'), isNotNull);
     });
 
-    test('phone/date must omit direction', () {
-      expect(validateDirection('phone', null), isNull);
-      expect(validateDirection('date', null), isNull);
-      expect(validateDirection('phone', 'deEn'), isNotNull);
-      expect(validateDirection('date', 'enDe'), isNotNull);
+    test('freeText follows the exact same rules as choice (#022)', () {
+      expect(validateLanguagePair('freeText', 'de', 'en'), isNull);
+      expect(validateLanguagePair('freeText', null, null), isNull);
+      expect(validateLanguagePair('freeText', 'de', null), isNotNull);
+      expect(validateLanguagePair('freeText', 'fr', 'en'), isNotNull);
+    });
+
+    test('phone/date must omit the pair', () {
+      expect(validateLanguagePair('phone', null, null), isNull);
+      expect(validateLanguagePair('date', null, null), isNull);
+      expect(validateLanguagePair('phone', 'de', 'en'), isNotNull);
+      expect(validateLanguagePair('date', 'en', 'de'), isNotNull);
     });
   });
 

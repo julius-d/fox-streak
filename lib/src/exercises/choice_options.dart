@@ -38,9 +38,13 @@ class ChoiceOption {
 /// Distractor fallback, in priority order (never fewer than 3 distractors,
 /// the correct answer is always excluded, duplicates of it are dropped):
 /// 1. [item.choices] (blank-tolerant JSON array from the #004 editor).
-/// 2. Other items in [otherSetItems] that share [item.direction] (expected
-///    to be the rest of the current lesson's set — the current item is
-///    excluded by id), picked in random order.
+/// 2. Other items in [otherSetItems] that share [item.type] and the same
+///    `promptLang`/`answerLang` pair (expected to be the rest of the current
+///    lesson's set — the current item is excluded by id), picked in random
+///    order. Filtering by type too (not just language pair) keeps non-vocab
+///    `choice` items (both language fields `null`, #022's Bundesländer seed)
+///    from leaking in as distractors for a differently-typed item that also
+///    has no language pair (e.g. `phone`/`date`).
 /// 3. [placeholderDistractor] for any still-empty slot, called with a
 ///    1-based index.
 List<ChoiceOption> buildChoiceOptions({
@@ -68,12 +72,15 @@ List<ChoiceOption> buildChoiceOptions({
     addIfNew(stored);
   }
 
-  if (distractors.length < 3 && item.direction != null) {
+  if (distractors.length < 3) {
     final pool =
         otherSetItems
             .where(
               (other) =>
-                  other.id != item.id && other.direction == item.direction,
+                  other.id != item.id &&
+                  other.type == item.type &&
+                  other.promptLang == item.promptLang &&
+                  other.answerLang == item.answerLang,
             )
             .map((other) => other.answer)
             .toList()

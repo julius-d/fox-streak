@@ -13,14 +13,20 @@ import 'package:fox_streak_app/src/data/database.dart';
 import 'package:fox_streak_app/src/exercises/free_text_exercise.dart';
 import 'package:fox_streak_app/src/lesson/exercise_card.dart';
 
-Item _item({String? direction, String answer = 'Hund', String prompt = 'dog'}) {
+Item _item({
+  String? promptLang,
+  String? answerLang,
+  String answer = 'Hund',
+  String prompt = 'dog',
+}) {
   return Item(
     id: 1,
     setId: 1,
     type: 'freeText',
     prompt: prompt,
     answer: answer,
-    direction: direction,
+    promptLang: promptLang,
+    answerLang: answerLang,
     choices: null,
     hint: '',
     position: 0,
@@ -166,49 +172,66 @@ void main() {
       },
     );
 
-    testWidgets('vocab-flavored item shows direction framing (deEn)', (
+    testWidgets('vocab-flavored item shows direction framing (de->en)', (
       tester,
     ) async {
       await tester.pumpWidget(
         _Harness(
-          item: _item(direction: 'deEn'),
-          onDraft: (_) {},
-        ),
-      );
-      await tester.pump();
-
-      final l10n = AppLocalizations.delegate.load(const Locale('en'));
-      final resolved = await l10n;
-      expect(find.text(resolved.directionDeEn), findsOneWidget);
-    });
-
-    testWidgets('vocab-flavored item shows direction framing (enDe)', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        _Harness(
-          item: _item(direction: 'enDe'),
+          item: _item(promptLang: 'de', answerLang: 'en'),
           onDraft: (_) {},
         ),
       );
       await tester.pump();
 
       final resolved = await AppLocalizations.delegate.load(const Locale('en'));
-      expect(find.text(resolved.directionEnDe), findsOneWidget);
+      expect(
+        find.text(resolved.exerciseDirectionLabel('German', 'English')),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('non-vocab item (direction null) shows no direction framing', (
+    testWidgets('vocab-flavored item shows direction framing (en->de)', (
       tester,
     ) async {
       await tester.pumpWidget(
-        _Harness(item: _item(direction: null), onDraft: (_) {}),
+        _Harness(
+          item: _item(promptLang: 'en', answerLang: 'de'),
+          onDraft: (_) {},
+        ),
       );
       await tester.pump();
 
       final resolved = await AppLocalizations.delegate.load(const Locale('en'));
-      expect(find.text(resolved.directionDeEn), findsNothing);
-      expect(find.text(resolved.directionEnDe), findsNothing);
-      expect(find.text('dog'), findsOneWidget);
+      expect(
+        find.text(resolved.exerciseDirectionLabel('English', 'German')),
+        findsOneWidget,
+      );
     });
+
+    testWidgets(
+      'non-vocab item (no language pair) shows no direction framing',
+      (tester) async {
+        await tester.pumpWidget(
+          _Harness(
+            item: _item(promptLang: null, answerLang: null),
+            onDraft: (_) {},
+          ),
+        );
+        await tester.pump();
+
+        final resolved = await AppLocalizations.delegate.load(
+          const Locale('en'),
+        );
+        expect(
+          find.text(resolved.exerciseDirectionLabel('German', 'English')),
+          findsNothing,
+        );
+        expect(
+          find.text(resolved.exerciseDirectionLabel('English', 'German')),
+          findsNothing,
+        );
+        expect(find.text('dog'), findsOneWidget);
+      },
+    );
   });
 }

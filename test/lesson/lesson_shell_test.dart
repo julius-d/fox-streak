@@ -148,7 +148,8 @@ Future<List<Item>> setupTestItems(
             type: type,
             prompt: 'Question $i',
             answer: 'answer$i',
-            direction: const Value.absent(),
+            promptLang: const Value.absent(),
+            answerLang: const Value.absent(),
             choices: choicesJson != null
                 ? Value(choicesJson)
                 : const Value.absent(),
@@ -163,7 +164,8 @@ Future<List<Item>> setupTestItems(
         type: type,
         prompt: 'Question $i',
         answer: 'answer$i',
-        direction: null,
+        promptLang: null,
+        answerLang: null,
         choices: choicesJson,
         hint: '',
         position: i,
@@ -1077,7 +1079,15 @@ void main() {
         // which caches its shuffled options in initState — without a
         // per-item key (lesson_screen.dart's `_buildExerciseCard`), the
         // second item would wrongly keep showing the first item's answer.
-        final items = await setupTestItems(db, 1, 2);
+        // Explicit `choices` (rather than #022's same-set fallback) keeps
+        // each item's distractors from legitimately including the other
+        // item's answer, which would otherwise make `shownFirst` ambiguous.
+        final items = await setupTestItems(
+          db,
+          1,
+          2,
+          choicesJson: '["Opt A","Opt B","Opt C"]',
+        );
 
         await pumpLessonShell(
           tester,

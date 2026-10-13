@@ -1,4 +1,5 @@
-// Schema v1 -> v2 (issue #026) and v2 -> v3 (issue #010) migration tests.
+// Schema v1 -> v2 (issue #026), v2 -> v3 (issue #010), and v3 -> v4
+// (issue #022) migration tests.
 //
 // Simulates pre-migration databases on disk, then reopens them with the
 // real (current schemaVersion) `AppDatabase` and asserts `onUpgrade` applied
@@ -11,20 +12,70 @@
 import 'dart:io';
 
 import 'package:drift/drift.dart'
-    show MigrationStrategy, Migrator, QueryExecutor, Value;
+    show MigrationStrategy, Migrator, QueryExecutor, Value, Variable;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fox_streak_app/src/data/database.dart';
 
-/// Creates the pre-#010 (v1/v2) table shapes: `questionSets`/`items`/
-/// `attempts` match the current Dart defs (no structural diff since v1),
-/// but `profile_stats` is hand-written *without* `today_xp` — using
-/// `createAll()` here would build it from the current (v3) Dart table
-/// definition and mask the `addColumn` migration under test.
+/// Creates the pre-#022 `items` shape (`direction` TEXT instead of
+/// `promptLang`/`answerLang`) — the current Dart `Items` definition no
+/// longer has `direction`, so `m.createTable(db.items)` can't be used for
+/// pre-v4 fixtures; this hand-written DDL stands in for it.
+Future<void> _createItemsTableWithDirection(Migrator m) async {
+  final db = m.database as AppDatabase;
+  await db.customStatement('''
+    CREATE TABLE items (
+      id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+      set_id INTEGER NOT NULL REFERENCES question_sets (id) ON DELETE CASCADE,
+      type TEXT NOT NULL,
+      prompt TEXT NOT NULL,
+      answer TEXT NOT NULL,
+      direction TEXT NULL,
+      choices TEXT NULL,
+      hint TEXT NULL DEFAULT '',
+      position INTEGER NOT NULL
+    )
+  ''');
+}
+
+/// Inserts an `items` row with a `direction` value via raw SQL, since the
+/// pre-v4 `direction` column has no corresponding Dart field to insert
+/// through `ItemsCompanion` any more.
+Future<int> _insertLegacyItem(
+  AppDatabase db, {
+  required int setId,
+  required String type,
+  required String prompt,
+  required String answer,
+  String? direction,
+  String? choices,
+  required int position,
+}) {
+  return db.customInsert(
+    'INSERT INTO items (set_id, type, prompt, answer, direction, choices, '
+    'position) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    variables: [
+      Variable.withInt(setId),
+      Variable.withString(type),
+      Variable.withString(prompt),
+      Variable.withString(answer),
+      direction == null ? const Variable(null) : Variable.withString(direction),
+      choices == null ? const Variable(null) : Variable.withString(choices),
+      Variable.withInt(position),
+    ],
+  );
+}
+
+/// Creates the pre-#010 (v1/v2) table shapes: `questionSets`/`attempts`
+/// match the current Dart defs (no structural diff since v1); `items` is
+/// the pre-#022 shape (see [_createItemsTableWithDirection]); `profile_stats`
+/// is hand-written *without* `today_xp` — using `createAll()` here would
+/// build it from the current (v4) Dart table definition and mask the
+/// `addColumn` migration under test.
 Future<void> _createLegacySchema(Migrator m) async {
   final db = m.database as AppDatabase;
   await m.createTable(db.questionSets);
-  await m.createTable(db.items);
+  await _createItemsTableWithDirection(m);
   await m.createTable(db.attempts);
   await db.customStatement('''
     CREATE TABLE profile_stats (
@@ -65,6 +116,29 @@ class _LegacyV2Database extends AppDatabase {
       MigrationStrategy(onCreate: _createLegacySchema);
 }
 
+/// A schemaVersion-3 view of [AppDatabase], used only to seed a pre-#022
+/// file at the exact version #022's migration upgrades from. `profile_stats`
+/// already has `today_xp` at v3 (unaffected by #022), so it can use the
+/// current Dart definition directly; `items` still needs the pre-#022
+/// `direction` shape.
+class _LegacyV3Database extends AppDatabase {
+  _LegacyV3Database(QueryExecutor executor) : super.forTesting(executor); // ignore: use_super_parameters — must forward to the named forTesting() ctor, not the default unnamed one
+
+  @override
+  int get schemaVersion => 3;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) async {
+      final db = m.database as AppDatabase;
+      await m.createTable(db.questionSets);
+      await _createItemsTableWithDirection(m);
+      await m.createTable(db.attempts);
+      await m.createTable(db.profileStats);
+    },
+  );
+}
+
 void main() {
   test('onUpgrade rewrites vocab -> choice exactly once', () async {
     final dir = Directory.systemTemp.createTempSync('foxstreak_migration');
@@ -85,40 +159,36 @@ void main() {
             updatedAt: 0,
           ),
         );
-    final vocabId = await legacyDb
-        .into(legacyDb.items)
-        .insert(
-          ItemsCompanion.insert(
-            setId: setId,
-            type: 'vocab',
-            prompt: 'Hund',
-            answer: 'dog',
-            direction: const Value('deEn'),
-            choices: const Value('["cat","mouse"]'),
-            position: 0,
-          ),
-        );
-    final phoneId = await legacyDb
-        .into(legacyDb.items)
-        .insert(
-          ItemsCompanion.insert(
-            setId: setId,
-            type: 'phone',
-            prompt: 'Mama',
-            answer: '01711234567',
-            position: 1,
-          ),
-        );
+    final vocabId = await _insertLegacyItem(
+      legacyDb,
+      setId: setId,
+      type: 'vocab',
+      prompt: 'Hund',
+      answer: 'dog',
+      direction: 'deEn',
+      choices: '["cat","mouse"]',
+      position: 0,
+    );
+    final phoneId = await _insertLegacyItem(
+      legacyDb,
+      setId: setId,
+      type: 'phone',
+      prompt: 'Mama',
+      answer: '01711234567',
+      position: 1,
+    );
     await legacyDb.close();
 
-    // 2. Reopen the SAME file with the real (schemaVersion 2) database;
-    // drift sees user_version=1 < schemaVersion=2 and runs onUpgrade.
+    // 2. Reopen the SAME file with the real (current schemaVersion)
+    // database; drift sees user_version=1 < schemaVersion and runs every
+    // onUpgrade step in order, including #022's direction rewrite.
     final upgradedDb = AppDatabase.forTesting(NativeDatabase(file));
     addTearDown(upgradedDb.close);
 
     final vocabRow = await upgradedDb.getItemById(vocabId);
     expect(vocabRow?.type, 'choice');
-    expect(vocabRow?.direction, 'deEn');
+    expect(vocabRow?.promptLang, 'de');
+    expect(vocabRow?.answerLang, 'en');
     expect(vocabRow?.choices, '["cat","mouse"]');
 
     final phoneRow = await upgradedDb.getItemById(phoneId);
@@ -162,6 +232,85 @@ void main() {
     expect(profile.xpTotal, 42);
     expect(profile.streakCount, 3);
     expect(profile.lastActiveDay, '2026-10-10');
+  });
+
+  test('onUpgrade (v3 -> v4) rewrites direction into promptLang/answerLang and '
+      'drops the direction column', () async {
+    final dir = Directory.systemTemp.createTempSync('foxstreak_migration_v4');
+    final file = File('${dir.path}/test.sqlite');
+    addTearDown(() {
+      if (dir.existsSync()) dir.deleteSync(recursive: true);
+    });
+
+    // 1. Seed a v3 database directly on disk with deEn/enDe/no-direction
+    // items.
+    final legacyDb = _LegacyV3Database(NativeDatabase(file));
+    final setId = await legacyDb
+        .into(legacyDb.questionSets)
+        .insert(
+          QuestionSetsCompanion.insert(
+            title: 'Legacy set',
+            createdBy: 'teacher',
+            createdAt: 0,
+            updatedAt: 0,
+          ),
+        );
+    final deEnId = await _insertLegacyItem(
+      legacyDb,
+      setId: setId,
+      type: 'choice',
+      prompt: 'Hund',
+      answer: 'dog',
+      direction: 'deEn',
+      choices: '["cat","mouse"]',
+      position: 0,
+    );
+    final enDeId = await _insertLegacyItem(
+      legacyDb,
+      setId: setId,
+      type: 'choice',
+      prompt: 'bird',
+      answer: 'Vogel',
+      direction: 'enDe',
+      position: 1,
+    );
+    final noPairId = await _insertLegacyItem(
+      legacyDb,
+      setId: setId,
+      type: 'phone',
+      prompt: 'Mama',
+      answer: '01711234567',
+      position: 2,
+    );
+    await legacyDb.close();
+
+    // 2. Reopen the SAME file with the real (current schemaVersion)
+    // database; drift sees user_version=3 < schemaVersion=4 and runs
+    // onUpgrade's rewrite + dropColumn.
+    final upgradedDb = AppDatabase.forTesting(NativeDatabase(file));
+    addTearDown(upgradedDb.close);
+
+    final deEnRow = await upgradedDb.getItemById(deEnId);
+    expect(deEnRow?.promptLang, 'de');
+    expect(deEnRow?.answerLang, 'en');
+    expect(deEnRow?.choices, '["cat","mouse"]');
+
+    final enDeRow = await upgradedDb.getItemById(enDeId);
+    expect(enDeRow?.promptLang, 'en');
+    expect(enDeRow?.answerLang, 'de');
+
+    final noPairRow = await upgradedDb.getItemById(noPairId);
+    expect(noPairRow?.promptLang, isNull);
+    expect(noPairRow?.answerLang, isNull);
+
+    // The old `direction` column is actually dropped, not just unused.
+    final columns = await upgradedDb
+        .customSelect("PRAGMA table_info('items')")
+        .get();
+    expect(
+      columns.map((row) => row.read<String>('name')),
+      isNot(contains('direction')),
+    );
   });
 }
 

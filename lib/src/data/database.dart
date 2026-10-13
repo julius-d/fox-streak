@@ -35,8 +35,11 @@ class Items extends Table {
   TextColumn get type => text()();
   TextColumn get prompt => text()();
   TextColumn get answer => text()();
-  // deEn|enDe: required for choice, optional for freeText, NULL otherwise.
-  TextColumn get direction => text().nullable()();
+  // ISO 639-1 codes (e.g. de/en): optional for choice/freeText (set/unset
+  // together), NULL otherwise. Replaces the v3 `direction` enum (#022) so
+  // adding a language is just adding a code to `kSupportedLanguages`.
+  TextColumn get promptLang => text().nullable()();
+  TextColumn get answerLang => text().nullable()();
   // JSON array of distractors, choice only, NULL otherwise.
   TextColumn get choices => text().nullable()();
   TextColumn get hint => text().nullable().withDefault(const Constant(''))();
@@ -86,7 +89,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -104,6 +107,21 @@ class AppDatabase extends _$AppDatabase {
       if (from < 3) {
         await m.addColumn(profileStats, profileStats.todayXp);
       }
+      // v4 (#022): replaces `direction` (deEn|enDe) with the generic
+      // `promptLang`/`answerLang` ISO 639-1 pair, then drops `direction`.
+      if (from < 4) {
+        await m.addColumn(items, items.promptLang);
+        await m.addColumn(items, items.answerLang);
+        await customStatement(
+          'UPDATE items SET '
+          "prompt_lang = CASE direction WHEN 'deEn' THEN 'de' WHEN 'enDe' "
+          "THEN 'en' END, "
+          "answer_lang = CASE direction WHEN 'deEn' THEN 'en' WHEN 'enDe' "
+          "THEN 'de' END "
+          "WHERE direction IN ('deEn', 'enDe')",
+        );
+        await m.dropColumn(items, 'direction');
+      }
     },
     beforeOpen: (details) async {
       // SQLite disables FK enforcement by default; without this,
@@ -113,7 +131,8 @@ class AppDatabase extends _$AppDatabase {
   );
 
   // v1 had no migrations; v2 (#026) added the vocab->choice rewrite above;
-  // v3 (#010) added `profileStats.todayXp`.
+  // v3 (#010) added `profileStats.todayXp`; v4 (#022) replaced
+  // `items.direction` with `promptLang`/`answerLang`.
 }
 
 DatabaseConnection _openConnection() => driftDatabase(name: 'fox_streak');

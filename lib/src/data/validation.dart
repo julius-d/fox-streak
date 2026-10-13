@@ -38,8 +38,10 @@ String? validateCreatorName(String? value) {
 /// True when [value] is a valid free-text creator name.
 bool isValidCreatorName(String value) => validateCreatorName(value) == null;
 
-/// Allowed `items.direction` values (`choice`/`freeText` only).
-const Set<String> kDirections = {'deEn', 'enDe'};
+/// Supported ISO 639-1 language codes for `items.promptLang`/`answerLang`
+/// (#022). Adding a third language later is just adding a code here plus a
+/// display-name string (see `language_display.dart`) — no schema/UI change.
+const Set<String> kSupportedLanguages = {'de', 'en'};
 
 /// Share-format marker + version (see `set_json_codec.dart`).
 const String kShareFormat = 'foxstreak-set';
@@ -104,30 +106,37 @@ String _normalizeForGrading(String s) {
   return trimmed.toLowerCase();
 }
 
-/// Validates an item [direction]; returns an error message or `null` if ok.
+/// Validates an item's [promptLang]/[answerLang] pair; returns an error
+/// message or `null` if ok.
 ///
-/// `choice` items require `deEn|enDe`. `freeText` items may omit it
-/// (non-vocab-flavored free-text prompts) or set it (vocab-flavored ones).
-/// `phone`/`date` must leave it `null`.
-String? validateDirection(String type, String? direction) {
-  if (type == 'choice') {
-    if (direction == null || direction.isEmpty) {
-      return 'direction is required for choice items';
+/// `choice`/`freeText` items may omit the pair entirely (non-vocab-flavored
+/// prompts) or set both to distinct codes from [kSupportedLanguages] — they
+/// must be set/unset together. `phone`/`date` must leave both `null`.
+String? validateLanguagePair(
+  String type,
+  String? promptLang,
+  String? answerLang,
+) {
+  final hasPrompt = promptLang != null && promptLang.isNotEmpty;
+  final hasAnswer = answerLang != null && answerLang.isNotEmpty;
+  if (type == 'choice' || type == 'freeText') {
+    if (!hasPrompt && !hasAnswer) return null;
+    if (hasPrompt != hasAnswer) {
+      return 'promptLang and answerLang must be set together';
     }
-    if (!kDirections.contains(direction)) {
-      return 'unknown direction "$direction"';
+    if (!kSupportedLanguages.contains(promptLang)) {
+      return 'unknown language "$promptLang"';
+    }
+    if (!kSupportedLanguages.contains(answerLang)) {
+      return 'unknown language "$answerLang"';
+    }
+    if (promptLang == answerLang) {
+      return 'promptLang and answerLang must differ';
     }
     return null;
   }
-  if (type == 'freeText') {
-    if (direction == null || direction.isEmpty) return null;
-    if (!kDirections.contains(direction)) {
-      return 'unknown direction "$direction"';
-    }
-    return null;
-  }
-  if (direction != null) {
-    return 'direction is not allowed for type "$type"';
+  if (hasPrompt || hasAnswer) {
+    return 'language pair is not allowed for type "$type"';
   }
   return null;
 }

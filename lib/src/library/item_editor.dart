@@ -6,14 +6,17 @@
 // dates). Validation mirrors #002 `validation.dart` exactly; storage formats
 // never change (phone digits-only, date ISO `YYYY-MM-DD`).
 //
-// - Choice: prompt + answer (trim-then-require), required direction toggle
-//   (`SegmentedButton`, nullable initial for new items), 3 optional
-//   distractor fields (blank allowed; non-blank validated by
-//   `validateChoices` plus an editor-only duplicate-vs-answer check).
-// - FreeText: prompt + answer, optional direction toggle (#007's grading
-//   doesn't need it); no distractor fields (choices forbidden). The
-//   freeText-specific exercise-authoring UI (hint reveal, etc.) stays #007's
-//   job — this is the minimal non-rejecting editor path from #026.
+// - Choice: prompt + answer (trim-then-require), an optional "Vocabulary
+//   translation" toggle (#022) revealing two language dropdowns
+//   (`promptLang`/`answerLang`, picked from `kSupportedLanguages`) that must
+//   both be set and differ when the toggle is on, 3 optional distractor
+//   fields (blank allowed; non-blank validated by `validateChoices` plus an
+//   editor-only duplicate-vs-answer check).
+// - FreeText: prompt + answer, the same optional language-pair toggle as
+//   choice (#022 generalized the #007 optionality to both types); no
+//   distractor fields (choices forbidden). The freeText-specific
+//   exercise-authoring UI (hint reveal, etc.) stays #007's job — this is the
+//   minimal non-rejecting editor path from #026.
 // - Phone: name label + digit-only field with live display-only grouping
 //   (see `phone_formatting.dart`); the repository normalises on save.
 // - Date: calendar-styled card with 3 numeric fields (see
@@ -31,6 +34,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../data/database.dart';
+import '../data/language_display.dart';
 import '../data/providers.dart';
 import '../data/validation.dart';
 import '../theme/fox_streak_theme.dart';
@@ -65,10 +69,13 @@ class _ItemEditorDialogState extends ConsumerState<ItemEditorDialog> {
   late final FocusNode _dayFocus;
   late final FocusNode _monthFocus;
   late final FocusNode _yearFocus;
-  String? _direction;
+  late bool _languagePairEnabled;
+  String? _promptLang;
+  String? _answerLang;
   bool _saving = false;
   String? _saveError;
   String? _dateError;
+  String? _languagePairError;
 
   @override
   void initState() {
@@ -109,9 +116,11 @@ class _ItemEditorDialogState extends ConsumerState<ItemEditorDialog> {
         // save path below only writes what the fields contain.
       }
     }
-    // New items start with no pre-selected direction (inline error until
-    // picked); existing items keep their stored value.
-    _direction = existing?.direction;
+    // New items start with the toggle off (both fields null); existing
+    // items with a stored pair start with it on.
+    _promptLang = existing?.promptLang;
+    _answerLang = existing?.answerLang;
+    _languagePairEnabled = _promptLang != null && _answerLang != null;
     _dayFocus = FocusNode(debugLabel: 'itemDay');
     _monthFocus = FocusNode(debugLabel: 'itemMonth');
     _yearFocus = FocusNode(debugLabel: 'itemYear');
@@ -273,12 +282,22 @@ class _ItemEditorDialogState extends ConsumerState<ItemEditorDialog> {
       final today = ref.read(systemClockProvider).now();
       dateOk = isValidDateAnswer(_composedIso(), today: today);
     }
-    final directionOk =
-        _type != 'choice' || validateDirection(_type, _direction) == null;
-    if (!formValid || !dateOk || !directionOk) {
-      // Inline direction error is always visible while null; just block.
+    // Only choice/freeText render the language-pair picker; phone/date must
+    // never be blocked by a stale toggle left on from a prior type pick.
+    final languagePairOk =
+        (_type != 'choice' && _type != 'freeText') ||
+        !_languagePairEnabled ||
+        (_promptLang != null &&
+            _answerLang != null &&
+            _promptLang != _answerLang);
+    if (!formValid || !dateOk || !languagePairOk) {
       setState(() {
         if (!dateOk) _dateError = l10n.errorInvalidDate;
+        if (!languagePairOk) {
+          _languagePairError = (_promptLang == null || _answerLang == null)
+              ? l10n.errorLanguagePairRequired
+              : l10n.errorLanguagePairSame;
+        }
       });
       return;
     }
@@ -292,10 +311,14 @@ class _ItemEditorDialogState extends ConsumerState<ItemEditorDialog> {
       }
       choicesForSave = picks.isEmpty ? null : picks;
     }
-    // freeText direction is optional: pass through whatever (if anything)
-    // was picked; phone/date never have one.
-    final directionForSave = switch (_type) {
-      'choice' || 'freeText' => _direction,
+    // Both choice and freeText may optionally carry a language pair (#022);
+    // phone/date never have one.
+    final promptLangForSave = switch (_type) {
+      'choice' || 'freeText' when _languagePairEnabled => _promptLang,
+      _ => null,
+    };
+    final answerLangForSave = switch (_type) {
+      'choice' || 'freeText' when _languagePairEnabled => _answerLang,
       _ => null,
     };
     setState(() {
@@ -316,7 +339,8 @@ class _ItemEditorDialogState extends ConsumerState<ItemEditorDialog> {
           type: _type,
           prompt: prompt,
           answer: answer,
-          direction: directionForSave,
+          promptLang: promptLangForSave,
+          answerLang: answerLangForSave,
           choices: choicesForSave,
         );
       } else {
@@ -325,7 +349,8 @@ class _ItemEditorDialogState extends ConsumerState<ItemEditorDialog> {
           type: _type,
           prompt: prompt,
           answer: answer,
-          directionUpdate: () => directionForSave,
+          languagePairUpdate: () =>
+              (promptLang: promptLangForSave, answerLang: answerLangForSave),
           choicesUpdate: () => choicesForSave,
         );
       }
@@ -339,33 +364,80 @@ class _ItemEditorDialogState extends ConsumerState<ItemEditorDialog> {
     }
   }
 
-  /// Direction `SegmentedButton`, shared by `choice` (required) and
-  /// `freeText` (optional — no inline required-error).
-  Widget _directionPicker(AppLocalizations l10n, {required bool required}) {
+  /// Toggle + two language dropdowns, shared by `choice` and `freeText`
+  /// (#022): off by default, hides both dropdowns and keeps both fields
+  /// null; on requires picking both (and they must differ) before save.
+  Widget _languagePairPicker(AppLocalizations l10n) {
+    final languages = kSupportedLanguages.toList()..sort();
+    final languageItems = [
+      for (final code in languages)
+        DropdownMenuItem(
+          value: code,
+          child: Text(languageDisplayName(code, l10n)),
+        ),
+    ];
     return Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SegmentedButton<String>(
-          key: const Key('itemDirectionField'),
-          segments: [
-            ButtonSegment(value: 'deEn', label: Text(l10n.directionDeEn)),
-            ButtonSegment(value: 'enDe', label: Text(l10n.directionEnDe)),
-          ],
-          selected: _direction == null ? const <String>{} : {_direction!},
-          emptySelectionAllowed: true,
-          onSelectionChanged: (s) => setState(() => _direction = s.single),
-          style: ButtonStyle(
-            minimumSize: WidgetStateProperty.all(const Size(48, 48)),
-          ),
+        SwitchListTile(
+          key: const Key('itemLanguagePairToggle'),
+          contentPadding: EdgeInsets.zero,
+          title: Text(l10n.itemLanguagePairToggleLabel),
+          value: _languagePairEnabled,
+          onChanged: (enabled) => setState(() {
+            _languagePairEnabled = enabled;
+            _languagePairError = null;
+            if (!enabled) {
+              _promptLang = null;
+              _answerLang = null;
+            }
+          }),
         ),
-        if (required && _direction == null) ...[
-          const SizedBox(height: FoxSpacing.xs),
-          Text(
-            l10n.errorDirectionRequired,
-            softWrap: true,
-            style: Theme.of(context).textTheme.bodySmall
-                ?.copyWith(color: Theme.of(context).colorScheme.error),
+        if (_languagePairEnabled) ...[
+          const SizedBox(height: FoxSpacing.sm),
+          Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  key: const Key('itemPromptLangField'),
+                  initialValue: _promptLang,
+                  decoration: InputDecoration(
+                    labelText: l10n.itemPromptLangLabel,
+                  ),
+                  items: languageItems,
+                  onChanged: (v) => setState(() {
+                    _promptLang = v;
+                    _languagePairError = null;
+                  }),
+                ),
+              ),
+              const SizedBox(width: FoxSpacing.md),
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  key: const Key('itemAnswerLangField'),
+                  initialValue: _answerLang,
+                  decoration: InputDecoration(
+                    labelText: l10n.itemAnswerLangLabel,
+                  ),
+                  items: languageItems,
+                  onChanged: (v) => setState(() {
+                    _answerLang = v;
+                    _languagePairError = null;
+                  }),
+                ),
+              ),
+            ],
           ),
+          if (_languagePairError != null) ...[
+            const SizedBox(height: FoxSpacing.xs),
+            Text(
+              _languagePairError!,
+              softWrap: true,
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(color: Theme.of(context).colorScheme.error),
+            ),
+          ],
         ],
       ],
     );
@@ -388,7 +460,7 @@ class _ItemEditorDialogState extends ConsumerState<ItemEditorDialog> {
       children: [
         _answerField(l10n),
         const SizedBox(height: FoxSpacing.md),
-        _directionPicker(l10n, required: true),
+        _languagePairPicker(l10n),
         const SizedBox(height: FoxSpacing.md),
         for (var i = 0; i < 3; i++) ...[
           if (i > 0) const SizedBox(height: FoxSpacing.md),
@@ -406,7 +478,7 @@ class _ItemEditorDialogState extends ConsumerState<ItemEditorDialog> {
     );
   }
 
-  /// `freeText` type-the-answer fields: answer + optional direction, no
+  /// `freeText` type-the-answer fields: answer + optional language pair, no
   /// distractors (choices are forbidden for this type). The dedicated
   /// freeText-authoring UI stays #007's job — this is the minimal
   /// non-rejecting editor path #026 requires.
@@ -416,7 +488,7 @@ class _ItemEditorDialogState extends ConsumerState<ItemEditorDialog> {
       children: [
         _answerField(l10n),
         const SizedBox(height: FoxSpacing.md),
-        _directionPicker(l10n, required: false),
+        _languagePairPicker(l10n),
       ],
     );
   }

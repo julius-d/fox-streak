@@ -72,8 +72,14 @@ abstract class AppLocalizations {
   String get typeFreeText;
   String get typePhone;
   String get typeDate;
-  String get directionDeEn;
-  String get directionEnDe;
+  String get languageDe;
+  String get languageEn;
+  String exerciseDirectionLabel(String fromLanguage, String toLanguage);
+  String get itemLanguagePairToggleLabel;
+  String get itemPromptLangLabel;
+  String get itemAnswerLangLabel;
+  String get errorLanguagePairRequired;
+  String get errorLanguagePairSame;
   String get shareSet;
   String get importSet;
   String get setActions;
@@ -83,7 +89,6 @@ abstract class AppLocalizations {
   String get errorCreatorLength;
   String get errorInvalidPhone;
   String get errorInvalidDate;
-  String get errorDirectionRequired;
   String itemDistractorLabel(int index);
   String get itemDistractorHint;
   String get itemDayLabel;
@@ -232,9 +237,22 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get typeDate => 'Birthday';
   @override
-  String get directionDeEn => 'German → English';
+  String get languageDe => 'German';
   @override
-  String get directionEnDe => 'English → German';
+  String get languageEn => 'English';
+  @override
+  String exerciseDirectionLabel(String fromLanguage, String toLanguage) =>
+      '$fromLanguage → $toLanguage';
+  @override
+  String get itemLanguagePairToggleLabel => 'Vocabulary translation';
+  @override
+  String get itemPromptLangLabel => 'From language';
+  @override
+  String get itemAnswerLangLabel => 'To language';
+  @override
+  String get errorLanguagePairRequired => 'Pick both languages';
+  @override
+  String get errorLanguagePairSame => 'Languages must differ';
   @override
   String get shareSet => 'Share';
   @override
@@ -253,8 +271,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorInvalidPhone => 'Enter 3–15 digits';
   @override
   String get errorInvalidDate => 'Use YYYY-MM-DD (1900-01-01…today)';
-  @override
-  String get errorDirectionRequired => 'Pick a direction';
   @override
   String itemDistractorLabel(int index) => 'Distractor $index';
   @override
@@ -458,9 +474,22 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get typeDate => 'Geburtstag';
   @override
-  String get directionDeEn => 'Deutsch → Englisch';
+  String get languageDe => 'Deutsch';
   @override
-  String get directionEnDe => 'Englisch → Deutsch';
+  String get languageEn => 'Englisch';
+  @override
+  String exerciseDirectionLabel(String fromLanguage, String toLanguage) =>
+      '$fromLanguage → $toLanguage';
+  @override
+  String get itemLanguagePairToggleLabel => 'Vokabel-Übersetzung';
+  @override
+  String get itemPromptLangLabel => 'Von Sprache';
+  @override
+  String get itemAnswerLangLabel => 'Zu Sprache';
+  @override
+  String get errorLanguagePairRequired => 'Wähle beide Sprachen';
+  @override
+  String get errorLanguagePairSame => 'Sprachen müssen sich unterscheiden';
   @override
   String get shareSet => 'Teilen';
   @override
@@ -480,8 +509,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get errorInvalidPhone => '3–15 Ziffern eingeben';
   @override
   String get errorInvalidDate => 'JJJJ-MM-TT nutzen (1900-01-01…heute)';
-  @override
-  String get errorDirectionRequired => 'Wähle eine Richtung';
   @override
   String itemDistractorLabel(int index) => 'Distraktor $index';
   @override

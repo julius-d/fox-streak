@@ -1,6 +1,6 @@
 # Issue 022: Generify direction into promptLang/answerLang + Bundesländer capitals seed set
 
-Status: open | Priority: P1 | Type: feature | Refined-at: 2026-10-13
+Status: done | Priority: P1 | Type: feature | Refined-at: 2026-10-13
 
 ## Goal
 Replace the opaque `items.direction` enum (`deEn`/`enDe`) with two language-code fields, `promptLang`/`answerLang` (ISO 639-1, e.g. `de`/`en`), so adding more language pairs later is just adding codes to a supported-languages set — no enum explosion, no further schema change. Use this to make `choice` (multiple-choice) usable for non-vocab recall quizzes (optional language pair, mirroring `freeText`'s existing optionality), and ship a concrete example: a bundled demo set quizzing the capitals of all 16 German Bundesländer.
@@ -17,16 +17,16 @@ Replace the opaque `items.direction` enum (`deEn`/`enDe`) with two language-code
   - Content: Schleswig-Holstein→Kiel, Hamburg→Hamburg, Mecklenburg-Vorpommern→Schwerin, Niedersachsen→Hannover, Bremen→Bremen, Sachsen-Anhalt→Magdeburg, Brandenburg→Potsdam, Berlin→Berlin, Sachsen→Dresden, Thüringen→Erfurt, Hessen→Wiesbaden, Nordrhein-Westfalen→Düsseldorf, Rheinland-Pfalz→Mainz, Saarland→Saarbrücken, Baden-Württemberg→Stuttgart, Bayern→München.
 
 ## Acceptance criteria
-- [ ] `database.dart`: `schemaVersion` 4; `prompt_lang`/`answer_lang` columns added, `direction` dropped, `onUpgrade` rewrite step + migration test (old `direction` values map correctly, old column gone).
-- [ ] `validation.dart`: `kSupportedLanguages = {'de','en'}`; direction validation replaced by a language-pair validator (both optional together for `choice`/`freeText`, must differ when set, forbidden for `phone`/`date`).
-- [ ] `sets_repository.dart`: `createItem`/`updateItem` take `promptLang`/`answerLang` instead of `direction`; the inline `'direction is required for choice items'` throw in `updateItem`'s type-change guard is removed (no longer required at all). *(Touches the same guard #029 flagged as duplicated — fold in if convenient.)*
-- [ ] `set_json_codec.dart` + `assets/seed/README.md`: JSON share format uses `promptLang`/`answerLang`; existing seed assets (`demo_animals`, `demo_family`) updated to match.
-- [ ] `item_editor.dart`: shared direction-picker becomes a toggle + two language dropdowns, used by both `_choiceFields` and `_freeTextFields`; hidden by default for new items, shown by default when editing an item with an existing language pair.
-- [ ] `multiple_choice_exercise.dart` / `free_text_exercise.dart`: direction-framing label built generically from `promptLang`/`answerLang` via a language-display-name lookup + one parameterized l10n template (replacing `directionDeEn`/`directionEnDe`).
-- [ ] `choice_options.dart`'s same-set fallback filters by type + language pair (not language pair alone).
-- [ ] New `assets/seed/demo_bundeslaender.foxstreak.json` (16 `choice` items, no language pair, no `choices`) registered in `seed_loader.dart`'s `kSeedAssetPaths`.
-- [ ] All existing tests touching `direction` updated to the new fields (`item_editor_test.dart`, `multiple_choice_exercise_test.dart`, `free_text_exercise_test.dart`, `migration_test.dart`, `set_json_codec_test.dart`, `lesson_shell_test.dart`, `choice_options_test.dart`, `sets_repository_test.dart`, both integration tests); new tests for the toggle UX, the generic label builder, and the new seed.
-- [ ] `flutter analyze` / `dart format` / `flutter test` clean.
+- [x] `database.dart`: `schemaVersion` 4; `prompt_lang`/`answer_lang` columns added, `direction` dropped, `onUpgrade` rewrite step + migration test (old `direction` values map correctly, old column gone).
+- [x] `validation.dart`: `kSupportedLanguages = {'de','en'}`; direction validation replaced by a language-pair validator (both optional together for `choice`/`freeText`, must differ when set, forbidden for `phone`/`date`).
+- [x] `sets_repository.dart`: `createItem`/`updateItem` take `promptLang`/`answerLang` instead of `direction`; the inline `'direction is required for choice items'` throw in `updateItem`'s type-change guard is removed (no longer required at all). *(Touches the same guard #029 flagged as duplicated — fold in if convenient.)*
+- [x] `set_json_codec.dart` + `assets/seed/README.md`: JSON share format uses `promptLang`/`answerLang`; existing seed assets (`demo_animals`, `demo_family`) updated to match.
+- [x] `item_editor.dart`: shared direction-picker becomes a toggle + two language dropdowns, used by both `_choiceFields` and `_freeTextFields`; hidden by default for new items, shown by default when editing an item with an existing language pair.
+- [x] `multiple_choice_exercise.dart` / `free_text_exercise.dart`: direction-framing label built generically from `promptLang`/`answerLang` via a language-display-name lookup + one parameterized l10n template (replacing `directionDeEn`/`directionEnDe`).
+- [x] `choice_options.dart`'s same-set fallback filters by type + language pair (not language pair alone).
+- [x] New `assets/seed/demo_bundeslaender.foxstreak.json` (16 `choice` items, no language pair, no `choices`) registered in `seed_loader.dart`'s `kSeedAssetPaths`.
+- [x] All existing tests touching `direction` updated to the new fields (`item_editor_test.dart`, `multiple_choice_exercise_test.dart`, `free_text_exercise_test.dart`, `migration_test.dart`, `set_json_codec_test.dart`, `lesson_shell_test.dart`, `choice_options_test.dart`, `sets_repository_test.dart`, both integration tests); new tests for the toggle UX, the generic label builder, and the new seed.
+- [x] `flutter analyze` / `dart format` / `flutter test` clean.
 
 ## Tasks
 1. Schema migration: add `prompt_lang`/`answer_lang`, drop `direction`, `schemaVersion` → 4, `onUpgrade` rewrite + migration test.
@@ -53,3 +53,11 @@ flutter analyze
 dart format --output=none --set-exit-if-changed .
 flutter test
 ```
+
+## Summary (2026-10-13)
+- Schema v4 (`promptLang`/`answerLang` columns, `direction` dropped), `validateLanguagePair` replacing `validateDirection`, JSON codec + seeds (`demo_animals`/`demo_family`) migrated to the new field shape, new `demo_bundeslaender.foxstreak.json` (16 non-vocab `choice` items, same-set fallback only).
+- `item_editor.dart`: direction `SegmentedButton` replaced by a language-pair toggle + two dropdowns (off by default for new items, on when editing an item with a stored pair).
+- `choice_options.dart` fallback now filters by `type` + language pair (not language pair alone), so non-vocab `choice` items (both fields `null`) distract each other but never phone/date.
+- `multiple_choice_exercise.dart`/`free_text_exercise.dart` build the direction label generically via `language_display.dart` + one `exerciseDirectionLabel` l10n template.
+- All acceptance-criteria tests updated/added (migration, validation, codec, repository, editor toggle UX, choice-options filter, generic label); `flutter analyze`/`dart format`/`flutter test` clean (244 tests); both touched `integration_test` files pass individually (macOS integration-test batch runs are flaky at app-foreground time in this environment, unrelated to this change — each test passes in isolation).
+- Post-implementation `/code-review` caught a real bug: `_save()`'s language-pair check in `item_editor.dart` ignored `_type`, so a stale half-picked toggle from a `choice`/`freeText` selection silently blocked saving after switching to `phone`/`date` (no visible error, since that type never renders the picker). Fixed by gating the check on `_type`; added a regression test. Also tidied the v3→v4 migration into one `CASE`-based `UPDATE` and hoisted the duplicated language-dropdown `items` list.

@@ -48,8 +48,49 @@
   "typeFreeText": "Word (type answer)",
   "typePhone": "Phone",
   "typeDate": "Birthday",
-  "directionDeEn": "German → English",
-  "directionEnDe": "English → German",
+  "@languageDe": {
+    "description": "Display name for the German language code (de)",
+    "placeholders": {}
+  },
+  "languageDe": "German",
+  "@languageEn": {
+    "description": "Display name for the English language code (en)",
+    "placeholders": {}
+  },
+  "languageEn": "English",
+  "@exerciseDirectionLabel": {
+    "description": "Generic X -> Y direction-framing label built from promptLang/answerLang display names (#022)",
+    "placeholders": {
+      "fromLanguage": {"type": "String"},
+      "toLanguage": {"type": "String"}
+    }
+  },
+  "exerciseDirectionLabel": "{fromLanguage} → {toLanguage}",
+  "@itemLanguagePairToggleLabel": {
+    "description": "Toggle label revealing the promptLang/answerLang dropdowns in the item editor (#022)",
+    "placeholders": {}
+  },
+  "itemLanguagePairToggleLabel": "Vocabulary translation",
+  "@itemPromptLangLabel": {
+    "description": "Label for the prompt-language dropdown in the item editor (#022)",
+    "placeholders": {}
+  },
+  "itemPromptLangLabel": "From language",
+  "@itemAnswerLangLabel": {
+    "description": "Label for the answer-language dropdown in the item editor (#022)",
+    "placeholders": {}
+  },
+  "itemAnswerLangLabel": "To language",
+  "@errorLanguagePairRequired": {
+    "description": "Inline error when the language-pair toggle is on but a language is not picked (#022)",
+    "placeholders": {}
+  },
+  "errorLanguagePairRequired": "Pick both languages",
+  "@errorLanguagePairSame": {
+    "description": "Inline error when both picked languages are the same (#022)",
+    "placeholders": {}
+  },
+  "errorLanguagePairSame": "Languages must differ",
   "shareSet": "Share",
   "importSet": "Import",
   "setActions": "Set actions",
@@ -59,7 +100,6 @@
   "errorCreatorLength": "Max 50 characters",
   "errorInvalidPhone": "Enter 3–15 digits",
   "errorInvalidDate": "Use YYYY-MM-DD (1900-01-01…today)",
-  "errorDirectionRequired": "Pick a direction",
   "@itemDistractorLabel": {
     "description": "Label for one optional vocab distractor field",
     "placeholders": {

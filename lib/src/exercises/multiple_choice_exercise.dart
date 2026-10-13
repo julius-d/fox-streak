@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../data/database.dart';
+import '../data/language_display.dart';
 import '../theme/fox_streak_theme.dart';
 import '../lesson/exercise_card.dart';
 import 'choice_options.dart';
@@ -109,11 +110,11 @@ class _MultipleChoiceCardState extends State<MultipleChoiceCard> {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
     final l10n = widget.l10n;
-    final String? directionLabel = switch (widget.item.direction) {
-      'deEn' => l10n.directionDeEn,
-      'enDe' => l10n.directionEnDe,
-      _ => null,
-    };
+    final String? directionLabel = languagePairLabel(
+      widget.item.promptLang,
+      widget.item.answerLang,
+      l10n,
+    );
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(vertical: FoxSpacing.md),

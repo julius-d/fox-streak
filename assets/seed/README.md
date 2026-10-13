@@ -8,7 +8,8 @@ Fictional first-launch content for issue #002. Real learning content ships in #0
 { "format": "foxstreak-set", "version": 1, "title": "…", "description": "…",
   "createdBy": "Mama", "items": [
     { "type": "choice", "prompt": "Hund", "answer": "dog",
-      "direction": "deEn", "choices": ["cat","mouse","bird"], "hint": "" },
+      "promptLang": "de", "answerLang": "en",
+      "choices": ["cat","mouse","bird"], "hint": "" },
     { "type": "phone", "prompt": "Mama", "answer": "01711234567" },
     { "type": "date", "prompt": "Mamas Geburtstag",
       "answer": "1985-05-14" } ] }
@@ -21,10 +22,12 @@ Rules (enforced by `lib/src/data/set_json_codec.dart`):
   max 50 chars, e.g. `"Mama"`).
 - Item `type` one of `choice|freeText|phone|date` (#026 split the original
   `vocab` type into `choice`/`freeText`); `prompt`/`answer` non-empty.
-- `choice`: `direction` required (`deEn|enDe`); `choices` optional list of
-  non-empty strings; `hint` optional.
-- `freeText`: `direction` optional (`deEn|enDe`, omit for non-vocab prompts);
-  `choices` forbidden; `hint` optional.
+- `choice`/`freeText`: `promptLang`/`answerLang` are optional ISO 639-1 codes
+  (#022) — omit both for a non-vocab prompt (e.g. a general-knowledge quiz),
+  or set both to distinct codes from `kSupportedLanguages` (currently
+  `de`/`en`) for a vocab-flavored one; `choice` additionally allows an
+  optional `choices` list of non-empty strings, forbidden for `freeText`;
+  `hint` optional on both.
 - `phone`: `answer` digits-only after normalisation, `^[0-9]{3,15}$`
   (normalisation strips spaces, `-`, `/`, `(`, `)`, `.`, `+`; German numbers
   keep their leading `0`, e.g. `01711234567`).
@@ -37,3 +40,8 @@ Rules (enforced by `lib/src/data/set_json_codec.dart`):
 
 `SeedLoader.ensureSeeded()` imports every `demo_*.foxstreak.json` when the
 database has no sets. Corrupt seeds are skipped, never crash launch.
+
+`demo_bundeslaender.foxstreak.json` (#022) is a non-vocab `choice` example:
+all 16 German Bundesländer capitals, no `promptLang`/`answerLang`, no
+explicit `choices` — distractors come entirely from the same-set fallback
+(each item's 3 wrong options are drawn from the other 15 states' capitals).

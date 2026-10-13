@@ -20,6 +20,7 @@ import 'sets_repository.dart';
 const List<String> kSeedAssetPaths = [
   'assets/seed/demo_animals.foxstreak.json',
   'assets/seed/demo_family.foxstreak.json',
+  'assets/seed/demo_bundeslaender.foxstreak.json',
 ];
 
 typedef AssetStringLoader = Future<String> Function(String assetPath);
