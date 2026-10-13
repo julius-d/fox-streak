@@ -20,10 +20,10 @@ import '../widgets/widgets.dart';
 import '../exercises/date_exercise.dart';
 import '../exercises/dial_pad_exercise.dart';
 import '../exercises/free_text_exercise.dart';
+import '../exercises/multiple_choice_exercise.dart';
 import 'exercise_card.dart';
 import 'lesson_controller.dart';
 import 'lesson_result.dart';
-import 'multiple_choice_card.dart';
 
 /// Entry point: navigates to LessonScreen for the given setId.
 ///
@@ -230,7 +230,12 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(FoxSpacing.lg),
-              child: _buildExerciseCard(item, controller, l10n),
+              child: _buildExerciseCard(
+                item,
+                controller,
+                l10n,
+                state.sourceItems,
+              ),
             ),
           ),
           // Feedback banner (shown in feedback phase)
@@ -298,6 +303,7 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
     Item item,
     LessonController controller,
     AppLocalizations l10n,
+    List<Item> otherSetItems,
   ) {
     // Dispatch by item.type to the appropriate exercise card.
     // #006 provides MultipleChoiceCard for 'choice', #007 the free-text
@@ -330,9 +336,10 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
     // Real card implementations.
     switch (item.type) {
       case 'choice':
-        return MultipleChoiceCard(
+        return buildMultipleChoiceExercise(
           key: cardKey,
           item: item,
+          otherSetItems: otherSetItems,
           onStateChanged: controller.updateDraft,
           l10n: l10n,
         );

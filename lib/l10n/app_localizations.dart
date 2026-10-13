@@ -109,6 +109,14 @@ abstract class AppLocalizations {
   String get exerciseFreeTextRevealHintAria;
   String exerciseFreeTextHintLabel(String letter);
 
+  // Multiple-choice exercise (#006)
+  String exerciseChoicePlaceholderOption(int index);
+  String exerciseChoiceOptionSemanticLabel(
+    String label,
+    int position,
+    int total,
+  );
+
   // Lesson shell (#005)
   String get lessonStart;
   String get lessonTitle;
@@ -287,6 +295,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Reveal the first letter (costs hint bonus)';
   @override
   String exerciseFreeTextHintLabel(String letter) => 'Starts with: $letter';
+
+  // Multiple-choice exercise (#006)
+  @override
+  String exerciseChoicePlaceholderOption(int index) => 'Option $index';
+  @override
+  String exerciseChoiceOptionSemanticLabel(
+    String label,
+    int position,
+    int total,
+  ) => '$label, option $position of $total';
 
   // Lesson shell (#005)
   @override
@@ -492,6 +510,16 @@ class AppLocalizationsDe extends AppLocalizations {
       'Ersten Buchstaben anzeigen (kostet Hinweis-Bonus)';
   @override
   String exerciseFreeTextHintLabel(String letter) => 'Beginnt mit: $letter';
+
+  // Multiple-choice exercise (#006)
+  @override
+  String exerciseChoicePlaceholderOption(int index) => 'Option $index';
+  @override
+  String exerciseChoiceOptionSemanticLabel(
+    String label,
+    int position,
+    int total,
+  ) => '$label, Option $position von $total';
 
   // Lesson shell (#005)
   @override

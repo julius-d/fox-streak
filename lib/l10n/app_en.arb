@@ -130,6 +130,22 @@
     }
   },
   "exerciseFreeTextHintLabel": "Starts with: {letter}",
+  "@exerciseChoicePlaceholderOption": {
+    "description": "Placeholder distractor label used when there are not enough real distractors (#006)",
+    "placeholders": {
+      "index": {"type": "int"}
+    }
+  },
+  "exerciseChoicePlaceholderOption": "Option {index}",
+  "@exerciseChoiceOptionSemanticLabel": {
+    "description": "Accessibility label for a multiple-choice option: its text plus its position among the options",
+    "placeholders": {
+      "label": {"type": "String"},
+      "position": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "exerciseChoiceOptionSemanticLabel": "{label}, option {position} of {total}",
   "@lessonEmptySetNote": {
     "description": "Empty state message for set with no items, prompting to add items",
     "placeholders": {}
