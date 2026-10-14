@@ -185,6 +185,40 @@ void main() {
     );
   });
 
+  testWidgets('goal ring clamps, shows the center label, and announces '
+      '(issue #012)', (WidgetTester tester) async {
+    await pumpKit(
+      tester,
+      const FoxGoalRing(
+        value: 1.4,
+        centerLabel: '30 / 20 XP today',
+        semanticsLabel: 'Daily goal progress',
+        semanticsValue: '30 / 20 XP today',
+      ),
+    );
+
+    expect(find.text('30 / 20 XP today'), findsOneWidget);
+    final CircularProgressIndicator indicator = tester.widget(
+      find.byType(CircularProgressIndicator),
+    );
+    expect(indicator.value, closeTo(1.0, 1e-9));
+    expect(
+      (indicator.valueColor as AlwaysStoppedAnimation<Color>).value,
+      FoxSemanticColors.light.gold,
+    );
+
+    final Semantics semantics = tester.widget<Semantics>(
+      find
+          .ancestor(
+            of: find.byType(CircularProgressIndicator),
+            matching: find.byType(Semantics),
+          )
+          .first,
+    );
+    expect(semantics.properties.label, 'Daily goal progress');
+    expect(semantics.properties.value, '30 / 20 XP today');
+  });
+
   testWidgets('streak badge shows flame, count, and the done check '
       '(issue #011)', (WidgetTester tester) async {
     await pumpKit(

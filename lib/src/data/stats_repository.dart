@@ -20,7 +20,8 @@ const int kDefaultDailyGoalXp = 30;
 ///   `StreakService`.
 /// - [recordAttempt] writes an `attempts` row only (+ ensures the profile row
 ///   exists) and MUST NOT touch `streakCount`/`lastActiveDay` — or `xpTotal`.
-/// - This repository owns `dailyGoalXp` (editable, see #012).
+/// - This repository owns `dailyGoalXp`, `displayName` and `hasOnboarded`
+///   (see #012).
 class StatsRepository {
   final AppDatabase _db;
   final Clock _clock;
@@ -45,6 +46,8 @@ class StatsRepository {
             lastActiveDay: Value(null),
             dailyGoalXp: Value(kDefaultDailyGoalXp),
             todayXp: Value(0),
+            displayName: Value(null),
+            hasOnboarded: Value(false),
           ),
         );
     return const ProfileStat(
@@ -54,6 +57,8 @@ class StatsRepository {
       lastActiveDay: null,
       dailyGoalXp: kDefaultDailyGoalXp,
       todayXp: 0,
+      displayName: null,
+      hasOnboarded: false,
     );
   }
 
@@ -70,6 +75,8 @@ class StatsRepository {
             lastActiveDay: null,
             dailyGoalXp: kDefaultDailyGoalXp,
             todayXp: 0,
+            displayName: null,
+            hasOnboarded: false,
           ),
     );
   }
@@ -119,6 +126,47 @@ class StatsRepository {
         lastActiveDay: Value(lastActiveDay),
       ),
     );
+  }
+
+  /// Sets the optional display name shown in Home's greeting (#012).
+  ///
+  /// Trims [name]; blank/null stores `NULL` so Home falls back to the
+  /// generic time-of-day greeting.
+  Future<void> setDisplayName(String? name) async {
+    await getProfile();
+    final trimmed = name?.trim();
+    await (_db.update(
+      _db.profileStats,
+    )..where((t) => t.id.equals(kProfileId))).write(
+      ProfileStatsCompanion(
+        displayName: Value(trimmed == null || trimmed.isEmpty ? null : trimmed),
+      ),
+    );
+  }
+
+  /// Marks first-run onboarding as shown (completed or skipped), so Home
+  /// never shows it again (#012).
+  Future<void> setOnboarded() async {
+    await getProfile();
+    await (_db.update(_db.profileStats)..where((t) => t.id.equals(kProfileId)))
+        .write(const ProfileStatsCompanion(hasOnboarded: Value(true)));
+  }
+
+  /// The `setId` of the most recently attempted item, or `null` if no
+  /// lesson has ever been completed (#012's Home "Continue" button).
+  ///
+  /// Derived from `attempts` (latest by [Attempts.at]) joined to `items` —
+  /// no dedicated column. Deleting a set/item cascades its attempts away,
+  /// so this never points at stale data.
+  Future<int?> getLastPracticedSetId() async {
+    final query =
+        _db.select(_db.attempts).join([
+            innerJoin(_db.items, _db.items.id.equalsExp(_db.attempts.itemId)),
+          ])
+          ..orderBy([OrderingTerm.desc(_db.attempts.at)])
+          ..limit(1);
+    final row = await query.getSingleOrNull();
+    return row?.readTable(_db.items).setId;
   }
 
   /// Records a graded answer.

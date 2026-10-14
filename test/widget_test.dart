@@ -9,7 +9,10 @@ import 'package:fox_streak_app/src/data/providers.dart';
 import 'data/test_helpers.dart';
 
 void main() {
-  testWidgets('App boots to the set library', (WidgetTester tester) async {
+  testWidgets('App boots to first-run onboarding; skipping lands on the '
+      'Home dashboard, which can navigate to the set library', (
+    WidgetTester tester,
+  ) async {
     final db = AppDatabase.forTesting(NativeDatabase.memory());
     addTearDown(() async => db.close());
     await tester.pumpWidget(
@@ -23,12 +26,26 @@ void main() {
     );
     // Bounded settle: see note in test/library/library_screen_test.dart
     // about pumpAndSettle vs drift watch streams.
-    for (var i = 0; i < 50; i++) {
-      await tester.pump(const Duration(milliseconds: 100));
-      if (!tester.binding.hasScheduledFrame) break;
+    Future<void> settle() async {
+      for (var i = 0; i < 50; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+        if (!tester.binding.hasScheduledFrame) break;
+      }
+      expect(tester.binding.hasScheduledFrame, isFalse);
     }
-    expect(tester.binding.hasScheduledFrame, isFalse);
 
+    await settle();
+
+    // Fresh install: onboarding gates Home until `has_onboarded` is set.
+    expect(find.byKey(const Key('onboardingScreen')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('onboardingSkipButton')));
+    await settle();
+
+    expect(find.byKey(const Key('homeScreen')), findsOneWidget);
+    expect(find.byKey(const Key('homeBrowseSetsButton')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('homeBrowseSetsButton')));
+    await settle();
     expect(find.text('My Sets'), findsOneWidget);
     expect(find.byKey(const Key('newSetFab')), findsOneWidget);
 

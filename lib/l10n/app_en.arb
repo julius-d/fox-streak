@@ -339,5 +339,144 @@
     "description": "Button label to go back to library",
     "placeholders": {}
   },
-  "lessonBackToLibrary": "Back to library"
+  "lessonBackToLibrary": "Back to library",
+  "@homeGreetingMorning": {
+    "description": "Generic morning greeting on Home when no display name is set (issue #012)",
+    "placeholders": {}
+  },
+  "homeGreetingMorning": "Good morning!",
+  "@homeGreetingMorningNamed": {
+    "description": "Morning greeting on Home with the display name (issue #012)",
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "homeGreetingMorningNamed": "Good morning, {name}!",
+  "@homeGreetingAfternoon": {
+    "description": "Generic afternoon greeting on Home when no display name is set (issue #012)",
+    "placeholders": {}
+  },
+  "homeGreetingAfternoon": "Good afternoon!",
+  "@homeGreetingAfternoonNamed": {
+    "description": "Afternoon greeting on Home with the display name (issue #012)",
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "homeGreetingAfternoonNamed": "Good afternoon, {name}!",
+  "@homeGreetingEvening": {
+    "description": "Generic evening greeting on Home when no display name is set (issue #012)",
+    "placeholders": {}
+  },
+  "homeGreetingEvening": "Good evening!",
+  "@homeGreetingEveningNamed": {
+    "description": "Evening greeting on Home with the display name (issue #012)",
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "homeGreetingEveningNamed": "Good evening, {name}!",
+  "@homeEditNameTooltip": {
+    "description": "Tooltip/accessibility label on Home's tappable greeting, opening the rename dialog (issue #012)",
+    "placeholders": {}
+  },
+  "homeEditNameTooltip": "Edit your name",
+  "@homeEditNameDialogTitle": {
+    "description": "Title of the tap-to-rename dialog (issue #012)",
+    "placeholders": {}
+  },
+  "homeEditNameDialogTitle": "Your name",
+  "@homeEditNameHint": {
+    "description": "Hint text in the tap-to-rename dialog's text field (issue #012)",
+    "placeholders": {}
+  },
+  "homeEditNameHint": "Enter your name (optional)",
+  "@homeContinueButton": {
+    "description": "Home's Continue button label, resuming the last practiced set (issue #012)",
+    "placeholders": {}
+  },
+  "homeContinueButton": "Continue practicing",
+  "@homeBrowseSetsButton": {
+    "description": "Home's Browse sets button label, navigating to the library (issue #012)",
+    "placeholders": {}
+  },
+  "homeBrowseSetsButton": "Browse sets",
+  "@homeGoalRingLabel": {
+    "description": "Accessibility label for Home's daily-goal ring (issue #012)",
+    "placeholders": {}
+  },
+  "homeGoalRingLabel": "Daily goal progress",
+  "@homeGoalRingValue": {
+    "description": "Accessibility value and center label for Home's daily-goal ring: XP earned today over the daily goal (issue #012)",
+    "placeholders": {
+      "earnedXp": {"type": "int"},
+      "goalXp": {"type": "int"}
+    }
+  },
+  "homeGoalRingValue": "{earnedXp} / {goalXp} XP today",
+  "@homeParentalInfoTooltip": {
+    "description": "Tooltip/accessibility label for Home's button opening the parental info screen (issue #012)",
+    "placeholders": {}
+  },
+  "homeParentalInfoTooltip": "For parents",
+  "@parentalInfoTitle": {
+    "description": "App bar title for the static parental info screen (issue #012)",
+    "placeholders": {}
+  },
+  "parentalInfoTitle": "For parents",
+  "@parentalInfoBody": {
+    "description": "Body copy of the static parental info screen (issue #012)",
+    "placeholders": {}
+  },
+  "parentalInfoBody": "FoxStreak works fully offline on this device. There's no chat, no social features, and no ads. All progress stays local and is never uploaded anywhere.",
+  "@onboardingSlide1Title": {
+    "description": "First onboarding slide title (issue #012)",
+    "placeholders": {}
+  },
+  "onboardingSlide1Title": "Welcome to FoxStreak!",
+  "@onboardingSlide1Body": {
+    "description": "First onboarding slide body (issue #012)",
+    "placeholders": {}
+  },
+  "onboardingSlide1Body": "Practice a little every day and watch your streak grow.",
+  "@onboardingSlide2Title": {
+    "description": "Second onboarding slide title (issue #012)",
+    "placeholders": {}
+  },
+  "onboardingSlide2Title": "Earn XP, level up",
+  "@onboardingSlide2Body": {
+    "description": "Second onboarding slide body (issue #012)",
+    "placeholders": {}
+  },
+  "onboardingSlide2Body": "Correct answers earn XP. Collect enough to level up!",
+  "@onboardingSlide3Title": {
+    "description": "Third onboarding slide title, with optional name capture (issue #012)",
+    "placeholders": {}
+  },
+  "onboardingSlide3Title": "What should we call you?",
+  "@onboardingSlide3Body": {
+    "description": "Third onboarding slide body (issue #012)",
+    "placeholders": {}
+  },
+  "onboardingSlide3Body": "Totally optional — you can always change this later.",
+  "@onboardingNameHint": {
+    "description": "Hint text in the onboarding name field (issue #012)",
+    "placeholders": {}
+  },
+  "onboardingNameHint": "Your name (optional)",
+  "@onboardingSkip": {
+    "description": "Skip button label on every onboarding slide (issue #012)",
+    "placeholders": {}
+  },
+  "onboardingSkip": "Skip",
+  "@onboardingNext": {
+    "description": "Next button label on non-final onboarding slides (issue #012)",
+    "placeholders": {}
+  },
+  "onboardingNext": "Next",
+  "@onboardingGetStarted": {
+    "description": "Final onboarding slide's primary button label (issue #012)",
+    "placeholders": {}
+  },
+  "onboardingGetStarted": "Get started"
 }

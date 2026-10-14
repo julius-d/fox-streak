@@ -1363,6 +1363,32 @@ class $ProfileStatsTable extends ProfileStats
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _displayNameMeta = const VerificationMeta(
+    'displayName',
+  );
+  @override
+  late final GeneratedColumn<String> displayName = GeneratedColumn<String>(
+    'display_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _hasOnboardedMeta = const VerificationMeta(
+    'hasOnboarded',
+  );
+  @override
+  late final GeneratedColumn<bool> hasOnboarded = GeneratedColumn<bool>(
+    'has_onboarded',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("has_onboarded" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1371,6 +1397,8 @@ class $ProfileStatsTable extends ProfileStats
     lastActiveDay,
     dailyGoalXp,
     todayXp,
+    displayName,
+    hasOnboarded,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1426,6 +1454,24 @@ class $ProfileStatsTable extends ProfileStats
         todayXp.isAcceptableOrUnknown(data['today_xp']!, _todayXpMeta),
       );
     }
+    if (data.containsKey('display_name')) {
+      context.handle(
+        _displayNameMeta,
+        displayName.isAcceptableOrUnknown(
+          data['display_name']!,
+          _displayNameMeta,
+        ),
+      );
+    }
+    if (data.containsKey('has_onboarded')) {
+      context.handle(
+        _hasOnboardedMeta,
+        hasOnboarded.isAcceptableOrUnknown(
+          data['has_onboarded']!,
+          _hasOnboardedMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1459,6 +1505,14 @@ class $ProfileStatsTable extends ProfileStats
         DriftSqlType.int,
         data['${effectivePrefix}today_xp'],
       )!,
+      displayName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}display_name'],
+      ),
+      hasOnboarded: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}has_onboarded'],
+      )!,
     );
   }
 
@@ -1475,6 +1529,8 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
   final String? lastActiveDay;
   final int dailyGoalXp;
   final int todayXp;
+  final String? displayName;
+  final bool hasOnboarded;
   const ProfileStat({
     required this.id,
     required this.xpTotal,
@@ -1482,6 +1538,8 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
     this.lastActiveDay,
     required this.dailyGoalXp,
     required this.todayXp,
+    this.displayName,
+    required this.hasOnboarded,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1494,6 +1552,10 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
     }
     map['daily_goal_xp'] = Variable<int>(dailyGoalXp);
     map['today_xp'] = Variable<int>(todayXp);
+    if (!nullToAbsent || displayName != null) {
+      map['display_name'] = Variable<String>(displayName);
+    }
+    map['has_onboarded'] = Variable<bool>(hasOnboarded);
     return map;
   }
 
@@ -1507,6 +1569,10 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
           : Value(lastActiveDay),
       dailyGoalXp: Value(dailyGoalXp),
       todayXp: Value(todayXp),
+      displayName: displayName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(displayName),
+      hasOnboarded: Value(hasOnboarded),
     );
   }
 
@@ -1522,6 +1588,8 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
       lastActiveDay: serializer.fromJson<String?>(json['lastActiveDay']),
       dailyGoalXp: serializer.fromJson<int>(json['dailyGoalXp']),
       todayXp: serializer.fromJson<int>(json['todayXp']),
+      displayName: serializer.fromJson<String?>(json['displayName']),
+      hasOnboarded: serializer.fromJson<bool>(json['hasOnboarded']),
     );
   }
   @override
@@ -1534,6 +1602,8 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
       'lastActiveDay': serializer.toJson<String?>(lastActiveDay),
       'dailyGoalXp': serializer.toJson<int>(dailyGoalXp),
       'todayXp': serializer.toJson<int>(todayXp),
+      'displayName': serializer.toJson<String?>(displayName),
+      'hasOnboarded': serializer.toJson<bool>(hasOnboarded),
     };
   }
 
@@ -1544,6 +1614,8 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
     Value<String?> lastActiveDay = const Value.absent(),
     int? dailyGoalXp,
     int? todayXp,
+    Value<String?> displayName = const Value.absent(),
+    bool? hasOnboarded,
   }) => ProfileStat(
     id: id ?? this.id,
     xpTotal: xpTotal ?? this.xpTotal,
@@ -1553,6 +1625,8 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
         : this.lastActiveDay,
     dailyGoalXp: dailyGoalXp ?? this.dailyGoalXp,
     todayXp: todayXp ?? this.todayXp,
+    displayName: displayName.present ? displayName.value : this.displayName,
+    hasOnboarded: hasOnboarded ?? this.hasOnboarded,
   );
   ProfileStat copyWithCompanion(ProfileStatsCompanion data) {
     return ProfileStat(
@@ -1568,6 +1642,12 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
           ? data.dailyGoalXp.value
           : this.dailyGoalXp,
       todayXp: data.todayXp.present ? data.todayXp.value : this.todayXp,
+      displayName: data.displayName.present
+          ? data.displayName.value
+          : this.displayName,
+      hasOnboarded: data.hasOnboarded.present
+          ? data.hasOnboarded.value
+          : this.hasOnboarded,
     );
   }
 
@@ -1579,7 +1659,9 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
           ..write('streakCount: $streakCount, ')
           ..write('lastActiveDay: $lastActiveDay, ')
           ..write('dailyGoalXp: $dailyGoalXp, ')
-          ..write('todayXp: $todayXp')
+          ..write('todayXp: $todayXp, ')
+          ..write('displayName: $displayName, ')
+          ..write('hasOnboarded: $hasOnboarded')
           ..write(')'))
         .toString();
   }
@@ -1592,6 +1674,8 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
     lastActiveDay,
     dailyGoalXp,
     todayXp,
+    displayName,
+    hasOnboarded,
   );
   @override
   bool operator ==(Object other) =>
@@ -1602,7 +1686,9 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
           other.streakCount == this.streakCount &&
           other.lastActiveDay == this.lastActiveDay &&
           other.dailyGoalXp == this.dailyGoalXp &&
-          other.todayXp == this.todayXp);
+          other.todayXp == this.todayXp &&
+          other.displayName == this.displayName &&
+          other.hasOnboarded == this.hasOnboarded);
 }
 
 class ProfileStatsCompanion extends UpdateCompanion<ProfileStat> {
@@ -1612,6 +1698,8 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStat> {
   final Value<String?> lastActiveDay;
   final Value<int> dailyGoalXp;
   final Value<int> todayXp;
+  final Value<String?> displayName;
+  final Value<bool> hasOnboarded;
   const ProfileStatsCompanion({
     this.id = const Value.absent(),
     this.xpTotal = const Value.absent(),
@@ -1619,6 +1707,8 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStat> {
     this.lastActiveDay = const Value.absent(),
     this.dailyGoalXp = const Value.absent(),
     this.todayXp = const Value.absent(),
+    this.displayName = const Value.absent(),
+    this.hasOnboarded = const Value.absent(),
   });
   ProfileStatsCompanion.insert({
     this.id = const Value.absent(),
@@ -1627,6 +1717,8 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStat> {
     this.lastActiveDay = const Value.absent(),
     this.dailyGoalXp = const Value.absent(),
     this.todayXp = const Value.absent(),
+    this.displayName = const Value.absent(),
+    this.hasOnboarded = const Value.absent(),
   });
   static Insertable<ProfileStat> custom({
     Expression<int>? id,
@@ -1635,6 +1727,8 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStat> {
     Expression<String>? lastActiveDay,
     Expression<int>? dailyGoalXp,
     Expression<int>? todayXp,
+    Expression<String>? displayName,
+    Expression<bool>? hasOnboarded,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1643,6 +1737,8 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStat> {
       if (lastActiveDay != null) 'last_active_day': lastActiveDay,
       if (dailyGoalXp != null) 'daily_goal_xp': dailyGoalXp,
       if (todayXp != null) 'today_xp': todayXp,
+      if (displayName != null) 'display_name': displayName,
+      if (hasOnboarded != null) 'has_onboarded': hasOnboarded,
     });
   }
 
@@ -1653,6 +1749,8 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStat> {
     Value<String?>? lastActiveDay,
     Value<int>? dailyGoalXp,
     Value<int>? todayXp,
+    Value<String?>? displayName,
+    Value<bool>? hasOnboarded,
   }) {
     return ProfileStatsCompanion(
       id: id ?? this.id,
@@ -1661,6 +1759,8 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStat> {
       lastActiveDay: lastActiveDay ?? this.lastActiveDay,
       dailyGoalXp: dailyGoalXp ?? this.dailyGoalXp,
       todayXp: todayXp ?? this.todayXp,
+      displayName: displayName ?? this.displayName,
+      hasOnboarded: hasOnboarded ?? this.hasOnboarded,
     );
   }
 
@@ -1685,6 +1785,12 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStat> {
     if (todayXp.present) {
       map['today_xp'] = Variable<int>(todayXp.value);
     }
+    if (displayName.present) {
+      map['display_name'] = Variable<String>(displayName.value);
+    }
+    if (hasOnboarded.present) {
+      map['has_onboarded'] = Variable<bool>(hasOnboarded.value);
+    }
     return map;
   }
 
@@ -1696,7 +1802,9 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStat> {
           ..write('streakCount: $streakCount, ')
           ..write('lastActiveDay: $lastActiveDay, ')
           ..write('dailyGoalXp: $dailyGoalXp, ')
-          ..write('todayXp: $todayXp')
+          ..write('todayXp: $todayXp, ')
+          ..write('displayName: $displayName, ')
+          ..write('hasOnboarded: $hasOnboarded')
           ..write(')'))
         .toString();
   }
@@ -2831,6 +2939,8 @@ typedef $$ProfileStatsTableCreateCompanionBuilder =
       Value<String?> lastActiveDay,
       Value<int> dailyGoalXp,
       Value<int> todayXp,
+      Value<String?> displayName,
+      Value<bool> hasOnboarded,
     });
 typedef $$ProfileStatsTableUpdateCompanionBuilder =
     ProfileStatsCompanion Function({
@@ -2840,6 +2950,8 @@ typedef $$ProfileStatsTableUpdateCompanionBuilder =
       Value<String?> lastActiveDay,
       Value<int> dailyGoalXp,
       Value<int> todayXp,
+      Value<String?> displayName,
+      Value<bool> hasOnboarded,
     });
 
 class $$ProfileStatsTableFilterComposer
@@ -2878,6 +2990,16 @@ class $$ProfileStatsTableFilterComposer
 
   ColumnFilters<int> get todayXp => $composableBuilder(
     column: $table.todayXp,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get displayName => $composableBuilder(
+    column: $table.displayName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get hasOnboarded => $composableBuilder(
+    column: $table.hasOnboarded,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -2920,6 +3042,16 @@ class $$ProfileStatsTableOrderingComposer
     column: $table.todayXp,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get displayName => $composableBuilder(
+    column: $table.displayName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get hasOnboarded => $composableBuilder(
+    column: $table.hasOnboarded,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ProfileStatsTableAnnotationComposer
@@ -2954,6 +3086,16 @@ class $$ProfileStatsTableAnnotationComposer
 
   GeneratedColumn<int> get todayXp =>
       $composableBuilder(column: $table.todayXp, builder: (column) => column);
+
+  GeneratedColumn<String> get displayName => $composableBuilder(
+    column: $table.displayName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get hasOnboarded => $composableBuilder(
+    column: $table.hasOnboarded,
+    builder: (column) => column,
+  );
 }
 
 class $$ProfileStatsTableTableManager
@@ -2993,6 +3135,8 @@ class $$ProfileStatsTableTableManager
                 Value<String?> lastActiveDay = const Value.absent(),
                 Value<int> dailyGoalXp = const Value.absent(),
                 Value<int> todayXp = const Value.absent(),
+                Value<String?> displayName = const Value.absent(),
+                Value<bool> hasOnboarded = const Value.absent(),
               }) => ProfileStatsCompanion(
                 id: id,
                 xpTotal: xpTotal,
@@ -3000,6 +3144,8 @@ class $$ProfileStatsTableTableManager
                 lastActiveDay: lastActiveDay,
                 dailyGoalXp: dailyGoalXp,
                 todayXp: todayXp,
+                displayName: displayName,
+                hasOnboarded: hasOnboarded,
               ),
           createCompanionCallback:
               ({
@@ -3009,6 +3155,8 @@ class $$ProfileStatsTableTableManager
                 Value<String?> lastActiveDay = const Value.absent(),
                 Value<int> dailyGoalXp = const Value.absent(),
                 Value<int> todayXp = const Value.absent(),
+                Value<String?> displayName = const Value.absent(),
+                Value<bool> hasOnboarded = const Value.absent(),
               }) => ProfileStatsCompanion.insert(
                 id: id,
                 xpTotal: xpTotal,
@@ -3016,6 +3164,8 @@ class $$ProfileStatsTableTableManager
                 lastActiveDay: lastActiveDay,
                 dailyGoalXp: dailyGoalXp,
                 todayXp: todayXp,
+                displayName: displayName,
+                hasOnboarded: hasOnboarded,
               ),
           withReferenceMapper: (p0) => p0
               .map(

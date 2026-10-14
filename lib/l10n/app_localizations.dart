@@ -150,6 +150,34 @@ abstract class AppLocalizations {
   String get lessonPracticeAgain;
   String get lessonBackToLibrary;
   String get lessonEmptySetNote;
+
+  // Home dashboard / onboarding / parental info (#012)
+  String get homeGreetingMorning;
+  String homeGreetingMorningNamed(String name);
+  String get homeGreetingAfternoon;
+  String homeGreetingAfternoonNamed(String name);
+  String get homeGreetingEvening;
+  String homeGreetingEveningNamed(String name);
+  String get homeEditNameTooltip;
+  String get homeEditNameDialogTitle;
+  String get homeEditNameHint;
+  String get homeContinueButton;
+  String get homeBrowseSetsButton;
+  String get homeGoalRingLabel;
+  String homeGoalRingValue(int earnedXp, int goalXp);
+  String get homeParentalInfoTooltip;
+  String get parentalInfoTitle;
+  String get parentalInfoBody;
+  String get onboardingSlide1Title;
+  String get onboardingSlide1Body;
+  String get onboardingSlide2Title;
+  String get onboardingSlide2Body;
+  String get onboardingSlide3Title;
+  String get onboardingSlide3Body;
+  String get onboardingNameHint;
+  String get onboardingSkip;
+  String get onboardingNext;
+  String get onboardingGetStarted;
 }
 
 class AppLocalizationsEn extends AppLocalizations {
@@ -386,6 +414,67 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lessonBackToLibrary => 'Back to library';
   @override
   String get lessonEmptySetNote => 'Add items to start practicing!';
+
+  // Home dashboard / onboarding / parental info (#012)
+  @override
+  String get homeGreetingMorning => 'Good morning!';
+  @override
+  String homeGreetingMorningNamed(String name) => 'Good morning, $name!';
+  @override
+  String get homeGreetingAfternoon => 'Good afternoon!';
+  @override
+  String homeGreetingAfternoonNamed(String name) => 'Good afternoon, $name!';
+  @override
+  String get homeGreetingEvening => 'Good evening!';
+  @override
+  String homeGreetingEveningNamed(String name) => 'Good evening, $name!';
+  @override
+  String get homeEditNameTooltip => 'Edit your name';
+  @override
+  String get homeEditNameDialogTitle => 'Your name';
+  @override
+  String get homeEditNameHint => 'Enter your name (optional)';
+  @override
+  String get homeContinueButton => 'Continue practicing';
+  @override
+  String get homeBrowseSetsButton => 'Browse sets';
+  @override
+  String get homeGoalRingLabel => 'Daily goal progress';
+  @override
+  String homeGoalRingValue(int earnedXp, int goalXp) =>
+      '$earnedXp / $goalXp XP today';
+  @override
+  String get homeParentalInfoTooltip => 'For parents';
+  @override
+  String get parentalInfoTitle => 'For parents';
+  @override
+  String get parentalInfoBody =>
+      "FoxStreak works fully offline on this device. There's no chat, no "
+      'social features, and no ads. All progress stays local and is never '
+      'uploaded anywhere.';
+  @override
+  String get onboardingSlide1Title => 'Welcome to FoxStreak!';
+  @override
+  String get onboardingSlide1Body =>
+      'Practice a little every day and watch your streak grow.';
+  @override
+  String get onboardingSlide2Title => 'Earn XP, level up';
+  @override
+  String get onboardingSlide2Body =>
+      'Correct answers earn XP. Collect enough to level up!';
+  @override
+  String get onboardingSlide3Title => 'What should we call you?';
+  @override
+  String get onboardingSlide3Body =>
+      'Totally optional — you can always change this later.';
+  @override
+  String get onboardingNameHint => 'Your name (optional)';
+  @override
+  String get onboardingSkip => 'Skip';
+  @override
+  String get onboardingNext => 'Next';
+  @override
+  String get onboardingGetStarted => 'Get started';
 }
 
 class AppLocalizationsDe extends AppLocalizations {
@@ -625,6 +714,68 @@ class AppLocalizationsDe extends AppLocalizations {
   String get lessonBackToLibrary => 'Zurück zur Bibliothek';
   @override
   String get lessonEmptySetNote => 'Füge Einträge hinzu, um zu üben!';
+
+  // Home dashboard / onboarding / parental info (#012)
+  @override
+  String get homeGreetingMorning => 'Guten Morgen!';
+  @override
+  String homeGreetingMorningNamed(String name) => 'Guten Morgen, $name!';
+  @override
+  String get homeGreetingAfternoon => 'Guten Tag!';
+  @override
+  String homeGreetingAfternoonNamed(String name) => 'Guten Tag, $name!';
+  @override
+  String get homeGreetingEvening => 'Guten Abend!';
+  @override
+  String homeGreetingEveningNamed(String name) => 'Guten Abend, $name!';
+  @override
+  String get homeEditNameTooltip => 'Namen bearbeiten';
+  @override
+  String get homeEditNameDialogTitle => 'Dein Name';
+  @override
+  String get homeEditNameHint => 'Gib deinen Namen ein (optional)';
+  @override
+  String get homeContinueButton => 'Weiter üben';
+  @override
+  String get homeBrowseSetsButton => 'Sets durchsuchen';
+  @override
+  String get homeGoalRingLabel => 'Tagesziel-Fortschritt';
+  @override
+  String homeGoalRingValue(int earnedXp, int goalXp) =>
+      '$earnedXp / $goalXp XP heute';
+  @override
+  String get homeParentalInfoTooltip => 'Für Eltern';
+  @override
+  String get parentalInfoTitle => 'Für Eltern';
+  @override
+  String get parentalInfoBody =>
+      'FoxStreak funktioniert komplett offline auf diesem Gerät. Es gibt '
+      'keinen Chat, keine sozialen Funktionen und keine Werbung. Der '
+      'Fortschritt bleibt lokal und wird nirgendwo hochgeladen.';
+  @override
+  String get onboardingSlide1Title => 'Willkommen bei FoxStreak!';
+  @override
+  String get onboardingSlide1Body =>
+      'Übe jeden Tag ein bisschen und lass deine Serie wachsen.';
+  @override
+  String get onboardingSlide2Title => 'XP sammeln, aufsteigen';
+  @override
+  String get onboardingSlide2Body =>
+      'Richtige Antworten bringen XP. Sammle genug, um ein Level '
+      'aufzusteigen!';
+  @override
+  String get onboardingSlide3Title => 'Wie sollen wir dich nennen?';
+  @override
+  String get onboardingSlide3Body =>
+      'Ganz optional — du kannst das später jederzeit ändern.';
+  @override
+  String get onboardingNameHint => 'Dein Name (optional)';
+  @override
+  String get onboardingSkip => 'Überspringen';
+  @override
+  String get onboardingNext => 'Weiter';
+  @override
+  String get onboardingGetStarted => "Los geht's";
 }
 
 class _AppLocalizationsDelegate

@@ -66,6 +66,8 @@ class Attempts extends Table {
 /// - `streakCount` / `lastActiveDay` — written exclusively by #011
 ///   `StreakService`. [StatsRepository.recordAttempt] must NOT touch them.
 /// - `dailyGoalXp` — editable (see #012), written by [StatsRepository].
+/// - `displayName` / `hasOnboarded` — written exclusively by #012's
+///   [StatsRepository.setDisplayName]/[StatsRepository.setOnboarded].
 class ProfileStats extends Table {
   IntColumn get id => integer()();
   IntColumn get xpTotal => integer().withDefault(const Constant(0))();
@@ -75,6 +77,10 @@ class ProfileStats extends Table {
   IntColumn get dailyGoalXp => integer().withDefault(const Constant(30))();
   // v3 (#010): XP earned on the current `lastActiveDay`, day-scoped.
   IntColumn get todayXp => integer().withDefault(const Constant(0))();
+  // v5 (#012): optional display name, settable via onboarding/tap-to-rename.
+  TextColumn get displayName => text().nullable()();
+  // v5 (#012): true once first-run onboarding has completed/been skipped.
+  BoolColumn get hasOnboarded => boolean().withDefault(const Constant(false))();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -89,7 +95,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -122,6 +128,11 @@ class AppDatabase extends _$AppDatabase {
         );
         await m.dropColumn(items, 'direction');
       }
+      // v5 (#012): adds optional display name + the onboarding-shown gate.
+      if (from < 5) {
+        await m.addColumn(profileStats, profileStats.displayName);
+        await m.addColumn(profileStats, profileStats.hasOnboarded);
+      }
     },
     beforeOpen: (details) async {
       // SQLite disables FK enforcement by default; without this,
@@ -132,7 +143,8 @@ class AppDatabase extends _$AppDatabase {
 
   // v1 had no migrations; v2 (#026) added the vocab->choice rewrite above;
   // v3 (#010) added `profileStats.todayXp`; v4 (#022) replaced
-  // `items.direction` with `promptLang`/`answerLang`.
+  // `items.direction` with `promptLang`/`answerLang`; v5 (#012) added
+  // `profileStats.displayName`/`hasOnboarded`.
 }
 
 DatabaseConnection _openConnection() => driftDatabase(name: 'fox_streak');

@@ -1,5 +1,5 @@
-// Schema v1 -> v2 (issue #026), v2 -> v3 (issue #010), and v3 -> v4
-// (issue #022) migration tests.
+// Schema v1 -> v2 (issue #026), v2 -> v3 (issue #010), v3 -> v4 (issue
+// #022), and v4 -> v5 (issue #012) migration tests.
 //
 // Simulates pre-migration databases on disk, then reopens them with the
 // real (current schemaVersion) `AppDatabase` and asserts `onUpgrade` applied
@@ -116,11 +116,35 @@ class _LegacyV2Database extends AppDatabase {
       MigrationStrategy(onCreate: _createLegacySchema);
 }
 
+/// Pre-#012 `profile_stats` shape: has `today_xp` (added by #010) but not
+/// yet `display_name`/`has_onboarded` — using `createAll()` here would
+/// build the table from the current (v5) Dart definition and mask the
+/// `addColumn` migrations under test.
+Future<void> _createProfileStatsWithTodayXpOnly(Migrator m) async {
+  final db = m.database as AppDatabase;
+  await db.customStatement('''
+    CREATE TABLE profile_stats (
+      id INTEGER NOT NULL,
+      xp_total INTEGER NOT NULL DEFAULT 0,
+      streak_count INTEGER NOT NULL DEFAULT 0,
+      last_active_day TEXT NULL,
+      daily_goal_xp INTEGER NOT NULL DEFAULT 30,
+      today_xp INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (id)
+    )
+  ''');
+  // Keep the "schema is fully built" shape of `createTable` for the two
+  // tables unaffected by either #022 or #012, matching other legacy
+  // fixtures in this file.
+  await m.createTable(db.questionSets);
+  await m.createTable(db.attempts);
+}
+
 /// A schemaVersion-3 view of [AppDatabase], used only to seed a pre-#022
-/// file at the exact version #022's migration upgrades from. `profile_stats`
-/// already has `today_xp` at v3 (unaffected by #022), so it can use the
-/// current Dart definition directly; `items` still needs the pre-#022
-/// `direction` shape.
+/// file at the exact version #022's migration upgrades from. `items` still
+/// needs the pre-#022 `direction` shape; `profile_stats` already has
+/// `today_xp` (added by #010) but not yet #012's `display_name`/
+/// `has_onboarded`.
 class _LegacyV3Database extends AppDatabase {
   _LegacyV3Database(QueryExecutor executor) : super.forTesting(executor); // ignore: use_super_parameters — must forward to the named forTesting() ctor, not the default unnamed one
 
@@ -130,11 +154,30 @@ class _LegacyV3Database extends AppDatabase {
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
-      final db = m.database as AppDatabase;
-      await m.createTable(db.questionSets);
+      await _createProfileStatsWithTodayXpOnly(m);
       await _createItemsTableWithDirection(m);
-      await m.createTable(db.attempts);
-      await m.createTable(db.profileStats);
+    },
+  );
+}
+
+/// A schemaVersion-4 view of [AppDatabase], used only to seed a pre-#012
+/// file at the exact version #012's migration upgrades from: `items` is
+/// already in the post-#022 `promptLang`/`answerLang` shape (so
+/// `m.createTable(db.items)` can use the current Dart definition
+/// directly), but `profile_stats` still lacks `display_name`/
+/// `has_onboarded`.
+class _LegacyV4Database extends AppDatabase {
+  _LegacyV4Database(QueryExecutor executor) : super.forTesting(executor); // ignore: use_super_parameters — must forward to the named forTesting() ctor, not the default unnamed one
+
+  @override
+  int get schemaVersion => 4;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) async {
+      await _createProfileStatsWithTodayXpOnly(m);
+      final db = m.database as AppDatabase;
+      await m.createTable(db.items);
     },
   );
 }
@@ -285,8 +328,8 @@ void main() {
     await legacyDb.close();
 
     // 2. Reopen the SAME file with the real (current schemaVersion)
-    // database; drift sees user_version=3 < schemaVersion=4 and runs
-    // onUpgrade's rewrite + dropColumn.
+    // database; drift sees user_version=3 < schemaVersion and runs every
+    // onUpgrade step in order, including #022's rewrite + dropColumn.
     final upgradedDb = AppDatabase.forTesting(NativeDatabase(file));
     addTearDown(upgradedDb.close);
 
@@ -311,6 +354,48 @@ void main() {
       columns.map((row) => row.read<String>('name')),
       isNot(contains('direction')),
     );
+  });
+
+  test('onUpgrade (v4 -> v5) adds displayName (null) and hasOnboarded '
+      '(false), preserving existing xpTotal/streakCount/todayXp', () async {
+    final dir = Directory.systemTemp.createTempSync('foxstreak_migration_v5');
+    final file = File('${dir.path}/test.sqlite');
+    addTearDown(() {
+      if (dir.existsSync()) dir.deleteSync(recursive: true);
+    });
+
+    // 1. Seed a v4 database directly on disk (profile_stats has no
+    // display_name/has_onboarded columns yet) with a pre-existing row.
+    final legacyDb = _LegacyV4Database(NativeDatabase(file));
+    await legacyDb
+        .into(legacyDb.profileStats)
+        .insert(
+          const ProfileStatsCompanion(
+            id: Value(0),
+            xpTotal: Value(42),
+            streakCount: Value(3),
+            lastActiveDay: Value('2026-10-10'),
+            dailyGoalXp: Value(30),
+            todayXp: Value(12),
+          ),
+        );
+    await legacyDb.close();
+
+    // 2. Reopen the SAME file with the real (current schemaVersion)
+    // database; drift sees user_version=4 < schemaVersion and runs
+    // onUpgrade's two `addColumn`s.
+    final upgradedDb = AppDatabase.forTesting(NativeDatabase(file));
+    addTearDown(upgradedDb.close);
+
+    final profile = await (upgradedDb.select(
+      upgradedDb.profileStats,
+    )..where((t) => t.id.equals(0))).getSingle();
+    expect(profile.displayName, isNull);
+    expect(profile.hasOnboarded, isFalse);
+    expect(profile.xpTotal, 42);
+    expect(profile.streakCount, 3);
+    expect(profile.todayXp, 12);
+    expect(profile.lastActiveDay, '2026-10-10');
   });
 }
 

@@ -60,6 +60,143 @@ void main() {
       expect((await repo.getProfile()).dailyGoalXp, 50);
       expect(() => repo.updateDailyGoal(-1), throwsArgumentError);
     });
+
+    test('getProfile/watchProfile default displayName to null and '
+        'hasOnboarded to false', () async {
+      final profile = await repo.getProfile();
+      expect(profile.displayName, isNull);
+      expect(profile.hasOnboarded, isFalse);
+      final watched = await repo.watchProfile().first;
+      expect(watched.displayName, isNull);
+      expect(watched.hasOnboarded, isFalse);
+    });
+  });
+
+  group('setDisplayName', () {
+    test('trims and persists a non-blank name', () async {
+      await repo.setDisplayName('  Mia  ');
+      expect((await repo.getProfile()).displayName, 'Mia');
+    });
+
+    test(
+      'null/blank stores null (falls back to the generic greeting)',
+      () async {
+        await repo.setDisplayName('Mia');
+        await repo.setDisplayName(null);
+        expect((await repo.getProfile()).displayName, isNull);
+
+        await repo.setDisplayName('Mia');
+        await repo.setDisplayName('   ');
+        expect((await repo.getProfile()).displayName, isNull);
+      },
+    );
+
+    test('never touches hasOnboarded/other columns', () async {
+      await repo.setOnboarded();
+      await repo.addXp(10, now: kTestToday);
+      await repo.setDisplayName('Mia');
+      final profile = await repo.getProfile();
+      expect(profile.hasOnboarded, isTrue);
+      expect(profile.xpTotal, 10);
+    });
+  });
+
+  group('setOnboarded', () {
+    test('flips hasOnboarded to true and stays true', () async {
+      expect((await repo.getProfile()).hasOnboarded, isFalse);
+      await repo.setOnboarded();
+      expect((await repo.getProfile()).hasOnboarded, isTrue);
+      await repo.setOnboarded();
+      expect((await repo.getProfile()).hasOnboarded, isTrue);
+    });
+
+    test('never touches displayName/other columns', () async {
+      await repo.setDisplayName('Mia');
+      await repo.setOnboarded();
+      final profile = await repo.getProfile();
+      expect(profile.displayName, 'Mia');
+    });
+  });
+
+  group('getLastPracticedSetId', () {
+    test('returns null when no attempts exist yet', () async {
+      expect(await repo.getLastPracticedSetId(), isNull);
+    });
+
+    test(
+      'returns the set of the most recent attempt across multiple sets',
+      () async {
+        final setA = await sets.createSet(title: 'A', createdBy: 'teacher');
+        final itemA = await sets.addItem(
+          setId: setA,
+          type: 'phone',
+          prompt: 'P',
+          answer: '0171',
+        );
+        final setB = await sets.createSet(title: 'B', createdBy: 'teacher');
+        final itemB = await sets.addItem(
+          setId: setB,
+          type: 'phone',
+          prompt: 'P',
+          answer: '0172',
+        );
+
+        await repo.recordAttempt(
+          itemId: itemA,
+          ok: true,
+          now: DateTime(2026, 10, 10),
+        );
+        await repo.recordAttempt(
+          itemId: itemB,
+          ok: true,
+          now: DateTime(2026, 10, 12),
+        );
+        expect(await repo.getLastPracticedSetId(), setB);
+
+        // An even later attempt back on set A becomes the new most-recent.
+        await repo.recordAttempt(
+          itemId: itemA,
+          ok: false,
+          now: DateTime(2026, 10, 13),
+        );
+        expect(await repo.getLastPracticedSetId(), setA);
+      },
+    );
+
+    test('falls back to an earlier set once the most-recently-attempted set '
+        'is deleted (its attempts cascade away)', () async {
+      final setA = await sets.createSet(title: 'A', createdBy: 'teacher');
+      final itemA = await sets.addItem(
+        setId: setA,
+        type: 'phone',
+        prompt: 'P',
+        answer: '0171',
+      );
+      final setB = await sets.createSet(title: 'B', createdBy: 'teacher');
+      final itemB = await sets.addItem(
+        setId: setB,
+        type: 'phone',
+        prompt: 'P',
+        answer: '0172',
+      );
+      await repo.recordAttempt(
+        itemId: itemA,
+        ok: true,
+        now: DateTime(2026, 10, 10),
+      );
+      await repo.recordAttempt(
+        itemId: itemB,
+        ok: true,
+        now: DateTime(2026, 10, 12),
+      );
+      expect(await repo.getLastPracticedSetId(), setB);
+
+      await sets.deleteSet(setB);
+      expect(await repo.getLastPracticedSetId(), setA);
+
+      await sets.deleteSet(setA);
+      expect(await repo.getLastPracticedSetId(), isNull);
+    });
   });
 
   group('addXp', () {

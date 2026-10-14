@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'l10n/app_localizations.dart';
-import 'src/library/library_screen.dart';
+import 'src/home/home_screen.dart';
 import 'src/theme/fox_streak_theme.dart';
 
 void main() {
@@ -21,7 +21,7 @@ class FoxStreakApp extends StatelessWidget {
       themeMode: ThemeMode.system,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      home: const LibraryScreen(),
+      home: const HomeScreen(),
     );
   }
 }
