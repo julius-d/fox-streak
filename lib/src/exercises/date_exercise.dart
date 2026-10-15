@@ -326,12 +326,10 @@ class _DateExerciseState extends ConsumerState<DateExercise> {
                             ),
                           )
                         else
-                          IconButton(
+                          FoxRevealHintButton(
                             key: const Key('dateExerciseHintButton'),
-                            icon: const Icon(Icons.visibility_outlined),
                             tooltip: l10n.exerciseDateRevealHintAria,
                             onPressed: _onRevealHint,
-                            color: scheme.primary,
                           ),
                       ],
                     ),

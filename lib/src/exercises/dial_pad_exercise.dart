@@ -230,12 +230,10 @@ class _DialPadExerciseState extends ConsumerState<DialPadExercise> {
                       ),
                     ),
                     if (!_revealingHint)
-                      IconButton(
+                      FoxRevealHintButton(
                         key: const Key('dialPadRevealHint'),
-                        icon: const Icon(Icons.visibility_outlined),
                         tooltip: widget.l10n.exercisePhoneRevealHintAria,
                         onPressed: _onRevealHint,
-                        color: scheme.primary,
                       ),
                   ],
                 ),

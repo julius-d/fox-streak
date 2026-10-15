@@ -16,6 +16,7 @@ import '../data/language_display.dart';
 import '../data/validation.dart';
 import '../lesson/exercise_card.dart';
 import '../theme/fox_streak_theme.dart';
+import '../widgets/widgets.dart';
 
 /// Builds the free-text exercise card.
 ///
@@ -154,12 +155,10 @@ class _FreeTextExerciseState extends State<FreeTextExercise> {
                 ),
               ),
               const SizedBox(height: FoxSpacing.lg),
-              IconButton(
+              FoxRevealHintButton(
                 key: const Key('freeTextRevealHintButton'),
-                icon: const Icon(Icons.visibility_outlined),
                 tooltip: widget.l10n.exerciseFreeTextRevealHintAria,
                 onPressed: _hintUsed ? null : _onRevealHint,
-                color: scheme.primary,
               ),
               if (_hintUsed)
                 Padding(

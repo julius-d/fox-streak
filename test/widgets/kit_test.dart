@@ -377,6 +377,29 @@ void main() {
     expect(find.bySemanticsLabel('Sleepy fox'), findsOneWidget);
   });
 
+  testWidgets('reveal-hint button fires and can be disabled (issue #027)', (
+    WidgetTester tester,
+  ) async {
+    bool revealed = false;
+    await pumpKit(
+      tester,
+      FoxRevealHintButton(
+        tooltip: 'Reveal hint',
+        onPressed: () => revealed = true,
+      ),
+    );
+    expect(find.byIcon(Icons.visibility_outlined), findsOneWidget);
+    await tester.tap(find.byType(FoxRevealHintButton));
+    expect(revealed, isTrue);
+
+    await pumpKit(
+      tester,
+      const FoxRevealHintButton(tooltip: 'Reveal hint', onPressed: null),
+    );
+    final IconButton button = tester.widget(find.byType(IconButton));
+    expect(button.onPressed, isNull);
+  });
+
   testWidgets('celebration wraps its child', (WidgetTester tester) async {
     await pumpKit(tester, const FoxCelebration(child: Text('+10 XP')));
     expect(find.text('+10 XP'), findsOneWidget);
