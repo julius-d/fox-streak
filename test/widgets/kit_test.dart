@@ -185,46 +185,41 @@ void main() {
     );
   });
 
-  testWidgets('goal ring clamps, shows the center label, and announces '
+  testWidgets('goal ring shows the two label lines and announces '
       '(issue #012)', (WidgetTester tester) async {
     await pumpKit(
       tester,
       const FoxGoalRing(
-        value: 1.4,
-        centerLabel: '30 / 20 XP today',
+        value: 0.7,
+        primaryLabel: '14 XP',
+        secondaryLabel: 'today',
         semanticsLabel: 'Daily goal progress',
-        semanticsValue: '30 / 20 XP today',
+        semanticsValue: '14 / 20 XP today',
       ),
     );
+    await tester.pumpAndSettle();
 
-    expect(find.text('30 / 20 XP today'), findsOneWidget);
-    final CircularProgressIndicator indicator = tester.widget(
-      find.byType(CircularProgressIndicator),
-    );
-    expect(indicator.value, closeTo(1.0, 1e-9));
-    expect(
-      (indicator.valueColor as AlwaysStoppedAnimation<Color>).value,
-      FoxSemanticColors.light.gold,
-    );
+    expect(find.text('14 XP'), findsOneWidget);
+    expect(find.text('today'), findsOneWidget);
+    expect(find.byType(CustomPaint), findsWidgets);
 
     final Semantics semantics = tester.widget<Semantics>(
       find
-          .ancestor(
-            of: find.byType(CircularProgressIndicator),
+          .descendant(
+            of: find.byType(FoxGoalRing),
             matching: find.byType(Semantics),
           )
           .first,
     );
     expect(semantics.properties.label, 'Daily goal progress');
-    expect(semantics.properties.value, '30 / 20 XP today');
+    expect(semantics.properties.value, '14 / 20 XP today');
   });
 
   testWidgets('goal ring label stays within the ring at default and large text '
       'scale (issue #037)', (WidgetTester tester) async {
-    const String label = '30 / 30 XP today';
-    const double ringSize = 96;
-    const double strokeWidth = 10;
-    const double innerDiameter = ringSize - 2 * (strokeWidth + 4);
+    const double ringSize = 120;
+    const double labelClearRadius = ringSize * 0.28;
+    const double innerDiameter = labelClearRadius * 2;
 
     Future<void> pumpAtScale(double scale) async {
       await tester.pumpWidget(
@@ -239,30 +234,109 @@ void main() {
             home: const Scaffold(
               body: FoxGoalRing(
                 value: 1.0,
-                centerLabel: label,
+                primaryLabel: '30 XP',
+                secondaryLabel: 'today',
                 semanticsLabel: 'Daily goal progress',
-                semanticsValue: label,
+                semanticsValue: '30 / 30 XP today',
               ),
             ),
           ),
         ),
       );
-      await tester.pump();
+      await tester.pumpAndSettle();
     }
 
     await pumpAtScale(1.0);
     expect(tester.takeException(), isNull);
-    expect(find.text(label), findsOneWidget);
+    expect(find.text('30 XP'), findsOneWidget);
     final Size defaultSize = tester.getSize(find.byType(FittedBox));
     expect(defaultSize.width, lessThanOrEqualTo(innerDiameter + 0.01));
     expect(defaultSize.height, lessThanOrEqualTo(innerDiameter + 0.01));
 
     await pumpAtScale(3.0);
     expect(tester.takeException(), isNull);
-    expect(find.text(label), findsOneWidget);
+    expect(find.text('30 XP'), findsOneWidget);
     final Size scaledSize = tester.getSize(find.byType(FittedBox));
     expect(scaledSize.width, lessThanOrEqualTo(innerDiameter + 0.01));
     expect(scaledSize.height, lessThanOrEqualTo(innerDiameter + 0.01));
+  });
+
+  testWidgets('goal ring overflow past 100% animates in and never throws '
+      '(issue #037)', (WidgetTester tester) async {
+    await pumpKit(
+      tester,
+      const FoxGoalRing(
+        value: 2.3,
+        primaryLabel: '46 XP',
+        secondaryLabel: 'today',
+        semanticsLabel: 'Daily goal progress',
+        semanticsValue: '46 / 20 XP today',
+      ),
+    );
+    // Mid-animation: still ramping toward the target, no exception.
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(tester.takeException(), isNull);
+
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.text('46 XP'), findsOneWidget);
+  });
+
+  group('foxGoalRingLapGeometry (issue #037)', () {
+    test('below one lap: partial outer sweep, no nested laps', () {
+      final result = foxGoalRingLapGeometry(0.4);
+      expect(result.outerSweep, closeTo(0.4, 1e-9));
+      expect(result.nestedLaps, 0);
+    });
+
+    test('exactly one lap: outer ring full, no nested laps yet', () {
+      final result = foxGoalRingLapGeometry(1.0);
+      expect(result.outerSweep, closeTo(1.0, 1e-9));
+      expect(result.nestedLaps, 0);
+    });
+
+    test('mid-second-lap: partial outer sweep, one nested lap', () {
+      final result = foxGoalRingLapGeometry(1.4);
+      expect(result.outerSweep, closeTo(0.4, 1e-9));
+      expect(result.nestedLaps, 1);
+    });
+
+    test('exactly two laps: outer ring full, one nested lap', () {
+      final result = foxGoalRingLapGeometry(2.0);
+      expect(result.outerSweep, closeTo(1.0, 1e-9));
+      expect(result.nestedLaps, 1);
+    });
+
+    test('negative values clamp to empty', () {
+      final result = foxGoalRingLapGeometry(-1.0);
+      expect(result.outerSweep, 0);
+      expect(result.nestedLaps, 0);
+    });
+  });
+
+  group('foxGoalRingVisibleNestedLaps (issue #037)', () {
+    test('caps nested laps so they never reach the label clear radius', () {
+      final int visible = foxGoalRingVisibleNestedLaps(
+        nestedLapsWanted: 10,
+        outerRadius: 56.5,
+        strokeWidth: 7,
+        lapGap: 3,
+        labelClearRadius: 33.6,
+      );
+      // (56.5 - 33.6) / 10 ≈ 2.29 -> 2 nested laps fit.
+      expect(visible, 2);
+    });
+
+    test('returns 0 when even one lap would cross the clear radius', () {
+      final int visible = foxGoalRingVisibleNestedLaps(
+        nestedLapsWanted: 5,
+        outerRadius: 40,
+        strokeWidth: 7,
+        lapGap: 3,
+        labelClearRadius: 35,
+      );
+      expect(visible, 0);
+    });
   });
 
   testWidgets('streak badge shows flame, count, and the done check '

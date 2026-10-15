@@ -205,10 +205,8 @@ class _HomeDashboard extends ConsumerWidget {
                 child: FoxGoalRing(
                   key: const Key('goalRing'),
                   value: goalProgress,
-                  centerLabel: l10n.homeGoalRingValue(
-                    todayXp,
-                    profile.dailyGoalXp,
-                  ),
+                  primaryLabel: l10n.homeGoalRingXp(todayXp),
+                  secondaryLabel: l10n.homeGoalRingToday,
                   semanticsLabel: l10n.homeGoalRingLabel,
                   semanticsValue: l10n.homeGoalRingValue(
                     todayXp,

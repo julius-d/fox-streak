@@ -164,6 +164,12 @@ void main() {
       expect(profile.todayXp, greaterThan(0));
       expect(profile.streakCount, greaterThan(0));
       expect(find.text(profile.streakCount.toString()), findsOneWidget);
+
+      // The goal ring's center label reflects the real wiring end-to-end
+      // (issue #037): just the earned XP, with the goal conveyed by fill.
+      expect(find.byKey(const Key('goalRing')), findsOneWidget);
+      expect(find.text('${profile.todayXp} XP'), findsOneWidget);
+      expect(find.text('today'), findsOneWidget);
     },
   );
 }

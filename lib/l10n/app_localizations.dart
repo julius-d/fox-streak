@@ -166,6 +166,8 @@ abstract class AppLocalizations {
   String get homeBrowseSetsButton;
   String get homeGoalRingLabel;
   String homeGoalRingValue(int earnedXp, int goalXp);
+  String homeGoalRingXp(int earnedXp);
+  String get homeGoalRingToday;
   String get homeParentalInfoTooltip;
   String get parentalInfoTitle;
   String get parentalInfoBody;
@@ -446,6 +448,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String homeGoalRingValue(int earnedXp, int goalXp) =>
       '$earnedXp / $goalXp XP today';
+  @override
+  String homeGoalRingXp(int earnedXp) => '$earnedXp XP';
+  @override
+  String get homeGoalRingToday => 'today';
   @override
   String get homeParentalInfoTooltip => 'For parents';
   @override
@@ -748,6 +754,10 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String homeGoalRingValue(int earnedXp, int goalXp) =>
       '$earnedXp / $goalXp XP heute';
+  @override
+  String homeGoalRingXp(int earnedXp) => '$earnedXp XP';
+  @override
+  String get homeGoalRingToday => 'heute';
   @override
   String get homeParentalInfoTooltip => 'Für Eltern';
   @override

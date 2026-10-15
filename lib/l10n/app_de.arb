@@ -384,6 +384,18 @@
     }
   },
   "homeGoalRingValue": "{earnedXp} / {goalXp} XP heute",
+  "@homeGoalRingXp": {
+    "description": "Primary line of Home's daily-goal ring center label (issue #037); the goal amount is conveyed visually by the ring's fill, not restated here",
+    "placeholders": {
+      "earnedXp": {"type": "int"}
+    }
+  },
+  "homeGoalRingXp": "{earnedXp} XP",
+  "@homeGoalRingToday": {
+    "description": "Secondary (caption) line of Home's daily-goal ring center label (issue #037)",
+    "placeholders": {}
+  },
+  "homeGoalRingToday": "heute",
   "@homeParentalInfoTooltip": {
     "description": "Tooltip/accessibility label for Home's button opening the parental info screen (issue #012)",
     "placeholders": {}

@@ -71,26 +71,79 @@ flutter test
 # inside the ring, not overlapping the arc.
 ```
 
-## Summary
-`FoxGoalRing`'s center label is now wrapped in `Padding` (margin = stroke
-width + 4) + `FittedBox(fit: scaleDown)` with `maxLines: 1`, so it's always
-confined to a fixed box inside the ring's inner diameter and shrinks to fit
-rather than overflowing at large text-scale. No public API change. Added a
-widget test (`test/widgets/kit_test.dart`) asserting the label's bounding
-box stays within the inner diameter at both default and 3x text scale.
+## Summary (expanded mid-implementation, see below)
+Initial fix (label overlap only) was superseded by a fuller rework the user
+asked for after reviewing the first pass: the single-line "fit-to-shrink"
+label was unreadable once squeezed into the ring, so the scope grew into a
+redesign rather than a layout patch.
+
+Final shape of `FoxGoalRing`:
+- **Two-line label**: `primaryLabel` (e.g. "14 XP") + `secondaryLabel`
+  (e.g. "today") replace the old single `centerLabel` — the goal amount
+  itself is no longer restated in text, since the ring's fill already
+  conveys it. New l10n keys `homeGoalRingXp` / `homeGoalRingToday` (en/de,
+  arb + hand-written `app_localizations.dart`); `homeGoalRingValue` (the
+  full "N / M XP today" ratio) stays for `semanticsValue` so screen readers
+  still get the exact numbers.
+- **Overflow-aware fill**: `value` is no longer clamped to `1.0`. Each
+  whole number is one completed "lap"; laps beyond the first nest inward
+  as additional filled circles (fitness-tracker style) instead of just
+  looking "full". Pure lap math extracted into `@visibleForTesting`
+  top-level functions (`foxGoalRingLapGeometry`,
+  `foxGoalRingVisibleNestedLaps`) for direct unit testing.
+- **Custom-painted ring**: replaced `CircularProgressIndicator` with a
+  `CustomPainter` (needed for the multi-lap draw and partial-lap arcs);
+  thinner stroke (10 -> 7), default `size` bumped 96 -> 120 to leave room
+  for nested laps without crowding the label.
+  **Still rounded**: every arc/lap keeps `StrokeCap.round` end-caps.
+- **Animated fill**: wrapped in `TweenAnimationBuilder` (700ms,
+  `easeOutCubic`) so the ring eases to its new value instead of snapping,
+  including rolling into a new lap.
+- Label is still constrained via `Padding` + `FittedBox(scaleDown,
+  maxLines: 1)` to the clear center the painter always keeps free of
+  nested laps — same overlap-safety guarantee as the original fix, now
+  sized from a `size`-relative fraction instead of a fixed margin.
+- Public API changed (`centerLabel` -> `primaryLabel`/`secondaryLabel`);
+  the one call site (`home_screen.dart`) was updated.
+
+Tests: widget tests for label rendering/semantics, label-fits-in-bounds at
+default and 3x text scale, overflow-past-100% animates without throwing;
+unit tests for both extracted lap-geometry functions (below/exactly/past
+one lap, negative-value clamp, nested-lap capping). Updated
+`integration_test/home_screen_test.dart` to assert the real post-lesson
+Home screen shows the new "N XP" / "today" label end-to-end.
+
+Visually checked via a scratch golden-image render (ring shape/overflow
+nesting/stroke) and the real integration test run on `-d macos` (confirmed
+pre-existing #038 is Android-emulator/locale-specific — this test passes
+cleanly on macOS, where the fresh #037 label assertions also pass).
 
 Filed #038 (pre-existing, unrelated `home_screen_test.dart` integration-test
-failure on device/emulator, reproduces on unmodified `main`) rather than
-fixing it here.
+failure on the Android emulator, reproduces on unmodified `main`) rather
+than fixing it here.
 
 ## Code review
-- The square padding box (`EdgeInsets.all(strokeWidth + 4)`) has corners
-  slightly past the inner circle, so a near-square-aspect label could
-  theoretically poke the arc.
-  Not fixed: no real risk for this app's actual labels ("NN / NN XP
-  today" is always much wider than tall); revisit if the label shape
+- The square padding box (`EdgeInsets.all(labelMargin)`) has corners
+  slightly past the inner clear circle, so a near-square-aspect label
+  could theoretically poke a nested lap.
+  Not fixed: no real risk for this app's actual labels ("NN XP" /
+  "today" are both much wider than tall); revisit if the label shape
   changes.
-- The new widget test hardcodes `ringSize`/`strokeWidth` literals instead
-  of deriving them from `FoxGoalRing`'s (private) constant.
+- The widget test hardcodes `ringSize`/`labelClearRadius` literals
+  instead of deriving them from `FoxGoalRing`'s private constants.
   Not fixed: duplication is intentional so the test is an independent
   check, not a tautology against the implementation.
+- At an exact integer lap boundary (e.g. 1.9999 -> 2.0001) the outer
+  sweep hard-resets from ~full to ~0 instead of rolling over smoothly.
+  Not fixed: inherent to the chosen lap semantics, identical at every
+  boundary, and masked by the 700ms ease — cosmetic, not a logic bug.
+- A full (100%) sweep with `StrokeCap.round` can show a faint seam
+  where the rounded start/end caps meet at the top.
+  Not fixed: pre-existing quirk shared with the old
+  `CircularProgressIndicator`-based ring, not a new regression.
+- The rewritten "goal ring ... announces" widget test checks
+  `CustomPaint` exists but no longer inspects the actual painted
+  value/color like the old `CircularProgressIndicator`-based test did.
+  Not fixed: the extracted `foxGoalRingLapGeometry`/
+  `foxGoalRingVisibleNestedLaps` unit tests cover the math directly;
+  accepted as a reasonable tradeoff of moving to a `CustomPainter`.
