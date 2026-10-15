@@ -1,6 +1,7 @@
 # Issue 036: Home XP goal ring shows stale "full" state on days with no activity
 
-Status: open | Priority: P2 | Type: bug
+Status: done | Priority: P2 | Type: bug
+Completed-at: 2026-10-15
 
 ## Goal
 Fix `FoxGoalRing` on the home dashboard showing a stale "X / Y XP today"
@@ -27,20 +28,20 @@ Found while investigating a user report: XP wheel showed "30 of 30" despite
 no app usage that day.
 
 ## Acceptance criteria
-- [ ] The goal ring shows `0 / dailyGoalXp` (not the previous day's stale
+- [x] The goal ring shows `0 / dailyGoalXp` (not the previous day's stale
       `todayXp`) whenever `profile.lastActiveDay` is not the current local
       day — mirroring the existing `todayDone` check already used for the
       streak badge in `home_screen.dart`.
-- [ ] No change to `StatsRepository.addXp()`'s write-time reset logic — the
+- [x] No change to `StatsRepository.addXp()`'s write-time reset logic — the
       underlying `todayXp` column can stay a lazily-reset accumulator; the
       fix is only in how `HomeScreen`/`FoxGoalRing` *display* it, not a
       stored-data migration or a scheduled/background reset job.
-- [ ] A widget/unit test reproduces the symptom: seed `profile_stats` with
+- [x] A widget/unit test reproduces the symptom: seed `profile_stats` with
       `todayXp == dailyGoalXp` and `lastActiveDay` set to a day before
       "today" (using the overridable `Clock` from `test/data/`), then
       assert the rendered goal ring shows `0 / dailyGoalXp`, not
       `dailyGoalXp / dailyGoalXp`.
-- [ ] `flutter analyze`, `dart format --output=none --set-exit-if-changed .`,
+- [x] `flutter analyze`, `dart format --output=none --set-exit-if-changed .`,
       `dart fix --dry-run`, `flutter test` stay clean/green.
 
 ## Out of scope
@@ -70,3 +71,20 @@ flutter test
 # to yesterday, open Home without completing a lesson, confirm the ring
 # shows 0 / dailyGoalXp rather than the stale full value.
 ```
+
+## Summary
+- `_HomeDashboard.build` in `lib/src/home/home_screen.dart` now derives a
+  `todayXp` display value gated on `todayDone` (same check the streak
+  badge already used), falling back to `0` when `lastActiveDay` isn't
+  today; `goalProgress` and the ring's center/semantics labels use that
+  instead of `profile.todayXp` directly.
+- No `lib/src/data/` changes; `StatsRepository.addXp()` untouched.
+- New widget test in `test/home/home_screen_test.dart` seeds a stale
+  profile (via `addXp(..., now: yesterday)` + `setStreak(lastActiveDay:
+  yesterday)`, since `addXp` never touches `lastActiveDay`) and asserts
+  the ring shows `0 / dailyGoalXp`.
+
+## Code review
+No findings — reviewed at medium effort (correctness, reuse,
+simplification, efficiency, conventions); none flagged.
+N/A — nothing to fix; the fix matched its own acceptance criteria.

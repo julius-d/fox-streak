@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fox_streak_app/l10n/app_localizations.dart';
+import 'package:fox_streak_app/src/data/clock.dart';
 import 'package:fox_streak_app/src/data/database.dart';
 import 'package:fox_streak_app/src/data/providers.dart';
 import 'package:fox_streak_app/src/data/sets_repository.dart';
@@ -276,4 +277,38 @@ void main() {
     expect(find.byKey(const Key('goalRing')), findsOneWidget);
     await unmount(tester);
   });
+
+  testWidgets(
+    'goal ring shows 0 / dailyGoalXp, not a stale prior-day full value, '
+    'when lastActiveDay is before today (issue #036)',
+    (tester) async {
+      final clock = FakeClock(kTestToday);
+      final yesterday = kTestToday.subtract(const Duration(days: 1));
+      await pumpOnboardedHome(
+        tester,
+        clock,
+        seed: (stats, sets) async {
+          // Fills yesterday's todayXp to a full goal via addXp (which never
+          // touches lastActiveDay), then sets lastActiveDay to yesterday
+          // directly — reproducing the write-time-lazy-reset staleness
+          // `StatsRepository.addXp` leaves behind until the next write.
+          await stats.addXp(kDefaultDailyGoalXp, now: yesterday);
+          await stats.setStreak(
+            streakCount: 3,
+            lastActiveDay: toLocalDayString(yesterday),
+          );
+        },
+      );
+
+      final ring = tester.widget<FoxGoalRing>(
+        find.byKey(const Key('goalRing')),
+      );
+      expect(ring.value, 0.0);
+      final l10n = AppLocalizations.of(
+        tester.element(find.byKey(const Key('goalRing'))),
+      )!;
+      expect(ring.centerLabel, l10n.homeGoalRingValue(0, kDefaultDailyGoalXp));
+      await unmount(tester);
+    },
+  );
 }

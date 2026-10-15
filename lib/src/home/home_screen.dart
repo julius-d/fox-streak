@@ -113,12 +113,17 @@ class _HomeDashboard extends ConsumerWidget {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
     final DateTime now = ref.watch(systemClockProvider).now();
     final bool todayDone = profile.lastActiveDay == toLocalDayString(now);
+    // `profile.todayXp` is only reset lazily on the next `addXp()` write
+    // (see `StatsRepository.addXp`), so it can still hold a prior day's
+    // value here; gate the *display* on `todayDone`, same as the streak
+    // badge above.
+    final int todayXp = todayDone ? profile.todayXp : 0;
     final int level = XpService.levelForXp(profile.xpTotal);
     final int lo = XpService.xpForLevel(level);
     final int hi = XpService.xpForLevel(level + 1);
     final double goalProgress = profile.dailyGoalXp <= 0
         ? 1.0
-        : profile.todayXp / profile.dailyGoalXp;
+        : todayXp / profile.dailyGoalXp;
     final AsyncValue<int?> lastSetIdAsync = ref.watch(
       lastPracticedSetIdProvider,
     );
@@ -197,12 +202,12 @@ class _HomeDashboard extends ConsumerWidget {
                   key: const Key('goalRing'),
                   value: goalProgress,
                   centerLabel: l10n.homeGoalRingValue(
-                    profile.todayXp,
+                    todayXp,
                     profile.dailyGoalXp,
                   ),
                   semanticsLabel: l10n.homeGoalRingLabel,
                   semanticsValue: l10n.homeGoalRingValue(
-                    profile.todayXp,
+                    todayXp,
                     profile.dailyGoalXp,
                   ),
                 ),
