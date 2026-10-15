@@ -102,8 +102,12 @@ class _HomeDashboard extends ConsumerWidget {
       await _openLibrary(context, ref);
       return;
     }
+    final l10n = AppLocalizations.of(context)!;
     await Navigator.of(context).push<void>(
-      MaterialPageRoute<void>(builder: (_) => LessonScreen(setId: setId)),
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            LessonScreen(setId: setId, backLabel: l10n.lessonBackToHome),
+      ),
     );
     ref.invalidate(lastPracticedSetIdProvider);
   }

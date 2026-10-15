@@ -24,6 +24,10 @@ class LessonResultScreen extends ConsumerWidget {
   final AppLocalizations l10n;
   final VoidCallback onPracticeAgain;
   final VoidCallback onBackToLibrary;
+  // Caller-supplied label (issue #034): the button always just pops the
+  // navigator, so its real destination (library/set-detail vs. Home)
+  // depends on who pushed LessonScreen — the label must match that caller.
+  final String backLabel;
 
   const LessonResultScreen({
     super.key,
@@ -31,6 +35,7 @@ class LessonResultScreen extends ConsumerWidget {
     required this.l10n,
     required this.onPracticeAgain,
     required this.onBackToLibrary,
+    required this.backLabel,
   });
 
   @override
@@ -149,7 +154,7 @@ class LessonResultScreen extends ConsumerWidget {
               // Back to library button
               FoxSecondaryButton(
                 key: const Key('backToLibraryButton'),
-                label: l10n.lessonBackToLibrary,
+                label: backLabel,
                 expanded: true,
                 onPressed: onBackToLibrary,
               ),

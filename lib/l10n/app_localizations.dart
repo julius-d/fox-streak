@@ -149,6 +149,7 @@ abstract class AppLocalizations {
   String get streakTodayDoneLabel;
   String get lessonPracticeAgain;
   String get lessonBackToLibrary;
+  String get lessonBackToHome;
   String get lessonEmptySetNote;
 
   // Home dashboard / onboarding / parental info (#012)
@@ -412,6 +413,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lessonPracticeAgain => 'Practice again';
   @override
   String get lessonBackToLibrary => 'Back to library';
+  @override
+  String get lessonBackToHome => 'Back to home';
   @override
   String get lessonEmptySetNote => 'Add items to start practicing!';
 
@@ -712,6 +715,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get lessonPracticeAgain => 'Nochmal üben';
   @override
   String get lessonBackToLibrary => 'Zurück zur Bibliothek';
+  @override
+  String get lessonBackToHome => 'Zurück zur Startseite';
   @override
   String get lessonEmptySetNote => 'Füge Einträge hinzu, um zu üben!';
 

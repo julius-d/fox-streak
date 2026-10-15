@@ -66,6 +66,13 @@ class LessonEntryButton extends ConsumerWidget {
 class LessonScreen extends ConsumerStatefulWidget {
   final int setId;
   final List<Item> items; // If empty, fetches from itemsForSetProvider
+  // Result screen's "back" button label (issue #034): the button just pops
+  // the navigator, so the caller — whoever pushed this screen — is the only
+  // one who knows where that actually lands. Defaults to the library-flow
+  // wording (SetDetailScreen's LessonEntryButton); callers that push this
+  // screen directly from elsewhere (e.g. Home's Continue button) must pass
+  // their own accurate label.
+  final String? backLabel;
   // Test-only: custom card builder for exercise cards.
   // If null, uses the default placeholder (throws in prod, works in tests).
   final Widget Function({
@@ -81,6 +88,7 @@ class LessonScreen extends ConsumerStatefulWidget {
     super.key,
     required this.setId,
     this.items = const [],
+    this.backLabel,
     this.cardBuilder,
   });
 
@@ -414,6 +422,7 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
       l10n: l10n,
       onPracticeAgain: () => controller.restart(),
       onBackToLibrary: () => Navigator.of(context).pop(result),
+      backLabel: widget.backLabel ?? l10n.lessonBackToLibrary,
     );
   }
 }

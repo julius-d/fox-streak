@@ -8,7 +8,8 @@
 //    yet) that genuinely opens the real `LibraryScreen`.
 // 2. A profile with one prior attempt: Home's Continue button resumes the
 //    real `LessonScreen` for that set; completing the lesson and tapping
-//    "Back to library" returns to Home, whose goal ring/streak badge/
+//    "Back to home" (issue #034: labeled for this entry path, not the
+//    library-flow default) returns to Home, whose goal ring/streak badge/
 //    level-progress bar now reflect the just-written XP/streak, and whose
 //    Continue button still points at the same set.
 
@@ -146,6 +147,11 @@ void main() {
       // window (800x600) — scroll the button into view before tapping.
       await tester.ensureVisible(find.byKey(const Key('backToLibraryButton')));
       await tester.pumpAndSettle();
+      // Reached via Home's Continue button (not the library/set-detail
+      // flow), so the button must say "Back to home" — it actually pops to
+      // Home, not the library (issue #034).
+      expect(find.text('Back to home'), findsOneWidget);
+      expect(find.text('Back to library'), findsNothing);
       await tester.tap(find.byKey(const Key('backToLibraryButton')));
       await tester.pumpAndSettle();
 

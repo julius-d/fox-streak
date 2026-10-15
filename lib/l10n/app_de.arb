@@ -305,6 +305,11 @@
     "placeholders": {}
   },
   "lessonBackToLibrary": "Zurück zur Bibliothek",
+  "@lessonBackToHome": {
+    "description": "Lesson result button label when the lesson was reached directly from Home (issue #034), not via the library/set-detail flow",
+    "placeholders": {}
+  },
+  "lessonBackToHome": "Zurück zur Startseite",
   "@homeGreetingMorning": {
     "description": "Generic morning greeting on Home when no display name is set (issue #012)",
     "placeholders": {}
