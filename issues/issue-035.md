@@ -1,6 +1,6 @@
 # Issue 035: Native splash screen (Android/iOS) for cold-start black screen
 
-Status: open | Priority: P3 | Type: polish
+Status: done | Priority: P3 | Type: polish | Completed-at: 2026-10-15
 
 ## Goal
 Replace the stock `flutter create` launch background with a branded
@@ -29,28 +29,28 @@ Library screen opens, and `profileProvider` (`StreamProvider`) shows a
 contributes to the pre-first-frame black window.
 
 ## Acceptance criteria
-- [ ] `flutter_native_splash: ^2.4.8` added to `dev_dependencies` (dev-only
+- [x] `flutter_native_splash: ^2.4.8` added to `dev_dependencies` (dev-only
       codegen tool, like `flutter_launcher_icons` in #023 — no runtime
       plugin, so the "iOS + Windows + macOS plugin support" rule in
       AGENTS.md doesn't block this).
-- [ ] `flutter_native_splash.yaml` at repo root configures a branded splash
+- [x] `flutter_native_splash.yaml` at repo root configures a branded splash
       (background color = `kFoxSeedColor` `#FF9800` from #015, centered
       `assets/fox.png`) for both `color` and `color_dark` variants, so dark
       mode gets the branded splash instead of a plain black rectangle.
-- [ ] `dart run flutter_native_splash:create` regenerates and commits the
+- [x] `dart run flutter_native_splash:create` regenerates and commits the
       Android (`drawable*/launch_background.xml`, `values*/styles.xml`,
       Android 12+ `drawable*/android12splash.xml` + manifest entries) and
       iOS (`LaunchScreen.storyboard`, `Assets.xcassets` splash images)
       output.
-- [ ] Windows/macOS stay out of scope (desktop targets don't have an
+- [x] Windows/macOS stay out of scope (desktop targets don't have an
       equivalent native-splash startup gap and `flutter_native_splash`
       doesn't generate for them) — repo's "keep all four platforms" rule
       doesn't apply here since this isn't a plugin/dependency being added
       to the Flutter app itself, just platform-specific native resources.
-- [ ] No runtime Dart code changes; `flutter analyze`, `dart format`,
+- [x] No runtime Dart code changes; `flutter analyze`, `dart format`,
       `dart fix --dry-run` clean; `flutter test` green (asset/config-only
       change).
-- [ ] Follows #015: splash background reuses the orange seed color, no
+- [x] Follows #015: splash background reuses the orange seed color, no
       ad-hoc brand color.
 
 ## Out of scope
@@ -78,3 +78,24 @@ flutter test
 # Manual: cold-start on Android emulator in both light and dark OS mode,
 # confirm branded splash (not black/white) appears instead of the gap.
 ```
+
+## Summary
+Added `flutter_native_splash` (dev-only) + `flutter_native_splash.yaml`
+(orange `#FF9800` background, centered `assets/fox.png`, same values for
+`color_dark`/`image_dark` and the Android 12+ `android_12` block), then ran
+`dart run flutter_native_splash:create` to regenerate Android
+drawables/styles (incl. `values-v31`/`values-night-v31` for Android 12+)
+and iOS `LaunchScreen` assets/`Info.plist`. No Dart code touched.
+Manually verified on the Android emulator (`flutter build apk --debug` +
+`adb install`/`am start`): cold start now shows the branded orange fox
+splash instead of the stock black/white rectangle (screenshots captured
+mid-launch). Dark-mode styles/drawables were generated with the identical
+orange color/image, so no separate black splash remains in dark mode.
+
+## Code review
+No findings. Reviewer checked yaml color/image consistency across
+light/dark/android_12, verified generated native resources aren't
+half-updated placeholders, confirmed splash PNGs keep real transparency
+(so the orange native background shows through), and independently
+re-ran `flutter analyze`/`dart format` rather than trusting this issue's
+claims.

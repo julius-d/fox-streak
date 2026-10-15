@@ -1,0 +1,26 @@
+# Native (pre-Flutter-engine) splash screen config (issue #035).
+#
+# Regenerate after editing this file:
+#   dart run flutter_native_splash:create
+#
+# Background reuses kFoxSeedColor (#FF9800, lib/src/theme/fox_streak_theme.dart)
+# per #015 — same color/image for light and dark so dark-mode OS theme no
+# longer falls back to the stock black launch background.
+flutter_native_splash:
+  color: "#FF9800"
+  color_dark: "#FF9800"
+  image: assets/fox.png
+  image_dark: assets/fox.png
+
+  android: true
+  ios: true
+  web: false
+
+  # Android 12+ enforces its own splash API (circular icon + background
+  # color, not an arbitrary full-bleed image) — configured separately here
+  # rather than via top-level `fullscreen: true`.
+  android_12:
+    image: assets/fox.png
+    icon_background_color: "#FF9800"
+    image_dark: assets/fox.png
+    icon_background_color_dark: "#FF9800"
