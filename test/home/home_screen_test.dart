@@ -307,7 +307,7 @@ void main() {
       final l10n = AppLocalizations.of(
         tester.element(find.byKey(const Key('goalRing'))),
       )!;
-      expect(ring.centerLabel, l10n.homeGoalRingValue(0, kDefaultDailyGoalXp));
+      expect(ring.primaryLabel, l10n.homeGoalRingXp(0));
       await unmount(tester);
     },
   );
