@@ -219,6 +219,52 @@ void main() {
     expect(semantics.properties.value, '30 / 20 XP today');
   });
 
+  testWidgets('goal ring label stays within the ring at default and large text '
+      'scale (issue #037)', (WidgetTester tester) async {
+    const String label = '30 / 30 XP today';
+    const double ringSize = 96;
+    const double strokeWidth = 10;
+    const double innerDiameter = ringSize - 2 * (strokeWidth + 4);
+
+    Future<void> pumpAtScale(double scale) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            theme: FoxStreakTheme.light(),
+            builder: (BuildContext context, Widget? child) => MediaQuery(
+              data: MediaQuery.of(context)
+                  .copyWith(textScaler: TextScaler.linear(scale)),
+              child: child!,
+            ),
+            home: const Scaffold(
+              body: FoxGoalRing(
+                value: 1.0,
+                centerLabel: label,
+                semanticsLabel: 'Daily goal progress',
+                semanticsValue: label,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+    }
+
+    await pumpAtScale(1.0);
+    expect(tester.takeException(), isNull);
+    expect(find.text(label), findsOneWidget);
+    final Size defaultSize = tester.getSize(find.byType(FittedBox));
+    expect(defaultSize.width, lessThanOrEqualTo(innerDiameter + 0.01));
+    expect(defaultSize.height, lessThanOrEqualTo(innerDiameter + 0.01));
+
+    await pumpAtScale(3.0);
+    expect(tester.takeException(), isNull);
+    expect(find.text(label), findsOneWidget);
+    final Size scaledSize = tester.getSize(find.byType(FittedBox));
+    expect(scaledSize.width, lessThanOrEqualTo(innerDiameter + 0.01));
+    expect(scaledSize.height, lessThanOrEqualTo(innerDiameter + 0.01));
+  });
+
   testWidgets('streak badge shows flame, count, and the done check '
       '(issue #011)', (WidgetTester tester) async {
     await pumpKit(

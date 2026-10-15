@@ -21,6 +21,8 @@ class FoxGoalRing extends StatelessWidget {
   final String? semanticsValue;
   final double size;
 
+  static const double _strokeWidth = 10;
+
   const FoxGoalRing({
     super.key,
     required this.value,
@@ -46,7 +48,7 @@ class FoxGoalRing extends StatelessWidget {
             SizedBox.expand(
               child: CircularProgressIndicator(
                 value: clamped,
-                strokeWidth: 10,
+                strokeWidth: _strokeWidth,
                 strokeCap: StrokeCap.round,
                 backgroundColor: scheme.surfaceContainerHighest,
                 valueColor: AlwaysStoppedAnimation<Color>(
@@ -55,10 +57,22 @@ class FoxGoalRing extends StatelessWidget {
               ),
             ),
             if (centerLabel != null)
-              Text(
-                centerLabel!,
-                style: Theme.of(context).textTheme.titleMedium,
-                textAlign: TextAlign.center,
+              // Constrained to the ring's inner diameter (a small margin
+              // inside the stroke) and shrunk to fit via FittedBox, so a
+              // long label or a large device text-scale never clips or
+              // paints over the arc.
+              Padding(
+                padding: const EdgeInsets.all(_strokeWidth + 4),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    centerLabel!,
+                    style: Theme.of(context).textTheme.titleMedium,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    softWrap: false,
+                  ),
+                ),
               ),
           ],
         ),

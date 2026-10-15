@@ -1,6 +1,7 @@
 # Issue 037: XP goal ring center label can overlap/clip the ring arc
 
-Status: open | Priority: P3 | Type: bug
+Status: done | Priority: P3 | Type: bug
+Completed-at: 2026-10-15
 
 ## Goal
 Fix `FoxGoalRing`'s center label (`lib/src/widgets/fox_goal_ring.dart`) so
@@ -25,22 +26,22 @@ Found alongside #036 while investigating a user report of the ring's text
 overlapping the wheel.
 
 ## Acceptance criteria
-- [ ] The center label is constrained to fit within the ring's inner
+- [x] The center label is constrained to fit within the ring's inner
       diameter (box size minus `2 * strokeWidth` plus a small margin) at
       the default system font size, with no visual overlap onto the arc.
-- [ ] Behavior at larger device text-scale settings (accessibility large
+- [x] Behavior at larger device text-scale settings (accessibility large
       fonts) degrades gracefully — e.g. via `FittedBox`/`maxLines: 1` with
       scale-down, not unbounded clipping — rather than crashing or
       silently overflowing past the ring.
-- [ ] No change to `FoxGoalRing`'s public API (`value`, `centerLabel`,
+- [x] No change to `FoxGoalRing`'s public API (`value`, `centerLabel`,
       `size`, etc.) beyond internal layout — existing call site in
       `home_screen.dart` keeps working unmodified.
-- [ ] A widget test renders `FoxGoalRing` with a long/two-digit
+- [x] A widget test renders `FoxGoalRing` with a long/two-digit
       `centerLabel` (e.g. "30 / 30 XP today") at both default and a scaled
       text-scale factor, and asserts the label's rendered size stays within
       the ring's inner bounds (no `RenderFlex overflow`/clipped paint
       outside the expected box).
-- [ ] `flutter analyze`, `dart format --output=none --set-exit-if-changed .`,
+- [x] `flutter analyze`, `dart format --output=none --set-exit-if-changed .`,
       `dart fix --dry-run`, `flutter test` stay clean/green.
 
 ## Out of scope
@@ -69,3 +70,27 @@ flutter test
 # accessibility setting, open Home and confirm the goal ring's label stays
 # inside the ring, not overlapping the arc.
 ```
+
+## Summary
+`FoxGoalRing`'s center label is now wrapped in `Padding` (margin = stroke
+width + 4) + `FittedBox(fit: scaleDown)` with `maxLines: 1`, so it's always
+confined to a fixed box inside the ring's inner diameter and shrinks to fit
+rather than overflowing at large text-scale. No public API change. Added a
+widget test (`test/widgets/kit_test.dart`) asserting the label's bounding
+box stays within the inner diameter at both default and 3x text scale.
+
+Filed #038 (pre-existing, unrelated `home_screen_test.dart` integration-test
+failure on device/emulator, reproduces on unmodified `main`) rather than
+fixing it here.
+
+## Code review
+- The square padding box (`EdgeInsets.all(strokeWidth + 4)`) has corners
+  slightly past the inner circle, so a near-square-aspect label could
+  theoretically poke the arc.
+  Not fixed: no real risk for this app's actual labels ("NN / NN XP
+  today" is always much wider than tall); revisit if the label shape
+  changes.
+- The new widget test hardcodes `ringSize`/`strokeWidth` literals instead
+  of deriving them from `FoxGoalRing`'s (private) constant.
+  Not fixed: duplication is intentional so the test is an independent
+  check, not a tautology against the implementation.
