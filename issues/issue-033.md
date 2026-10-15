@@ -1,6 +1,7 @@
 # Issue 033: restart()/start() can race a still-in-flight submitGrade/skip/next
 
-Status: open | Priority: P4 | Type: tech-debt
+Status: done | Priority: P4 | Type: tech-debt
+Completed-at: 2026-10-15
 
 ## Goal
 `#031` added `LessonController._actionInFlight` to serialize
@@ -23,14 +24,14 @@ the type level, so a future call site (or a fast enough double-tap on
 Practice-again right as a trailing write settles) could hit it.
 
 ## Acceptance criteria
-- [ ] `restart()`/`start()` can't observe or clobber state from a
+- [x] `restart()`/`start()` can't observe or clobber state from a
       `submitGrade`/`skip`/`next` call that's still in flight for a
       *different* session — either by also respecting `_actionInFlight`,
       or by some other mechanism that makes the two non-interfering.
-- [ ] A test demonstrating the race (e.g. call `restart()` while a
+- [x] A test demonstrating the race (e.g. call `restart()` while a
       `_completeLesson` await is pending) shows the post-restart state is
       not overwritten by the stale call.
-- [ ] No regression; `flutter analyze`, `dart format`, `flutter test` stay
+- [x] No regression; `flutter analyze`, `dart format`, `flutter test` stay
       clean/green.
 
 ## Out of scope
@@ -40,3 +41,18 @@ Practice-again right as a trailing write settles) could hit it.
 ## Dependencies
 - Builds on #031's `_actionInFlight` guard in
   `lib/src/lesson/lesson_controller.dart`.
+
+## Summary
+Added a `_generation` counter bumped by every `start()` (so every
+`restart()`). `start()` also force-clears `_actionInFlight`. Guarded actions
+(`submitGrade`/`skip`/`next`/`_completeLesson`) capture the generation they
+started with and bail on any `state = ...` write once it no longer matches
+`_generation`, instead of reading/clobbering the new session's state;
+`_completeLesson`'s XP/streak DB writes still complete for genuinely
+answered items, only the final in-memory state write is skipped when stale.
+New regression tests in `test/lesson/lesson_controller_restart_race_test.dart`
+(verified to fail without the fix) cover both failure modes from the issue.
+
+## Code review
+Subagent code review (medium) raised two candidate findings.
+Both were refuted on verification; no findings survived — nothing to fix.
