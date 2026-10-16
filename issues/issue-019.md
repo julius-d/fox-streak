@@ -14,7 +14,7 @@ Add golden (screenshot-comparison) widget tests for the #015 widget kit now that
 
 ## Acceptance criteria
 - [x] Golden tests exist for each widget in scope (buttons, `FoxFeedbackBanner` variants, `FoxProgressBar`, `FoxConfirmDialog`, `FoxEmptyState`, `FoxMascot` states), each rendered under both `FoxStreakTheme.light()` and `.dark()`
-- [x] Baseline PNGs committed under `test/golden/goldens/`, generated via `flutter test --update-goldens` (see summary: generated on macOS, not Windows — environment deviation)
+- [x] Baseline PNGs committed under `test/golden/goldens/<platform>/`, generated via `flutter test --update-goldens` (see Summary + CI follow-up: generated on macOS, not Windows, and per-platform folders added after the first real CI run mismatched)
 - [x] `flutter test` (the same command #018's CI already runs) exercises the golden tests with no separate CI step/command added
 - [x] Fallback plan documented in this issue (above) for the case where `ubuntu-latest` CI renders differently than the Windows-generated baselines
 - [x] No new test/golden dependency added; `*.png` baselines are treated as binary in git (verify `.gitattributes` or default binary detection, so they diff cleanly and aren't mangled by line-ending normalization)
@@ -23,7 +23,7 @@ Add golden (screenshot-comparison) widget tests for the #015 widget kit now that
 ## Tasks
 1. [x] `test/golden/kit_golden_test.dart`: render each in-scope kit widget inside a minimal `MaterialApp(theme:, darkTheme:, themeMode:)` host, once per theme mode, and assert `matchesGoldenFile`
 2. [x] Generate baseline PNGs via `flutter test --update-goldens`; commit under `test/golden/goldens/`
-3. [ ] Confirm plain `flutter test` picks the new tests up with no CI change; run once against the actual CI (`ubuntu-latest`) and execute the documented fallback regeneration job if mismatches appear — **pending**: CI only triggers on push/PR to `main` (see `.github/workflows/ci.yml`); first real validation happens on the next push, not in this worktree
+3. [x] Confirm plain `flutter test` picks the new tests up with no CI change; run once against the actual CI (`ubuntu-latest`) and execute the documented fallback regeneration job if mismatches appear — **ran, and it did mismatch** (see "CI follow-up" below); fallback in progress
 4. [x] Verify `*.png` is treated as binary by git (added explicit `*.png binary` to `.gitattributes`)
 5. [x] Short README/AGENTS.md note: how to regenerate goldens when a kit widget's visuals intentionally change (`flutter test --update-goldens`, scoped to `test/golden`)
 
@@ -66,3 +66,9 @@ flutter test
   Fixed: hoisted to a single `themes` list reused by every group.
 - Stale `AGENTS.md` comment on `flutter test` didn't mention the new golden tests it now also runs.
   Fixed: comment updated to reference `test/golden/` (#019).
+
+## CI follow-up (2026-10-16)
+- First real `ubuntu-latest` CI run on this branch's push to `main` **failed**: 22/30 goldens mismatched. Every failure was a text-bearing widget (buttons, banners, confirm dialog, empty state); the two text-free widgets (progress bar, mascot) passed. Diffs were small (1.3–5.2%).
+- Root cause (confirmed via research, not just the originally-flagged OS/arch risk): `flutter_test` already renders all text with its placeholder "Ahem" font by default — no custom/real font is loaded either locally or in CI — so this isn't a font-file difference. The diffs are Skia rasterizer/antialiasing noise that differs across OS builds even for identical placeholder-glyph layout. Flutter's own golden-test docs confirm this is a known, unresolved limitation ("occasional subtle rendering differences between platforms"), handled upstream by keeping **one approved baseline per platform** (Flutter Gold), not by trying to eliminate the difference.
+- Fix: switched to per-OS baseline folders, `test/golden/goldens/<macos|windows|linux>/`, selected at test run time via `Platform.operatingSystem`. macOS-generated baselines moved into `macos/`; `windows/` and `linux/` are populated the first time a dev/CI runs `--update-goldens` on that platform. This means a macOS dev's local `flutter test` keeps catching real regressions against the macOS baseline regardless of what CI's Linux baseline shows — the original ask behind this follow-up.
+- Still open: `linux/` baselines don't exist yet, so CI will fail on "golden file not found" until they're generated via the already-documented `workflow_dispatch` fallback job (one-off `flutter test --update-goldens` run on `ubuntu-latest`, PNGs committed from the artifact).

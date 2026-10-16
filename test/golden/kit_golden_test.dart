@@ -5,16 +5,31 @@
 // `.dark()` inside a minimal `MaterialApp` host, wrapped in a `RepaintBoundary`
 // so the captured bounds stay stable regardless of surrounding layout.
 //
-// Baselines live under `goldens/` (generated via `flutter test
-// --update-goldens`). Regenerate scoped to this directory when a kit
-// widget's visuals intentionally change: see AGENTS.md.
+// Baselines are per-OS (`goldens/<platform>/`): even with no custom fonts
+// loaded, Skia's text rasterization still differs subtly across OSes (CI
+// run on 2026-10-16 showed 1.3-5.2% pixel diffs on every text-bearing
+// widget, macOS-generated baselines vs ubuntu-latest), so a single
+// cross-platform baseline set isn't viable — see Flutter's own golden-test
+// docs, which handle this the same way (Flutter Gold keeps one baseline
+// per platform). Regenerate scoped to this directory + your platform when
+// a kit widget's visuals intentionally change: see AGENTS.md.
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
 import 'package:fox_streak_app/src/widgets/widgets.dart';
 
+/// Baseline subfolder for the OS this test run is executing on.
+String get _goldenPlatformDir {
+  if (Platform.isMacOS) return 'macos';
+  if (Platform.isWindows) return 'windows';
+  return 'linux';
+}
+
 /// Pumps [child] under [theme] inside a fixed-size, keyed [RepaintBoundary]
-/// and asserts it matches the baseline PNG named `goldens/$name.png`.
+/// and asserts it matches the baseline PNG named
+/// `goldens/<platform>/$name.png`.
 ///
 /// Pins `devicePixelRatio` so the captured pixel grid doesn't shift if a
 /// future SDK changes the test harness's implicit default.
@@ -45,7 +60,7 @@ Future<void> _expectGolden(
   await tester.pumpAndSettle();
   await expectLater(
     find.byKey(boundaryKey),
-    matchesGoldenFile('goldens/$name.png'),
+    matchesGoldenFile('goldens/$_goldenPlatformDir/$name.png'),
   );
 }
 

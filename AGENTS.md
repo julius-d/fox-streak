@@ -68,20 +68,29 @@ Lints via `flutter_lints` + `riverpod_lint` surface through `flutter analyze`;
 ## Golden tests (issue #019)
 
 - `test/golden/kit_golden_test.dart` snapshots each #015 kit widget under
-  both `FoxStreakTheme.light()` and `.dark()`; baselines live in
-  `test/golden/goldens/*.png` (plain `flutter_test`/`matchesGoldenFile`, no
-  new dependency). `flutter test` already runs them — no separate command.
-- When a kit widget's visuals intentionally change, regenerate the
-  baselines (scope the run to avoid touching unrelated goldens elsewhere):
+  both `FoxStreakTheme.light()` and `.dark()` (plain
+  `flutter_test`/`matchesGoldenFile`, no new dependency). `flutter test`
+  already runs them — no separate command.
+- **Baselines are per-OS**: `test/golden/goldens/<macos|windows|linux>/*.png`.
+  Even with no custom fonts loaded (text renders via `flutter_test`'s
+  placeholder font either way), Skia's text rasterization still differs
+  subtly across OSes — confirmed 2026-10-16, 1.3-5.2% pixel diffs on every
+  text-bearing widget between macOS- and `ubuntu-latest`-rendered goldens.
+  A single cross-platform baseline set isn't viable; the test resolves the
+  subfolder from `Platform.operatingSystem` at run time, matching how
+  Flutter's own golden-test infra (Flutter Gold) keeps one baseline per
+  platform instead of trying to eliminate the difference.
+- When a kit widget's visuals intentionally change, regenerate your
+  platform's baselines only (scope the run so you don't touch other
+  widgets' goldens):
   ```shell
   flutter test --update-goldens test/golden
   ```
   Review the diffed PNGs before committing — an unexpected change here
   usually means an unintended visual regression, not a baseline to update.
-- Baselines are OS/renderer sensitive; if a baseline was regenerated on a
-  different OS than CI (`ubuntu-latest`) and CI then reports a mismatch, see
-  #019's fallback plan (regenerate via a `workflow_dispatch` CI job rather
-  than loosening or skipping the tests).
+  The `linux/` baselines can only be regenerated on `ubuntu-latest` itself
+  (a `workflow_dispatch` CI job, per #019's fallback plan) — not from a
+  macOS or Windows dev machine.
 
 ## Conventions
 
