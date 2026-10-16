@@ -72,6 +72,37 @@ closing comment for the recorded proof (and its #020 correction).
 
 > **Format authority:** `dart format` check in CI is authoritative; `.gitattributes`/CRLF normalization is out of scope unless a CI-only format failure proves otherwise.
 
+## Device e2e (issue #016)
+
+Four critical-flow `integration_test` specs (`integration_test/flow1_*`
+through `flow4_*`), using only the Flutter SDK `integration_test` +
+`flutter_test` stack (no Patrol, no new deps). Shared boot/settle helpers
+live in `integration_test/helpers.dart`.
+
+- Flow 1 — Library CRUD (#002/#003/#004)
+- Flow 2 — Lesson play-through (#005-#009), incl. quit-leaves-no-dead-end
+- Flow 3 — XP + streak tiers and day-boundary behavior (#010/#011)
+- Flow 4 — Share round-trip (#002/#008); `share_plus`/`file_picker` are
+  stubbed at the platform-interface level (`SharePlatform`/
+  `FilePickerPlatform`) — no real share sheet or file dialog ever opens.
+
+Each isolated in an in-memory DB + overridable `Clock` — never the real
+on-device `fox_streak` database — with no network access.
+
+```shell
+flutter test integration_test/flow1_library_crud_test.dart -d macos
+flutter test integration_test/flow2_lesson_playthrough_test.dart -d macos
+flutter test integration_test/flow3_xp_streak_test.dart -d macos
+flutter test integration_test/flow4_share_roundtrip_test.dart -d macos
+```
+
+Run each file individually (not the whole `integration_test/` dir in one
+invocation) — this repo's macOS runs have known cross-test relaunch
+flakiness at app-foreground time; each flow passes reliably standalone.
+`-d windows` works too; the primary gate is any one real device/desktop
+run (not the `flutter test integration_test` host-check, which only
+compiles).
+
 ## Data layer (issue #002)
 
 Local-only persistence with Drift + SQLite. No accounts.

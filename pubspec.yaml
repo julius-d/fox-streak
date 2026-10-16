@@ -61,6 +61,13 @@ dev_dependencies:
   flutter_launcher_icons: ^0.14.4
   flutter_native_splash: ^2.4.8
 
+  # For #016's share-round-trip integration test (fakes `SharePlatform` so
+  # no real share sheet ever opens; `share_plus` itself doesn't re-export
+  # `SharePlatform`). Already transitive via `share_plus`; pinned here as a
+  # direct dep only so `flutter analyze` doesn't flag the import as
+  # undeclared.
+  share_plus_platform_interface: ^7.2.0
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
