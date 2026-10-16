@@ -10,10 +10,11 @@ so the same shape can grow a renderer later (e.g. lottie, in a follow-up
 issue) without another schema migration to the type enum.
 
 ## Decisions (2026-10-13, with repo owner)
-- Scope split: lottie/animated images are **not** part of this issue.
-  AGENTS.md, #010, and #015 all repeat "no lottie dep" (3-platform
-  compatibility risk) — adding that dependency is a separate decision.
-  Split into #032 (filed alongside this refinement) as a follow-up; this
+- Scope split: lottie/animated images are **not** part of this issue —
+  lottie isn't a dependency yet (3-platform compatibility needs
+  verifying first), and adding it is a separate decision from this
+  issue's image-field work. Split into #032 (filed alongside this
+  refinement) as a follow-up; this
   issue's `imageType` enum stays **closed** to `emoji | base64 | url` (no
   reserved-but-unimplemented `lottie` value — #032 adds its own enum value
   + migration when/if it lands).
@@ -111,8 +112,8 @@ issue) without another schema migration to the type enum.
   implementation time — #012 also plans a schema bump; whichever lands
   first takes the next version number, the other follows.
 - Seed content convention (emoji/base64-only) feeds into #013's QA pass.
-- Predecessor to #032 (lottie/animated images), which is blocked on a
-  repo-wide decision to accept a lottie dependency.
+- Predecessor to #032 (lottie/animated images), which needs a lottie
+  package chosen and verified cross-platform.
 
 ## Verify
 ```powershell

@@ -3,7 +3,7 @@
 // Rules: instant bright green/red answers, bouncy celebratory micro-moments
 // (XP pop, streak-flame lit, result cheer), encouraging copy with no
 // shaming (copy itself is owned by #012). Animation budget is deliberately
-// tiny — one short elastic scale, no controllers to dispose, no lottie dep
+// tiny — one short elastic scale, no controllers to dispose
 // (lottie lands in #014).
 //
 // Haptics/sound: [foxHapticsEnabledProvider] is the single toggle

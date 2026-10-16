@@ -58,8 +58,8 @@ contributes to the pre-first-frame black window.
   overhead is inherent to `flutter run`; release builds are already
   faster).
 - Windows/macOS native splash (see acceptance criteria).
-- Any animated/Lottie splash (would collide with the repo's "no lottie
-  dep" rule — see #032).
+- Any animated/Lottie splash (lottie isn't a dependency yet; see #032
+  for adding it).
 
 ## Dependencies
 - Builds on #015 (`kFoxSeedColor` orange seed) and `assets/fox.png`.
