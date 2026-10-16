@@ -1,6 +1,6 @@
 # Issue 041: Split README into end-user README + CONTRIBUTING.md, add app install section
 
-Status: open | Priority: P2 | Type: docs | Refined-at: 2026-10-16
+Status: done | Priority: P2 | Type: docs | Refined-at: 2026-10-16 | Completed-at: 2026-10-16
 
 ## Goal
 
@@ -46,23 +46,23 @@ to `README.md`, modeled on
 
 ## Acceptance criteria
 
-- [ ] `README.md` keeps: title, CI badge, one-line description, a new
+- [x] `README.md` keeps: title, CI badge, one-line description, a new
       "Installation" section (Obtainium badge, APK download badge,
       macOS section, Windows section — no iOS, no F-Droid), and nothing
       else technical.
-- [ ] `CONTRIBUTING.md` (new file) contains everything moved out:
+- [x] `CONTRIBUTING.md` (new file) contains everything moved out:
       tech-fact bullets, Prerequisites, Commands, Formatting, the detailed
       CI section (step table + closing-proof convention + format-authority
       note), Device e2e (#016), Data layer (#002), Codegen (Drift), Project
       docs links.
-- [ ] No content is lost or duplicated between the two files (verify by
+- [x] No content is lost or duplicated between the two files (verify by
       diffing old README against new README + CONTRIBUTING combined).
-- [ ] Links/badges in the new Installation section resolve correctly
+- [x] Links/badges in the new Installation section resolve correctly
       (Obtainium redirect URL, APK download badge target, macOS/Windows
       release links) — verify manually against the actual
       `github.com/julius-d/fox-streak/releases/latest` page once at least
       one release exists.
-- [ ] README's existing CI badge and any cross-references to moved
+- [x] README's existing CI badge and any cross-references to moved
       sections (e.g. "Project docs" list, AGENTS.md's "follows #015"-style
       pointers if any point at README section headers) still resolve.
 
@@ -103,3 +103,31 @@ to `README.md`, modeled on
 # Manual: open README.md and CONTRIBUTING.md, click through each
 # Installation link/badge, confirm no technical content remains in README.
 ```
+
+## Summary
+
+New `CONTRIBUTING.md` holds everything moved out of `README.md` (tech
+bullets, Prerequisites, Commands, Formatting, CI, Device e2e, Data layer,
+Codegen, Project docs) verbatim. `README.md` now has only the title, CI
+badge, one-line description, and an "Installation" section (Obtainium
+badge + a static "Download APK" badge for Android, plain release links
+for macOS/Windows) — no F-Droid, no iOS, no screenshots, per the recorded
+decisions. `flutter analyze`/`dart format`/`dart fix --dry-run`/`flutter
+test` all clean (docs-only change, no Dart code touched). Verified against
+the real `0.0.1` GitHub Release: the repo is **private**, so a dynamic
+`shields.io` badge querying the GitHub API for release info rendered "no
+releases or repo not found" — swapped for a static badge image instead
+(no API call, so it renders correctly regardless of repo visibility; the
+link target itself still requires the viewer to be logged in with repo
+access, same as every other link in this README).
+
+## Code review
+
+- CI badge was duplicated verbatim in both `README.md` and
+  `CONTRIBUTING.md`'s CI section.
+  Fixed — removed the badge image from `CONTRIBUTING.md`, kept the prose/table.
+- The original README's "Developed on both Windows and macOS." sentence
+  was dropped during the split, not relocated to either file.
+  Fixed — added to the top of `CONTRIBUTING.md`.
+- Acceptance-criteria checkboxes were left unchecked despite `Status: done`.
+  Fixed — checked all five boxes (repo has no strict convention here, but it's a quick accuracy fix).
