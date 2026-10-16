@@ -1,0 +1,35 @@
+name: Update Goldens
+
+# One-off fallback (issue #019): golden baselines are per-OS
+# (test/golden/goldens/<macos|windows|linux>/), and the linux/ baselines can
+# only be generated on the same platform CI verifies against. Run this
+# manually, download the "linux-goldens" artifact, and commit its contents
+# into test/golden/goldens/linux/ whenever those baselines need
+# (re)generating.
+on:
+  workflow_dispatch:
+
+jobs:
+  update-goldens:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.6'
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Regenerate linux goldens
+        run: flutter test --update-goldens test/golden
+
+      - name: Upload linux goldens
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-goldens
+          path: test/golden/goldens/linux/
