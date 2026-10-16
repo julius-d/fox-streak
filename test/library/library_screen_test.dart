@@ -22,6 +22,7 @@ import 'package:fox_streak_app/l10n/app_localizations.dart';
 import 'package:fox_streak_app/src/data/database.dart';
 import 'package:fox_streak_app/src/data/providers.dart';
 import 'package:fox_streak_app/src/data/sets_repository.dart';
+import 'package:fox_streak_app/src/lesson/lesson_screen.dart';
 import 'package:fox_streak_app/src/library/library_screen.dart';
 import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
 
@@ -193,7 +194,7 @@ void main() {
     final id = await repo.createSet(title: 'Contacts', createdBy: 'Mama');
     await settle(tester);
 
-    await tester.tap(find.byKey(Key('setTile-$id')));
+    await tester.tap(find.byKey(Key('editSet-$id')));
     await settle(tester);
 
     await tester.tap(find.byKey(const Key('addItemFab')));
@@ -228,7 +229,7 @@ void main() {
     final id = await repo.createSet(title: 'Birthdays', createdBy: 'Mama');
     await settle(tester);
 
-    await tester.tap(find.byKey(Key('setTile-$id')));
+    await tester.tap(find.byKey(Key('editSet-$id')));
     await settle(tester);
 
     await tester.tap(find.byKey(const Key('addItemFab')));
@@ -251,4 +252,49 @@ void main() {
     expect(await repo.getItemsForSet(id), isEmpty);
     await unmount(tester);
   });
+
+  testWidgets(
+    'play icon shows the empty-set snackbar instead of navigating when the '
+    'set has no items (issue #042)',
+    (tester) async {
+      final clock = FakeClock(kTestToday);
+      final db = await pumpLibrary(tester, clock);
+      final repo = repoOf(db, clock);
+      final id = await repo.createSet(title: 'Empty', createdBy: 'Mama');
+      await settle(tester);
+
+      await tester.tap(find.byKey(Key('playSet-$id')));
+      await settle(tester);
+
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.text('Add items to start practicing!'), findsOneWidget);
+      expect(find.byType(LessonScreen), findsNothing);
+      await unmount(tester);
+    },
+  );
+
+  testWidgets(
+    'play icon navigates straight to LessonScreen, skipping SetDetailScreen, '
+    'when the set has items (issue #042)',
+    (tester) async {
+      final clock = FakeClock(kTestToday);
+      final db = await pumpLibrary(tester, clock);
+      final repo = repoOf(db, clock);
+      final id = await repo.createSet(title: 'Animals', createdBy: 'Mama');
+      await repo.addItem(
+        setId: id,
+        type: 'choice',
+        prompt: 'Hund',
+        answer: 'dog',
+      );
+      await settle(tester);
+
+      await tester.tap(find.byKey(Key('playSet-$id')));
+      await settle(tester);
+
+      expect(find.byType(LessonScreen), findsOneWidget);
+      expect(find.byKey(const Key('setOverflowMenu')), findsNothing);
+      await unmount(tester);
+    },
+  );
 }

@@ -118,7 +118,7 @@ void main() {
       await tester.enterText(find.byKey(const Key('creatorField')), 'Mama');
       await tester.tap(find.byKey(const Key('saveSetButton')));
       await settle(tester);
-      await tester.tap(listTileWithText('Animals'));
+      await tester.tap(editSetButton('Animals'));
       await settle(tester);
       await tester.tap(find.byKey(const Key('addItemFab')));
       await settle(tester);
@@ -162,7 +162,7 @@ void main() {
         listTileWithText('Animals'),
         findsNWidgets(2),
       ); // original + import
-      await tester.tap(listTileWithText('Animals').last);
+      await tester.tap(editSetButton('Animals').last);
       await settle(tester);
       expect(listTileWithText('Hund'), findsOneWidget);
     },
@@ -185,7 +185,7 @@ void main() {
       await tester.enterText(find.byKey(const Key('creatorField')), 'Mama');
       await tester.tap(find.byKey(const Key('saveSetButton')));
       await settle(tester);
-      await tester.tap(listTileWithText('Scratch'));
+      await tester.tap(editSetButton('Scratch'));
       await settle(tester);
 
       // Bad JSON: not even a map.

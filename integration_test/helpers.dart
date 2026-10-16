@@ -6,12 +6,14 @@
 //
 // Stable finder keys this harness relies on (see each screen for the full
 // list; this is the cross-flow subset):
-// - Library: `newSetFab`, `setTile-<id>`, `setMenu-<id>` (rename/duplicate/
-//   delete), `tryDemoSetButton`.
+// - Library: `newSetFab`, `setTile-<id>` (row, no longer a tap target —
+//   #042), `playSet-<id>` (opens `LessonScreen` directly), `editSet-<id>`
+//   (opens `SetDetailScreen`), `setMenu-<id>` (rename/duplicate/delete),
+//   `tryDemoSetButton`.
 // - Set editor: `titleField`, `creatorField`, `descriptionField`,
 //   `saveSetButton`; delete confirm: `confirmDeleteSetButton`.
-// - Set detail: `addItemFab`, `setOverflowMenu` (share/import), `itemTile-
-//   <id>`, `editItem-<id>`, `deleteItem-<id>`.
+// - Set detail: `addItemFab`, `startLessonFab`, `setOverflowMenu`
+//   (share/import), `itemTile-<id>`, `editItem-<id>`, `deleteItem-<id>`.
 // - Item editor: `itemTypeField`, `itemPromptField`, `itemAnswerField`
 //   (shared by choice/freeText/phone), `itemDayField`/`itemMonthField`/
 //   `itemYearField`, `saveItemButton`.
@@ -106,6 +108,21 @@ Finder listTileWithText(String text) {
   );
   return find.ancestor(of: textInTile, matching: find.byType(ListTile));
 }
+
+/// Finds the edit icon button for the Library set row titled [title], which
+/// opens `SetDetailScreen` — the row itself is no longer a tap target
+/// (issue #042).
+Finder editSetButton(String title) => find.descendant(
+  of: listTileWithText(title),
+  matching: find.byIcon(Icons.edit),
+);
+
+/// Finds the play icon button for the Library set row titled [title], which
+/// jumps straight into `LessonScreen`, skipping `SetDetailScreen` (#042).
+Finder playSetButton(String title) => find.descendant(
+  of: listTileWithText(title),
+  matching: find.byIcon(Icons.play_arrow),
+);
 
 /// Boots the real `LessonScreen` directly (no Home/Library navigation),
 /// for flows that only care about lesson play-through/XP/streak.

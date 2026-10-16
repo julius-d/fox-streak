@@ -25,41 +25,36 @@ import 'exercise_card.dart';
 import 'lesson_controller.dart';
 import 'lesson_result.dart';
 
-/// Entry point: navigates to LessonScreen for the given setId.
+/// Navigates into [LessonScreen] for [setId], or shows the
+/// `lessonEmptySetNote` snackbar instead when the set has no items.
 ///
-/// Reads items via itemsForSetProvider (snapshot, no new data access).
-/// Disables start if empty (SetDetailScreen handles empty CTA).
-class LessonEntryButton extends ConsumerWidget {
-  final int setId;
-
-  const LessonEntryButton({super.key, required this.setId});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
-    final itemsAsync = ref.watch(itemsForSetProvider(setId));
-
-    return itemsAsync.when(
-      loading: () => const SizedBox.shrink(),
-      error: (_, _) => const SizedBox.shrink(),
-      data: (items) {
-        if (items.isEmpty) return const SizedBox.shrink();
-        return FoxPrimaryButton(
-          key: const Key('startLessonButton'),
-          label: l10n.lessonStart,
-          expanded: true,
-          icon: Icons.play_arrow,
-          onPressed: () {
-            Navigator.of(context).push<LessonResult?>(
-              MaterialPageRoute<LessonResult?>(
-                builder: (_) => LessonScreen(setId: setId, items: items),
-              ),
-            );
-          },
-        );
-      },
-    );
+/// Shared by `SetDetailScreen`'s "Start lesson" FAB and the Library row's
+/// play icon (#042) so both entry points stay in lockstep. Both are always
+/// enabled by design (never disabled for an empty set — a disabled icon
+/// reads as "broken" to a young user), so this reads [itemsAsync] directly
+/// rather than collapsing it to a plain list beforehand: while it's still
+/// loading there's no reliable answer yet to "is this set empty", so the
+/// tap is a no-op rather than risking a false "empty" snackbar for a set
+/// that actually has items (the narrow window right after navigating in,
+/// before the first stream emission arrives).
+void startLessonFromSet({
+  required BuildContext context,
+  required int setId,
+  required AsyncValue<List<Item>> itemsAsync,
+  required AppLocalizations l10n,
+}) {
+  if (itemsAsync.isLoading) return;
+  final items = itemsAsync.value ?? const <Item>[];
+  if (items.isEmpty) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(l10n.lessonEmptySetNote)));
+    return;
   }
+  Navigator.of(context).push<LessonResult?>(
+    MaterialPageRoute<LessonResult?>(
+      builder: (_) => LessonScreen(setId: setId, items: items),
+    ),
+  );
 }
 
 /// Main lesson screen: progress bar, card, feedback, check/skip buttons.
@@ -69,9 +64,9 @@ class LessonScreen extends ConsumerStatefulWidget {
   // Result screen's "back" button label (issue #034): the button just pops
   // the navigator, so the caller — whoever pushed this screen — is the only
   // one who knows where that actually lands. Defaults to the library-flow
-  // wording (SetDetailScreen's LessonEntryButton); callers that push this
-  // screen directly from elsewhere (e.g. Home's Continue button) must pass
-  // their own accurate label.
+  // wording (SetDetailScreen's "Start lesson" FAB, Library's play icon —
+  // #042); callers that push this screen directly from elsewhere (e.g.
+  // Home's Continue button) must pass their own accurate label.
   final String? backLabel;
   // Test-only: custom card builder for exercise cards.
   // If null, uses the default placeholder (throws in prod, works in tests).

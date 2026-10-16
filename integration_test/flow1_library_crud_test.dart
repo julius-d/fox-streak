@@ -44,7 +44,7 @@ void main() {
       expect(listTileWithText('Birthdays'), findsOneWidget);
 
       // --- Open the new set, add one item of each type ---
-      await tester.tap(listTileWithText('Birthdays'));
+      await tester.tap(editSetButton('Birthdays'));
       await settle(tester);
 
       // Choice (default type): prompt + answer.

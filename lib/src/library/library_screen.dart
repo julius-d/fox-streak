@@ -1,8 +1,9 @@
 // Home library: list of sets + FAB (issue #003).
 //
-// Lists title, item count, type icons (choice/freeText/phone/date). No "last score" —
-// moved to #005/#012. Watches `watchAllSets` via [allSetsProvider];
-// counts/icons via [itemsForSetProvider].
+// Lists title, item count. No "last score" — moved to #005/#012. Watches
+// `watchAllSets` via [allSetsProvider]; counts/play-affordance via
+// [itemsForSetProvider]. Each row's play icon jumps straight into
+// `LessonScreen`, skipping `SetDetailScreen` entirely (#042).
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,13 +11,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../l10n/app_localizations.dart';
 import '../data/database.dart';
 import '../data/providers.dart';
+import '../lesson/lesson.dart';
 import '../widgets/widgets.dart';
-import 'item_type_icons.dart';
 import 'library_providers.dart';
 import 'set_detail_screen.dart';
 import 'set_editor_screen.dart';
 
-/// Library home screen: all sets with counts + type icons.
+/// Library home screen: all sets with counts + play/edit affordances.
 class LibraryScreen extends ConsumerStatefulWidget {
   const LibraryScreen({super.key});
 
@@ -130,7 +131,11 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   }
 }
 
-/// One set row: title, item count, type icons, overflow menu.
+/// One set row: title, item count, play/edit icons, overflow menu.
+///
+/// The row itself is not a tap target (#042) — play, edit, and the overflow
+/// menu are explicit, unambiguous icon buttons instead of an implicit
+/// whole-row `onTap` competing with them.
 class _SetCard extends ConsumerWidget {
   final QuestionSet set;
   final VoidCallback onOpen;
@@ -153,25 +158,7 @@ class _SetCard extends ConsumerWidget {
     final subtitle = itemsAsync.when(
       loading: () => l10n.libraryLoading,
       error: (_, _) => '',
-      data: (items) => l10n.setItemCount(items.length),
-    );
-    final icons = itemsAsync.when(
-      loading: () => const <Widget>[],
-      error: (_, _) => const <Widget>[],
-      data: (items) {
-        final types = items.map((e) => e.type).toSet().toList()..sort();
-        return [
-          for (final t in types)
-            Padding(
-              padding: const EdgeInsets.only(left: 4),
-              child: Icon(
-                iconForItemType(t),
-                size: 18,
-                color: colorForItemType(context, t),
-              ),
-            ),
-        ];
-      },
+      data: (loadedItems) => l10n.setItemCount(loadedItems.length),
     );
     return Card(
       child: ListTile(
@@ -182,7 +169,25 @@ class _SetCard extends ConsumerWidget {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ...icons,
+            IconButton(
+              key: Key('playSet-${set.id}'),
+              tooltip: l10n.lessonStart,
+              style: IconButton.styleFrom(minimumSize: const Size(48, 48)),
+              icon: const Icon(Icons.play_arrow),
+              onPressed: () => startLessonFromSet(
+                context: context,
+                setId: set.id,
+                itemsAsync: itemsAsync,
+                l10n: l10n,
+              ),
+            ),
+            IconButton(
+              key: Key('editSet-${set.id}'),
+              tooltip: l10n.edit,
+              style: IconButton.styleFrom(minimumSize: const Size(48, 48)),
+              icon: const Icon(Icons.edit),
+              onPressed: onOpen,
+            ),
             PopupMenuButton<String>(
               key: Key('setMenu-${set.id}'),
               tooltip: l10n.setActions,
@@ -204,7 +209,6 @@ class _SetCard extends ConsumerWidget {
             ),
           ],
         ),
-        onTap: onOpen,
       ),
     );
   }

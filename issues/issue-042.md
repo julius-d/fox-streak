@@ -1,6 +1,8 @@
 # Issue 042: Starting a lesson is buried — sticky start button + direct-start from Library list
 
-Status: open | Priority: P1 | Type: UX
+Status: done | Priority: P1 | Type: UX
+
+Completed-at: 2026-10-16
 
 ## Goal
 
@@ -61,25 +63,25 @@ start action visible without scrolling.
 
 ## Acceptance criteria
 
-- [ ] `SetDetailScreen` shows a persistent (non-scrolling) "Start lesson"
+- [x] `SetDetailScreen` shows a persistent (non-scrolling) "Start lesson"
       action at all times the screen is open, including with a long item
       list — no scrolling required to find it.
-- [ ] "Add item" remains reachable on `SetDetailScreen` (secondary FAB),
+- [x] "Add item" remains reachable on `SetDetailScreen` (secondary FAB),
       unchanged behavior otherwise.
-- [ ] Each set row in the Library list has a play affordance that opens
+- [x] Each set row in the Library list has a play affordance that opens
       `LessonScreen` for that set directly, with no intermediate screen.
-- [ ] Both new "start lesson" entry points (Library row play icon,
+- [x] Both new "start lesson" entry points (Library row play icon,
       `SetDetailScreen`'s "Start lesson" FAB) stay tappable for sets with 0
       items; tapping shows a `l10n.lessonEmptySetNote` snackbar instead of
       navigating.
-- [ ] The set row itself is no longer a tap target (`ListTile.onTap`
+- [x] The set row itself is no longer a tap target (`ListTile.onTap`
       removed); opening `SetDetailScreen` only happens via the new explicit
       edit icon button.
-- [ ] Per-set type icons are removed from the Library list row; item count
+- [x] Per-set type icons are removed from the Library list row; item count
       text stays.
-- [ ] 48dp min targets + screen-reader tooltips/semantics on both new icon
+- [x] 48dp min targets + screen-reader tooltips/semantics on both new icon
       buttons (play on Library row, both FABs on detail) — follows #015.
-- [ ] `flutter analyze`, `dart format`, `flutter test` stay clean.
+- [x] `flutter analyze`, `dart format`, `flutter test` stay clean.
 
 ## Tasks
 
@@ -117,3 +119,50 @@ start action visible without scrolling.
   FAB + a11y conventions). Removes a #003-shipped behavior (per-set type
   icons) by design.
 - Surfaced during #012's (Home dashboard) manual verification.
+
+## Summary
+
+- `SetDetailScreen`: single `addItemFab` → two stacked FABs
+  (`startLessonFab` extended + `addItemFab` small), `LessonEntryButton`
+  deleted. Empty set shows the snackbar, not a disabled button.
+- `library_screen.dart`/`_SetCard`: per-type icon list and row `onTap`
+  removed; new `playSet-<id>` and `editSet-<id>` 48dp icon buttons added.
+- Shared `startLessonFromSet()` (`lesson_screen.dart`) is the single
+  navigate-or-snackbar entry point for both the Library play icon and
+  `SetDetailScreen`'s FAB.
+- Tests: 5 new widget tests (`set_detail_screen_test.dart`,
+  `library_screen_test.dart`), 1 new integration test
+  (`issue042_sticky_start_test.dart`); 2 existing integration tests
+  (flow1, flow4) updated for the row no longer being a tap target.
+  Full suite (340 widget/unit tests) + integration tests pass;
+  `flutter analyze`/`dart format`/`dart fix --dry-run` clean.
+
+## Code review
+
+1. Both new entry points read `items` via `itemsAsync.asData?.value`, which
+   collapses to `[]` during the brief loading/error window right after
+   navigating in — a tap in that window could fire a false "empty"
+   snackbar for a non-empty set.
+   Fixed: extracted shared `startLessonFromSet()` that checks
+   `itemsAsync.isLoading` first (no-op during that window) and reads
+   `itemsAsync.value` (preserves last-known data) instead.
+2. `addItemFab` (`FloatingActionButton.small`, 40dp) falls below the 48dp
+   a11y floor on desktop: `ThemeData.materialTapTargetSize` defaults to
+   `shrinkWrap` on macOS/Windows/Linux (vs. `padded` on mobile), unlike the
+   sibling `IconButton`s which set an explicit `minimumSize`.
+   Fixed: added `materialTapTargetSize: MaterialTapTargetSize.padded`
+   explicitly on `addItemFab`.
+3. `_startLesson` (navigate-or-snackbar) was duplicated near-verbatim in
+   `set_detail_screen.dart` and `library_screen.dart`, risking future drift
+   between the two entry points.
+   Fixed: both now call the shared `startLessonFromSet()`.
+4. `_SetCard` read the same `itemsAsync` twice via two different accessors
+   (`.when` for the subtitle, `.asData?.value` for the tap handler).
+   Fixed as a side effect of #1/#3: the tap handler now takes the raw
+   `AsyncValue` directly instead of a pre-collapsed list.
+5. The new integration spec defined its own local `playButtonFor` finder
+   instead of adding it to `helpers.dart`, where the analogous
+   `editSetButton` already lives and the doc comment already names the
+   `playSet-<id>` key.
+   Fixed: added shared `playSetButton()` to `helpers.dart`; the spec uses
+   it instead of a local closure.

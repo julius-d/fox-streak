@@ -798,8 +798,9 @@ void main() {
         );
 
         // Push LessonScreen for real (Navigator.push), the way
-        // LessonEntryButton does — unlike pumpLessonShell's `home:`, this
-        // gives Navigator.pop() a previous route to actually pop to.
+        // SetDetailScreen's "Start lesson" FAB does — unlike pumpLessonShell's
+        // `home:`, this gives Navigator.pop() a previous route to actually
+        // pop to.
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
@@ -862,8 +863,8 @@ void main() {
         expect(find.byKey(const Key('lessonResultScreen')), findsOneWidget);
         expect(find.byKey(const Key('practiceAgainButton')), findsOneWidget);
 
-        // No backLabel override (as LessonEntryButton never passes one):
-        // defaults to the library-flow wording (issue #034).
+        // No backLabel override (as the "Start lesson" FAB/play icon never
+        // pass one): defaults to the library-flow wording (issue #034).
         expect(find.text('Back to library'), findsOneWidget);
 
         // Only an explicit tap pops it back to the caller.
