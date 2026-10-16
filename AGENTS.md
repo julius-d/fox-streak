@@ -37,7 +37,7 @@ machine has it.
 flutter analyze        # must be clean (includes riverpod_lint plugin)
 dart format --output=none --set-exit-if-changed .  # must be clean (or: dart format . then git diff --exit-code)
 dart fix --dry-run     # nothing auto-fixable left
-flutter test           # data-layer tests (test/data/) + bootstrap widget test
+flutter test           # data-layer tests (test/data/), bootstrap widget test, golden tests (test/golden/, #019)
 ```
 
 Lints via `flutter_lints` + `riverpod_lint` surface through `flutter analyze`;
@@ -64,6 +64,24 @@ Lints via `flutter_lints` + `riverpod_lint` surface through `flutter analyze`;
 - Fox placement: empty states, result celebrations, streak moments only — never random decoration. Motion: instant green/red + bouncy micro-moments, encouraging copy, no shaming; animation budget reserves room for #014 lottie.
 - A11y floor in kit: 48dp targets, screen-reader labels, wrapping (never clipped) labels; #012 owns the per-screen dark-mode / large-font / reader-flow pass. User-visible strings flow via `lib/l10n` arb params (DE + EN), never hardcoded in the kit.
 - Each UI issue (#004–#014) carries a "follows #015" acceptance line pointing back here.
+
+## Golden tests (issue #019)
+
+- `test/golden/kit_golden_test.dart` snapshots each #015 kit widget under
+  both `FoxStreakTheme.light()` and `.dark()`; baselines live in
+  `test/golden/goldens/*.png` (plain `flutter_test`/`matchesGoldenFile`, no
+  new dependency). `flutter test` already runs them — no separate command.
+- When a kit widget's visuals intentionally change, regenerate the
+  baselines (scope the run to avoid touching unrelated goldens elsewhere):
+  ```shell
+  flutter test --update-goldens test/golden
+  ```
+  Review the diffed PNGs before committing — an unexpected change here
+  usually means an unintended visual regression, not a baseline to update.
+- Baselines are OS/renderer sensitive; if a baseline was regenerated on a
+  different OS than CI (`ubuntu-latest`) and CI then reports a mismatch, see
+  #019's fallback plan (regenerate via a `workflow_dispatch` CI job rather
+  than loosening or skipping the tests).
 
 ## Conventions
 
