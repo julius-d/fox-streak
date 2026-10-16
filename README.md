@@ -14,7 +14,8 @@ Install and receive automatic updates using Obtainium:
 
 Or download and install the APK manually:
 
-[![Download APK](https://img.shields.io/badge/Download-APK-orange)](https://github.com/julius-d/fox-streak/releases/latest)
+[<img src="https://github.com/nyxiereal/get-it-on/blob/master/badges/png/github.png" alt="Get it on GitHub" height="80">](https://github.com/julius-d/fox-streak/releases/latest)
+
 
 ### macOS
 
