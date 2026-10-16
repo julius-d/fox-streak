@@ -1,0 +1,282 @@
+name: Multi-Platform Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  version:
+    name: Calculate Semantic Version
+    runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ steps.semver.outputs.new_tag }}
+      previous_version: ${{ steps.semver.outputs.tag }}
+      changelog: ${{ steps.semver.outputs.changelog }}
+      new_build_number: ${{ steps.version_bump.outputs.new_build_number }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Calculate semantic version
+        id: semver
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          dry_run: true
+          default_bump: patch
+          release_branches: main
+          fetch_all_tags: true
+          tag_prefix: ''
+
+      - name: Calculate new build number
+        id: version_bump
+        run: |
+          VERSION="${{ steps.semver.outputs.new_tag }}"
+          # Extract build number from current pubspec.yaml
+          CURRENT_BUILD=$(grep "^version:" pubspec.yaml | sed 's/.*+//')
+          # Increment build number
+          NEW_BUILD=$((CURRENT_BUILD + 1))
+          echo "new_build_number=$NEW_BUILD" >> $GITHUB_OUTPUT
+          echo "Previous build: $CURRENT_BUILD"
+          echo "New version: $VERSION+$NEW_BUILD"
+
+      - name: Update version files and commit
+        run: |
+          VERSION="${{ steps.semver.outputs.new_tag }}"
+          NEW_BUILD="${{ steps.version_bump.outputs.new_build_number }}"
+
+          # Update pubspec.yaml
+          sed -i "s/^version: .*/version: $VERSION+$NEW_BUILD/" pubspec.yaml
+
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Commit the changes
+          git add pubspec.yaml
+          git commit -m "chore: bump version to $VERSION+$NEW_BUILD"
+          git push
+
+  build-android:
+    name: Build Android APK
+    needs: version
+    runs-on: ubuntu-latest
+    if: needs.version.outputs.new_version != ''
+
+    steps:
+      - name: Checkout code with version bump
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+
+      - name: Pull latest changes
+        run: git pull origin ${{ github.ref_name }}
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.6'
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build APK
+        run: flutter build apk --release
+
+      - name: Rename APK
+        run: |
+          VERSION="${{ needs.version.outputs.new_version }}"
+          mv build/app/outputs/flutter-apk/app-release.apk \
+             build/app/outputs/flutter-apk/fox-streak-$VERSION.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: build/app/outputs/flutter-apk/fox-streak-*.apk
+          retention-days: 90
+
+  build-macos:
+    name: Build macOS DMG
+    needs: version
+    runs-on: macos-latest
+    if: needs.version.outputs.new_version != ''
+
+    steps:
+      - name: Checkout code with version bump
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+
+      - name: Pull latest changes
+        run: git pull origin ${{ github.ref_name }}
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.6'
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build macOS app
+        run: flutter build macos --release
+
+      - name: Create DMG
+        run: |
+          VERSION="${{ needs.version.outputs.new_version }}"
+          brew install create-dmg
+          create-dmg \
+            --volname "FoxStreak" \
+            --window-pos 200 120 \
+            --window-size 600 400 \
+            --icon-size 100 \
+            --app-drop-link 425 120 \
+            "fox-streak-$VERSION-macos.dmg" \
+            "build/macos/Build/Products/Release/fox_streak_app.app"
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-dmg
+          path: fox-streak-*-macos.dmg
+          retention-days: 90
+
+  build-windows:
+    name: Build Windows ZIP
+    needs: version
+    runs-on: windows-latest
+    if: needs.version.outputs.new_version != ''
+
+    steps:
+      - name: Checkout code with version bump
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+
+      - name: Pull latest changes
+        run: git pull origin ${{ github.ref_name }}
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.6'
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Windows app
+        run: flutter build windows --release
+
+      - name: Bundle Visual C++ Redistributables
+        shell: pwsh
+        run: |
+          $releaseDir = "build\windows\x64\runner\Release"
+          Copy-Item "C:\Windows\System32\msvcp140.dll"     -Destination $releaseDir
+          Copy-Item "C:\Windows\System32\vcruntime140.dll"   -Destination $releaseDir
+          Copy-Item "C:\Windows\System32\vcruntime140_1.dll" -Destination $releaseDir
+
+      - name: Create ZIP
+        shell: pwsh
+        run: |
+          $version = "${{ needs.version.outputs.new_version }}"
+          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath "fox-streak-$version-windows.zip"
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-windows
+          path: fox-streak-*-windows.zip
+          retention-days: 90
+
+  release:
+    name: Create GitHub Release
+    needs: [version, build-android, build-macos, build-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code with version bump
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+
+      - name: Pull latest changes including version bump
+        run: |
+          git pull origin ${{ github.ref_name }}
+          echo "Current commit SHA: $(git rev-parse HEAD)"
+          git log -1 --oneline
+
+      - name: Download APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release-apk
+          path: ./artifacts
+
+      - name: Download DMG artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release-dmg
+          path: ./artifacts
+
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release-windows
+          path: ./artifacts
+
+      - name: Create Release Tag
+        id: create_tag
+        run: |
+          VERSION="${{ needs.version.outputs.new_version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$VERSION" -m "Release $VERSION"
+          git push origin "$VERSION"
+          echo "tag=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.version.outputs.new_version }}
+          name: Release ${{ needs.version.outputs.new_version }}
+          body: ${{ needs.version.outputs.changelog }}
+          draft: false
+          prerelease: false
+          files: |
+            ./artifacts/fox-streak-*.apk
+            ./artifacts/fox-streak-*-macos.dmg
+            ./artifacts/fox-streak-*-windows.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Release Summary
+        run: |
+          echo "Release ${{ needs.version.outputs.new_version }} created successfully!"
+          echo "Android APK uploaded"
+          echo "macOS DMG uploaded"
+          echo "Windows ZIP uploaded"
+          echo "Release URL: https://github.com/${{ github.repository }}/releases/tag/${{ needs.version.outputs.new_version }}"
