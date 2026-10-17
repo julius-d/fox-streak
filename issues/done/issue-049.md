@@ -1,6 +1,6 @@
 # Issue 049: Set detail screen shows raw unformatted date/phone answers
 
-Status: open | Priority: P3 | Type: bug | Refined-at: 2026-10-17
+Status: done | Priority: P3 | Type: bug | Refined-at: 2026-10-17 | Completed-at: 2026-10-17
 
 ## Goal
 
@@ -30,15 +30,15 @@ in one pass since it's the same line and the same class of bug.
 
 ## Acceptance criteria
 
-- [ ] `set_detail_screen.dart`'s item subtitle formats `date` items via
+- [x] `set_detail_screen.dart`'s item subtitle formats `date` items via
       `formatDateForDisplay(item.answer, Localizations.localeOf(context))`.
-- [ ] Same subtitle formats `phone` items via
+- [x] Same subtitle formats `phone` items via
       `groupPhoneForDisplay(normalizePhone(item.answer))`.
-- [ ] `choice`/`freeText` items keep showing `item.answer` as-is.
-- [ ] Test added/updated in `test/library/set_detail_screen_test.dart`
+- [x] `choice`/`freeText` items keep showing `item.answer` as-is.
+- [x] Test added/updated in `test/library/set_detail_screen_test.dart`
       asserting a `date` item's subtitle shows `DD.MM.YYYY` (not raw ISO)
       and a `phone` item's subtitle shows grouped digits.
-- [ ] `flutter analyze` / `dart format` / `dart fix --dry-run` /
+- [x] `flutter analyze` / `dart format` / `dart fix --dry-run` /
       `flutter test` clean.
 
 ## Out of scope
@@ -62,3 +62,30 @@ dart format --output=none --set-exit-if-changed .
 dart fix --dry-run
 flutter test
 ```
+
+## Summary
+
+Fixed `set_detail_screen.dart`'s per-item subtitle to call the existing
+`formatDateForDisplay`/`groupPhoneForDisplay` helpers instead of
+interpolating `item.answer` raw. Added 2 widget tests (DE-locale date,
+phone grouping) to `test/library/set_detail_screen_test.dart`, and fixed a
+pre-existing test in `test/library/library_screen_test.dart` that had
+asserted the old (buggy) raw-digit display as if it were correct. Added
+`integration_test/issue049_set_detail_date_phone_format_test.dart`
+(run on `-d macos`, passing) driving the real app end-to-end under the
+device's default locale — forcing German via
+`platformDispatcher.localeTestValue` does **not** work in device-mode
+`integration_test` (confirmed by a debug probe: it only affects in-process
+widget tests, not the separate native app process device-mode launches),
+so the German `DD.MM.YYYY` branch is covered by the widget test instead,
+which does support an explicit `locale:` override.
+
+Screenshot: `issues/done/issue049-set_detail_screen.png`.
+
+## Code review
+
+Medium-effort review of the diff against `afb63bf`: no findings.
+Confirmed: the subtitle's `.at(1)` test lookup is unambiguous (exactly 2
+`Text` widgets per `ListTile`), `normalizePhone(item.answer)` before
+grouping is a harmless defensive no-op, and the fix reuses existing
+shared formatters rather than reimplementing anything. Nothing to fix.
