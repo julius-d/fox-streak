@@ -14,6 +14,14 @@ Write the `integration_test`, execute it and make sure it passes before you fini
 You are done when the issue is implemented, all tests are passing, and the code is formatted.
 Especially: `flutter analyze`, `dart format`, `flutter test`.
 After you are done, change the status of the issue to "done", add `Completed-at: <date>` and add a very short, few lines only, summary block to the end of the issue that contains important information only.
+Move the issue file into the `issues/done` folder.
+
+If the implementation of the issue changed UI: create screenshots that show the changed UI:
+1. Write a throwaway test file, e.g. integration_test/_scratch_issueNNN_screenshots_test.dart, with the seed data + pump/capture logic above, writing to ${Directory.systemTemp.path}/screenshots and printing that path.
+2. `flutter test integration_test/_scratch_issueNNN_screenshots_test.dart -d macos`
+3. Grab the printed SCREENSHOT_OUT_DIR: ... path from the output.
+4. `cp "<that path>"/*.png issues/done/issueNNN-what-it-shows.png`
+5. Delete the scratch test file (it's not meant to be a permanent part of the suite — it has side effects and bespoke fixture data) and the temp dir.
 
 Then run a subagent to perform a code review for the changes just made, using the relevant code review skill.
 
@@ -25,5 +33,5 @@ Then commit the changes into the worktree branch.
 Then rebase the worktree branch onto a fresh main.
 Then ask we if this shall be fast-forward merged (without merge commit) into main.
 
-Note on technical debt: If you find a problem that is not part of the issue, but should be fixed, create a new, short issue for it for it. so that it can be fixed later. 
+Note on technical debt: If you find a problem that is not part of the issue, but should be fixed, create a new, short issue for it. so that it can be fixed later. 
 Do not fix it in this issue, unless it is a small and easy fix that does not require much time and effort.
