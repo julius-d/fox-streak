@@ -43,8 +43,9 @@ class SetsRepository {
     required String title,
     String description = '',
     required String createdBy,
+    String? category,
   }) {
-    _checkSetFields(title: title, createdBy: createdBy);
+    _checkSetFields(title: title, createdBy: createdBy, category: category);
     final nowMs = _clock.now().millisecondsSinceEpoch;
     return _db
         .into(_db.questionSets)
@@ -55,6 +56,7 @@ class SetsRepository {
             createdBy: createdBy.trim(),
             createdAt: nowMs,
             updatedAt: nowMs,
+            category: Value(category),
           ),
         );
   }
@@ -64,6 +66,7 @@ class SetsRepository {
     String? title,
     String? description,
     String? createdBy,
+    String? category,
   }) async {
     if (title != null && title.trim().isEmpty) {
       throw ArgumentError('title must be non-empty');
@@ -71,6 +74,7 @@ class SetsRepository {
     if (createdBy != null && validateCreatorName(createdBy) != null) {
       throw ArgumentError(validateCreatorName(createdBy));
     }
+    _checkCategory(category);
     await (_db.update(_db.questionSets)..where((t) => t.id.equals(id))).write(
       QuestionSetsCompanion(
         title: title == null ? const Value.absent() : Value(title.trim()),
@@ -80,6 +84,7 @@ class SetsRepository {
         createdBy: createdBy == null
             ? const Value.absent()
             : Value(createdBy.trim()),
+        category: category == null ? const Value.absent() : Value(category),
         updatedAt: Value(_clock.now().millisecondsSinceEpoch),
       ),
     );
@@ -262,6 +267,7 @@ class SetsRepository {
               createdBy: source.createdBy,
               createdAt: nowMs,
               updatedAt: nowMs,
+              category: Value(source.category),
             ),
           );
       for (final item in items) {
@@ -299,6 +305,7 @@ class SetsRepository {
       title: set.title,
       description: set.description,
       createdBy: set.createdBy,
+      category: effectiveSetCategory(set.category),
       items: [
         for (final item in items)
           ShareItem(
@@ -338,6 +345,7 @@ class SetsRepository {
               createdBy: share.createdBy,
               createdAt: nowMs,
               updatedAt: nowMs,
+              category: Value(share.category),
             ),
           );
       for (var i = 0; i < share.items.length; i++) {
@@ -366,10 +374,21 @@ class SetsRepository {
 
   // -- Internals ----------------------------------------------------------
 
-  void _checkSetFields({required String title, required String createdBy}) {
+  void _checkSetFields({
+    required String title,
+    required String createdBy,
+    String? category,
+  }) {
     if (title.trim().isEmpty) throw ArgumentError('title must be non-empty');
     final creatorError = validateCreatorName(createdBy);
     if (creatorError != null) throw ArgumentError(creatorError);
+    _checkCategory(category);
+  }
+
+  void _checkCategory(String? category) {
+    if (category != null && !kSetCategories.contains(category)) {
+      throw ArgumentError('unknown category "$category"');
+    }
   }
 
   _CleanItem _checkItemFields({

@@ -6,7 +6,7 @@
 //
 // Wired into the lesson shell's `item.type == 'freeText'` dispatch by #026
 // (the `vocab` -> `choice`/`freeText` schema migration this issue originally
-// deferred).
+// deferred). All-digit answers (#045) get the numeric keyboard.
 
 import 'package:flutter/material.dart';
 
@@ -35,6 +35,13 @@ Widget buildFreeTextExercise({
     l10n: l10n,
   );
 }
+
+/// All-digit answers (e.g. multiplication facts, #045) open the numeric
+/// keyboard. Content-driven, not category-gated, so it also benefits any
+/// other all-digit freeText content, not just math.
+final RegExp _kAllDigits = RegExp(r'^\d+$');
+
+bool _isAllDigits(String answer) => _kAllDigits.hasMatch(answer.trim());
 
 /// Internal stateful widget for the free-text exercise.
 class FreeTextExercise extends StatefulWidget {
@@ -145,6 +152,9 @@ class _FreeTextExerciseState extends State<FreeTextExercise> {
                 controller: _controller,
                 autocorrect: false,
                 enableSuggestions: false,
+                keyboardType: _isAllDigits(widget.item.answer)
+                    ? TextInputType.number
+                    : null,
                 textAlign: TextAlign.center,
                 style: text.titleLarge,
                 decoration: InputDecoration(

@@ -51,6 +51,11 @@ abstract class AppLocalizations {
   String get setTitleLabel;
   String get setCreatorLabel;
   String get setDescriptionLabel;
+  String get setCategoryLabel;
+  String get categoryVocab;
+  String get categoryMath;
+  String get categoryGeography;
+  String get categoryGeneral;
   String get cancel;
   String get save;
   String get edit;
@@ -224,6 +229,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get setCreatorLabel => 'Your name';
   @override
   String get setDescriptionLabel => 'Description (optional)';
+  @override
+  String get setCategoryLabel => 'Category';
+  @override
+  String get categoryVocab => 'Vocab';
+  @override
+  String get categoryMath => 'Math';
+  @override
+  String get categoryGeography => 'Geography';
+  @override
+  String get categoryGeneral => 'General';
   @override
   String get cancel => 'Cancel';
   @override
@@ -527,6 +542,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get setCreatorLabel => 'Dein Name';
   @override
   String get setDescriptionLabel => 'Beschreibung (optional)';
+  @override
+  String get setCategoryLabel => 'Kategorie';
+  @override
+  String get categoryVocab => 'Vokabeln';
+  @override
+  String get categoryMath => 'Mathe';
+  @override
+  String get categoryGeography => 'Geografie';
+  @override
+  String get categoryGeneral => 'Allgemein';
   @override
   String get cancel => 'Abbrechen';
   @override

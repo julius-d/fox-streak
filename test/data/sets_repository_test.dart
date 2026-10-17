@@ -73,6 +73,35 @@ void main() {
       expect((await repo.getSetById(id))?.createdBy, 'Mama');
     });
 
+    test('category defaults to null; create/update validate and persist it '
+        '(#045)', () async {
+      final id = await repo.createSet(title: 'S', createdBy: 'teacher');
+      expect((await repo.getSetById(id))?.category, isNull);
+
+      final mathId = await repo.createSet(
+        title: 'Math',
+        createdBy: 'teacher',
+        category: 'math',
+      );
+      expect((await repo.getSetById(mathId))?.category, 'math');
+
+      await repo.updateSet(id: mathId, category: 'geography');
+      expect((await repo.getSetById(mathId))?.category, 'geography');
+
+      expect(
+        () => repo.createSet(
+          title: 'Bad',
+          createdBy: 'teacher',
+          category: 'grammar',
+        ),
+        throwsArgumentError,
+      );
+      expect(
+        () => repo.updateSet(id: mathId, category: 'grammar'),
+        throwsArgumentError,
+      );
+    });
+
     test('watchAllSets emits', () async {
       final setId = await repo.createSet(title: 'A', createdBy: 'parent');
       await expectLater(
@@ -398,6 +427,16 @@ void main() {
       expect(copyItems.map((e) => e.prompt), origItems.map((e) => e.prompt));
       expect(() => repo.duplicateSet(99999), throwsArgumentError);
     });
+
+    test('duplicateSet carries over the category (#045)', () async {
+      final setId = await repo.createSet(
+        title: 'Facts',
+        createdBy: 'teacher',
+        category: 'math',
+      );
+      final copyId = await repo.duplicateSet(setId);
+      expect((await repo.getSetById(copyId))?.category, 'math');
+    });
   });
 
   group('export/import round-trip', () {
@@ -432,14 +471,46 @@ void main() {
       final exported = await repo.exportSetToJson(setId, today: kTestToday);
       expect(exported['format'], 'foxstreak-set');
       expect(exported['version'], 1);
+      // Null DB category resolves to 'vocab' on export (#045).
+      expect(exported['category'], 'vocab');
 
       final newId = await repo.importSetFromJson(exported, today: kTestToday);
       expect(newId, isNot(setId));
+      expect((await repo.getSetById(newId))?.category, 'vocab');
       final items = await repo.getItemsForSet(newId);
       expect(items, hasLength(3));
       // Re-export of the copy matches the original payload.
       final reExported = await repo.exportSetToJson(newId, today: kTestToday);
       expect(reExported['items'], exported['items']);
+    });
+
+    test(
+      'export carries an explicit category; import honours it (#045)',
+      () async {
+        final setId = await repo.createSet(
+          title: 'Facts',
+          createdBy: 'teacher',
+          category: 'math',
+        );
+        final exported = await repo.exportSetToJson(setId, today: kTestToday);
+        expect(exported['category'], 'math');
+
+        final newId = await repo.importSetFromJson(exported, today: kTestToday);
+        expect((await repo.getSetById(newId))?.category, 'math');
+      },
+    );
+
+    test('import defaults a missing category to vocab (#045)', () async {
+      final id = await repo.importSetFromJson({
+        'format': 'foxstreak-set',
+        'version': 1,
+        'title': 'T',
+        'createdBy': 'learner',
+        'items': [
+          {'type': 'phone', 'prompt': 'A', 'answer': '111'},
+        ],
+      }, today: kTestToday);
+      expect((await repo.getSetById(id))?.category, 'vocab');
     });
 
     test('import rejects bad schema with SetImportException', () async {

@@ -1,11 +1,12 @@
 // JSON share format v1 for question sets (issue #002; item `type` enum
-// split from `vocab` into `choice`/`freeText` by #026 — share format stays
-// v1, only the known-type set changed).
+// split from `vocab` into `choice`/`freeText` by #026; set-level `category`
+// added by #045 — share format stays v1, only the known-field set changed).
 //
 // File extension `.foxstreak.json`, e.g.:
 // ```json
 // { "format": "foxstreak-set", "version": 1, "title": "...",
-//   "description": "...", "createdBy": "Mama", "items": [
+//   "description": "...", "createdBy": "Mama", "category": "vocab",
+//   "items": [
 //     { "type": "choice", "prompt": "Hund", "answer": "dog",
 //       "promptLang": "de", "answerLang": "en", "choices": ["cat","mouse"],
 //       "hint": "" },
@@ -13,6 +14,8 @@
 //     { "type": "date", "prompt": "Mamas Geburtstag",
 //       "answer": "1985-05-14" } ] }
 // ```
+// `category` is optional on import (absent -> `kDefaultSetCategory`, same
+// rule as the DB migration default) but always written on export.
 //
 // The codec is pure Dart (no Drift) so UI share/picker code in #003 and the
 // repository import/export paths share validation. Import never overwrites:
@@ -70,12 +73,16 @@ class ShareSet {
   final String title;
   final String description;
   final String createdBy;
+  // One of `kSetCategories` (#045); always a concrete value here — absence
+  // on import resolves to `kDefaultSetCategory` before this is built.
+  final String category;
   final List<ShareItem> items;
 
   const ShareSet({
     required this.title,
     required this.description,
     required this.createdBy,
+    this.category = kDefaultSetCategory,
     required this.items,
   });
 
@@ -85,6 +92,7 @@ class ShareSet {
     'title': title,
     'description': description,
     'createdBy': createdBy,
+    'category': category,
     'items': [for (final i in items) i.toJson()],
   };
 
@@ -99,6 +107,7 @@ Map<String, dynamic> encodeSetToJson({
   required String title,
   String description = '',
   required String createdBy,
+  String category = kDefaultSetCategory,
   required List<ShareItem> items,
   DateTime? today,
 }) {
@@ -106,6 +115,7 @@ Map<String, dynamic> encodeSetToJson({
     title: title,
     description: description,
     createdBy: createdBy,
+    category: category,
     items: items,
   );
   validateShareSet(set, today: today);
@@ -158,6 +168,15 @@ ShareSet decodeSetFromJson(Map<dynamic, dynamic> json, {DateTime? today}) {
     throw const SetImportException('description must be a string');
   }
 
+  final rawCategory = map['category'];
+  if (rawCategory != null &&
+      (rawCategory is! String || !kSetCategories.contains(rawCategory))) {
+    throw SetImportException(
+      'unknown category "$rawCategory" (expected ${kSetCategories.join("|")})',
+    );
+  }
+  final category = effectiveSetCategory(rawCategory as String?);
+
   final items = <ShareItem>[];
   for (var i = 0; i < rawItems.length; i++) {
     final raw = rawItems[i];
@@ -171,6 +190,7 @@ ShareSet decodeSetFromJson(Map<dynamic, dynamic> json, {DateTime? today}) {
     title: title.trim(),
     description: (description as String?) ?? '',
     createdBy: createdBy.trim(),
+    category: category,
     items: items,
   );
   validateShareSet(set, today: today);
@@ -274,6 +294,9 @@ void validateShareSet(ShareSet set, {DateTime? today}) {
   final creatorError = validateCreatorName(set.createdBy);
   if (creatorError != null) {
     throw SetImportException(creatorError);
+  }
+  if (!kSetCategories.contains(set.category)) {
+    throw SetImportException('unknown category "${set.category}"');
   }
   for (var i = 0; i < set.items.length; i++) {
     final item = set.items[i];

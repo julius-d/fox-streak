@@ -21,6 +21,7 @@ const List<String> kSeedAssetPaths = [
   'assets/seed/demo_animals.foxstreak.json',
   'assets/seed/demo_family.foxstreak.json',
   'assets/seed/demo_bundeslaender.foxstreak.json',
+  'assets/seed/demo_times_tables.foxstreak.json',
 ];
 
 typedef AssetStringLoader = Future<String> Function(String assetPath);

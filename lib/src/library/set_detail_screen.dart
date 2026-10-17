@@ -60,9 +60,13 @@ class SetDetailScreen extends ConsumerWidget {
     final setsRepo = ref.read(setsRepositoryProvider);
     final itemsAsync = ref.watch(itemsForSetProvider(setId));
     var title = l10n.libraryTitle;
+    String? category;
     ref.watch(allSetsProvider).whenData((allSets) {
       for (final s in allSets) {
-        if (s.id == setId) title = s.title;
+        if (s.id == setId) {
+          title = s.title;
+          category = s.category;
+        }
       }
     });
     return Scaffold(
@@ -168,8 +172,9 @@ class SetDetailScreen extends ConsumerWidget {
               return ListTile(
                 key: Key('itemTile-${item.id}'),
                 leading: Icon(
-                  iconForItemType(item.type),
-                  color: colorForItemType(context, item.type),
+                  key: Key('itemTypeIcon-${item.id}'),
+                  iconForItemType(item.type, category),
+                  color: colorForItemType(context, item.type, category),
                 ),
                 title: Text(item.prompt),
                 subtitle: Text('$typeLabel · ${item.answer}'),

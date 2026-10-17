@@ -76,6 +76,17 @@ class $QuestionSetsTable extends QuestionSets
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _categoryMeta = const VerificationMeta(
+    'category',
+  );
+  @override
+  late final GeneratedColumn<String> category = GeneratedColumn<String>(
+    'category',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -84,6 +95,7 @@ class $QuestionSetsTable extends QuestionSets
     createdBy,
     createdAt,
     updatedAt,
+    category,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -141,6 +153,12 @@ class $QuestionSetsTable extends QuestionSets
     } else if (isInserting) {
       context.missing(_updatedAtMeta);
     }
+    if (data.containsKey('category')) {
+      context.handle(
+        _categoryMeta,
+        category.isAcceptableOrUnknown(data['category']!, _categoryMeta),
+      );
+    }
     return context;
   }
 
@@ -174,6 +192,10 @@ class $QuestionSetsTable extends QuestionSets
         DriftSqlType.int,
         data['${effectivePrefix}updated_at'],
       )!,
+      category: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category'],
+      ),
     );
   }
 
@@ -190,6 +212,7 @@ class QuestionSet extends DataClass implements Insertable<QuestionSet> {
   final String createdBy;
   final int createdAt;
   final int updatedAt;
+  final String? category;
   const QuestionSet({
     required this.id,
     required this.title,
@@ -197,6 +220,7 @@ class QuestionSet extends DataClass implements Insertable<QuestionSet> {
     required this.createdBy,
     required this.createdAt,
     required this.updatedAt,
+    this.category,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -207,6 +231,9 @@ class QuestionSet extends DataClass implements Insertable<QuestionSet> {
     map['created_by'] = Variable<String>(createdBy);
     map['created_at'] = Variable<int>(createdAt);
     map['updated_at'] = Variable<int>(updatedAt);
+    if (!nullToAbsent || category != null) {
+      map['category'] = Variable<String>(category);
+    }
     return map;
   }
 
@@ -218,6 +245,9 @@ class QuestionSet extends DataClass implements Insertable<QuestionSet> {
       createdBy: Value(createdBy),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
+      category: category == null && nullToAbsent
+          ? const Value.absent()
+          : Value(category),
     );
   }
 
@@ -233,6 +263,7 @@ class QuestionSet extends DataClass implements Insertable<QuestionSet> {
       createdBy: serializer.fromJson<String>(json['createdBy']),
       createdAt: serializer.fromJson<int>(json['createdAt']),
       updatedAt: serializer.fromJson<int>(json['updatedAt']),
+      category: serializer.fromJson<String?>(json['category']),
     );
   }
   @override
@@ -245,6 +276,7 @@ class QuestionSet extends DataClass implements Insertable<QuestionSet> {
       'createdBy': serializer.toJson<String>(createdBy),
       'createdAt': serializer.toJson<int>(createdAt),
       'updatedAt': serializer.toJson<int>(updatedAt),
+      'category': serializer.toJson<String?>(category),
     };
   }
 
@@ -255,6 +287,7 @@ class QuestionSet extends DataClass implements Insertable<QuestionSet> {
     String? createdBy,
     int? createdAt,
     int? updatedAt,
+    Value<String?> category = const Value.absent(),
   }) => QuestionSet(
     id: id ?? this.id,
     title: title ?? this.title,
@@ -262,6 +295,7 @@ class QuestionSet extends DataClass implements Insertable<QuestionSet> {
     createdBy: createdBy ?? this.createdBy,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
+    category: category.present ? category.value : this.category,
   );
   QuestionSet copyWithCompanion(QuestionSetsCompanion data) {
     return QuestionSet(
@@ -273,6 +307,7 @@ class QuestionSet extends DataClass implements Insertable<QuestionSet> {
       createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      category: data.category.present ? data.category.value : this.category,
     );
   }
 
@@ -284,14 +319,22 @@ class QuestionSet extends DataClass implements Insertable<QuestionSet> {
           ..write('description: $description, ')
           ..write('createdBy: $createdBy, ')
           ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('category: $category')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, title, description, createdBy, createdAt, updatedAt);
+  int get hashCode => Object.hash(
+    id,
+    title,
+    description,
+    createdBy,
+    createdAt,
+    updatedAt,
+    category,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -301,7 +344,8 @@ class QuestionSet extends DataClass implements Insertable<QuestionSet> {
           other.description == this.description &&
           other.createdBy == this.createdBy &&
           other.createdAt == this.createdAt &&
-          other.updatedAt == this.updatedAt);
+          other.updatedAt == this.updatedAt &&
+          other.category == this.category);
 }
 
 class QuestionSetsCompanion extends UpdateCompanion<QuestionSet> {
@@ -311,6 +355,7 @@ class QuestionSetsCompanion extends UpdateCompanion<QuestionSet> {
   final Value<String> createdBy;
   final Value<int> createdAt;
   final Value<int> updatedAt;
+  final Value<String?> category;
   const QuestionSetsCompanion({
     this.id = const Value.absent(),
     this.title = const Value.absent(),
@@ -318,6 +363,7 @@ class QuestionSetsCompanion extends UpdateCompanion<QuestionSet> {
     this.createdBy = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.category = const Value.absent(),
   });
   QuestionSetsCompanion.insert({
     this.id = const Value.absent(),
@@ -326,6 +372,7 @@ class QuestionSetsCompanion extends UpdateCompanion<QuestionSet> {
     required String createdBy,
     required int createdAt,
     required int updatedAt,
+    this.category = const Value.absent(),
   }) : title = Value(title),
        createdBy = Value(createdBy),
        createdAt = Value(createdAt),
@@ -337,6 +384,7 @@ class QuestionSetsCompanion extends UpdateCompanion<QuestionSet> {
     Expression<String>? createdBy,
     Expression<int>? createdAt,
     Expression<int>? updatedAt,
+    Expression<String>? category,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -345,6 +393,7 @@ class QuestionSetsCompanion extends UpdateCompanion<QuestionSet> {
       if (createdBy != null) 'created_by': createdBy,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
+      if (category != null) 'category': category,
     });
   }
 
@@ -355,6 +404,7 @@ class QuestionSetsCompanion extends UpdateCompanion<QuestionSet> {
     Value<String>? createdBy,
     Value<int>? createdAt,
     Value<int>? updatedAt,
+    Value<String?>? category,
   }) {
     return QuestionSetsCompanion(
       id: id ?? this.id,
@@ -363,6 +413,7 @@ class QuestionSetsCompanion extends UpdateCompanion<QuestionSet> {
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      category: category ?? this.category,
     );
   }
 
@@ -387,6 +438,9 @@ class QuestionSetsCompanion extends UpdateCompanion<QuestionSet> {
     if (updatedAt.present) {
       map['updated_at'] = Variable<int>(updatedAt.value);
     }
+    if (category.present) {
+      map['category'] = Variable<String>(category.value);
+    }
     return map;
   }
 
@@ -398,7 +452,8 @@ class QuestionSetsCompanion extends UpdateCompanion<QuestionSet> {
           ..write('description: $description, ')
           ..write('createdBy: $createdBy, ')
           ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('category: $category')
           ..write(')'))
         .toString();
   }
@@ -1854,6 +1909,7 @@ typedef $$QuestionSetsTableCreateCompanionBuilder =
       required String createdBy,
       required int createdAt,
       required int updatedAt,
+      Value<String?> category,
     });
 typedef $$QuestionSetsTableUpdateCompanionBuilder =
     QuestionSetsCompanion Function({
@@ -1863,6 +1919,7 @@ typedef $$QuestionSetsTableUpdateCompanionBuilder =
       Value<String> createdBy,
       Value<int> createdAt,
       Value<int> updatedAt,
+      Value<String?> category,
     });
 
 final class $$QuestionSetsTableReferences
@@ -1925,6 +1982,11 @@ class $$QuestionSetsTableFilterComposer
 
   ColumnFilters<int> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get category => $composableBuilder(
+    column: $table.category,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1992,6 +2054,11 @@ class $$QuestionSetsTableOrderingComposer
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get category => $composableBuilder(
+    column: $table.category,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$QuestionSetsTableAnnotationComposer
@@ -2022,6 +2089,9 @@ class $$QuestionSetsTableAnnotationComposer
 
   GeneratedColumn<int> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get category =>
+      $composableBuilder(column: $table.category, builder: (column) => column);
 
   Expression<T> itemsRefs<T extends Object>(
     Expression<T> Function($$ItemsTableAnnotationComposer a) f,
@@ -2083,6 +2153,7 @@ class $$QuestionSetsTableTableManager
                 Value<String> createdBy = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
                 Value<int> updatedAt = const Value.absent(),
+                Value<String?> category = const Value.absent(),
               }) => QuestionSetsCompanion(
                 id: id,
                 title: title,
@@ -2090,6 +2161,7 @@ class $$QuestionSetsTableTableManager
                 createdBy: createdBy,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
+                category: category,
               ),
           createCompanionCallback:
               ({
@@ -2099,6 +2171,7 @@ class $$QuestionSetsTableTableManager
                 required String createdBy,
                 required int createdAt,
                 required int updatedAt,
+                Value<String?> category = const Value.absent(),
               }) => QuestionSetsCompanion.insert(
                 id: id,
                 title: title,
@@ -2106,6 +2179,7 @@ class $$QuestionSetsTableTableManager
                 createdBy: createdBy,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
+                category: category,
               ),
           withReferenceMapper: (p0) => p0
               .map(

@@ -23,6 +23,10 @@ class QuestionSets extends Table {
   // Epoch millis.
   IntColumn get createdAt => integer()();
   IntColumn get updatedAt => integer()();
+  // v6 (#045): one of `kSetCategories` (validation.dart), drives the
+  // choice/freeText icon (item_type_icons.dart). NULL on pre-#045 rows and
+  // treated as `vocab` everywhere category is read — no backfill.
+  TextColumn get category => text().nullable()();
 }
 
 /// Items belonging to a set, ordered by [position].
@@ -95,7 +99,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -133,6 +137,11 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(profileStats, profileStats.displayName);
         await m.addColumn(profileStats, profileStats.hasOnboarded);
       }
+      // v6 (#045): adds the optional set category; existing rows stay NULL
+      // (treated as `vocab` everywhere category is read), no backfill.
+      if (from < 6) {
+        await m.addColumn(questionSets, questionSets.category);
+      }
     },
     beforeOpen: (details) async {
       // SQLite disables FK enforcement by default; without this,
@@ -144,7 +153,8 @@ class AppDatabase extends _$AppDatabase {
   // v1 had no migrations; v2 (#026) added the vocab->choice rewrite above;
   // v3 (#010) added `profileStats.todayXp`; v4 (#022) replaced
   // `items.direction` with `promptLang`/`answerLang`; v5 (#012) added
-  // `profileStats.displayName`/`hasOnboarded`.
+  // `profileStats.displayName`/`hasOnboarded`; v6 (#045) added
+  // `questionSets.category`.
 }
 
 DatabaseConnection _openConnection() => driftDatabase(name: 'fox_streak');

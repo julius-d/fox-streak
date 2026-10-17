@@ -14,6 +14,20 @@ import 'clock.dart';
 /// `choice` by `database.dart`'s schema v2 upgrade.
 const Set<String> kItemTypes = {'choice', 'freeText', 'phone', 'date'};
 
+/// Allowed `question_sets.category` values (#045). Drives the choice/
+/// freeText icon/color (`item_type_icons.dart`); `general` is a catch-all
+/// for future non-vocab/math/geography knowledge sets.
+const Set<String> kSetCategories = {'vocab', 'general', 'math', 'geography'};
+
+/// Default category for sets stored with `category == null` (pre-#045 rows,
+/// or a share file predating the field).
+const String kDefaultSetCategory = 'vocab';
+
+/// Resolves a stored/share `category` to a concrete value in
+/// [kSetCategories]: `null` resolves to [kDefaultSetCategory].
+String effectiveSetCategory(String? category) =>
+    category ?? kDefaultSetCategory;
+
 /// Maximum length of a free-text creator name (`question_sets.created_by`).
 ///
 /// Loosened from the old `parent|teacher|learner` enum in #003 (see #002

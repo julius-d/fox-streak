@@ -127,6 +127,41 @@ void main() {
     });
 
     testWidgets(
+      'all-digit answers (e.g. math facts, #045) get the numeric keyboard',
+      (tester) async {
+        await tester.pumpWidget(
+          _Harness(
+            item: _item(answer: '42'),
+            onDraft: (_) {},
+          ),
+        );
+        await tester.pump();
+
+        final field = tester.widget<TextField>(
+          find.byKey(const Key('freeTextAnswerField')),
+        );
+        expect(field.keyboardType, TextInputType.number);
+      },
+    );
+
+    testWidgets('a non-digit answer keeps the default keyboard', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _Harness(
+          item: _item(answer: 'Hund'),
+          onDraft: (_) {},
+        ),
+      );
+      await tester.pump();
+
+      final field = tester.widget<TextField>(
+        find.byKey(const Key('freeTextAnswerField')),
+      );
+      expect(field.keyboardType, isNot(TextInputType.number));
+    });
+
+    testWidgets(
       'reveal-hint works pre-check (no answer needed) and sets hintLabel',
       (tester) async {
         ExerciseDraft? draft;

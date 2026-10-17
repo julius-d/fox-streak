@@ -103,7 +103,7 @@ void main() {
         );
         expect(id, isPositive);
       }
-      expect(await sets.getAllSets(), hasLength(3));
+      expect(await sets.getAllSets(), hasLength(4));
     });
 
     test(
@@ -126,5 +126,30 @@ void main() {
         }
       },
     );
+
+    test('demo_times_tables seed is 78 unique math choice facts, category '
+        '"math" (#045)', () async {
+      final raw = await File('assets/seed/demo_times_tables.foxstreak.json')
+          .readAsString();
+      final decoded = jsonDecode(raw) as Map<String, dynamic>;
+      expect(decoded['category'], 'math');
+      final id = await sets.importSetFromJson(
+        Map<dynamic, dynamic>.from(decoded),
+        today: kTestToday,
+      );
+      expect((await sets.getSetById(id))?.category, 'math');
+      final items = await sets.getItemsForSet(id);
+      expect(items, hasLength(78));
+      final facts = <String>{};
+      for (final item in items) {
+        expect(item.type, 'choice');
+        expect(item.promptLang, isNull);
+        expect(item.answerLang, isNull);
+        expect(item.choices, isNull);
+        facts.add(item.prompt);
+      }
+      // No duplicate/commutative facts (3 × 5 and 5 × 3 are the same fact).
+      expect(facts, hasLength(78));
+    });
   });
 }

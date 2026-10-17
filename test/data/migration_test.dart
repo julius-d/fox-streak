@@ -66,15 +66,16 @@ Future<int> _insertLegacyItem(
   );
 }
 
-/// Creates the pre-#010 (v1/v2) table shapes: `questionSets`/`attempts`
-/// match the current Dart defs (no structural diff since v1); `items` is
+/// Creates the pre-#010 (v1/v2) table shapes: `attempts` matches the
+/// current Dart def (no structural diff since v1); `questionSets` is the
+/// pre-#045 shape (see [_createQuestionSetsWithoutCategory]); `items` is
 /// the pre-#022 shape (see [_createItemsTableWithDirection]); `profile_stats`
 /// is hand-written *without* `today_xp` — using `createAll()` here would
 /// build it from the current (v4) Dart table definition and mask the
 /// `addColumn` migration under test.
 Future<void> _createLegacySchema(Migrator m) async {
   final db = m.database as AppDatabase;
-  await m.createTable(db.questionSets);
+  await _createQuestionSetsWithoutCategory(m);
   await _createItemsTableWithDirection(m);
   await m.createTable(db.attempts);
   await db.customStatement('''
@@ -133,10 +134,9 @@ Future<void> _createProfileStatsWithTodayXpOnly(Migrator m) async {
       PRIMARY KEY (id)
     )
   ''');
-  // Keep the "schema is fully built" shape of `createTable` for the two
-  // tables unaffected by either #022 or #012, matching other legacy
-  // fixtures in this file.
-  await m.createTable(db.questionSets);
+  // `questionSets` is still pre-#045 (no `category`); `attempts` matches
+  // the current Dart def, unaffected by #022/#012/#045.
+  await _createQuestionSetsWithoutCategory(m);
   await m.createTable(db.attempts);
 }
 
@@ -178,6 +178,45 @@ class _LegacyV4Database extends AppDatabase {
       await _createProfileStatsWithTodayXpOnly(m);
       final db = m.database as AppDatabase;
       await m.createTable(db.items);
+    },
+  );
+}
+
+/// Creates the pre-#045 `question_sets` shape (no `category` column) — the
+/// current Dart `QuestionSets` definition already has it, so
+/// `m.createTable(db.questionSets)` can't be used for this pre-v6 fixture.
+Future<void> _createQuestionSetsWithoutCategory(Migrator m) async {
+  final db = m.database as AppDatabase;
+  await db.customStatement('''
+    CREATE TABLE question_sets (
+      id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      description TEXT NOT NULL DEFAULT '',
+      created_by TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    )
+  ''');
+}
+
+/// A schemaVersion-5 view of [AppDatabase], used only to seed a pre-#045
+/// file at the exact version #045's migration upgrades from: `items` and
+/// `profile_stats` are already in their current (post-#012) shape, but
+/// `question_sets` still lacks `category`.
+class _LegacyV5Database extends AppDatabase {
+  _LegacyV5Database(QueryExecutor executor) : super.forTesting(executor); // ignore: use_super_parameters — must forward to the named forTesting() ctor, not the default unnamed one
+
+  @override
+  int get schemaVersion => 5;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) async {
+      await _createQuestionSetsWithoutCategory(m);
+      final db = m.database as AppDatabase;
+      await m.createTable(db.items);
+      await m.createTable(db.attempts);
+      await m.createTable(db.profileStats);
     },
   );
 }
@@ -396,6 +435,53 @@ void main() {
     expect(profile.streakCount, 3);
     expect(profile.todayXp, 12);
     expect(profile.lastActiveDay, '2026-10-10');
+  });
+
+  test('onUpgrade (v5 -> v6) adds category (null), preserving existing set '
+      'fields', () async {
+    final dir = Directory.systemTemp.createTempSync('foxstreak_migration_v6');
+    final file = File('${dir.path}/test.sqlite');
+    addTearDown(() {
+      if (dir.existsSync()) dir.deleteSync(recursive: true);
+    });
+
+    // 1. Seed a v5 database directly on disk (question_sets has no
+    // category column yet) with a pre-existing set row.
+    final legacyDb = _LegacyV5Database(NativeDatabase(file));
+    final setId = await legacyDb
+        .into(legacyDb.questionSets)
+        .insert(
+          QuestionSetsCompanion.insert(
+            title: 'Legacy set',
+            createdBy: 'teacher',
+            createdAt: 1,
+            updatedAt: 2,
+          ),
+        );
+    await legacyDb.close();
+
+    // 2. Reopen the SAME file with the real (current schemaVersion)
+    // database; drift sees user_version=5 < schemaVersion and runs
+    // onUpgrade's `addColumn`.
+    final upgradedDb = AppDatabase.forTesting(NativeDatabase(file));
+    addTearDown(upgradedDb.close);
+
+    final set = await (upgradedDb.select(
+      upgradedDb.questionSets,
+    )..where((t) => t.id.equals(setId))).getSingle();
+    expect(set.category, isNull);
+    expect(set.title, 'Legacy set');
+    expect(set.createdBy, 'teacher');
+    expect(set.createdAt, 1);
+    expect(set.updatedAt, 2);
+
+    final columns = await upgradedDb
+        .customSelect("PRAGMA table_info('question_sets')")
+        .get();
+    expect(
+      columns.map((row) => row.read<String>('name')),
+      contains('category'),
+    );
   });
 }
 

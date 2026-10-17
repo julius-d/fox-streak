@@ -155,4 +155,31 @@ void main() {
       await unmount(tester);
     },
   );
+
+  testWidgets('a choice item in a math set shows the math category icon, not '
+      'translate (#045)', (tester) async {
+    final clock = FakeClock(kTestToday);
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(() async => db.close());
+    final repo = SetsRepository(db, clock);
+    final setId = await repo.createSet(
+      title: 'Facts',
+      createdBy: 'Mama',
+      category: 'math',
+    );
+    final itemId = await repo.addItem(
+      setId: setId,
+      type: 'choice',
+      prompt: '2 × 3',
+      answer: '6',
+    );
+
+    await pumpSetDetail(tester, db, clock, setId);
+
+    final icon = tester.widget<Icon>(find.byKey(Key('itemTypeIcon-$itemId')));
+    expect(icon.icon, Icons.calculate);
+    expect(icon.icon, isNot(Icons.translate));
+
+    await unmount(tester);
+  });
 }

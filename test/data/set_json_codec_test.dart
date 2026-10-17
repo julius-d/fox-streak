@@ -73,6 +73,37 @@ void main() {
     });
   });
 
+  group('category (#045)', () {
+    test('missing category defaults to vocab', () {
+      final json = validSetJson()..remove('category');
+      final set = decodeSetFromJson(json, today: kTestToday);
+      expect(set.category, 'vocab');
+    });
+
+    test('an explicit category round-trips', () {
+      final json = {...validSetJson(), 'category': 'math'};
+      final set = decodeSetFromJson(json, today: kTestToday);
+      expect(set.category, 'math');
+      expect(set.toJson()['category'], 'math');
+    });
+
+    test('an unknown category is rejected', () {
+      final json = {...validSetJson(), 'category': 'grammar'};
+      expect(
+        () => decodeSetFromJson(json, today: kTestToday),
+        throwsA(isA<SetImportException>()),
+      );
+    });
+
+    test('a non-string category is rejected', () {
+      final json = {...validSetJson(), 'category': 42};
+      expect(
+        () => decodeSetFromJson(json, today: kTestToday),
+        throwsA(isA<SetImportException>()),
+      );
+    });
+  });
+
   group('decodeSetFromJson — rejection cases', () {
     Future<void> expectRejects(
       Map<dynamic, dynamic> json, [
@@ -306,10 +337,22 @@ void main() {
       );
       expect(map['format'], 'foxstreak-set');
       expect(map['version'], 1);
+      // category defaults to vocab when not passed (#045).
+      expect(map['category'], 'vocab');
       expect(
         () => encodeSetToJson(
           title: ' ',
           createdBy: 'learner',
+          items: const [],
+          today: kTestToday,
+        ),
+        throwsA(isA<SetImportException>()),
+      );
+      expect(
+        () => encodeSetToJson(
+          title: 'T',
+          createdBy: 'learner',
+          category: 'grammar',
           items: const [],
           today: kTestToday,
         ),

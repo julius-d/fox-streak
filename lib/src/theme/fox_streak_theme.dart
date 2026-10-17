@@ -82,6 +82,13 @@ class FoxSemanticColors extends ThemeExtension<FoxSemanticColors> {
   final Color gold;
   final Color onGold;
   final Color goldInk;
+  // #045: category tints for the choice/freeText set icon (math/geography);
+  // vocab keeps `info`, general falls back to the surface ink (no new
+  // token needed for a catch-all).
+  final Color math;
+  final Color onMath;
+  final Color geography;
+  final Color onGeography;
 
   const FoxSemanticColors({
     required this.success,
@@ -95,6 +102,10 @@ class FoxSemanticColors extends ThemeExtension<FoxSemanticColors> {
     required this.gold,
     required this.onGold,
     required this.goldInk,
+    required this.math,
+    required this.onMath,
+    required this.geography,
+    required this.onGeography,
   });
 
   /// Light values. Content colors are darkened so they pass AA on light
@@ -111,6 +122,10 @@ class FoxSemanticColors extends ThemeExtension<FoxSemanticColors> {
     gold: Color(0xFFFFC107),
     onGold: Color(0xFF231A00),
     goldInk: Color(0xFF7A5900),
+    math: Color(0xFF6750A4),
+    onMath: Color(0xFFFFFFFF),
+    geography: Color(0xFF00696C),
+    onGeography: Color(0xFFFFFFFF),
   );
 
   /// Dark values. Content colors are lightened so they pass AA on dark
@@ -127,6 +142,10 @@ class FoxSemanticColors extends ThemeExtension<FoxSemanticColors> {
     gold: Color(0xFFFFC107),
     onGold: Color(0xFF231A00),
     goldInk: Color(0xFFFFC107),
+    math: Color(0xFFD0BCFF),
+    onMath: Color(0xFF381E72),
+    geography: Color(0xFF4DD9DC),
+    onGeography: Color(0xFF003738),
   );
 
   @override
@@ -142,6 +161,10 @@ class FoxSemanticColors extends ThemeExtension<FoxSemanticColors> {
     Color? gold,
     Color? onGold,
     Color? goldInk,
+    Color? math,
+    Color? onMath,
+    Color? geography,
+    Color? onGeography,
   }) {
     return FoxSemanticColors(
       success: success ?? this.success,
@@ -155,6 +178,10 @@ class FoxSemanticColors extends ThemeExtension<FoxSemanticColors> {
       gold: gold ?? this.gold,
       onGold: onGold ?? this.onGold,
       goldInk: goldInk ?? this.goldInk,
+      math: math ?? this.math,
+      onMath: onMath ?? this.onMath,
+      geography: geography ?? this.geography,
+      onGeography: onGeography ?? this.onGeography,
     );
   }
 
@@ -174,6 +201,10 @@ class FoxSemanticColors extends ThemeExtension<FoxSemanticColors> {
       gold: lerpColor(gold, other.gold),
       onGold: lerpColor(onGold, other.onGold),
       goldInk: lerpColor(goldInk, other.goldInk),
+      math: lerpColor(math, other.math),
+      onMath: lerpColor(onMath, other.onMath),
+      geography: lerpColor(geography, other.geography),
+      onGeography: lerpColor(onGeography, other.onGeography),
     );
   }
 }

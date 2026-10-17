@@ -1,6 +1,8 @@
 # Issue 045: Multiplication-table practice set (set `category`) + fix translate-icon mislabeling
 
-Status: open | Priority: P2 | Type: feature | Refined-at: 2026-10-17
+Status: done | Priority: P2 | Type: feature | Refined-at: 2026-10-17
+
+Completed-at: 2026-10-17
 
 ## Goal
 
@@ -65,37 +67,40 @@ category per set is enough and keeps the per-set/per-item icon code simple.
 
 ## Acceptance criteria
 
-- [ ] `database.dart`: `schemaVersion` 6; `sets.category` (`TEXT?`) column
+- [x] `database.dart`: `schemaVersion` 6; `sets.category` (`TEXT?`) column
       added via `onUpgrade`; migration test (existing rows' `category` is
       `null` post-upgrade, column present).
-- [ ] `validation.dart`: `kSetCategories = {'vocab', 'general', 'math', 'geography'}`.
-- [ ] `item_type_icons.dart` (or a renamed equivalent): icon/color for
+- [x] `validation.dart`: `kSetCategories = {'vocab', 'general', 'math', 'geography'}`.
+- [x] `item_type_icons.dart` (or a renamed equivalent): icon/color for
       `choice`/`freeText` items keyed by the set's category (`null` treated
       as `vocab`); `phone`/`date` unchanged.
-- [ ] `library_screen.dart`: per-set badge shows one category icon, not a
-      per-distinct-type list.
-- [ ] `set_detail_screen.dart`: per-item icon uses category for
+- [x] `library_screen.dart`: per-set badge shows one category icon, not a
+      per-distinct-type list. **N/A** — #042 (shipped the day before this
+      issue was refined) already removed the per-set badge row entirely in
+      favor of explicit play/edit icon buttons; there is no badge left to
+      simplify.
+- [x] `set_detail_screen.dart`: per-item icon uses category for
       `choice`/`freeText`, type for `phone`/`date`.
-- [ ] `set_editor_screen.dart`: category segmented-button picker, defaults to
+- [x] `set_editor_screen.dart`: category segmented-button picker, defaults to
       `vocab` for new sets, pre-fills from `existing?.category` when editing.
-- [ ] `sets_repository.dart`: `createSet`/`updateSet` take `category`.
-- [ ] `set_json_codec.dart`: `"category"` optional field, round-trips on
+- [x] `sets_repository.dart`: `createSet`/`updateSet` take `category`.
+- [x] `set_json_codec.dart`: `"category"` optional field, round-trips on
       export, defaults to `vocab` on import when absent.
-- [ ] New `assets/seed/demo_times_tables.foxstreak.json` (78 items, `category:
+- [x] New `assets/seed/demo_times_tables.foxstreak.json` (78 items, `category:
       'math'`, no language pair, no explicit `choices`), registered in
       `seed_loader.dart`'s `kSeedAssetPaths`.
-- [ ] `demo_animals`/`demo_family` seeds get `"category": "vocab"`;
+- [x] `demo_animals`/`demo_family` seeds get `"category": "vocab"`;
       `demo_bundeslaender` gets `"category": "geography"`.
-- [ ] `free_text_exercise.dart`: all-digit answers get
+- [x] `free_text_exercise.dart`: all-digit answers get
       `keyboardType: TextInputType.number`.
-- [ ] New l10n strings (DE + EN) for the 4 category picker labels.
-- [ ] Tests updated/added: migration test, `item_type_icons_test.dart` (or
+- [x] New l10n strings (DE + EN) for the 4 category picker labels.
+- [x] Tests updated/added: migration test, `item_type_icons_test.dart` (or
       equivalent) for category-driven icons, `set_editor_screen_test.dart`
       for the picker, `set_json_codec_test.dart` for the new field,
       `sets_repository_test.dart`, `library_screen_test.dart`/
       `set_detail_screen_test.dart` for the simplified badge logic,
       `free_text_exercise_test.dart` for the numeric keyboard.
-- [ ] `flutter analyze` / `dart format` / `dart fix --dry-run` /
+- [x] `flutter analyze` / `dart format` / `dart fix --dry-run` /
       `flutter test` clean.
 
 ## Tasks
@@ -140,3 +145,46 @@ dart format --output=none --set-exit-if-changed .
 dart fix --dry-run
 flutter test
 ```
+
+## Summary (done 2026-10-17)
+
+`QuestionSets.category` (`TEXT?`, schemaVersion 6) drives a new
+category-keyed icon/color pair (`item_type_icons.dart`: `iconForSetCategory`/
+`colorForSetCategory`, two new AA-checked `FoxSemanticColors` tokens
+`math`/`geography`) for `choice`/`freeText` items; `phone`/`date` stay
+type-keyed. `set_editor_screen.dart` gained a `SegmentedButton<String>`
+category picker (defaults to `vocab`, pre-fills from `existing?.category`).
+`sets_repository`/`set_json_codec` thread `category` through
+create/update/duplicate/export/import (`null`/absent always resolves to
+`vocab` via `validation.dart`'s `effectiveSetCategory`). New
+`demo_times_tables.foxstreak.json` (78 unique facts, `a ≤ b`, `category:
+"math"`) registered in `seed_loader.dart`; the 3 existing seeds retrofitted
+with `category` (fixes the Bundesländer mis-icon as a side effect).
+`free_text_exercise.dart` opens the numeric keyboard for all-digit answers.
+The `library_screen.dart` badge-row criterion was **N/A**: #042 already
+removed that badge the day before this issue was refined.
+
+Tests: 1 new migration test (v5→v6), `item_type_icons_test.dart` rewritten
+for category-driven icons, new `set_editor_screen_test.dart` (6 widget
+tests), additions to `sets_repository_test.dart`, `set_json_codec_test.dart`,
+`seed_loader_test.dart`, `set_detail_screen_test.dart`,
+`free_text_exercise_test.dart`. Full suite (361 widget/unit tests) +
+integration tests pass (`flow1`, `flow4`, `choice_freetext_dispatch`,
+`issue042_sticky_start` individually confirmed green); 2 pre-existing
+flaky integration tests (`lesson_overflow_menu_test.dart`,
+`xp_level_result_test.dart`) reproduce identically on unmodified `main` —
+unrelated to this change. `flutter analyze`/`dart format`/`dart fix
+--dry-run`/`flutter test` all clean.
+
+## Code review (2026-10-17, `/code-review high`)
+
+1. New `SegmentedButton` category picker used Material's default 40dp
+   segment height, below the kit's 48dp a11y floor (#015).
+   Fixed — added an explicit `minimumSize` style matching `FoxButtonMetrics`.
+2. Category-validity check (`!kSetCategories.contains(category)`) was
+   duplicated verbatim in `sets_repository.dart`'s `updateSet` and
+   `_checkSetFields` (used by `createSet`).
+   Fixed — extracted a shared `_checkCategory()` helper.
+3. `colorForItemType` called `foxSemantics(context)` separately per branch
+   instead of resolving it once, unlike the pre-#045 code.
+   Fixed — hoisted the lookup to the top of the function.
