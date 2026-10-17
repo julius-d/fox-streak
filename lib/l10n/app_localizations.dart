@@ -175,7 +175,14 @@ abstract class AppLocalizations {
   String homeGoalRingValue(int earnedXp, int goalXp);
   String homeGoalRingXp(int earnedXp);
   String get homeGoalRingToday;
+  String get homeOverflowMenuTooltip;
   String get homeParentalInfoTooltip;
+  String get homeSettingsMenuItem;
+  String get settingsTitle;
+  String get settingsHapticsLabel;
+  String get settingsHapticsSubtitle;
+  String get settingsSoundLabel;
+  String get settingsSoundSubtitle;
   String get parentalInfoTitle;
   String get parentalInfoBody;
   String get onboardingSlide1Title;
@@ -474,7 +481,23 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get homeGoalRingToday => 'today';
   @override
+  String get homeOverflowMenuTooltip => 'More options';
+  @override
   String get homeParentalInfoTooltip => 'For parents';
+  @override
+  String get homeSettingsMenuItem => 'Settings';
+  @override
+  String get settingsTitle => 'Settings';
+  @override
+  String get settingsHapticsLabel => 'Haptics';
+  @override
+  String get settingsHapticsSubtitle =>
+      'Vibrate on correct and incorrect answers';
+  @override
+  String get settingsSoundLabel => 'Sound';
+  @override
+  String get settingsSoundSubtitle =>
+      'Play chimes on level-up and correct answers';
   @override
   String get parentalInfoTitle => 'For parents';
   @override
@@ -794,7 +817,22 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get homeGoalRingToday => 'heute';
   @override
+  String get homeOverflowMenuTooltip => 'Weitere Optionen';
+  @override
   String get homeParentalInfoTooltip => 'Für Eltern';
+  @override
+  String get homeSettingsMenuItem => 'Einstellungen';
+  @override
+  String get settingsTitle => 'Einstellungen';
+  @override
+  String get settingsHapticsLabel => 'Haptik';
+  @override
+  String get settingsHapticsSubtitle => 'Beim Antworten vibrieren';
+  @override
+  String get settingsSoundLabel => 'Ton';
+  @override
+  String get settingsSoundSubtitle =>
+      'Töne beim Level-Aufstieg und bei richtigen Antworten abspielen';
   @override
   String get parentalInfoTitle => 'Für Eltern';
   @override

@@ -90,7 +90,24 @@ class ProfileStats extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-@DriftDatabase(tables: [QuestionSets, Items, Attempts, ProfileStats])
+/// Single-row app preferences (id fixed to 0), separate from [ProfileStats]
+/// (progress/XP/streak) — see issue #055.
+///
+/// v7 (#055): both `hapticsEnabled` and `soundEnabled` are read/written via
+/// [SettingsRepository] and surfaced by `SettingsScreen`'s two switches.
+class AppSettings extends Table {
+  IntColumn get id => integer()();
+  BoolColumn get hapticsEnabled =>
+      boolean().withDefault(const Constant(true))();
+  BoolColumn get soundEnabled => boolean().withDefault(const Constant(true))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+@DriftDatabase(
+  tables: [QuestionSets, Items, Attempts, ProfileStats, AppSettings],
+)
 class AppDatabase extends _$AppDatabase {
   /// Production constructor backed by `drift_flutter`.
   AppDatabase() : super(_openConnection());
@@ -99,7 +116,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -142,6 +159,11 @@ class AppDatabase extends _$AppDatabase {
       if (from < 6) {
         await m.addColumn(questionSets, questionSets.category);
       }
+      // v7 (#055): adds the single-row app-preferences table (haptics/sound
+      // toggles), separate from profileStats.
+      if (from < 7) {
+        await m.createTable(appSettings);
+      }
     },
     beforeOpen: (details) async {
       // SQLite disables FK enforcement by default; without this,
@@ -154,7 +176,7 @@ class AppDatabase extends _$AppDatabase {
   // v3 (#010) added `profileStats.todayXp`; v4 (#022) replaced
   // `items.direction` with `promptLang`/`answerLang`; v5 (#012) added
   // `profileStats.displayName`/`hasOnboarded`; v6 (#045) added
-  // `questionSets.category`.
+  // `questionSets.category`; v7 (#055) added the `appSettings` table.
 }
 
 DatabaseConnection _openConnection() => driftDatabase(name: 'fox_streak');

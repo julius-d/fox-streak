@@ -409,11 +409,46 @@
     "placeholders": {}
   },
   "homeGoalRingToday": "heute",
+  "@homeOverflowMenuTooltip": {
+    "description": "Tooltip/accessibility label for Home's app bar overflow menu button (issue #055)",
+    "placeholders": {}
+  },
+  "homeOverflowMenuTooltip": "Weitere Optionen",
   "@homeParentalInfoTooltip": {
-    "description": "Tooltip/accessibility label for Home's button opening the parental info screen (issue #012)",
+    "description": "Label of Home's overflow-menu entry opening the parental info screen (issue #012, menu entry since #055)",
     "placeholders": {}
   },
   "homeParentalInfoTooltip": "Für Eltern",
+  "@homeSettingsMenuItem": {
+    "description": "Label of Home's overflow-menu entry opening the settings screen (issue #055)",
+    "placeholders": {}
+  },
+  "homeSettingsMenuItem": "Einstellungen",
+  "@settingsTitle": {
+    "description": "App bar title for the settings screen (issue #055)",
+    "placeholders": {}
+  },
+  "settingsTitle": "Einstellungen",
+  "@settingsHapticsLabel": {
+    "description": "Title of the haptics SwitchListTile on the settings screen (issue #055)",
+    "placeholders": {}
+  },
+  "settingsHapticsLabel": "Haptik",
+  "@settingsHapticsSubtitle": {
+    "description": "Subtitle of the haptics SwitchListTile on the settings screen (issue #055)",
+    "placeholders": {}
+  },
+  "settingsHapticsSubtitle": "Beim Antworten vibrieren",
+  "@settingsSoundLabel": {
+    "description": "Title of the sound SwitchListTile on the settings screen (issue #055)",
+    "placeholders": {}
+  },
+  "settingsSoundLabel": "Ton",
+  "@settingsSoundSubtitle": {
+    "description": "Subtitle of the sound SwitchListTile on the settings screen (issue #055)",
+    "placeholders": {}
+  },
+  "settingsSoundSubtitle": "Töne beim Level-Aufstieg und bei richtigen Antworten abspielen",
   "@parentalInfoTitle": {
     "description": "App bar title for the static parental info screen (issue #012)",
     "placeholders": {}

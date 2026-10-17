@@ -1,6 +1,6 @@
 # Issue 055: Settings screen with haptics + sound toggles
 
-Status: open | Priority: P3 | Type: feature | Refined-at: 2026-10-17
+Status: done | Priority: P3 | Type: feature | Refined-at: 2026-10-17 | Completed-at: 2026-10-17
 
 ## Goal
 
@@ -55,36 +55,36 @@ restarts.
 
 ## Acceptance criteria
 
-- [ ] Home's app bar icon button becomes an `Icons.more_vert` menu with two
+- [x] Home's app bar icon button becomes an `Icons.more_vert` menu with two
       entries — "For parents" then "Settings" — replacing today's single
       direct-navigation icon; "For parents" still opens `ParentalInfoScreen`
       unchanged.
-- [ ] A new `SettingsScreen` (full-screen route, #015 `Scaffold`/`FoxSpacing`
+- [x] A new `SettingsScreen` (full-screen route, #015 `Scaffold`/`FoxSpacing`
       conventions) is reachable via the new "Settings" menu entry.
-- [ ] A `SwitchListTile` for haptics, wired to
+- [x] A `SwitchListTile` for haptics, wired to
       `foxHapticsEnabledProvider.setEnabled` + persisted via
       `SettingsRepository`.
-- [ ] A `SwitchListTile` for sound, wired to
+- [x] A `SwitchListTile` for sound, wired to
       `foxSoundEnabledProvider.setEnabled` (or whatever #053/#054 actually
       name it once landed) + persisted via `SettingsRepository`.
-- [ ] Both default to on for a fresh install, matching current provider
+- [x] Both default to on for a fresh install, matching current provider
       defaults.
-- [ ] A toggle's value survives an app restart: flipping a switch, then
+- [x] A toggle's value survives an app restart: flipping a switch, then
       relaunching, shows the switch in its last-set position and the
       corresponding provider seeded to that value — verified without ever
       opening `SettingsScreen` again (i.e. hydration happens on startup, not
       lazily on screen open).
-- [ ] New drift table/migration (schema v7) + `SettingsRepository`, tested
+- [x] New drift table/migration (schema v7) + `SettingsRepository`, tested
       in `test/data/` the same way `StatsRepository` is (in-memory DB,
       get-or-create default row, update-and-read-back).
-- [ ] New widget test(s): Home's menu shows both entries in order and
+- [x] New widget test(s): Home's menu shows both entries in order and
       navigates correctly; `SettingsScreen` renders both switches and
       toggling one updates the corresponding provider (via the existing
       test-override pattern, e.g. `test/widgets/kit_test.dart`'s style).
-- [ ] Follows #015: `FoxSpacing`/theme-driven styling on the screen itself;
+- [x] Follows #015: `FoxSpacing`/theme-driven styling on the screen itself;
       new strings via `lib/l10n` arb params (DE + EN) — menu item labels,
       settings screen title, switch labels (+ optional short subtitles).
-- [ ] `flutter analyze` / `dart format` / `dart fix --dry-run` /
+- [x] `flutter analyze` / `dart format` / `dart fix --dry-run` /
       `flutter test` clean.
 
 ## Out of scope
@@ -112,3 +112,23 @@ dart format --output=none --set-exit-if-changed .
 dart fix --dry-run
 flutter test
 ```
+
+## Summary
+
+Added `AppSettings` (schema v7) + `SettingsRepository`, a `SettingsScreen`
+with haptics + sound `SwitchListTile`s, and Home's `Icons.more_vert`
+overflow menu ("For parents" then "Settings"). `settingsHydrationProvider`
+seeds both toggle providers on startup before any screen renders. Started
+before #053 merged, so the sound switch was initially scoped out and added
+once `foxSoundEnabledProvider` landed on `main` (rebased onto it before
+finishing). New integration test: `integration_test/issue055_settings_test.dart`.
+
+## Code review
+
+- First pass (haptics-only, before #053 landed): no findings.
+- Second pass (after adding the sound switch): stale `AppSettings` doc
+  comment claiming no UI writes `soundEnabled` yet, contradicted by this
+  same diff's `SettingsScreen` sound switch — fixed.
+- Second pass: issue file briefly marked `Status: done` while this section
+  said review was still pending — fixed by finishing this section before
+  committing.

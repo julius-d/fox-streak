@@ -19,6 +19,7 @@ import 'package:fox_streak_app/l10n/app_localizations.dart';
 import 'package:fox_streak_app/src/data/clock.dart';
 import 'package:fox_streak_app/src/data/database.dart';
 import 'package:fox_streak_app/src/data/providers.dart';
+import 'package:fox_streak_app/src/data/settings_repository.dart';
 import 'package:fox_streak_app/src/data/sets_repository.dart';
 import 'package:fox_streak_app/src/data/stats_repository.dart';
 import 'package:fox_streak_app/src/home/home_screen.dart';
@@ -208,16 +209,117 @@ void main() {
   );
 
   testWidgets(
-    'the parental info button opens the static parental info screen',
+    'the overflow menu shows "For parents" then "Settings", in order, and '
+    'each opens its real screen (issue #055)',
     (tester) async {
       final clock = FakeClock(kTestToday);
       await pumpOnboardedHome(tester, clock);
 
-      await tester.tap(find.byKey(const Key('parentalInfoButton')));
+      await tester.tap(find.byKey(const Key('homeOverflowMenu')));
       await settle(tester);
 
+      final parentalItem = find.byKey(const Key('parentalInfoMenuItem'));
+      final settingsItem = find.byKey(const Key('settingsMenuItem'));
+      expect(parentalItem, findsOneWidget);
+      expect(settingsItem, findsOneWidget);
+      // "For parents" entry precedes "Settings" (top-to-bottom = earlier in
+      // the PopupMenuButton's itemBuilder list).
+      expect(
+        tester.getTopLeft(parentalItem).dy,
+        lessThan(tester.getTopLeft(settingsItem).dy),
+      );
+
+      await tester.tap(parentalItem);
+      await settle(tester);
       expect(find.byKey(const Key('parentalInfoScreen')), findsOneWidget);
       expect(find.text('For parents'), findsWidgets);
+      await tester.pageBack();
+      await settle(tester);
+
+      await tester.tap(find.byKey(const Key('homeOverflowMenu')));
+      await settle(tester);
+      await tester.tap(find.byKey(const Key('settingsMenuItem')));
+      await settle(tester);
+      expect(find.byKey(const Key('settingsScreen')), findsOneWidget);
+      await unmount(tester);
+    },
+  );
+
+  testWidgets('Settings screen renders haptics + sound switches on by '
+      'default, and toggling either updates its provider immediately and '
+      'persists the change', (tester) async {
+    final clock = FakeClock(kTestToday);
+    final db = await pumpOnboardedHome(tester, clock);
+
+    await tester.tap(find.byKey(const Key('homeOverflowMenu')));
+    await settle(tester);
+    await tester.tap(find.byKey(const Key('settingsMenuItem')));
+    await settle(tester);
+
+    final hapticsSwitch = find.byKey(const Key('hapticsSwitch'));
+    final soundSwitch = find.byKey(const Key('soundSwitch'));
+    expect(hapticsSwitch, findsOneWidget);
+    expect(soundSwitch, findsOneWidget);
+    expect(tester.widget<SwitchListTile>(hapticsSwitch).value, isTrue);
+    expect(tester.widget<SwitchListTile>(soundSwitch).value, isTrue);
+
+    final container = ProviderScope.containerOf(tester.element(hapticsSwitch));
+    expect(container.read(foxHapticsEnabledProvider), isTrue);
+    expect(container.read(foxSoundEnabledProvider), isTrue);
+
+    await tester.tap(hapticsSwitch);
+    await tester.tap(soundSwitch);
+    await settle(tester);
+
+    expect(tester.widget<SwitchListTile>(hapticsSwitch).value, isFalse);
+    expect(tester.widget<SwitchListTile>(soundSwitch).value, isFalse);
+    expect(container.read(foxHapticsEnabledProvider), isFalse);
+    expect(container.read(foxSoundEnabledProvider), isFalse);
+
+    final settingsRepo = SettingsRepository(db);
+    final settings = await settingsRepo.getSettings();
+    expect(settings.hapticsEnabled, isFalse);
+    expect(settings.soundEnabled, isFalse);
+    await unmount(tester);
+  });
+
+  testWidgets(
+    'persisted haptics=false/sound=false survive a fresh app launch: both '
+    'providers are seeded on startup, verified without ever opening '
+    'SettingsScreen (issue #055)',
+    (tester) async {
+      final clock = FakeClock(kTestToday);
+      final db = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(() async => db.close());
+      final statsRepo = StatsRepository(db, clock);
+      await statsRepo.setOnboarded();
+      final settingsRepo = SettingsRepository(db);
+      await settingsRepo.setHapticsEnabled(value: false);
+      await settingsRepo.setSoundEnabled(value: false);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appDatabaseProvider.overrideWithValue(db),
+            systemClockProvider.overrideWithValue(clock),
+          ],
+          child: MaterialApp(
+            theme: FoxStreakTheme.light(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const HomeScreen(),
+          ),
+        ),
+      );
+      await settle(tester);
+
+      expect(find.byKey(const Key('homeScreen')), findsOneWidget);
+      expect(find.byKey(const Key('settingsScreen')), findsNothing);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byKey(const Key('homeScreen'))),
+      );
+      expect(container.read(foxHapticsEnabledProvider), isFalse);
+      expect(container.read(foxSoundEnabledProvider), isFalse);
       await unmount(tester);
     },
   );

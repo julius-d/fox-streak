@@ -5,8 +5,12 @@
 // level-progress widget + FoxGoalRing (daily goal fill) + Continue button
 // (derived from the latest `attempts` row's set; a "Browse sets" CTA when
 // no attempts exist) + Browse sets -> unchanged LibraryScreen. Gates
-// first-run onboarding on `has_onboarded`; the parental info screen is
-// reachable via the app bar.
+// first-run onboarding on `has_onboarded`; the parental info and settings
+// screens are reachable via the app bar's overflow menu (#055).
+//
+// Also gates the dashboard on `settingsHydrationProvider` (#055), so the
+// persisted haptics/sound toggles are seeded into their providers before
+// any screen (not just `SettingsScreen`) can read them.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,12 +21,17 @@ import '../data/database.dart';
 import '../data/providers.dart';
 import '../library/library_screen.dart';
 import '../lesson/lesson_screen.dart';
+import '../settings/settings_providers.dart';
+import '../settings/settings_screen.dart';
 import '../stats/stats_providers.dart';
 import '../stats/xp_service.dart';
 import '../theme/fox_streak_theme.dart';
 import '../widgets/widgets.dart';
 import 'onboarding_screen.dart';
 import 'parental_info_screen.dart';
+
+/// Overflow-menu entry values for Home's app bar menu.
+enum _HomeMenuAction { parentalInfo, settings }
 
 /// Generic (no display name) or named time-of-day greeting.
 String _greeting(AppLocalizations l10n, DateTime now, String? displayName) {
@@ -45,6 +54,24 @@ String _greeting(AppLocalizations l10n, DateTime now, String? displayName) {
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AsyncValue<void> settingsAsync = ref.watch(settingsHydrationProvider);
+    return settingsAsync.when(
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (Object e, StackTrace _) =>
+          Scaffold(body: Center(child: Text(e.toString()))),
+      data: (_) => const _HomeGate(),
+    );
+  }
+}
+
+/// Gates the dashboard on `profileProvider` once settings have hydrated
+/// (split out of [HomeScreen] so each async gate stays a single `.when`).
+class _HomeGate extends ConsumerWidget {
+  const _HomeGate();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -137,15 +164,39 @@ class _HomeDashboard extends ConsumerWidget {
       appBar: AppBar(
         title: Text(l10n.appTitle),
         actions: <Widget>[
-          IconButton(
-            key: const Key('parentalInfoButton'),
-            tooltip: l10n.homeParentalInfoTooltip,
-            icon: const Icon(Icons.info_outline),
-            onPressed: () => Navigator.of(context).push<void>(
-              MaterialPageRoute<void>(
-                builder: (_) => const ParentalInfoScreen(),
-              ),
-            ),
+          PopupMenuButton<_HomeMenuAction>(
+            key: const Key('homeOverflowMenu'),
+            tooltip: l10n.homeOverflowMenuTooltip,
+            icon: const Icon(Icons.more_vert),
+            onSelected: (_HomeMenuAction action) {
+              switch (action) {
+                case _HomeMenuAction.parentalInfo:
+                  Navigator.of(context).push<void>(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const ParentalInfoScreen(),
+                    ),
+                  );
+                case _HomeMenuAction.settings:
+                  Navigator.of(context).push<void>(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const SettingsScreen(),
+                    ),
+                  );
+              }
+            },
+            itemBuilder: (BuildContext context) =>
+                <PopupMenuEntry<_HomeMenuAction>>[
+                  PopupMenuItem<_HomeMenuAction>(
+                    key: const Key('parentalInfoMenuItem'),
+                    value: _HomeMenuAction.parentalInfo,
+                    child: Text(l10n.homeParentalInfoTooltip),
+                  ),
+                  PopupMenuItem<_HomeMenuAction>(
+                    key: const Key('settingsMenuItem'),
+                    value: _HomeMenuAction.settings,
+                    child: Text(l10n.homeSettingsMenuItem),
+                  ),
+                ],
           ),
         ],
       ),

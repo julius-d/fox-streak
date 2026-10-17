@@ -221,6 +221,28 @@ class _LegacyV5Database extends AppDatabase {
   );
 }
 
+/// A schemaVersion-6 view of [AppDatabase], used only to seed a pre-#055
+/// file at the exact version #055's migration upgrades from: every table
+/// is already in its current shape except `app_settings`, which doesn't
+/// exist yet.
+class _LegacyV6Database extends AppDatabase {
+  _LegacyV6Database(QueryExecutor executor) : super.forTesting(executor); // ignore: use_super_parameters — must forward to the named forTesting() ctor, not the default unnamed one
+
+  @override
+  int get schemaVersion => 6;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) async {
+      final db = m.database as AppDatabase;
+      await m.createTable(db.questionSets);
+      await m.createTable(db.items);
+      await m.createTable(db.attempts);
+      await m.createTable(db.profileStats);
+    },
+  );
+}
+
 void main() {
   test('onUpgrade rewrites vocab -> choice exactly once', () async {
     final dir = Directory.systemTemp.createTempSync('foxstreak_migration');
@@ -482,6 +504,34 @@ void main() {
       columns.map((row) => row.read<String>('name')),
       contains('category'),
     );
+  });
+
+  test('onUpgrade (v6 -> v7) creates the app_settings table (empty, no default '
+      'row — SettingsRepository.getSettings() inserts that lazily)', () async {
+    final dir = Directory.systemTemp.createTempSync('foxstreak_migration_v7');
+    final file = File('${dir.path}/test.sqlite');
+    addTearDown(() {
+      if (dir.existsSync()) dir.deleteSync(recursive: true);
+    });
+
+    // 1. Seed a v6 database directly on disk (no app_settings table yet).
+    final legacyDb = _LegacyV6Database(NativeDatabase(file));
+    await legacyDb.close();
+
+    // 2. Reopen the SAME file with the real (current schemaVersion)
+    // database; drift sees user_version=6 < schemaVersion=7 and runs
+    // onUpgrade's `createTable`.
+    final upgradedDb = AppDatabase.forTesting(NativeDatabase(file));
+    addTearDown(upgradedDb.close);
+
+    final columns = await upgradedDb
+        .customSelect("PRAGMA table_info('app_settings')")
+        .get();
+    expect(
+      columns.map((row) => row.read<String>('name')),
+      containsAll(<String>['id', 'haptics_enabled', 'sound_enabled']),
+    );
+    expect(await (upgradedDb.select(upgradedDb.appSettings)).get(), isEmpty);
   });
 }
 

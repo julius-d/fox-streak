@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'clock.dart';
 import 'database.dart';
 import 'seed_loader.dart';
+import 'settings_repository.dart';
 import 'sets_repository.dart';
 import 'stats_repository.dart';
 
@@ -36,4 +37,8 @@ final statsRepositoryProvider = Provider<StatsRepository>((ref) {
 
 final seedLoaderProvider = Provider<SeedLoader>((ref) {
   return SeedLoader(ref.watch(setsRepositoryProvider));
+});
+
+final settingsRepositoryProvider = Provider<SettingsRepository>((ref) {
+  return SettingsRepository(ref.watch(appDatabaseProvider));
 });
