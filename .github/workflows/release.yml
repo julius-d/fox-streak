@@ -151,7 +151,7 @@ jobs:
             --icon-size 100 \
             --app-drop-link 425 120 \
             "fox-streak-$VERSION-macos.dmg" \
-            "build/macos/Build/Products/Release/fox_streak_app.app"
+            "build/macos/Build/Products/Release/Fox Streak.app"
 
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v6
