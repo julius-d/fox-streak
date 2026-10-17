@@ -43,6 +43,12 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   window_manager: ^0.5.2
+  # Level-up burst on the lesson result screen (issue #053); pure-Dart, no
+  # native plugin code, so all 4 kept platforms stay supported.
+  confetti: ^0.8.0
+  # Level-up chime (issue #053); #054 (per-question correct-answer sound)
+  # will likely share this dependency once refined.
+  audioplayers: ^6.8.1
 
 dev_dependencies:
   flutter_test:
@@ -82,6 +88,7 @@ flutter:
 
   assets:
     - assets/seed/
+    - assets/sfx/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

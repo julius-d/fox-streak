@@ -163,6 +163,7 @@ void main() {
       final result = resultOf([correctNoHint(), correctNoHint(itemId: 2)]);
       final application = await xpService.applyLessonResult(result);
       expect(application.earned, 25); // 10 + 10 + 5 perfect bonus
+      expect(application.xpTotalBefore, 0);
       expect(application.xpTotal, 25);
 
       final profile = await statsRepo.getProfile();
@@ -186,6 +187,20 @@ void main() {
         expect(profile.xpTotal, 15); // 10 + 5
       },
     );
+
+    test('xpTotalBefore reflects the pre-write total (issue #053 level-up '
+        'detection), not the post-write one', () async {
+      await xpService.applyLessonResult(
+        resultOf([correctNoHint(), wrong(itemId: 99)]),
+      ); // xpTotal: 0 -> 10
+
+      final second = await xpService.applyLessonResult(
+        resultOf([correctWithHint(itemId: 2), wrong(itemId: 99)]),
+      ); // xpTotal: 10 -> 15
+
+      expect(second.xpTotalBefore, 10);
+      expect(second.xpTotal, 15);
+    });
 
     test('todayXp resets on a day change, accumulates same-day', () async {
       // Simulate #011 having already recorded today as the active day.

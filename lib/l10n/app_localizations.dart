@@ -147,6 +147,7 @@ abstract class AppLocalizations {
   String lessonScoreSummary(int correct, int total, int pct);
   String xpEarnedLabel(int xp);
   String lessonXpBonusCallout(int bonus);
+  String lessonLevelUpCallout(int level);
   String levelLabel(int level);
   String get levelProgressLabel;
   String levelProgressText(int xpIntoLevel, int xpForNextLevel);
@@ -416,6 +417,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String xpEarnedLabel(int xp) => '+$xp XP';
   @override
   String lessonXpBonusCallout(int bonus) => '+$bonus Perfect!';
+  @override
+  String lessonLevelUpCallout(int level) => 'Level Up! Level $level';
   @override
   String levelLabel(int level) => 'Level $level';
   @override
@@ -734,6 +737,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String xpEarnedLabel(int xp) => '+$xp XP';
   @override
   String lessonXpBonusCallout(int bonus) => '+$bonus Perfekt!';
+  @override
+  String lessonLevelUpCallout(int level) => 'Level-Aufstieg! Level $level';
   @override
   String levelLabel(int level) => 'Level $level';
   @override

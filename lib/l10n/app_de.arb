@@ -262,6 +262,13 @@
     }
   },
   "lessonXpBonusCallout": "+{bonus} Perfekt!",
+  "@lessonLevelUpCallout": {
+    "description": "Callout shown when the lesson's completion crossed at least one level boundary (issue #053)",
+    "placeholders": {
+      "level": {"type": "int"}
+    }
+  },
+  "lessonLevelUpCallout": "Level-Aufstieg! Level {level}",
   "@levelLabel": {
     "description": "Current level label on the level-progress widget (issue #010)",
     "placeholders": {

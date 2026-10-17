@@ -32,6 +32,12 @@ void main() {
     expect(container.read(foxHapticsEnabledProvider), isTrue);
   });
 
+  test('sound toggle defaults on (issue #053)', () {
+    final ProviderContainer container = ProviderContainer();
+    addTearDown(container.dispose);
+    expect(container.read(foxSoundEnabledProvider), isTrue);
+  });
+
   testWidgets('primary button keeps the 48dp floor and fires', (
     WidgetTester tester,
   ) async {
@@ -182,6 +188,72 @@ void main() {
     expect(
       (indicator.valueColor as AlwaysStoppedAnimation<Color>).value,
       FoxSemanticColors.light.gold,
+    );
+  });
+
+  testWidgets(
+    'level progress bar with levelUpAnimateFrom fills to 100% then resets '
+    "and fills to the new level's progress (issue #053)",
+    (WidgetTester tester) async {
+      await pumpKit(
+        tester,
+        const FoxLevelProgressBar(
+          level: 2,
+          progress: 0.2,
+          levelLabel: 'Level 2',
+          progressText: '20 / 300 XP to next level',
+          semanticsLabel: 'Progress to next level',
+          levelUpAnimateFrom: 0.9,
+        ),
+      );
+
+      // The level-up path renders the dedicated animated widget; a plain
+      // (non-level-up) render never does (regression guard).
+      expect(find.byKey(const Key('levelUpProgressAnimation')), findsOneWidget);
+
+      // Animation starts at the previous level's progress, not the new one.
+      expect(
+        tester
+            .widget<LinearProgressIndicator>(
+              find.byType(LinearProgressIndicator),
+            )
+            .value,
+        closeTo(0.9, 1e-9),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Settles on the new level's progress, same as a plain render would.
+      expect(
+        tester
+            .widget<LinearProgressIndicator>(
+              find.byType(LinearProgressIndicator),
+            )
+            .value,
+        closeTo(0.2, 1e-9),
+      );
+    },
+  );
+
+  testWidgets('level progress bar without levelUpAnimateFrom renders the plain '
+      'instant fill (no animated-bar key)', (WidgetTester tester) async {
+    await pumpKit(
+      tester,
+      const FoxLevelProgressBar(
+        level: 2,
+        progress: 0.2,
+        levelLabel: 'Level 2',
+        progressText: '20 / 300 XP to next level',
+        semanticsLabel: 'Progress to next level',
+      ),
+    );
+
+    expect(find.byKey(const Key('levelUpProgressAnimation')), findsNothing);
+    expect(
+      tester
+          .widget<LinearProgressIndicator>(find.byType(LinearProgressIndicator))
+          .value,
+      closeTo(0.2, 1e-9),
     );
   });
 

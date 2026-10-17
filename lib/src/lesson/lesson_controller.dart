@@ -34,6 +34,10 @@ import 'exercise_card.dart';
 ///   handed to the result screen so it never has to re-query the database
 ///   (and never has to hold open a `watch()` stream of its own) to show
 ///   the level-progress bar.
+/// [xpTotalBeforeLesson] is the lifetime `xpTotal` immediately *before* that
+///   same write (issue #053), handed to the result screen so it can compute
+///   `XpService.levelForXp(before) != XpService.levelForXp(after)` and show
+///   the level-up celebration without a second database query.
 /// [streakCountAfterLesson] is the `streak_count` returned by #011's streak
 ///   write, handed to the result screen the same way for `StreakBadge` /
 ///   the mascot's on-fire check.
@@ -55,6 +59,7 @@ class LessonState {
   // needs this label while showing the wrong-answer message.
   final String? lastCorrectAnswerLabel;
   final bool xpApplied;
+  final int? xpTotalBeforeLesson;
   final int? xpTotalAfterLesson;
   final int? streakCountAfterLesson;
   final bool busy;
@@ -69,6 +74,7 @@ class LessonState {
     this.lastCorrect,
     this.lastCorrectAnswerLabel,
     this.xpApplied = false,
+    this.xpTotalBeforeLesson,
     this.xpTotalAfterLesson,
     this.streakCountAfterLesson,
     this.busy = false,
@@ -84,6 +90,7 @@ class LessonState {
     bool? lastCorrect,
     String? lastCorrectAnswerLabel,
     bool? xpApplied,
+    int? xpTotalBeforeLesson,
     int? xpTotalAfterLesson,
     int? streakCountAfterLesson,
     bool? busy,
@@ -102,6 +109,7 @@ class LessonState {
           ? null
           : (lastCorrectAnswerLabel ?? this.lastCorrectAnswerLabel),
       xpApplied: xpApplied ?? this.xpApplied,
+      xpTotalBeforeLesson: xpTotalBeforeLesson ?? this.xpTotalBeforeLesson,
       xpTotalAfterLesson: xpTotalAfterLesson ?? this.xpTotalAfterLesson,
       streakCountAfterLesson:
           streakCountAfterLesson ?? this.streakCountAfterLesson,
@@ -143,6 +151,7 @@ class LessonState {
           other.lastCorrect == lastCorrect &&
           other.lastCorrectAnswerLabel == lastCorrectAnswerLabel &&
           other.xpApplied == xpApplied &&
+          other.xpTotalBeforeLesson == xpTotalBeforeLesson &&
           other.xpTotalAfterLesson == xpTotalAfterLesson &&
           other.streakCountAfterLesson == streakCountAfterLesson &&
           other.busy == busy);
@@ -158,6 +167,7 @@ class LessonState {
     lastCorrect,
     lastCorrectAnswerLabel,
     xpApplied,
+    xpTotalBeforeLesson,
     streakCountAfterLesson,
     xpTotalAfterLesson,
     busy,
@@ -417,9 +427,9 @@ class LessonController extends Notifier<LessonState> {
     // that's the one that would overwrite the fresh post-restart state —
     // there's no longer a result screen for this session left to show it
     // to.
-    final xpTotal = result == null
+    final xpApplication = result == null
         ? null
-        : (await _xpService.applyLessonResult(result)).xpTotal;
+        : await _xpService.applyLessonResult(result);
     final streakCount = result == null
         ? null
         : (await _streakService.recordActivity()).streakCount;
@@ -428,7 +438,8 @@ class LessonController extends Notifier<LessonState> {
       outcomes: outcomes,
       phase: LessonPhase.done,
       clearLastCorrect: true,
-      xpTotalAfterLesson: xpTotal,
+      xpTotalBeforeLesson: xpApplication?.xpTotalBefore,
+      xpTotalAfterLesson: xpApplication?.xpTotal,
       streakCountAfterLesson: streakCount,
     );
   }

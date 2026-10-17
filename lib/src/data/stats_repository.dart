@@ -90,12 +90,17 @@ class StatsRepository {
   }
 
   /// Adds [delta] XP to the lifetime `xpTotal` and the day-scoped `todayXp`,
-  /// returning the resulting lifetime `xpTotal`.
+  /// returning the lifetime total both before and after the write — #053's
+  /// level-up detection needs both, and returning `xpTotalBefore` here (read
+  /// as part of this same [getProfile] call) saves callers a second query.
   ///
   /// `todayXp` resets to [delta] when `lastActiveDay` isn't today's day
   /// (fresh day or first-ever lesson), otherwise accumulates. Sole caller:
   /// #010 `XpService.applyLessonResult`.
-  Future<int> addXp(int delta, {DateTime? now}) async {
+  Future<({int xpTotalBefore, int xpTotal})> addXp(
+    int delta, {
+    DateTime? now,
+  }) async {
     final profile = await getProfile();
     final today = toLocalDayString(now ?? _clock.now());
     final sameDay = profile.lastActiveDay == today;
@@ -108,7 +113,7 @@ class StatsRepository {
         todayXp: Value(sameDay ? profile.todayXp + delta : delta),
       ),
     );
-    return newXpTotal;
+    return (xpTotalBefore: profile.xpTotal, xpTotal: newXpTotal);
   }
 
   /// Overwrites `streak_count`/`last_active_day` with [streakCount] /

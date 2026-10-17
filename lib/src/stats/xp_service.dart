@@ -63,21 +63,36 @@ class XpService {
 
   /// Applies [result]'s XP exactly once; the caller (`LessonController`)
   /// guards against repeat calls via `LessonState.xpApplied`.
+  ///
+  /// [StatsRepository.addXp] returns both the pre- and post-write lifetime
+  /// total from the same query, so the caller can detect a level crossing
+  /// (issue #053's level-up celebration) without a second one.
   Future<XpApplication> applyLessonResult(LessonResult result) async {
     final earned = xpEarned(result);
-    final xpTotal = await _statsRepo.addXp(earned, now: _clock.now());
-    return XpApplication(earned: earned, xpTotal: xpTotal);
+    final written = await _statsRepo.addXp(earned, now: _clock.now());
+    return XpApplication(
+      earned: earned,
+      xpTotal: written.xpTotal,
+      xpTotalBefore: written.xpTotalBefore,
+    );
   }
 }
 
 /// Result of applying a lesson's XP: how much was earned and the resulting
 /// lifetime `xpTotal` — handed straight to the UI so it never has to
-/// re-query the database for the level-progress widget.
+/// re-query the database for the level-progress widget. [xpTotalBefore] is
+/// the lifetime total immediately before this lesson's XP was added, so the
+/// result screen can detect a level crossing (issue #053).
 class XpApplication {
   final int earned;
   final int xpTotal;
+  final int xpTotalBefore;
 
-  const XpApplication({required this.earned, required this.xpTotal});
+  const XpApplication({
+    required this.earned,
+    required this.xpTotal,
+    required this.xpTotalBefore,
+  });
 }
 
 final xpServiceProvider = Provider<XpService>((ref) {

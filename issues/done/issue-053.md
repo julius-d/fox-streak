@@ -1,6 +1,6 @@
 # Issue 053: Level-up celebration on the lesson result screen
 
-Status: open | Priority: P2 | Type: feature | Refined-at: 2026-10-17
+Status: done | Priority: P2 | Type: feature | Refined-at: 2026-10-17 | Completed-at: 2026-10-17
 
 ## Goal
 
@@ -126,3 +126,36 @@ dart format --output=none --set-exit-if-changed .
 dart fix --dry-run
 flutter test
 ```
+
+## Summary
+
+`LessonState`/`LessonController` snapshot `xpTotalBeforeLesson` alongside
+`xpTotalAfterLesson` (via `XpApplication.xpTotalBefore`, sourced from
+`StatsRepository.addXp`'s now-record return `(xpTotalBefore, xpTotal)` —
+one profile query, not two); `LessonResultScreen` computes
+`leveledUp` by comparing `XpService.levelForXp` on both. On that path it
+shows a gold `levelUpCallout` ("Level Up! Level N", new DE/EN arb
+string), passes `FoxLevelProgressBar` a `levelUpAnimateFrom` (the
+pre-lesson progress) so it plays a fill-to-100%-then-reset
+`TweenSequence` animation instead of its usual instant fill, and mounts
+a `_LevelUpEffects` widget that plays a `confetti` burst and (via the
+new overridable `foxSoundPlayerProvider`/`foxSoundEnabledProvider` seam,
+default on) a bundled placeholder chime (`assets/sfx/level_up.mp3`,
+synthesized with `ffmpeg` — real asset sourcing still TBD). Non-level-up
+renders are unchanged. New deps: `confetti`, `audioplayers`.
+Screenshot: `issue053-level-up-result.png`.
+
+Found and filed separately (not fixed here): #056 — the pre-existing
+`xp_level_result_test.dart` integration test fails deterministically on
+a real device run (unrelated to this issue's changes); root-caused to a
+tap-selection ambiguity in a 2-item fixture. My own new
+`level_up_result_test.dart` avoids the same trap by selecting the shown
+question via its prompt rather than scanning for any known answer text.
+
+## Code review
+
+Reviewed by a code-review subagent (medium effort); both findings fixed.
+- `applyLessonResult` issued two `getProfile()` queries (one for `xpTotalBefore`, one inside `addXp`) where one would do.
+  Fixed: `StatsRepository.addXp` now returns `(xpTotalBefore, xpTotal)` from its single existing query; `applyLessonResult` no longer queries separately.
+- `_LevelUpEffectsState` unconditionally allocated a `ConfettiController` (and its ticker) in `initState` even on the common non-level-up path.
+  Fixed: the controller is now only constructed when `widget.active`; `_confettiController` is nullable and the build/dispose paths guard accordingly.

@@ -184,6 +184,28 @@ void main() {
     },
   );
 
+  test('xpTotalBeforeLesson snapshots the pre-write total alongside '
+      'xpTotalAfterLesson (issue #053 level-up detection)', () async {
+    await statsRepo.addXp(90, now: kTestToday); // seed a pre-lesson total
+
+    final items = await insertTestItems(db, 1, 1);
+    final controller = container.read(lessonControllerProvider.notifier);
+    controller.start([items.first]);
+    controller.updateDraft(
+      ExerciseDraft(
+        hasAnswer: true,
+        grade: () => true,
+        correctAnswerLabel: '05/14/1985',
+      ),
+    );
+    await controller.submitGrade();
+    await controller.next(); // -> done, 90 + 10 correct + 5 perfect = 105
+
+    final state = container.read(lessonControllerProvider);
+    expect(state.xpTotalBeforeLesson, 90);
+    expect(state.xpTotalAfterLesson, 105);
+  });
+
   test('restart() starts a fresh session that can apply XP again', () async {
     final items = await insertTestItems(db, 1, 1);
     final controller = container.read(lessonControllerProvider.notifier);
