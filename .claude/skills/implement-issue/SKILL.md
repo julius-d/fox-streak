@@ -20,7 +20,7 @@ If the implementation of the issue changed UI: create screenshots that show the 
 1. Write a throwaway test file, e.g. integration_test/_scratch_issueNNN_screenshots_test.dart, with the seed data + pump/capture logic above, writing to ${Directory.systemTemp.path}/screenshots and printing that path.
 2. `flutter test integration_test/_scratch_issueNNN_screenshots_test.dart -d macos`
 3. Grab the printed SCREENSHOT_OUT_DIR: ... path from the output.
-4. `cp "<that path>"/*.png issues/done/issueNNN-what-it-shows.png`
+4. `cp "<that path>"/*.png issues/done/issue-NNN-what-it-shows.png`
 5. Delete the scratch test file (it's not meant to be a permanent part of the suite — it has side effects and bespoke fixture data) and the temp dir.
 
 Then run a subagent to perform a code review for the changes just made, using the relevant code review skill.
