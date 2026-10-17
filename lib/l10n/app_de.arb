@@ -18,6 +18,7 @@
   "newSet": "Neues Set",
   "createSet": "Set erstellen",
   "editSet": "Set bearbeiten",
+  "editItem": "Eintrag bearbeiten",
   "setTitleLabel": "Titel",
   "setCreatorLabel": "Dein Name",
   "setDescriptionLabel": "Beschreibung (optional)",

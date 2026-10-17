@@ -1,8 +1,9 @@
 // Widget tests for the per-type item editors (issue #004; #022 replaced the
 // required `direction` SegmentedButton with an optional language-pair
-// toggle shared by choice/freeText).
+// toggle shared by choice/freeText; #047 converted the dialog into a full
+// screen pushed via `Navigator`).
 //
-// Pumps `ItemEditorDialog` through a harness button with an in-memory DB +
+// Pumps `ItemEditorScreen` through a harness button with an in-memory DB +
 // `FakeClock` overrides. Covers: choice-valid with language pair + 3
 // distractors, choice-valid-without-language-pair (#022 non-rejecting
 // path), language-pair-toggle-off-by-default,
@@ -52,6 +53,17 @@ Future<void> unmount(WidgetTester tester) async {
   await tester.pump(const Duration(milliseconds: 100));
 }
 
+/// Scrolls the Save button into view before tapping it: some type/toggle
+/// combinations (choice with the language-pair toggle + 3 distractors) make
+/// the form taller than the test surface, pushing the button out of the
+/// hit-testable area.
+Future<void> tapSaveItem(WidgetTester tester) async {
+  await tester.ensureVisible(find.byKey(const Key('saveItemButton')));
+  await settle(tester);
+  await tester.tap(find.byKey(const Key('saveItemButton')));
+  await settle(tester);
+}
+
 class _EditorHarness extends StatelessWidget {
   final int setId;
   final Item? existing;
@@ -64,9 +76,11 @@ class _EditorHarness extends StatelessWidget {
       body: Builder(
         builder: (context) => ElevatedButton(
           key: const Key('openEditorButton'),
-          onPressed: () => showDialog<bool>(
-            context: context,
-            builder: (_) => ItemEditorDialog(setId: setId, existing: existing),
+          onPressed: () => Navigator.of(context).push<bool>(
+            MaterialPageRoute(
+              builder: (_) =>
+                  ItemEditorScreen(setId: setId, existing: existing),
+            ),
           ),
           child: const Text('open'),
         ),
@@ -161,8 +175,7 @@ void main() {
         'mouse',
       );
       await tester.enterText(find.byKey(const Key('itemChoice2Field')), 'bird');
-      await tester.tap(find.byKey(const Key('saveItemButton')));
-      await settle(tester);
+      await tapSaveItem(tester);
 
       final items = await env.repo.getItemsForSet(env.setId);
       expect(items, hasLength(1));
@@ -193,8 +206,7 @@ void main() {
         'Capital of France',
       );
       await tester.enterText(find.byKey(const Key('itemAnswerField')), 'Paris');
-      await tester.tap(find.byKey(const Key('saveItemButton')));
-      await settle(tester);
+      await tapSaveItem(tester);
 
       final items = await env.repo.getItemsForSet(env.setId);
       expect(items, hasLength(1));
@@ -215,8 +227,7 @@ void main() {
 
       await tester.enterText(find.byKey(const Key('itemPromptField')), 'Hund');
       await tester.enterText(find.byKey(const Key('itemAnswerField')), 'dog');
-      await tester.tap(find.byKey(const Key('saveItemButton')));
-      await settle(tester);
+      await tapSaveItem(tester);
 
       final items = await env.repo.getItemsForSet(env.setId);
       expect(items, hasLength(1));
@@ -238,8 +249,7 @@ void main() {
     await tester.enterText(find.byKey(const Key('itemPromptField')), 'Hund');
     await tester.enterText(find.byKey(const Key('itemAnswerField')), 'dog');
     await enableLanguagePair(tester, 'German', 'German');
-    await tester.tap(find.byKey(const Key('saveItemButton')));
-    await settle(tester);
+    await tapSaveItem(tester);
 
     expect(find.text('Languages must differ'), findsOneWidget);
     expect(await env.repo.getItemsForSet(env.setId), isEmpty);
@@ -256,8 +266,7 @@ void main() {
     await tester.enterText(find.byKey(const Key('itemAnswerField')), 'dog');
     // Trim/case-insensitive duplicate of the answer.
     await tester.enterText(find.byKey(const Key('itemChoice0Field')), ' Dog ');
-    await tester.tap(find.byKey(const Key('saveItemButton')));
-    await settle(tester);
+    await tapSaveItem(tester);
 
     expect(find.text('Must be different from the answer'), findsOneWidget);
     expect(await env.repo.getItemsForSet(env.setId), isEmpty);
@@ -288,8 +297,7 @@ void main() {
         find.byKey(const Key('itemAnswerField')),
         '01711234567',
       );
-      await tester.tap(find.byKey(const Key('saveItemButton')));
-      await settle(tester);
+      await tapSaveItem(tester);
 
       final items = await env.repo.getItemsForSet(env.setId);
       expect(items, hasLength(1));
@@ -319,8 +327,7 @@ void main() {
     expect(shown.contains(' '), isTrue);
     expect(shown.replaceAll(' ', ''), '01711234567');
 
-    await tester.tap(find.byKey(const Key('saveItemButton')));
-    await settle(tester);
+    await tapSaveItem(tester);
 
     final items = await env.repo.getItemsForSet(env.setId);
     expect(items, hasLength(1));
@@ -338,8 +345,7 @@ void main() {
       find.byKey(const Key('itemAnswerField')),
       '0171 123-4567',
     );
-    await tester.tap(find.byKey(const Key('saveItemButton')));
-    await settle(tester);
+    await tapSaveItem(tester);
 
     final items = await env.repo.getItemsForSet(env.setId);
     expect(items, hasLength(1));
@@ -354,8 +360,7 @@ void main() {
 
     await tester.enterText(find.byKey(const Key('itemPromptField')), 'Mama');
     await tester.enterText(find.byKey(const Key('itemAnswerField')), '12');
-    await tester.tap(find.byKey(const Key('saveItemButton')));
-    await settle(tester);
+    await tapSaveItem(tester);
 
     expect(find.text('Enter 3–15 digits'), findsOneWidget);
     expect(await env.repo.getItemsForSet(env.setId), isEmpty);
@@ -371,8 +376,7 @@ void main() {
 
     await tester.enterText(find.byKey(const Key('itemPromptField')), 'Mama');
     await tester.enterText(find.byKey(const Key('itemAnswerField')), 'abc');
-    await tester.tap(find.byKey(const Key('saveItemButton')));
-    await settle(tester);
+    await tapSaveItem(tester);
 
     expect(find.text('Enter 3–15 digits'), findsOneWidget);
     expect(await env.repo.getItemsForSet(env.setId), isEmpty);
@@ -437,8 +441,7 @@ void main() {
     await tester.enterText(find.byKey(const Key('itemMonthField')), '10');
     await tester.enterText(find.byKey(const Key('itemDayField')), '12');
     await tester.enterText(find.byKey(const Key('itemYearField')), '2026');
-    await tester.tap(find.byKey(const Key('saveItemButton')));
-    await settle(tester);
+    await tapSaveItem(tester);
 
     expect(find.text('Use YYYY-MM-DD (1900-01-01…today)'), findsOneWidget);
     expect(await env.repo.getItemsForSet(env.setId), isEmpty);
@@ -454,8 +457,7 @@ void main() {
     await tester.enterText(find.byKey(const Key('itemMonthField')), '12');
     await tester.enterText(find.byKey(const Key('itemDayField')), '31');
     await tester.enterText(find.byKey(const Key('itemYearField')), '1899');
-    await tester.tap(find.byKey(const Key('saveItemButton')));
-    await settle(tester);
+    await tapSaveItem(tester);
 
     expect(find.text('Use YYYY-MM-DD (1900-01-01…today)'), findsOneWidget);
     expect(await env.repo.getItemsForSet(env.setId), isEmpty);
@@ -471,15 +473,13 @@ void main() {
     await tester.enterText(find.byKey(const Key('itemMonthField')), '02');
     await tester.enterText(find.byKey(const Key('itemDayField')), '30');
     await tester.enterText(find.byKey(const Key('itemYearField')), '2020');
-    await tester.tap(find.byKey(const Key('saveItemButton')));
-    await settle(tester);
+    await tapSaveItem(tester);
 
     expect(find.text('Use YYYY-MM-DD (1900-01-01…today)'), findsOneWidget);
     expect(await env.repo.getItemsForSet(env.setId), isEmpty);
 
     await tester.enterText(find.byKey(const Key('itemDayField')), '28');
-    await tester.tap(find.byKey(const Key('saveItemButton')));
-    await settle(tester);
+    await tapSaveItem(tester);
 
     final items = await env.repo.getItemsForSet(env.setId);
     expect(items, hasLength(1));
@@ -667,8 +667,7 @@ void main() {
     );
 
     // Saving untouched preserves everything.
-    await tester.tap(find.byKey(const Key('saveItemButton')));
-    await settle(tester);
+    await tapSaveItem(tester);
     final updated = await repo.getItemById(itemId);
     expect(updated?.promptLang, 'en');
     expect(updated?.answerLang, 'de');
@@ -724,7 +723,7 @@ void main() {
     await tester.tap(find.byKey(const Key('openEditorButton')));
     await settle(tester);
 
-    // Dialog opens instead of crashing; distractor fields start blank.
+    // Screen opens instead of crashing; distractor fields start blank.
     expect(find.byKey(const Key('itemChoice0Field')), findsOneWidget);
     expect(
       tester
@@ -775,13 +774,12 @@ void main() {
     },
   );
 
-  testWidgets('no-save-on-invalid keeps the dialog open', (tester) async {
+  testWidgets('no-save-on-invalid keeps the screen open', (tester) async {
     final clock = FakeClock(kTestToday);
     final env = await pumpEditor(tester, clock);
 
     await tester.enterText(find.byKey(const Key('itemAnswerField')), 'dog');
-    await tester.tap(find.byKey(const Key('saveItemButton')));
-    await settle(tester);
+    await tapSaveItem(tester);
 
     expect(find.text('This field is required'), findsWidgets);
     expect(await env.repo.getItemsForSet(env.setId), isEmpty);

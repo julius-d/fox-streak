@@ -1,9 +1,12 @@
-// Widget tests for the set detail screen's floating actions (issue #042).
+// Widget tests for the set detail screen's floating actions (issue #042)
+// and item editor navigation (issue #047: dialog -> full screen).
 //
 // Pumps `SetDetailScreen` with an in-memory DB + `FakeClock` override.
 // Covers: both FABs stay visible without scrolling through a long item
 // list, "Start lesson" shows the empty-set snackbar instead of navigating
-// when the set has no items, and navigates to `LessonScreen` when it does.
+// when the set has no items, and navigates to `LessonScreen` when it does;
+// add/edit item push `ItemEditorScreen` as a full screen and pop correctly
+// on save and on back navigation (#047).
 //
 // NOTE on pumping: do NOT use `pumpAndSettle()` here — same drift `watch()`
 // fake-async caveat as `library_screen_test.dart`'s own `settle()`.
@@ -17,6 +20,7 @@ import 'package:fox_streak_app/src/data/database.dart';
 import 'package:fox_streak_app/src/data/providers.dart';
 import 'package:fox_streak_app/src/data/sets_repository.dart';
 import 'package:fox_streak_app/src/lesson/lesson_screen.dart';
+import 'package:fox_streak_app/src/library/item_editor.dart';
 import 'package:fox_streak_app/src/library/set_detail_screen.dart';
 import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
 
@@ -37,6 +41,22 @@ Future<void> unmount(WidgetTester tester) async {
   await tester.pumpWidget(const SizedBox());
   await tester.pump(const Duration(milliseconds: 100));
   await tester.pump(const Duration(milliseconds: 100));
+}
+
+/// Finds the `ListTile` (item row) whose visible text is [text].
+///
+/// `MaterialPageRoute` defaults to `maintainState: true`, so a just-popped
+/// `ItemEditorScreen`'s `TextFormField` with the same text can still be
+/// mounted (off-stage) right after a pop — scoping to `ListTile`
+/// descendants excludes that stale editor text (see
+/// `integration_test/helpers.dart`'s own `listTileWithText` for the same
+/// caveat).
+Finder listTileWithText(String text) {
+  final textInTile = find.descendant(
+    of: find.byType(ListTile),
+    matching: find.text(text),
+  );
+  return find.ancestor(of: textInTile, matching: find.byType(ListTile));
 }
 
 Future<void> pumpSetDetail(
@@ -241,6 +261,104 @@ void main() {
     );
     expect(subtitle.data, contains('017 112 345 67'));
     expect(subtitle.data, isNot(contains('01711234567')));
+
+    await unmount(tester);
+  });
+
+  testWidgets(
+    'addItemFab pushes ItemEditorScreen as a full screen titled "Add item", '
+    'saving pops back with the new item visible (issue #047)',
+    (tester) async {
+      final clock = FakeClock(kTestToday);
+      final db = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(() async => db.close());
+      final repo = SetsRepository(db, clock);
+      final setId = await repo.createSet(title: 'Animals', createdBy: 'Mama');
+
+      await pumpSetDetail(tester, db, clock, setId);
+
+      await tester.tap(find.byKey(const Key('addItemFab')));
+      await settle(tester);
+
+      expect(find.byType(ItemEditorScreen), findsOneWidget);
+      expect(
+        find.widgetWithText(AppBar, l10n.setDetailAddItem),
+        findsOneWidget,
+      );
+      expect(find.byType(FloatingActionButton), findsNothing);
+
+      await tester.enterText(find.byKey(const Key('itemPromptField')), 'Hund');
+      await tester.enterText(find.byKey(const Key('itemAnswerField')), 'dog');
+      await tester.tap(find.byKey(const Key('saveItemButton')));
+      await settle(tester);
+
+      expect(find.byType(ItemEditorScreen), findsNothing);
+      expect(listTileWithText('Hund'), findsOneWidget);
+
+      await unmount(tester);
+    },
+  );
+
+  testWidgets('editItem-<id> pushes ItemEditorScreen titled "Edit item", back '
+      'navigation pops without saving changes (issue #047)', (tester) async {
+    final clock = FakeClock(kTestToday);
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(() async => db.close());
+    final repo = SetsRepository(db, clock);
+    final setId = await repo.createSet(title: 'Animals', createdBy: 'Mama');
+    final itemId = await repo.addItem(
+      setId: setId,
+      type: 'choice',
+      prompt: 'Hund',
+      answer: 'dog',
+    );
+
+    await pumpSetDetail(tester, db, clock, setId);
+
+    await tester.tap(find.byKey(Key('editItem-$itemId')));
+    await settle(tester);
+
+    expect(find.byType(ItemEditorScreen), findsOneWidget);
+    expect(find.widgetWithText(AppBar, l10n.editItem), findsOneWidget);
+
+    await tester.enterText(find.byKey(const Key('itemPromptField')), 'Katze');
+    await tester.pageBack();
+    await settle(tester);
+
+    expect(find.byType(ItemEditorScreen), findsNothing);
+    expect(listTileWithText('Hund'), findsOneWidget);
+    expect(listTileWithText('Katze'), findsNothing);
+    final unchanged = await repo.getItemById(itemId);
+    expect(unchanged?.prompt, 'Hund');
+
+    await unmount(tester);
+  });
+
+  testWidgets('editItem-<id> saving pops back with the updated item visible '
+      '(issue #047)', (tester) async {
+    final clock = FakeClock(kTestToday);
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(() async => db.close());
+    final repo = SetsRepository(db, clock);
+    final setId = await repo.createSet(title: 'Animals', createdBy: 'Mama');
+    final itemId = await repo.addItem(
+      setId: setId,
+      type: 'choice',
+      prompt: 'Hund',
+      answer: 'dog',
+    );
+
+    await pumpSetDetail(tester, db, clock, setId);
+
+    await tester.tap(find.byKey(Key('editItem-$itemId')));
+    await settle(tester);
+
+    await tester.enterText(find.byKey(const Key('itemPromptField')), 'Katze');
+    await tester.tap(find.byKey(const Key('saveItemButton')));
+    await settle(tester);
+
+    expect(find.byType(ItemEditorScreen), findsNothing);
+    expect(listTileWithText('Katze'), findsOneWidget);
 
     await unmount(tester);
   });

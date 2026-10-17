@@ -72,8 +72,8 @@ void main() {
       await settle(tester);
       expect(listTileWithText('Capital of France'), findsOneWidget);
 
-      // Phone: a bad number is blocked (cancel out of it), then a fresh
-      // add with the corrected number saves. Two separate dialogs rather
+      // Phone: a bad number is blocked (back out of it), then a fresh
+      // add with the corrected number saves. Two separate screens rather
       // than fixing in place, so the invalid-input-blocked check doesn't
       // depend on how the live grouping formatter behaves after a second
       // full-text replacement in the same field.
@@ -88,7 +88,7 @@ void main() {
       await tester.tap(find.byKey(const Key('saveItemButton')));
       await settle(tester);
       expect(find.text(l10n.errorInvalidPhone), findsOneWidget);
-      await tester.tap(find.text(l10n.cancel));
+      await tester.pageBack();
       await settle(tester);
 
       await tester.tap(find.byKey(const Key('addItemFab')));
@@ -106,7 +106,7 @@ void main() {
       await settle(tester);
       expect(listTileWithText('Mama'), findsOneWidget);
 
-      // Date: a future date is blocked (cancel out of it), then a fresh
+      // Date: a future date is blocked (back out of it), then a fresh
       // add with a valid birthday saves — same reasoning as phone above.
       await tester.tap(find.byKey(const Key('addItemFab')));
       await settle(tester);
@@ -124,7 +124,7 @@ void main() {
       await tester.tap(find.byKey(const Key('saveItemButton')));
       await settle(tester);
       expect(find.text(l10n.errorInvalidDate), findsOneWidget);
-      await tester.tap(find.text(l10n.cancel));
+      await tester.pageBack();
       await settle(tester);
 
       await tester.tap(find.byKey(const Key('addItemFab')));

@@ -1,5 +1,6 @@
 // Per-type item add/edit form (issue #004; type picker split vocab into
-// choice/freeText by #026).
+// choice/freeText by #026; converted from a dialog to a full screen by
+// #047, mirroring #003's `SetEditorScreen`).
 //
 // Replaces the #003 minimal shell with tailored subforms switching on the
 // picked type (vocab-flavored DE<->EN choice/freeText, phone numbers, birth
@@ -42,21 +43,21 @@ import '../widgets/widgets.dart';
 import 'date_display.dart';
 import 'phone_formatting.dart';
 
-/// Dialog form that creates or edits a single [Item].
+/// Full-screen form that creates or edits a single [Item].
 ///
 /// When [existing] is null, [setId] is required and a new item is added with
 /// the type picked in the form (sets are untyped containers).
-class ItemEditorDialog extends ConsumerStatefulWidget {
+class ItemEditorScreen extends ConsumerStatefulWidget {
   final int setId;
   final Item? existing;
 
-  const ItemEditorDialog({super.key, required this.setId, this.existing});
+  const ItemEditorScreen({super.key, required this.setId, this.existing});
 
   @override
-  ConsumerState<ItemEditorDialog> createState() => _ItemEditorDialogState();
+  ConsumerState<ItemEditorScreen> createState() => _ItemEditorScreenState();
 }
 
-class _ItemEditorDialogState extends ConsumerState<ItemEditorDialog> {
+class _ItemEditorScreenState extends ConsumerState<ItemEditorScreen> {
   final _formKey = GlobalKey<FormState>();
   late String _type;
   late final TextEditingController _prompt;
@@ -644,13 +645,21 @@ class _ItemEditorDialogState extends ConsumerState<ItemEditorDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return AlertDialog(
-      title: Text(widget.existing == null ? l10n.setDetailAddItem : l10n.save),
-      content: Form(
+    final isEdit = widget.existing != null;
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(isEdit ? l10n.editItem : l10n.setDetailAddItem),
+      ),
+      // `SingleChildScrollView`+`Column`, not `ListView`: this form's length
+      // varies a lot by type (choice with the language-pair toggle + 3
+      // distractors runs long) and a `ListView` only builds children within
+      // its viewport/cache extent, which can leave the Save button
+      // unbuilt (and thus untappable) until scrolled near.
+      body: Form(
         key: _formKey,
         child: SingleChildScrollView(
+          padding: const EdgeInsets.all(FoxSpacing.lg),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             children: [
               DropdownButtonFormField<String>(
                 key: const Key('itemTypeField'),
@@ -691,22 +700,18 @@ class _ItemEditorDialogState extends ConsumerState<ItemEditorDialog> {
                 const SizedBox(height: FoxSpacing.md),
                 FoxFeedbackBanner.error(message: _saveError!),
               ],
+              const SizedBox(height: FoxSpacing.lg),
+              FoxPrimaryButton(
+                key: const Key('saveItemButton'),
+                label: l10n.save,
+                expanded: true,
+                isLoading: _saving,
+                onPressed: _saving ? null : _save,
+              ),
             ],
           ),
         ),
       ),
-      actions: [
-        FoxSecondaryButton(
-          onPressed: _saving ? null : () => Navigator.of(context).pop(false),
-          label: l10n.cancel,
-        ),
-        FoxPrimaryButton(
-          key: const Key('saveItemButton'),
-          label: l10n.save,
-          isLoading: _saving,
-          onPressed: _saving ? null : _save,
-        ),
-      ],
     );
   }
 }

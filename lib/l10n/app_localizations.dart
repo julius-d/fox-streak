@@ -48,6 +48,7 @@ abstract class AppLocalizations {
   String get newSet;
   String get createSet;
   String get editSet;
+  String get editItem;
   String get setTitleLabel;
   String get setCreatorLabel;
   String get setDescriptionLabel;
@@ -223,6 +224,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createSet => 'Create set';
   @override
   String get editSet => 'Edit set';
+  @override
+  String get editItem => 'Edit item';
   @override
   String get setTitleLabel => 'Title';
   @override
@@ -536,6 +539,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get createSet => 'Set erstellen';
   @override
   String get editSet => 'Set bearbeiten';
+  @override
+  String get editItem => 'Eintrag bearbeiten';
   @override
   String get setTitleLabel => 'Titel';
   @override

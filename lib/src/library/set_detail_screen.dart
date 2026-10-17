@@ -1,7 +1,8 @@
 // Set detail: item list + overflow menu (issue #003).
 //
 // Shows items text-only (no images — #014). No field editing here; add/edit
-// goes through `ItemEditorDialog` (field widgets owned by #004).
+// goes through `ItemEditorScreen` (field widgets owned by #004; converted
+// from a dialog to a full screen by #047).
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -51,9 +52,10 @@ class SetDetailScreen extends ConsumerWidget {
     WidgetRef ref, [
     Item? existing,
   ]) async {
-    await showDialog<bool>(
-      context: context,
-      builder: (_) => ItemEditorDialog(setId: setId, existing: existing),
+    await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => ItemEditorScreen(setId: setId, existing: existing),
+      ),
     );
   }
 

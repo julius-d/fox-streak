@@ -247,8 +247,9 @@ class _HomeDashboard extends ConsumerWidget {
 /// Design reason for not reusing `FoxConfirmDialog`: the kit's only dialog
 /// is a confirm/cancel pattern with no text input slot, and #012's task
 /// list doesn't call for a new kit-level text-entry dialog (only
-/// `FoxGoalRing`) — so this stays a one-off `AlertDialog` built from kit
-/// buttons, same shape as `ItemEditorDialog`'s own hand-rolled `AlertDialog`.
+/// `FoxGoalRing`) — so this stays a one-off hand-rolled `AlertDialog` built
+/// from kit buttons (the item editor's own dialog was converted to a full
+/// screen by #047, so it is no longer an analogous shape).
 class _EditNameDialog extends StatefulWidget {
   final String? initialName;
 

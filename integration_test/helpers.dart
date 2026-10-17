@@ -101,6 +101,10 @@ Future<void> pumpFoxStreakApp(
 /// mounted (off-stage) when the next assertion runs — a bare `find.text`
 /// then matches both it and the real row, failing with "too many". Scoping
 /// to `ListTile` descendants excludes that stale editor text entirely.
+///
+/// `test/library/set_detail_screen_test.dart` carries its own copy of this
+/// (widget tests under `test/` can't depend on `integration_test/`) — keep
+/// both in sync if this logic changes.
 Finder listTileWithText(String text) {
   final textInTile = find.descendant(
     of: find.byType(ListTile),
