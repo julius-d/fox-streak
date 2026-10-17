@@ -39,10 +39,16 @@ import 'package:fox_streak_app/test/data/test_helpers.dart';
 /// Records calls instead of touching a real platform audio channel.
 class FakeSoundPlayer implements FoxSoundPlayer {
   int playLevelUpCallCount = 0;
+  int playCorrectCallCount = 0;
 
   @override
   Future<void> playLevelUp() async {
     playLevelUpCallCount++;
+  }
+
+  @override
+  Future<void> playCorrect() async {
+    playCorrectCallCount++;
   }
 }
 

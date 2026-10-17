@@ -294,7 +294,9 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
   }
 
   /// Grades the current answer, then fires the correct/wrong haptic moment
-  /// (behind [foxHapticsEnabledProvider]) once the result is known.
+  /// (behind [foxHapticsEnabledProvider]) plus, on a correct answer, the
+  /// congratulation chime (behind [foxSoundEnabledProvider], issue #054)
+  /// once the result is known.
   Future<void> _submitAndBuzz(
     BuildContext context,
     WidgetRef ref,
@@ -304,7 +306,7 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
     final correct = ref.read(lessonControllerProvider).lastCorrect;
     if (correct == null || !context.mounted) return;
     if (correct) {
-      await FoxFeedback.success(context, ref);
+      await FoxFeedback.correctAnswer(context, ref);
     } else {
       await FoxFeedback.error(context, ref);
     }

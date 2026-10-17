@@ -15,6 +15,24 @@ import 'package:fox_streak_app/src/data/database.dart';
 import 'package:fox_streak_app/src/exercises/dial_pad_exercise.dart';
 import 'package:fox_streak_app/src/lesson/exercise_card.dart';
 import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
+import 'package:fox_streak_app/src/widgets/widgets.dart';
+
+/// Records calls instead of touching a real platform audio channel
+/// (issue #054 regression guard).
+class _FakeSoundPlayer implements FoxSoundPlayer {
+  int playCorrectCallCount = 0;
+  int playLevelUpCallCount = 0;
+
+  @override
+  Future<void> playCorrect() async {
+    playCorrectCallCount++;
+  }
+
+  @override
+  Future<void> playLevelUp() async {
+    playLevelUpCallCount++;
+  }
+}
 
 const Item _phoneItem = Item(
   id: 1,
@@ -28,9 +46,15 @@ const Item _phoneItem = Item(
 Future<void> pumpDialPad(
   WidgetTester tester, {
   required void Function(ExerciseDraft) onDraft,
+  FoxSoundPlayer? soundPlayer,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
+      overrides: [
+        foxSoundPlayerProvider.overrideWithValue(
+          soundPlayer ?? _FakeSoundPlayer(),
+        ),
+      ],
       child: MaterialApp(
         theme: FoxStreakTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -49,6 +73,20 @@ Future<void> pumpDialPad(
 }
 
 void main() {
+  testWidgets('keypresses and reveal-hint never play the correct-answer chime '
+      '(regression: #054 scope — they only reuse FoxFeedback.success for its '
+      'haptic, not a graded answer)', (tester) async {
+    final fakeSoundPlayer = _FakeSoundPlayer();
+    await pumpDialPad(tester, onDraft: (_) {}, soundPlayer: fakeSoundPlayer);
+
+    await tester.tap(find.byKey(const Key('dialPadKey1')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('dialPadRevealHint')));
+    await tester.pump();
+
+    expect(fakeSoundPlayer.playCorrectCallCount, 0);
+  });
+
   testWidgets('hintUsed stays false until the reveal-hint eye icon is tapped', (
     tester,
   ) async {

@@ -16,6 +16,24 @@ import 'package:fox_streak_app/src/data/database.dart';
 import 'package:fox_streak_app/src/exercises/date_exercise.dart';
 import 'package:fox_streak_app/src/lesson/exercise_card.dart';
 import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
+import 'package:fox_streak_app/src/widgets/widgets.dart';
+
+/// Records calls instead of touching a real platform audio channel
+/// (issue #054 regression guard).
+class _FakeSoundPlayer implements FoxSoundPlayer {
+  int playCorrectCallCount = 0;
+  int playLevelUpCallCount = 0;
+
+  @override
+  Future<void> playCorrect() async {
+    playCorrectCallCount++;
+  }
+
+  @override
+  Future<void> playLevelUp() async {
+    playLevelUpCallCount++;
+  }
+}
 
 Item _dateItem({
   String answer = '1985-05-14',
@@ -36,9 +54,15 @@ Future<void> pumpDateExercise(
   required Item item,
   Locale locale = const Locale('en'),
   void Function(ExerciseDraft)? onDraft,
+  FoxSoundPlayer? soundPlayer,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
+      overrides: [
+        foxSoundPlayerProvider.overrideWithValue(
+          soundPlayer ?? _FakeSoundPlayer(),
+        ),
+      ],
       child: MaterialApp(
         locale: locale,
         theme: FoxStreakTheme.light(),
@@ -204,10 +228,12 @@ void main() {
     tester,
   ) async {
     ExerciseDraft? draft;
+    final fakeSoundPlayer = _FakeSoundPlayer();
     await pumpDateExercise(
       tester,
       item: _dateItem(answer: '1985-05-14'),
       onDraft: (d) => draft = d,
+      soundPlayer: fakeSoundPlayer,
     );
 
     expect(draft, isNull);
@@ -216,6 +242,10 @@ void main() {
 
     expect(draft!.hintUsed, isTrue);
     expect(find.text('05/14/1985'), findsOneWidget);
+    // Regression: #054 scope — reveal-hint only reuses FoxFeedback.success
+    // for its haptic, not a graded answer, so it must never play the
+    // correct-answer chime.
+    expect(fakeSoundPlayer.playCorrectCallCount, 0);
 
     // Auto-hides after 2 seconds, but hintUsed stays true for this item.
     await tester.pump(const Duration(seconds: 3));

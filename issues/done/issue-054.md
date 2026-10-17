@@ -1,6 +1,6 @@
 # Issue 054: Correct-answer congratulation sound
 
-Status: open | Priority: P3 | Type: feature | Refined-at: 2026-10-17
+Status: done | Priority: P3 | Type: feature | Refined-at: 2026-10-17 | Completed-at: 2026-10-17
 
 ## Goal
 
@@ -53,24 +53,24 @@ reserved for #014)`).
 
 ## Acceptance criteria
 
-- [ ] A short congratulation sound plays once per correctly answered
+- [x] A short congratulation sound plays once per correctly answered
       question, wired through `FoxFeedback.success`/`_submitAndBuzz`.
-- [ ] No sound plays on an incorrect answer (out of scope — wrong-answer
+- [x] No sound plays on an incorrect answer (out of scope — wrong-answer
       sound is a separate future issue).
-- [ ] Sound reuses the shared `audioplayers` dependency and
+- [x] Sound reuses the shared `audioplayers` dependency and
       `foxSoundEnabledProvider` toggle (added by whichever of #053/#054 lands
       first); no duplicate audio dependency or provider is introduced.
-- [ ] When `foxSoundEnabledProvider` is off, no sound plays (haptics still
+- [x] When `foxSoundEnabledProvider` is off, no sound plays (haptics still
       fire as today — the two are independent toggles per #053).
-- [ ] Bundled sound asset is short (≲1s) and small (≲50KB), CC0/royalty-free,
+- [x] Bundled sound asset is short (≲1s) and small (≲50KB), CC0/royalty-free,
       with its source and license documented in the repo (e.g.
       `assets/sfx/README.md`).
-- [ ] Sound playback goes through the same overridable/stubbed seam as #053
+- [x] Sound playback goes through the same overridable/stubbed seam as #053
       — no real platform audio channel is hit by `flutter test`/CI.
-- [ ] New widget/integration test: grading a correct answer triggers the
+- [x] New widget/integration test: grading a correct answer triggers the
       sound-playback call (via the stub seam); grading a wrong answer does
       not.
-- [ ] `flutter analyze` / `dart format` / `dart fix --dry-run` /
+- [x] `flutter analyze` / `dart format` / `dart fix --dry-run` /
       `flutter test` clean.
 
 ## Out of scope
@@ -97,3 +97,36 @@ dart format --output=none --set-exit-if-changed .
 dart fix --dry-run
 flutter test
 ```
+
+## Summary
+
+Added `FoxFeedback.correctAnswer` (haptic + chime, gated independently by
+`foxSoundEnabledProvider`) as a *new* method rather than overloading
+`FoxFeedback.success`, since `success` is also reused by per-keystroke
+dial-pad taps and date/dial-pad hint-reveal buttons — only
+`LessonScreen._submitAndBuzz`'s correct branch calls `correctAnswer`.
+`fox_sound.dart` gained `playCorrect()` on the `FoxSoundPlayer` seam with its
+own `AudioPlayer` instance (separate from the #053 level-up player). Asset
+`assets/sfx/koiroylers-correct-356013.mp3` was trimmed from the user-supplied
+source (2.1s/66KB had trailing silence) down to ~1.02s/17KB to meet budget,
+documented in `assets/sfx/attribution.md`. Filed #058 for a pre-existing gap
+found along the way: #053's `level_up.mp3` has no attribution entry.
+
+## Code review
+
+- Finding: `FoxFeedback.success()` would have unconditionally played the
+  chime from all its call sites, not just the correct-answer one, wrongly
+  firing on dial-pad keypresses and date/dial-pad hint-reveal taps.
+  Fixed — added a separate `FoxFeedback.correctAnswer()` used only by
+  `_submitAndBuzz`; `success()` stays haptic-only. Added regression tests in
+  `dial_pad_exercise_test.dart`/`date_exercise_test.dart`.
+- Finding: the sound-enabled check after `await success(...)` could throw if
+  the widget were disposed during that await (new async gap vs. the
+  pre-existing code).
+  Fixed — added a `context.mounted` guard before the post-await `ref.read`
+  calls in `correctAnswer()`.
+- Finding: several pre-existing widget tests exercising the real
+  correct-answer path didn't stub `foxSoundPlayerProvider`, so they
+  incidentally fell through to the real `audioplayers`-backed player.
+  Fixed — `pumpLessonShell`/`pumpDialPad`/`pumpDateExercise` test helpers now
+  always override `foxSoundPlayerProvider` with a no-op fake by default.

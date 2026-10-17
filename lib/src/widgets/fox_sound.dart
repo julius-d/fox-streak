@@ -24,14 +24,26 @@ final NotifierProvider<FoxSoundEnabled, bool> foxSoundEnabledProvider =
 abstract class FoxSoundPlayer {
   /// Plays the short level-up chime (`assets/sfx/level_up.mp3`).
   Future<void> playLevelUp();
+
+  /// Plays the short correct-answer chime
+  /// (`assets/sfx/koiroylers-correct-356013.mp3`, issue #054).
+  Future<void> playCorrect();
 }
 
 /// Production implementation backed by `audioplayers`.
 class AudioPlayersSoundPlayer implements FoxSoundPlayer {
-  final AudioPlayer _player = AudioPlayer();
+  // Separate players per sound so a correct-answer chime mid-lesson can't
+  // be cut off by (or cut off) the level-up chime on the result screen.
+  final AudioPlayer _levelUpPlayer = AudioPlayer();
+  final AudioPlayer _correctPlayer = AudioPlayer();
 
   @override
-  Future<void> playLevelUp() => _player.play(AssetSource('sfx/level_up.mp3'));
+  Future<void> playLevelUp() =>
+      _levelUpPlayer.play(AssetSource('sfx/level_up.mp3'));
+
+  @override
+  Future<void> playCorrect() =>
+      _correctPlayer.play(AssetSource('sfx/koiroylers-correct-356013.mp3'));
 }
 
 final Provider<FoxSoundPlayer> foxSoundPlayerProvider =

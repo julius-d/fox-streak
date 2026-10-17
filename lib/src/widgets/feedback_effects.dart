@@ -6,13 +6,18 @@
 // tiny — one short elastic scale, no controllers to dispose
 // (lottie lands in #014).
 //
-// Haptics/sound: [foxHapticsEnabledProvider] is the single toggle
-// (default on, mutable). #005/#012 own the settings UI surface; kit effects
-// check the flag before buzzing. Sound has no dep in this issue —
-// [FoxFeedback] is the hook point where a sound call goes later.
+// Haptics: [foxHapticsEnabledProvider] is the single toggle (default on,
+// mutable). #005/#012 own the settings UI surface; kit effects check the
+// flag before buzzing. Sound (issue #054) is gated by its own
+// [foxSoundEnabledProvider] — the two toggles are independent, so turning
+// one off never silences the other.
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'fox_sound.dart';
 
 /// Haptic + sound toggle. Default on; mutable from settings (#005/#012).
 class FoxHapticsEnabled extends Notifier<bool> {
@@ -45,9 +50,26 @@ abstract final class FoxFeedback {
     return _buzz(ref, HapticFeedback.mediumImpact);
   }
 
+  /// Correct-answer feedback for a *graded question*: the same light haptic
+  /// buzz as [success], plus the congratulation chime (issue #054), gated
+  /// independently by [foxSoundEnabledProvider]. Call this only from the
+  /// once-per-graded-question site (`LessonScreen._submitAndBuzz`) — plain
+  /// [success] stays haptic-only because it's also reused for per-keystroke
+  /// dial-pad taps and hint-reveal buttons
+  /// (`dial_pad_exercise.dart`/`date_exercise.dart`), none of which are a
+  /// correct answer and shouldn't play the chime.
+  static Future<void> correctAnswer(BuildContext context, WidgetRef ref) async {
+    await success(context, ref);
+    // Re-check after the haptic's platform-channel round trip: the widget
+    // may have been disposed (e.g. user navigated away) while awaiting it.
+    if (!context.mounted) return;
+    if (ref.read(foxSoundEnabledProvider)) {
+      unawaited(ref.read(foxSoundPlayerProvider).playCorrect());
+    }
+  }
+
   static Future<void> _buzz(WidgetRef ref, Future<void> Function() buzz) async {
     if (!ref.read(foxHapticsEnabledProvider)) return;
-    // Sound hook: no audio dep in this issue (budget reserved for #014).
     await buzz();
   }
 }

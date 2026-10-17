@@ -4,7 +4,9 @@
 // correct-flow, wrong-flow, skip-counts-wrong, skip-absent-from-menu-post-check,
 // quit-confirm-cancel-is-noop / quit-confirm-pops, restart-reshuffles,
 // result-score-math, rotation-safe (pump with new surface size, index
-// preserved), attempts-written-but-xp/streak-untouched.
+// preserved), attempts-written-but-xp/streak-untouched, correct/wrong haptic
+// buzz, and the correct-answer chime behind its own independent toggle
+// (issue #054, via the fake `FoxSoundPlayer` seam).
 // Quit/Skip are reached via the lesson AppBar overflow menu (issue #024).
 //
 // Uses NativeDatabase.memory() + FakeClock overrides via ProviderScope.
@@ -30,6 +32,10 @@ import 'package:fox_streak_app/test/data/test_helpers.dart';
 import 'package:fox_streak_app/test/lesson/helpers/placeholder_exercise_card.dart';
 
 /// Pumps a widget under the FoxStreak theme + Riverpod scope with test overrides.
+///
+/// Always stubs [foxSoundPlayerProvider] with a no-op fake (issue #054):
+/// without it, a correct answer's chime would fall through to the real
+/// `audioplayers`-backed player and hit a real platform channel.
 Future<void> pumpLessonShell(
   WidgetTester tester,
   Widget child, {
@@ -44,6 +50,7 @@ Future<void> pumpLessonShell(
       overrides: [
         appDatabaseProvider.overrideWithValue(db),
         systemClockProvider.overrideWithValue(clk),
+        foxSoundPlayerProvider.overrideWithValue(_FakeSoundPlayer()),
       ],
       child: MaterialApp(
         theme: FoxStreakTheme.light(),
@@ -110,6 +117,30 @@ class _TestLocalizationsDelegate
 class _DisabledHaptics extends FoxHapticsEnabled {
   @override
   bool build() => false;
+}
+
+/// Overrides [foxSoundEnabledProvider] to off, for the sound-suppressed test
+/// (issue #054).
+class _DisabledSound extends FoxSoundEnabled {
+  @override
+  bool build() => false;
+}
+
+/// Records calls instead of touching a real platform audio channel
+/// (issue #054).
+class _FakeSoundPlayer implements FoxSoundPlayer {
+  int playCorrectCallCount = 0;
+  int playLevelUpCallCount = 0;
+
+  @override
+  Future<void> playCorrect() async {
+    playCorrectCallCount++;
+  }
+
+  @override
+  Future<void> playLevelUp() async {
+    playLevelUpCallCount++;
+  }
 }
 
 /// Helper to create test items in the database.
@@ -1035,6 +1066,7 @@ void main() {
               appDatabaseProvider.overrideWithValue(db),
               systemClockProvider.overrideWithValue(fakeClock),
               foxHapticsEnabledProvider.overrideWith(_DisabledHaptics.new),
+              foxSoundPlayerProvider.overrideWithValue(_FakeSoundPlayer()),
             ],
             child: MaterialApp(
               theme: FoxStreakTheme.light(),
@@ -1074,6 +1106,214 @@ void main() {
         await tester.pump();
 
         expect(hapticCalls, isEmpty);
+      },
+    );
+
+    testWidgets('sound: correct CHECK plays the chime through the fake seam '
+        '(issue #054)', (WidgetTester tester) async {
+      final items = await setupTestItems(
+        db,
+        1,
+        1,
+        choicesJson: distractorsJson,
+      );
+      final correctAnswer = items.first.answer;
+      final fakeSoundPlayer = _FakeSoundPlayer();
+
+      // FoxFeedback.success awaits the haptic buzz before playing the
+      // chime — without a mock handler the platform channel call never
+      // resolves, so the chime call is never reached.
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (MethodCall call) async => null,
+      );
+      addTearDown(() {
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        );
+      });
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appDatabaseProvider.overrideWithValue(db),
+            systemClockProvider.overrideWithValue(fakeClock),
+            foxSoundPlayerProvider.overrideWithValue(fakeSoundPlayer),
+          ],
+          child: MaterialApp(
+            theme: FoxStreakTheme.light(),
+            darkTheme: FoxStreakTheme.dark(),
+            localizationsDelegates: const [_TestLocalizationsDelegate()],
+            supportedLocales: const [Locale('en')],
+            home: Scaffold(
+              body: LessonScreen(
+                setId: 1,
+                items: items,
+                cardBuilder:
+                    ({
+                      Key? key,
+                      required Item item,
+                      required void Function(ExerciseDraft) onStateChanged,
+                      required AppLocalizations l10n,
+                      bool autoAnswer = false,
+                    }) {
+                      return PlaceholderExerciseCard(
+                        key: key,
+                        item: item,
+                        onStateChanged: onStateChanged,
+                        l10n: l10n,
+                      );
+                    },
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      await tester.tap(find.byKey(Key('choice-$correctAnswer')));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('checkButton')));
+      await tester.pump();
+
+      expect(fakeSoundPlayer.playCorrectCallCount, 1);
+    });
+
+    testWidgets('sound: wrong CHECK does not play the chime (issue #054)', (
+      WidgetTester tester,
+    ) async {
+      final items = await setupTestItems(
+        db,
+        1,
+        1,
+        choicesJson: distractorsJson,
+      );
+      final fakeSoundPlayer = _FakeSoundPlayer();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appDatabaseProvider.overrideWithValue(db),
+            systemClockProvider.overrideWithValue(fakeClock),
+            foxSoundPlayerProvider.overrideWithValue(fakeSoundPlayer),
+          ],
+          child: MaterialApp(
+            theme: FoxStreakTheme.light(),
+            darkTheme: FoxStreakTheme.dark(),
+            localizationsDelegates: const [_TestLocalizationsDelegate()],
+            supportedLocales: const [Locale('en')],
+            home: Scaffold(
+              body: LessonScreen(
+                setId: 1,
+                items: items,
+                cardBuilder:
+                    ({
+                      Key? key,
+                      required Item item,
+                      required void Function(ExerciseDraft) onStateChanged,
+                      required AppLocalizations l10n,
+                      bool autoAnswer = false,
+                    }) {
+                      return PlaceholderExerciseCard(
+                        key: key,
+                        item: item,
+                        onStateChanged: onStateChanged,
+                        l10n: l10n,
+                      );
+                    },
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      // Pick a distractor (not the correct answer).
+      await tester.tap(find.byKey(const Key('choice-distractor1')));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('checkButton')));
+      await tester.pump();
+
+      expect(fakeSoundPlayer.playCorrectCallCount, 0);
+    });
+
+    testWidgets(
+      'sound: suppressed entirely when foxSoundEnabledProvider is off '
+      '(issue #054)',
+      (WidgetTester tester) async {
+        final items = await setupTestItems(
+          db,
+          1,
+          1,
+          choicesJson: distractorsJson,
+        );
+        final correctAnswer = items.first.answer;
+        final fakeSoundPlayer = _FakeSoundPlayer();
+
+        // Haptics stay on here (independent toggle): the platform channel
+        // mock lets FoxFeedback.success's await resolve and reach the
+        // sound-enabled check below.
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          (MethodCall call) async => null,
+        );
+        addTearDown(() {
+          tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+            SystemChannels.platform,
+            null,
+          );
+        });
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              appDatabaseProvider.overrideWithValue(db),
+              systemClockProvider.overrideWithValue(fakeClock),
+              foxSoundPlayerProvider.overrideWithValue(fakeSoundPlayer),
+              foxSoundEnabledProvider.overrideWith(_DisabledSound.new),
+            ],
+            child: MaterialApp(
+              theme: FoxStreakTheme.light(),
+              darkTheme: FoxStreakTheme.dark(),
+              localizationsDelegates: const [_TestLocalizationsDelegate()],
+              supportedLocales: const [Locale('en')],
+              home: Scaffold(
+                body: LessonScreen(
+                  setId: 1,
+                  items: items,
+                  cardBuilder:
+                      ({
+                        Key? key,
+                        required Item item,
+                        required void Function(ExerciseDraft) onStateChanged,
+                        required AppLocalizations l10n,
+                        bool autoAnswer = false,
+                      }) {
+                        return PlaceholderExerciseCard(
+                          key: key,
+                          item: item,
+                          onStateChanged: onStateChanged,
+                          l10n: l10n,
+                        );
+                      },
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        await tester.tap(find.byKey(Key('choice-$correctAnswer')));
+        await tester.pump();
+        await tester.tap(find.byKey(const Key('checkButton')));
+        await tester.pump();
+
+        // Haptics stay on (independent toggle) but sound is suppressed.
+        expect(fakeSoundPlayer.playCorrectCallCount, 0);
       },
     );
 
