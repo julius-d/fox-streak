@@ -1,6 +1,6 @@
 # Issue 060: Add a "night" greeting bucket for very early hours
 
-Status: open | Priority: P3 | Type: feature
+Status: done | Priority: P3 | Type: feature | Completed-at: 2026-10-17
 
 ## Goal
 
@@ -54,3 +54,23 @@ dart format --output=none --set-exit-if-changed .
 dart fix --dry-run
 flutter test
 ```
+
+## Summary
+
+Implemented as proposed: `_greeting` branches on `hour < 5` before the
+existing morning/afternoon/evening checks. New arb keys `homeGreetingNight`/
+`homeGreetingNightNamed` ("Up late?"/"Up late, {name}?", DE: "Noch wach?"/
+"Noch wach, {name}?") added to both arb files and hand-mirrored into
+`app_localizations.dart` (this repo has no working `flutter gen-l10n` setup,
+see `lib/l10n/README.md`). 9 new widget tests in `home_screen_test.dart`
+cover every bucket boundary (0/4/5/11/12/17/18/23) plus the named-night
+variant. Screenshot: `issues/done/issue-060-home_night_greeting.png`.
+
+## Code review
+
+- Finding: new boundary-sweep test only exercised the generic (no display
+  name) night greeting, leaving `homeGreetingNightNamed` unverified.
+  Fixed — added a dedicated test seeding a display name at 2am, asserting
+  "Up late, Mia?".
+- Everything else (hour-boundary logic, arb/locale-file completeness,
+  `flutter analyze`/`format`/`test`) checked out clean, no further findings.

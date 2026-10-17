@@ -160,6 +160,8 @@ abstract class AppLocalizations {
   String get lessonEmptySetNote;
 
   // Home dashboard / onboarding / parental info (#012)
+  String get homeGreetingNight;
+  String homeGreetingNightNamed(String name);
   String get homeGreetingMorning;
   String homeGreetingMorningNamed(String name);
   String get homeGreetingAfternoon;
@@ -449,6 +451,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lessonEmptySetNote => 'Add items to start practicing!';
 
   // Home dashboard / onboarding / parental info (#012)
+  @override
+  String get homeGreetingNight => 'Up late?';
+  @override
+  String homeGreetingNightNamed(String name) => 'Up late, $name?';
   @override
   String get homeGreetingMorning => 'Good morning!';
   @override
@@ -785,6 +791,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get lessonEmptySetNote => 'Füge Einträge hinzu, um zu üben!';
 
   // Home dashboard / onboarding / parental info (#012)
+  @override
+  String get homeGreetingNight => 'Noch wach?';
+  @override
+  String homeGreetingNightNamed(String name) => 'Noch wach, $name?';
   @override
   String get homeGreetingMorning => 'Guten Morgen!';
   @override

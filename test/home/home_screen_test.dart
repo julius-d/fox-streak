@@ -175,6 +175,38 @@ void main() {
     },
   );
 
+  for (final (int hour, String text) in const [
+    (0, 'Up late?'),
+    (4, 'Up late?'),
+    (5, 'Good morning!'),
+    (11, 'Good morning!'),
+    (12, 'Good afternoon!'),
+    (17, 'Good afternoon!'),
+    (18, 'Good evening!'),
+    (23, 'Good evening!'),
+  ]) {
+    testWidgets('greeting at hour $hour is "$text" (issue #060)', (
+      tester,
+    ) async {
+      final clock = FakeClock(DateTime(2026, 10, 13, hour));
+      await pumpOnboardedHome(tester, clock);
+      expect(find.text(text), findsOneWidget);
+      await unmount(tester);
+    });
+  }
+
+  testWidgets('night greeting uses the display name when one is set '
+      '(issue #060)', (tester) async {
+    final clock = FakeClock(DateTime(2026, 10, 13, 2));
+    await pumpOnboardedHome(
+      tester,
+      clock,
+      seed: (stats, sets) => stats.setDisplayName('Mia'),
+    );
+    expect(find.text('Up late, Mia?'), findsOneWidget);
+    await unmount(tester);
+  });
+
   testWidgets(
     'with no attempts yet, the Continue slot shows a Browse-sets CTA that '
     'opens the library (no dead button)',

@@ -358,6 +358,18 @@
     "placeholders": {}
   },
   "lessonBackToHome": "Back to home",
+  "@homeGreetingNight": {
+    "description": "Generic late-night greeting on Home (before 5am) when no display name is set (issue #060)",
+    "placeholders": {}
+  },
+  "homeGreetingNight": "Up late?",
+  "@homeGreetingNightNamed": {
+    "description": "Late-night greeting on Home (before 5am) with the display name (issue #060)",
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "homeGreetingNightNamed": "Up late, {name}?",
   "@homeGreetingMorning": {
     "description": "Generic morning greeting on Home when no display name is set (issue #012)",
     "placeholders": {}

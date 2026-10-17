@@ -37,6 +37,9 @@ enum _HomeMenuAction { parentalInfo, settings }
 String _greeting(AppLocalizations l10n, DateTime now, String? displayName) {
   final String? name = displayName?.trim();
   final bool hasName = name != null && name.isNotEmpty;
+  if (now.hour < 5) {
+    return hasName ? l10n.homeGreetingNightNamed(name) : l10n.homeGreetingNight;
+  }
   if (now.hour < 12) {
     return hasName
         ? l10n.homeGreetingMorningNamed(name)
