@@ -185,75 +185,63 @@ void main() {
     await unmount(tester);
   });
 
-  testWidgets(
-    'date item subtitle shows locale-formatted date, not raw ISO '
-    '(issue #049)',
-    (tester) async {
-      final clock = FakeClock(kTestToday);
-      final db = AppDatabase.forTesting(NativeDatabase.memory());
-      addTearDown(() async => db.close());
-      final repo = SetsRepository(db, clock);
-      final setId = await repo.createSet(title: 'Birthdays', createdBy: 'Mama');
-      final itemId = await repo.addItem(
-        setId: setId,
-        type: 'date',
-        prompt: "Mama's birthday",
-        answer: '1985-05-14',
-      );
+  testWidgets('date item subtitle shows locale-formatted date, not raw ISO '
+      '(issue #049)', (tester) async {
+    final clock = FakeClock(kTestToday);
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(() async => db.close());
+    final repo = SetsRepository(db, clock);
+    final setId = await repo.createSet(title: 'Birthdays', createdBy: 'Mama');
+    final itemId = await repo.addItem(
+      setId: setId,
+      type: 'date',
+      prompt: "Mama's birthday",
+      answer: '1985-05-14',
+    );
 
-      await pumpSetDetail(
-        tester,
-        db,
-        clock,
-        setId,
-        locale: const Locale('de'),
-      );
+    await pumpSetDetail(tester, db, clock, setId, locale: const Locale('de'));
 
-      final subtitle = tester.widget<Text>(
-        find
-            .descendant(
-              of: find.byKey(Key('itemTile-$itemId')),
-              matching: find.byType(Text),
-            )
-            .at(1),
-      );
-      expect(subtitle.data, contains('14.05.1985'));
-      expect(subtitle.data, isNot(contains('1985-05-14')));
+    final subtitle = tester.widget<Text>(
+      find
+          .descendant(
+            of: find.byKey(Key('itemTile-$itemId')),
+            matching: find.byType(Text),
+          )
+          .at(1),
+    );
+    expect(subtitle.data, contains('14.05.1985'));
+    expect(subtitle.data, isNot(contains('1985-05-14')));
 
-      await unmount(tester);
-    },
-  );
+    await unmount(tester);
+  });
 
-  testWidgets(
-    'phone item subtitle shows grouped digits, not raw unformatted '
-    'digits (issue #049)',
-    (tester) async {
-      final clock = FakeClock(kTestToday);
-      final db = AppDatabase.forTesting(NativeDatabase.memory());
-      addTearDown(() async => db.close());
-      final repo = SetsRepository(db, clock);
-      final setId = await repo.createSet(title: 'Contacts', createdBy: 'Mama');
-      final itemId = await repo.addItem(
-        setId: setId,
-        type: 'phone',
-        prompt: 'Oma',
-        answer: '01711234567',
-      );
+  testWidgets('phone item subtitle shows grouped digits, not raw unformatted '
+      'digits (issue #049)', (tester) async {
+    final clock = FakeClock(kTestToday);
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(() async => db.close());
+    final repo = SetsRepository(db, clock);
+    final setId = await repo.createSet(title: 'Contacts', createdBy: 'Mama');
+    final itemId = await repo.addItem(
+      setId: setId,
+      type: 'phone',
+      prompt: 'Oma',
+      answer: '01711234567',
+    );
 
-      await pumpSetDetail(tester, db, clock, setId);
+    await pumpSetDetail(tester, db, clock, setId);
 
-      final subtitle = tester.widget<Text>(
-        find
-            .descendant(
-              of: find.byKey(Key('itemTile-$itemId')),
-              matching: find.byType(Text),
-            )
-            .at(1),
-      );
-      expect(subtitle.data, contains('017 112 345 67'));
-      expect(subtitle.data, isNot(contains('01711234567')));
+    final subtitle = tester.widget<Text>(
+      find
+          .descendant(
+            of: find.byKey(Key('itemTile-$itemId')),
+            matching: find.byType(Text),
+          )
+          .at(1),
+    );
+    expect(subtitle.data, contains('017 112 345 67'));
+    expect(subtitle.data, isNot(contains('01711234567')));
 
-      await unmount(tester);
-    },
-  );
+    await unmount(tester);
+  });
 }
