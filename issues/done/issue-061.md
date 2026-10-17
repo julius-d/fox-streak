@@ -1,6 +1,6 @@
 # Issue 061: Holiday + funny-rotation greetings on Home
 
-Status: open | Priority: P3 | Type: feature
+Status: done | Priority: P3 | Type: feature | Completed-at: 2026-10-17
 
 ## Goal
 
@@ -39,16 +39,16 @@ calculation — fixed-date only, to avoid a date-math dependency.
 
 ## Acceptance criteria
 
-- [ ] A fixed-date holiday table (date → arb key) covers at minimum Jan 1,
+- [x] A fixed-date holiday table (date → arb key) covers at minimum Jan 1,
       Apr 1, Oct 31, Dec 24, Dec 25, each with EN + DE copy.
-- [ ] A curated pool (suggest 5-10 entries to start) of funny/playful
+- [x] A curated pool (suggest 5-10 entries to start) of funny/playful
       generic greetings, EN + DE, picked deterministically per local day
       when no holiday matches.
-- [ ] `_greeting` (or its caller) checks holiday → rotation → existing
+- [x] `_greeting` (or its caller) checks holiday → rotation → existing
       time-of-day logic, in that order, using the injected `Clock` (no
       direct `DateTime.now()`, keeping it testable like today).
-- [ ] New strings via `lib/l10n` arb, no hardcoded copy (#015).
-- [ ] Tests: a holiday date shows its override regardless of hour; a
+- [x] New strings via `lib/l10n` arb, no hardcoded copy (#015).
+- [x] Tests: a holiday date shows its override regardless of hour; a
       non-holiday day with `FakeClock` deterministically reproduces the
       same rotation pick across rebuilds; rotation is skipped (falls back
       to plain greeting) on the days it's not selected.
@@ -74,3 +74,28 @@ dart format --output=none --set-exit-if-changed .
 dart fix --dry-run
 flutter test
 ```
+
+## Summary
+
+Extracted the greeting logic from `home_screen.dart`'s private `_greeting`
+into `lib/src/home/greeting.dart` (`greetingText`), now checking a
+fixed-date holiday table (Jan 1, Apr 1, Oct 31, Dec 24, Dec 25) first, then
+a `Random(_daySeed(now))`-seeded ~1-in-5 funny rotation (8-entry pool,
+`_daySeed` built from the local `year/month/day`, not `String.hashCode`,
+so it's stable across runs), falling back to the existing time-of-day
+text. Both new layers are generic (no `displayName`), per the issue's
+decision. 13 new arb keys (EN+DE), hand-mirrored into
+`app_localizations.dart` (no working `flutter gen-l10n` here, see
+`lib/l10n/README.md`). New tests: `test/home/greeting_test.dart` (pure
+logic, precedence, determinism), 2 new cases in
+`test/home/home_screen_test.dart`, and
+`integration_test/home_greeting_test.dart` (real `FoxStreakApp`
+end-to-end). Screenshot: `issues/done/issue-061-home_holiday_greeting.png`.
+
+## Code review
+
+- No findings. A medium-effort review of the diff (correctness +
+  reuse/simplification/efficiency) cleared the precedence order, the
+  deterministic day-seed, arb/locale-file completeness, and the single
+  `greetingText` call site with nothing to flag.
+  N/A — nothing to fix.
