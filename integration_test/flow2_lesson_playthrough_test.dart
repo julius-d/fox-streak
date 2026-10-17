@@ -15,6 +15,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
 import 'package:fox_streak_app/l10n/app_localizations.dart';
+import 'package:fox_streak_app/l10n/app_localizations_en.dart';
 import 'package:fox_streak_app/src/data/database.dart';
 import 'package:fox_streak_app/src/data/providers.dart';
 import 'package:fox_streak_app/src/lesson/lesson_screen.dart';

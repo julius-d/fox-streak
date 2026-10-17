@@ -7,7 +7,8 @@
 // wiring through the real widget).
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fox_streak_app/l10n/app_localizations.dart';
+import 'package:fox_streak_app/l10n/app_localizations_de.dart';
+import 'package:fox_streak_app/l10n/app_localizations_en.dart';
 import 'package:fox_streak_app/src/home/greeting.dart';
 
 void main() {

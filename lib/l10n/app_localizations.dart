@@ -1,18 +1,69 @@
-// Manual `AppLocalizations` (issue #003 i18n scaffold).
-//
-// `lib/l10n/app_en.arb` / `app_de.arb` are the source of truth and this
-// hand-written delegate mirrors them 1:1 so `flutter analyze`/`flutter test`
-// /`flutter build` work everywhere, including checkouts where `flutter
-// gen-l10n` cannot run (see `lib/l10n/README.md` for why there is no root
-// `l10n.yaml` and how to regenerate on a machine where codegen works).
-// When regenerating, verify this file matches the arb files.
+import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
+import 'app_localizations_de.dart';
+import 'app_localizations_en.dart';
+
+// ignore_for_file: type=lint
+
+/// Callers can lookup localized strings with an instance of AppLocalizations
+/// returned by `AppLocalizations.of(context)`.
+///
+/// Applications need to include `AppLocalizations.delegate()` in their app's
+/// `localizationDelegates` list, and the locales they support in the app's
+/// `supportedLocales` list. For example:
+///
+/// ```dart
+/// import 'l10n/app_localizations.dart';
+///
+/// return MaterialApp(
+///   localizationsDelegates: AppLocalizations.localizationsDelegates,
+///   supportedLocales: AppLocalizations.supportedLocales,
+///   home: MyApplicationHome(),
+/// );
+/// ```
+///
+/// ## Update pubspec.yaml
+///
+/// Please make sure to update your pubspec.yaml to include the following
+/// packages:
+///
+/// ```yaml
+/// dependencies:
+///   # Internationalization support.
+///   flutter_localizations:
+///     sdk: flutter
+///   intl: any # Use the pinned version from flutter_localizations
+///
+///   # Rest of dependencies
+/// ```
+///
+/// ## iOS Applications
+///
+/// iOS applications define key application metadata, including supported
+/// locales, in an Info.plist file that is built into the application bundle.
+/// To configure the locales supported by your app, you’ll need to edit this
+/// file.
+///
+/// First, open your project’s ios/Runner.xcworkspace Xcode workspace file.
+/// Then, in the Project Navigator, open the Info.plist file under the Runner
+/// project’s Runner folder.
+///
+/// Next, select the Information Property List item, select Add Item from the
+/// Editor menu, then select Localizations from the pop-up menu.
+///
+/// Select and expand the newly-created Localizations item then, for each
+/// locale your application supports, add a new item and select the locale
+/// you wish to add from the pop-up menu in the Value field. This list should
+/// be consistent with the languages listed in the AppLocalizations.supportedLocales
+/// property.
 abstract class AppLocalizations {
-  AppLocalizations(this.localeName);
+  AppLocalizations(String locale)
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -23,6 +74,16 @@ abstract class AppLocalizations {
   static const LocalizationsDelegate<AppLocalizations> delegate =
       _AppLocalizationsDelegate();
 
+  /// A list of this localizations delegate along with the default localizations
+  /// delegates.
+  ///
+  /// Returns a list of localizations delegates containing this delegate along with
+  /// GlobalMaterialLocalizations.delegate, GlobalCupertinoLocalizations.delegate,
+  /// and GlobalWidgetsLocalizations.delegate.
+  ///
+  /// Additional delegates can be added by appending to this list in
+  /// MaterialApp. This list does not have to be used at all if a custom list
+  /// of delegates is preferred or required.
   static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
       <LocalizationsDelegate<dynamic>>[
         delegate,
@@ -31,1006 +92,1065 @@ abstract class AppLocalizations {
         GlobalWidgetsLocalizations.delegate,
       ];
 
+  /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
-    Locale('en'),
     Locale('de'),
+    Locale('en'),
   ];
 
+  /// No description provided for @appTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'FoxStreak'**
   String get appTitle;
+
+  /// No description provided for @libraryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My Sets'**
   String get libraryTitle;
+
+  /// No description provided for @libraryEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No sets yet'**
   String get libraryEmptyTitle;
+
+  /// No description provided for @libraryEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Create your first set or try the demo set.'**
   String get libraryEmptyMessage;
+
+  /// No description provided for @libraryTryDemo.
+  ///
+  /// In en, this message translates to:
+  /// **'Try demo set'**
   String get libraryTryDemo;
+
+  /// No description provided for @libraryLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading sets…'**
   String get libraryLoading;
+
+  /// No description provided for @librarySeedError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load the demo set. Please try again.'**
   String get librarySeedError;
+
+  /// No description provided for @librarySeedLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading demo set…'**
   String get librarySeedLoading;
+
+  /// Item count subtitle on a set card
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No items} =1{1 item} other{{count} items}}'**
   String setItemCount(int count);
+
+  /// No description provided for @newSet.
+  ///
+  /// In en, this message translates to:
+  /// **'New set'**
   String get newSet;
+
+  /// No description provided for @createSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Create set'**
   String get createSet;
+
+  /// No description provided for @editSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit set'**
   String get editSet;
+
+  /// No description provided for @editItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit item'**
   String get editItem;
+
+  /// No description provided for @setTitleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
   String get setTitleLabel;
+
+  /// No description provided for @setCreatorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Your name'**
   String get setCreatorLabel;
+
+  /// No description provided for @setDescriptionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Description (optional)'**
   String get setDescriptionLabel;
+
+  /// No description provided for @setCategoryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
   String get setCategoryLabel;
+
+  /// No description provided for @categoryVocab.
+  ///
+  /// In en, this message translates to:
+  /// **'Vocab'**
   String get categoryVocab;
+
+  /// No description provided for @categoryMath.
+  ///
+  /// In en, this message translates to:
+  /// **'Math'**
   String get categoryMath;
+
+  /// No description provided for @categoryGeography.
+  ///
+  /// In en, this message translates to:
+  /// **'Geography'**
   String get categoryGeography;
+
+  /// No description provided for @categoryGeneral.
+  ///
+  /// In en, this message translates to:
+  /// **'General'**
   String get categoryGeneral;
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
   String get cancel;
+
+  /// No description provided for @save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
   String get save;
+
+  /// No description provided for @edit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
   String get edit;
+
+  /// No description provided for @create.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
   String get create;
+
+  /// No description provided for @rename.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
   String get rename;
+
+  /// No description provided for @duplicate.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate'**
   String get duplicate;
+
+  /// No description provided for @delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
   String get delete;
+
+  /// No description provided for @deleteSetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete set?'**
   String get deleteSetTitle;
+
+  /// Delete confirmation body with set title
+  ///
+  /// In en, this message translates to:
+  /// **'Delete \"{title}\" with all its items? This cannot be undone.'**
   String deleteSetMessage(String title);
+
+  /// No description provided for @deleteItemTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete item?'**
   String get deleteItemTitle;
+
+  /// No description provided for @deleteItemMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this item? This cannot be undone.'**
   String get deleteItemMessage;
+
+  /// No description provided for @confirmDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
   String get confirmDelete;
+
+  /// No description provided for @setDetailAddItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Add item'**
   String get setDetailAddItem;
+
+  /// No description provided for @setDetailEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No items yet. Add the first one!'**
   String get setDetailEmpty;
+
+  /// No description provided for @itemPromptLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Prompt'**
   String get itemPromptLabel;
+
+  /// No description provided for @itemAnswerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer'**
   String get itemAnswerLabel;
+
+  /// No description provided for @itemTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
   String get itemTypeLabel;
+
+  /// No description provided for @typeChoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Word (choice)'**
   String get typeChoice;
+
+  /// No description provided for @typeFreeText.
+  ///
+  /// In en, this message translates to:
+  /// **'Word (type answer)'**
   String get typeFreeText;
+
+  /// No description provided for @typePhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
   String get typePhone;
+
+  /// No description provided for @typeDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Birthday'**
   String get typeDate;
+
+  /// Display name for the German language code (de)
+  ///
+  /// In en, this message translates to:
+  /// **'German'**
   String get languageDe;
+
+  /// Display name for the English language code (en)
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
   String get languageEn;
+
+  /// Generic X -> Y direction-framing label built from promptLang/answerLang display names (#022)
+  ///
+  /// In en, this message translates to:
+  /// **'{fromLanguage} → {toLanguage}'**
   String exerciseDirectionLabel(String fromLanguage, String toLanguage);
+
+  /// Toggle label revealing the promptLang/answerLang dropdowns in the item editor (#022)
+  ///
+  /// In en, this message translates to:
+  /// **'Vocabulary translation'**
   String get itemLanguagePairToggleLabel;
+
+  /// Label for the prompt-language dropdown in the item editor (#022)
+  ///
+  /// In en, this message translates to:
+  /// **'From language'**
   String get itemPromptLangLabel;
+
+  /// Label for the answer-language dropdown in the item editor (#022)
+  ///
+  /// In en, this message translates to:
+  /// **'To language'**
   String get itemAnswerLangLabel;
+
+  /// Inline error when the language-pair toggle is on but a language is not picked (#022)
+  ///
+  /// In en, this message translates to:
+  /// **'Pick both languages'**
   String get errorLanguagePairRequired;
+
+  /// Inline error when both picked languages are the same (#022)
+  ///
+  /// In en, this message translates to:
+  /// **'Languages must differ'**
   String get errorLanguagePairSame;
+
+  /// No description provided for @shareSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
   String get shareSet;
+
+  /// No description provided for @importSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Import'**
   String get importSet;
+
+  /// No description provided for @setActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Set actions'**
   String get setActions;
+
+  /// No description provided for @shareFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing failed. Please try again.'**
   String get shareFailed;
+
+  /// No description provided for @importFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Import failed. Please try again.'**
   String get importFailed;
+
+  /// No description provided for @errorRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'This field is required'**
   String get errorRequired;
+
+  /// No description provided for @errorCreatorLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Max 50 characters'**
   String get errorCreatorLength;
+
+  /// No description provided for @errorInvalidPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter 3–15 digits'**
   String get errorInvalidPhone;
+
+  /// No description provided for @errorInvalidDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Use YYYY-MM-DD (1900-01-01…today)'**
   String get errorInvalidDate;
+
+  /// Label for one optional vocab distractor field
+  ///
+  /// In en, this message translates to:
+  /// **'Distractor {index}'**
   String itemDistractorLabel(int index);
+
+  /// No description provided for @itemDistractorHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional'**
   String get itemDistractorHint;
+
+  /// No description provided for @itemDayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Day'**
   String get itemDayLabel;
+
+  /// No description provided for @itemMonthLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
   String get itemMonthLabel;
+
+  /// No description provided for @itemYearLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Year'**
   String get itemYearLabel;
+
+  /// No description provided for @itemDateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter day, month and year'**
   String get itemDateHint;
+
+  /// No description provided for @errorDuplicateChoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Must be different from the answer'**
   String get errorDuplicateChoice;
+
+  /// No description provided for @errorInvalidDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a day 1–31'**
   String get errorInvalidDay;
+
+  /// No description provided for @errorInvalidMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a month 1–12'**
   String get errorInvalidMonth;
+
+  /// No description provided for @errorInvalidYear.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a year 1900–today'**
   String get errorInvalidYear;
 
-  // Phone exercise (#008)
+  /// Prompt shown above the dial pad for phone exercises
+  ///
+  /// In en, this message translates to:
+  /// **'Dial the number'**
   String get exercisePhoneDialPrompt;
+
+  /// Tooltip/label for the reveal hint button (eye icon)
+  ///
+  /// In en, this message translates to:
+  /// **'Reveal number'**
   String get exercisePhoneRevealHint;
+
+  /// Accessibility label for reveal hint button
+  ///
+  /// In en, this message translates to:
+  /// **'Reveal the phone number (costs hint bonus)'**
   String get exercisePhoneRevealHintAria;
+
+  /// Character used to mask digits as they are typed
+  ///
+  /// In en, this message translates to:
+  /// **'●'**
   String get exercisePhoneMaskedDigit;
+
+  /// Success message when phone number is dialed correctly
+  ///
+  /// In en, this message translates to:
+  /// **'Correct!'**
   String get exercisePhoneCorrect;
+
+  /// Error message showing the correct phone number
+  ///
+  /// In en, this message translates to:
+  /// **'The number was {answer}'**
   String exercisePhoneWrongAnswer(String answer);
+
+  /// Accessibility label for the date exercise reveal hint button
+  ///
+  /// In en, this message translates to:
+  /// **'Reveal the date (costs hint bonus)'**
   String get exerciseDateRevealHintAria;
 
-  // Free-text exercise (#007)
+  /// Placeholder shown in the empty free-text answer field
+  ///
+  /// In en, this message translates to:
+  /// **'Type the answer'**
   String get exerciseFreeTextPlaceholder;
+
+  /// Accessibility label/tooltip for the free-text reveal hint button
+  ///
+  /// In en, this message translates to:
+  /// **'Reveal the first letter (costs hint bonus)'**
   String get exerciseFreeTextRevealHintAria;
+
+  /// Hint shown after reveal-hint is used, with the expected answer's first letter
+  ///
+  /// In en, this message translates to:
+  /// **'Starts with: {letter}'**
   String exerciseFreeTextHintLabel(String letter);
 
-  // Multiple-choice exercise (#006)
+  /// Placeholder distractor label used when there are not enough real distractors (#006)
+  ///
+  /// In en, this message translates to:
+  /// **'Option {index}'**
   String exerciseChoicePlaceholderOption(int index);
+
+  /// Accessibility label for a multiple-choice option: its text plus its position among the options
+  ///
+  /// In en, this message translates to:
+  /// **'{label}, option {position} of {total}'**
   String exerciseChoiceOptionSemanticLabel(
     String label,
     int position,
     int total,
   );
 
-  // Lesson shell (#005)
-  String get lessonStart;
-  String get lessonTitle;
-  String get lessonActions;
-  String get lessonQuit;
-  String get lessonProgressLabel;
-  String get lessonCorrect;
-  String lessonWrongAnswer(String answer);
-  String get lessonCheck;
-  String get lessonContinue;
-  String get lessonSkip;
-  String get lessonQuitTitle;
-  String get lessonQuitMessage;
-  String get lessonConfirmQuit;
-  String lessonScoreSummary(int correct, int total, int pct);
-  String xpEarnedLabel(int xp);
-  String lessonXpBonusCallout(int bonus);
-  String lessonLevelUpCallout(int level);
-  String levelLabel(int level);
-  String get levelProgressLabel;
-  String levelProgressText(int xpIntoLevel, int xpForNextLevel);
-  String lessonStreakResultText(int streakCount);
-  String streakCountLabel(int streakCount);
-  String get streakTodayDoneLabel;
-  String get lessonPracticeAgain;
-  String get lessonBackToLibrary;
-  String get lessonBackToHome;
+  /// Empty state message for set with no items, prompting to add items
+  ///
+  /// In en, this message translates to:
+  /// **'Add items to start practicing!'**
   String get lessonEmptySetNote;
 
-  // Home dashboard / onboarding / parental info (#012)
+  /// Button label to start a lesson/practice session
+  ///
+  /// In en, this message translates to:
+  /// **'Practice'**
+  String get lessonStart;
+
+  /// App bar title for the lesson screen
+  ///
+  /// In en, this message translates to:
+  /// **'Lesson'**
+  String get lessonTitle;
+
+  /// Tooltip for the lesson overflow menu button
+  ///
+  /// In en, this message translates to:
+  /// **'Lesson actions'**
+  String get lessonActions;
+
+  /// Tooltip for the quit button in lesson app bar
+  ///
+  /// In en, this message translates to:
+  /// **'Quit lesson'**
+  String get lessonQuit;
+
+  /// Accessibility label for lesson progress bar
+  ///
+  /// In en, this message translates to:
+  /// **'Lesson progress'**
+  String get lessonProgressLabel;
+
+  /// Feedback message for correct answer
+  ///
+  /// In en, this message translates to:
+  /// **'Correct!'**
+  String get lessonCorrect;
+
+  /// Feedback message for wrong answer with correct answer placeholder
+  ///
+  /// In en, this message translates to:
+  /// **'The answer was {answer}'**
+  String lessonWrongAnswer(String answer);
+
+  /// Button label to check/submit answer
+  ///
+  /// In en, this message translates to:
+  /// **'CHECK'**
+  String get lessonCheck;
+
+  /// Button label to continue to next question after feedback
+  ///
+  /// In en, this message translates to:
+  /// **'CONTINUE'**
+  String get lessonContinue;
+
+  /// Button label to skip current question
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get lessonSkip;
+
+  /// Title for quit lesson confirmation dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Quit lesson?'**
+  String get lessonQuitTitle;
+
+  /// Message for quit lesson confirmation dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Your progress will be lost. Are you sure you want to quit?'**
+  String get lessonQuitMessage;
+
+  /// Confirm button label for quit lesson dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Quit'**
+  String get lessonConfirmQuit;
+
+  /// Score summary with correct count, total, and percentage
+  ///
+  /// In en, this message translates to:
+  /// **'{correct} of {total} correct ({pct}%)'**
+  String lessonScoreSummary(int correct, int total, int pct);
+
+  /// XP-earned count-up label on the lesson result screen (issue #010)
+  ///
+  /// In en, this message translates to:
+  /// **'+{xp} XP'**
+  String xpEarnedLabel(int xp);
+
+  /// Separate callout shown when the lesson's perfect-score XP bonus applies (issue #010)
+  ///
+  /// In en, this message translates to:
+  /// **'+{bonus} Perfect!'**
+  String lessonXpBonusCallout(int bonus);
+
+  /// Callout shown when the lesson's completion crossed at least one level boundary (issue #053)
+  ///
+  /// In en, this message translates to:
+  /// **'Level Up! Level {level}'**
+  String lessonLevelUpCallout(int level);
+
+  /// Current level label on the level-progress widget (issue #010)
+  ///
+  /// In en, this message translates to:
+  /// **'Level {level}'**
+  String levelLabel(int level);
+
+  /// Screen-reader label for the level-progress bar (issue #010)
+  ///
+  /// In en, this message translates to:
+  /// **'Progress to next level'**
+  String get levelProgressLabel;
+
+  /// Numeric XP-into-level / XP-needed-for-level text under the level-progress bar (issue #010)
+  ///
+  /// In en, this message translates to:
+  /// **'{xpIntoLevel} / {xpForNextLevel} XP to next level'**
+  String levelProgressText(int xpIntoLevel, int xpForNextLevel);
+
+  /// Headline announcing the streak on the lesson result screen (issue #011)
+  ///
+  /// In en, this message translates to:
+  /// **'{streakCount}-day streak!'**
+  String lessonStreakResultText(int streakCount);
+
+  /// Streak-count label shown inside StreakBadge, next to the flame icon (issue #011)
+  ///
+  /// In en, this message translates to:
+  /// **'{streakCount}'**
+  String streakCountLabel(int streakCount);
+
+  /// Accessibility label for StreakBadge's "today done" check indicator (issue #011)
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s lesson counted'**
+  String get streakTodayDoneLabel;
+
+  /// Button label to practice the same set again
+  ///
+  /// In en, this message translates to:
+  /// **'Practice again'**
+  String get lessonPracticeAgain;
+
+  /// Button label to go back to library
+  ///
+  /// In en, this message translates to:
+  /// **'Back to library'**
+  String get lessonBackToLibrary;
+
+  /// Lesson result button label when the lesson was reached directly from Home (issue #034), not via the library/set-detail flow
+  ///
+  /// In en, this message translates to:
+  /// **'Back to home'**
+  String get lessonBackToHome;
+
+  /// Generic late-night greeting on Home (before 5am) when no display name is set (issue #060)
+  ///
+  /// In en, this message translates to:
+  /// **'Up late?'**
   String get homeGreetingNight;
+
+  /// Late-night greeting on Home (before 5am) with the display name (issue #060)
+  ///
+  /// In en, this message translates to:
+  /// **'Up late, {name}?'**
   String homeGreetingNightNamed(String name);
+
+  /// Generic morning greeting on Home when no display name is set (issue #012)
+  ///
+  /// In en, this message translates to:
+  /// **'Good morning!'**
   String get homeGreetingMorning;
+
+  /// Morning greeting on Home with the display name (issue #012)
+  ///
+  /// In en, this message translates to:
+  /// **'Good morning, {name}!'**
   String homeGreetingMorningNamed(String name);
+
+  /// Generic afternoon greeting on Home when no display name is set (issue #012)
+  ///
+  /// In en, this message translates to:
+  /// **'Good afternoon!'**
   String get homeGreetingAfternoon;
+
+  /// Afternoon greeting on Home with the display name (issue #012)
+  ///
+  /// In en, this message translates to:
+  /// **'Good afternoon, {name}!'**
   String homeGreetingAfternoonNamed(String name);
+
+  /// Generic evening greeting on Home when no display name is set (issue #012)
+  ///
+  /// In en, this message translates to:
+  /// **'Good evening!'**
   String get homeGreetingEvening;
+
+  /// Evening greeting on Home with the display name (issue #012)
+  ///
+  /// In en, this message translates to:
+  /// **'Good evening, {name}!'**
   String homeGreetingEveningNamed(String name);
 
-  // Holiday + funny-rotation greetings on Home (#061)
+  /// Fixed-date holiday greeting on Home for Jan 1, overriding the time-of-day greeting (issue #061)
+  ///
+  /// In en, this message translates to:
+  /// **'Happy New Year!'**
   String get homeGreetingNewYear;
+
+  /// Fixed-date holiday greeting on Home for Apr 1, overriding the time-of-day greeting (issue #061)
+  ///
+  /// In en, this message translates to:
+  /// **'Watch out for pranks today!'**
   String get homeGreetingAprilFools;
+
+  /// Fixed-date holiday greeting on Home for Oct 31, overriding the time-of-day greeting (issue #061)
+  ///
+  /// In en, this message translates to:
+  /// **'Happy Halloween!'**
   String get homeGreetingHalloween;
+
+  /// Fixed-date holiday greeting on Home for Dec 24, overriding the time-of-day greeting (issue #061)
+  ///
+  /// In en, this message translates to:
+  /// **'Christmas Eve is here!'**
   String get homeGreetingChristmasEve;
+
+  /// Fixed-date holiday greeting on Home for Dec 25, overriding the time-of-day greeting (issue #061)
+  ///
+  /// In en, this message translates to:
+  /// **'Merry Christmas!'**
   String get homeGreetingChristmasDay;
+
+  /// Playful rotation greeting on Home, shown on some non-holiday days instead of the plain time-of-day greeting; generic copy, no name personalization (issue #061)
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to level up today?'**
   String get homeGreetingFunny1;
+
+  /// Playful rotation greeting on Home (issue #061)
+  ///
+  /// In en, this message translates to:
+  /// **'Your foxy brain is warming up!'**
   String get homeGreetingFunny2;
+
+  /// Playful rotation greeting on Home (issue #061)
+  ///
+  /// In en, this message translates to:
+  /// **'Let\'s make today count!'**
   String get homeGreetingFunny3;
+
+  /// Playful rotation greeting on Home (issue #061)
+  ///
+  /// In en, this message translates to:
+  /// **'Knowledge snacks, coming right up!'**
   String get homeGreetingFunny4;
+
+  /// Playful rotation greeting on Home (issue #061)
+  ///
+  /// In en, this message translates to:
+  /// **'Time to feed the fox some facts!'**
   String get homeGreetingFunny5;
+
+  /// Playful rotation greeting on Home (issue #061)
+  ///
+  /// In en, this message translates to:
+  /// **'Brain gains await!'**
   String get homeGreetingFunny6;
+
+  /// Playful rotation greeting on Home (issue #061)
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s a great day to learn something new!'**
   String get homeGreetingFunny7;
+
+  /// Playful rotation greeting on Home (issue #061)
+  ///
+  /// In en, this message translates to:
+  /// **'Fox mode: activated!'**
   String get homeGreetingFunny8;
 
+  /// Tooltip/accessibility label on Home's tappable greeting, opening the rename dialog (issue #012)
+  ///
+  /// In en, this message translates to:
+  /// **'Edit your name'**
   String get homeEditNameTooltip;
+
+  /// Title of the tap-to-rename dialog (issue #012)
+  ///
+  /// In en, this message translates to:
+  /// **'Your name'**
   String get homeEditNameDialogTitle;
+
+  /// Hint text in the tap-to-rename dialog's text field (issue #012)
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your name (optional)'**
   String get homeEditNameHint;
+
+  /// Home's Continue button label, resuming the last practiced set (issue #012)
+  ///
+  /// In en, this message translates to:
+  /// **'Continue practicing'**
   String get homeContinueButton;
+
+  /// Home's Browse sets button label, navigating to the library (issue #012)
+  ///
+  /// In en, this message translates to:
+  /// **'Browse sets'**
   String get homeBrowseSetsButton;
+
+  /// Accessibility label for Home's daily-goal ring (issue #012)
+  ///
+  /// In en, this message translates to:
+  /// **'Daily goal progress'**
   String get homeGoalRingLabel;
+
+  /// Accessibility value and center label for Home's daily-goal ring: XP earned today over the daily goal (issue #012)
+  ///
+  /// In en, this message translates to:
+  /// **'{earnedXp} / {goalXp} XP today'**
   String homeGoalRingValue(int earnedXp, int goalXp);
+
+  /// Primary line of Home's daily-goal ring center label (issue #037); the goal amount is conveyed visually by the ring's fill, not restated here
+  ///
+  /// In en, this message translates to:
+  /// **'{earnedXp} XP'**
   String homeGoalRingXp(int earnedXp);
+
+  /// Secondary (caption) line of Home's daily-goal ring center label (issue #037)
+  ///
+  /// In en, this message translates to:
+  /// **'today'**
   String get homeGoalRingToday;
+
+  /// Tooltip/accessibility label for Home's app bar overflow menu button (issue #055)
+  ///
+  /// In en, this message translates to:
+  /// **'More options'**
   String get homeOverflowMenuTooltip;
+
+  /// Label of Home's overflow-menu entry opening the parental info screen (issue #012, menu entry since #055)
+  ///
+  /// In en, this message translates to:
+  /// **'For parents'**
   String get homeParentalInfoTooltip;
+
+  /// Label of Home's overflow-menu entry opening the settings screen (issue #055)
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
   String get homeSettingsMenuItem;
+
+  /// App bar title for the settings screen (issue #055)
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
   String get settingsTitle;
+
+  /// Title of the haptics SwitchListTile on the settings screen (issue #055)
+  ///
+  /// In en, this message translates to:
+  /// **'Haptics'**
   String get settingsHapticsLabel;
+
+  /// Subtitle of the haptics SwitchListTile on the settings screen (issue #055)
+  ///
+  /// In en, this message translates to:
+  /// **'Vibrate on correct and incorrect answers'**
   String get settingsHapticsSubtitle;
+
+  /// Title of the sound SwitchListTile on the settings screen (issue #055)
+  ///
+  /// In en, this message translates to:
+  /// **'Sound'**
   String get settingsSoundLabel;
+
+  /// Subtitle of the sound SwitchListTile on the settings screen (issue #055)
+  ///
+  /// In en, this message translates to:
+  /// **'Play chimes on level-up and correct answers'**
   String get settingsSoundSubtitle;
+
+  /// Title of the display name ListTile on the settings screen (issue #057)
+  ///
+  /// In en, this message translates to:
+  /// **'Display name'**
   String get settingsDisplayNameLabel;
+
+  /// Placeholder subtitle of the display name ListTile when no name is set (issue #057)
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
   String get settingsDisplayNameUnset;
+
+  /// Title of the settings display name edit dialog (issue #057)
+  ///
+  /// In en, this message translates to:
+  /// **'Display name'**
   String get settingsDisplayNameDialogTitle;
+
+  /// Hint text in the settings display name edit dialog's text field (issue #057)
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your name (optional)'**
   String get settingsDisplayNameHint;
+
+  /// Title of the daily XP goal ListTile on the settings screen (issue #057)
+  ///
+  /// In en, this message translates to:
+  /// **'Daily XP goal'**
   String get settingsDailyGoalLabel;
+
+  /// Subtitle of the daily XP goal ListTile, showing the current goal (issue #057)
+  ///
+  /// In en, this message translates to:
+  /// **'{xp} XP'**
   String settingsDailyGoalSubtitle(int xp);
+
+  /// Title of the settings daily XP goal edit dialog (issue #057)
+  ///
+  /// In en, this message translates to:
+  /// **'Daily XP goal'**
   String get settingsDailyGoalDialogTitle;
+
+  /// Hint text in the settings daily XP goal edit dialog's text field (issue #057)
+  ///
+  /// In en, this message translates to:
+  /// **'Daily XP goal (10–500)'**
   String get settingsDailyGoalHint;
+
+  /// Validation message shown in the daily XP goal dialog for non-numeric or out-of-range input (issue #057)
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a value between 10 and 500'**
   String get settingsDailyGoalValidationError;
+
+  /// App bar title for the static parental info screen (issue #012)
+  ///
+  /// In en, this message translates to:
+  /// **'For parents'**
   String get parentalInfoTitle;
+
+  /// Body copy of the static parental info screen (issue #012)
+  ///
+  /// In en, this message translates to:
+  /// **'FoxStreak works fully offline on this device. There\'s no chat, no social features, and no ads. All progress stays local and is never uploaded anywhere.'**
   String get parentalInfoBody;
+
+  /// First onboarding slide title (issue #012)
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to FoxStreak!'**
   String get onboardingSlide1Title;
+
+  /// First onboarding slide body (issue #012)
+  ///
+  /// In en, this message translates to:
+  /// **'Practice a little every day and watch your streak grow.'**
   String get onboardingSlide1Body;
+
+  /// Second onboarding slide title (issue #012)
+  ///
+  /// In en, this message translates to:
+  /// **'Earn XP, level up'**
   String get onboardingSlide2Title;
+
+  /// Second onboarding slide body (issue #012)
+  ///
+  /// In en, this message translates to:
+  /// **'Correct answers earn XP. Collect enough to level up!'**
   String get onboardingSlide2Body;
+
+  /// Third onboarding slide title, with optional name capture (issue #012)
+  ///
+  /// In en, this message translates to:
+  /// **'What should we call you?'**
   String get onboardingSlide3Title;
+
+  /// Third onboarding slide body (issue #012)
+  ///
+  /// In en, this message translates to:
+  /// **'Totally optional — you can always change this later.'**
   String get onboardingSlide3Body;
+
+  /// Hint text in the onboarding name field (issue #012)
+  ///
+  /// In en, this message translates to:
+  /// **'Your name (optional)'**
   String get onboardingNameHint;
+
+  /// Skip button label on every onboarding slide (issue #012)
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
   String get onboardingSkip;
+
+  /// Next button label on non-final onboarding slides (issue #012)
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
   String get onboardingNext;
+
+  /// Final onboarding slide's primary button label (issue #012)
+  ///
+  /// In en, this message translates to:
+  /// **'Get started'**
   String get onboardingGetStarted;
 
-  // Mascot collection / lootbox (#059)
+  /// Generic a11y/visible label for an equipped or revealed mascot, decoded from its filename into the literal emoji — no per-animal arb keys (issue #059)
+  ///
+  /// In en, this message translates to:
+  /// **'Mascot {emoji}'**
   String mascotSemanticLabel(String emoji);
+
+  /// A11y label for the currently-equipped mascot tile in the collection grid (issue #059)
+  ///
+  /// In en, this message translates to:
+  /// **'Mascot {emoji}, equipped'**
   String mascotEquippedSemanticLabel(String emoji);
+
+  /// A11y label for a not-yet-owned mascot tile in the collection grid (issue #059)
+  ///
+  /// In en, this message translates to:
+  /// **'Locked mascot'**
   String get mascotLockedSemanticLabel;
+
+  /// A11y label for Home's tap-to-collect mascot button (issue #059)
+  ///
+  /// In en, this message translates to:
+  /// **'Open your mascot collection'**
   String get homeMascotSemanticLabel;
+
+  /// App bar title of the mascot collection/equip screen (issue #059)
+  ///
+  /// In en, this message translates to:
+  /// **'Your mascots'**
   String get mascotCollectionTitle;
+
+  /// Heading on the unopened lootbox screen (issue #059)
+  ///
+  /// In en, this message translates to:
+  /// **'Daily lootbox!'**
   String get lootboxHeading;
+
+  /// Tap-to-open prompt on the unopened lootbox screen (issue #059)
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to reveal your new mascot!'**
   String get lootboxTapPrompt;
+
+  /// Heading shown once the lootbox has been opened (issue #059)
+  ///
+  /// In en, this message translates to:
+  /// **'You got a new mascot!'**
   String get lootboxRevealedTitle;
-}
-
-class AppLocalizationsEn extends AppLocalizations {
-  AppLocalizationsEn() : super('en');
-
-  @override
-  String get appTitle => 'FoxStreak';
-  @override
-  String get libraryTitle => 'My Sets';
-  @override
-  String get libraryEmptyTitle => 'No sets yet';
-  @override
-  String get libraryEmptyMessage =>
-      'Create your first set or try the demo set.';
-  @override
-  String get libraryTryDemo => 'Try demo set';
-  @override
-  String get libraryLoading => 'Loading sets…';
-  @override
-  String get librarySeedError =>
-      'Could not load the demo set. Please try again.';
-  @override
-  String get librarySeedLoading => 'Loading demo set…';
-  @override
-  String setItemCount(int count) => intl.Intl.plural(
-    count,
-    locale: localeName,
-    zero: 'No items',
-    one: '1 item',
-    other: '$count items',
-  );
-  @override
-  String get newSet => 'New set';
-  @override
-  String get createSet => 'Create set';
-  @override
-  String get editSet => 'Edit set';
-  @override
-  String get editItem => 'Edit item';
-  @override
-  String get setTitleLabel => 'Title';
-  @override
-  String get setCreatorLabel => 'Your name';
-  @override
-  String get setDescriptionLabel => 'Description (optional)';
-  @override
-  String get setCategoryLabel => 'Category';
-  @override
-  String get categoryVocab => 'Vocab';
-  @override
-  String get categoryMath => 'Math';
-  @override
-  String get categoryGeography => 'Geography';
-  @override
-  String get categoryGeneral => 'General';
-  @override
-  String get cancel => 'Cancel';
-  @override
-  String get save => 'Save';
-  @override
-  String get edit => 'Edit';
-  @override
-  String get create => 'Create';
-  @override
-  String get rename => 'Rename';
-  @override
-  String get duplicate => 'Duplicate';
-  @override
-  String get delete => 'Delete';
-  @override
-  String get deleteSetTitle => 'Delete set?';
-  @override
-  String deleteSetMessage(String title) =>
-      'Delete "$title" with all its items? This cannot be undone.';
-  @override
-  String get deleteItemTitle => 'Delete item?';
-  @override
-  String get deleteItemMessage => 'Delete this item? This cannot be undone.';
-  @override
-  String get confirmDelete => 'Delete';
-  @override
-  String get setDetailAddItem => 'Add item';
-  @override
-  String get setDetailEmpty => 'No items yet. Add the first one!';
-  @override
-  String get itemPromptLabel => 'Prompt';
-  @override
-  String get itemAnswerLabel => 'Answer';
-  @override
-  String get itemTypeLabel => 'Type';
-  @override
-  String get typeChoice => 'Word (choice)';
-  @override
-  String get typeFreeText => 'Word (type answer)';
-  @override
-  String get typePhone => 'Phone';
-  @override
-  String get typeDate => 'Birthday';
-  @override
-  String get languageDe => 'German';
-  @override
-  String get languageEn => 'English';
-  @override
-  String exerciseDirectionLabel(String fromLanguage, String toLanguage) =>
-      '$fromLanguage → $toLanguage';
-  @override
-  String get itemLanguagePairToggleLabel => 'Vocabulary translation';
-  @override
-  String get itemPromptLangLabel => 'From language';
-  @override
-  String get itemAnswerLangLabel => 'To language';
-  @override
-  String get errorLanguagePairRequired => 'Pick both languages';
-  @override
-  String get errorLanguagePairSame => 'Languages must differ';
-  @override
-  String get shareSet => 'Share';
-  @override
-  String get importSet => 'Import';
-  @override
-  String get setActions => 'Set actions';
-  @override
-  String get shareFailed => 'Sharing failed. Please try again.';
-  @override
-  String get importFailed => 'Import failed. Please try again.';
-  @override
-  String get errorRequired => 'This field is required';
-  @override
-  String get errorCreatorLength => 'Max 50 characters';
-  @override
-  String get errorInvalidPhone => 'Enter 3–15 digits';
-  @override
-  String get errorInvalidDate => 'Use YYYY-MM-DD (1900-01-01…today)';
-  @override
-  String itemDistractorLabel(int index) => 'Distractor $index';
-  @override
-  String get itemDistractorHint => 'Optional';
-  @override
-  String get itemDayLabel => 'Day';
-  @override
-  String get itemMonthLabel => 'Month';
-  @override
-  String get itemYearLabel => 'Year';
-  @override
-  String get itemDateHint => 'Enter day, month and year';
-  @override
-  String get errorDuplicateChoice => 'Must be different from the answer';
-  @override
-  String get errorInvalidDay => 'Enter a day 1–31';
-  @override
-  String get errorInvalidMonth => 'Enter a month 1–12';
-  @override
-  String get errorInvalidYear => 'Enter a year 1900–today';
-
-  // Phone exercise (#008)
-  @override
-  String get exercisePhoneDialPrompt => 'Dial the number';
-  @override
-  String get exercisePhoneRevealHint => 'Reveal number';
-  @override
-  String get exercisePhoneRevealHintAria =>
-      'Reveal the phone number (costs hint bonus)';
-  @override
-  String get exercisePhoneMaskedDigit => '●';
-  @override
-  String get exercisePhoneCorrect => 'Correct!';
-  @override
-  String exercisePhoneWrongAnswer(String answer) => 'The number was $answer';
-  @override
-  String get exerciseDateRevealHintAria => 'Reveal the date (costs hint bonus)';
-
-  // Free-text exercise (#007)
-  @override
-  String get exerciseFreeTextPlaceholder => 'Type the answer';
-  @override
-  String get exerciseFreeTextRevealHintAria =>
-      'Reveal the first letter (costs hint bonus)';
-  @override
-  String exerciseFreeTextHintLabel(String letter) => 'Starts with: $letter';
-
-  // Multiple-choice exercise (#006)
-  @override
-  String exerciseChoicePlaceholderOption(int index) => 'Option $index';
-  @override
-  String exerciseChoiceOptionSemanticLabel(
-    String label,
-    int position,
-    int total,
-  ) => '$label, option $position of $total';
-
-  // Lesson shell (#005)
-  @override
-  String get lessonStart => 'Practice';
-  @override
-  String get lessonTitle => 'Lesson';
-  @override
-  String get lessonActions => 'Lesson actions';
-  @override
-  String get lessonQuit => 'Quit lesson';
-  @override
-  String get lessonProgressLabel => 'Lesson progress';
-  @override
-  String get lessonCorrect => 'Correct!';
-  @override
-  String lessonWrongAnswer(String answer) => 'The answer was $answer';
-  @override
-  String get lessonCheck => 'CHECK';
-  @override
-  String get lessonContinue => 'CONTINUE';
-  @override
-  String get lessonSkip => 'Skip';
-  @override
-  String get lessonQuitTitle => 'Quit lesson?';
-  @override
-  String get lessonQuitMessage =>
-      'Your progress will be lost. Are you sure you want to quit?';
-  @override
-  String get lessonConfirmQuit => 'Quit';
-  @override
-  String lessonScoreSummary(int correct, int total, int pct) =>
-      '$correct of $total correct ($pct%)';
-  @override
-  String xpEarnedLabel(int xp) => '+$xp XP';
-  @override
-  String lessonXpBonusCallout(int bonus) => '+$bonus Perfect!';
-  @override
-  String lessonLevelUpCallout(int level) => 'Level Up! Level $level';
-  @override
-  String levelLabel(int level) => 'Level $level';
-  @override
-  String get levelProgressLabel => 'Progress to next level';
-  @override
-  String levelProgressText(int xpIntoLevel, int xpForNextLevel) =>
-      '$xpIntoLevel / $xpForNextLevel XP to next level';
-  @override
-  String lessonStreakResultText(int streakCount) => '$streakCount-day streak!';
-  @override
-  String streakCountLabel(int streakCount) => '$streakCount';
-  @override
-  String get streakTodayDoneLabel => "Today's lesson counted";
-  @override
-  String get lessonPracticeAgain => 'Practice again';
-  @override
-  String get lessonBackToLibrary => 'Back to library';
-  @override
-  String get lessonBackToHome => 'Back to home';
-  @override
-  String get lessonEmptySetNote => 'Add items to start practicing!';
-
-  // Home dashboard / onboarding / parental info (#012)
-  @override
-  String get homeGreetingNight => 'Up late?';
-  @override
-  String homeGreetingNightNamed(String name) => 'Up late, $name?';
-  @override
-  String get homeGreetingMorning => 'Good morning!';
-  @override
-  String homeGreetingMorningNamed(String name) => 'Good morning, $name!';
-  @override
-  String get homeGreetingAfternoon => 'Good afternoon!';
-  @override
-  String homeGreetingAfternoonNamed(String name) => 'Good afternoon, $name!';
-  @override
-  String get homeGreetingEvening => 'Good evening!';
-  @override
-  String homeGreetingEveningNamed(String name) => 'Good evening, $name!';
-
-  // Holiday + funny-rotation greetings on Home (#061)
-  @override
-  String get homeGreetingNewYear => 'Happy New Year!';
-  @override
-  String get homeGreetingAprilFools => 'Watch out for pranks today!';
-  @override
-  String get homeGreetingHalloween => 'Happy Halloween!';
-  @override
-  String get homeGreetingChristmasEve => 'Christmas Eve is here!';
-  @override
-  String get homeGreetingChristmasDay => 'Merry Christmas!';
-  @override
-  String get homeGreetingFunny1 => 'Ready to level up today?';
-  @override
-  String get homeGreetingFunny2 => 'Your foxy brain is warming up!';
-  @override
-  String get homeGreetingFunny3 => "Let's make today count!";
-  @override
-  String get homeGreetingFunny4 => 'Knowledge snacks, coming right up!';
-  @override
-  String get homeGreetingFunny5 => 'Time to feed the fox some facts!';
-  @override
-  String get homeGreetingFunny6 => 'Brain gains await!';
-  @override
-  String get homeGreetingFunny7 =>
-      "Today's a great day to learn something new!";
-  @override
-  String get homeGreetingFunny8 => 'Fox mode: activated!';
-
-  @override
-  String get homeEditNameTooltip => 'Edit your name';
-  @override
-  String get homeEditNameDialogTitle => 'Your name';
-  @override
-  String get homeEditNameHint => 'Enter your name (optional)';
-  @override
-  String get homeContinueButton => 'Continue practicing';
-  @override
-  String get homeBrowseSetsButton => 'Browse sets';
-  @override
-  String get homeGoalRingLabel => 'Daily goal progress';
-  @override
-  String homeGoalRingValue(int earnedXp, int goalXp) =>
-      '$earnedXp / $goalXp XP today';
-  @override
-  String homeGoalRingXp(int earnedXp) => '$earnedXp XP';
-  @override
-  String get homeGoalRingToday => 'today';
-  @override
-  String get homeOverflowMenuTooltip => 'More options';
-  @override
-  String get homeParentalInfoTooltip => 'For parents';
-  @override
-  String get homeSettingsMenuItem => 'Settings';
-  @override
-  String get settingsTitle => 'Settings';
-  @override
-  String get settingsHapticsLabel => 'Haptics';
-  @override
-  String get settingsHapticsSubtitle =>
-      'Vibrate on correct and incorrect answers';
-  @override
-  String get settingsSoundLabel => 'Sound';
-  @override
-  String get settingsSoundSubtitle =>
-      'Play chimes on level-up and correct answers';
-  @override
-  String get settingsDisplayNameLabel => 'Display name';
-  @override
-  String get settingsDisplayNameUnset => 'Not set';
-  @override
-  String get settingsDisplayNameDialogTitle => 'Display name';
-  @override
-  String get settingsDisplayNameHint => 'Enter your name (optional)';
-  @override
-  String get settingsDailyGoalLabel => 'Daily XP goal';
-  @override
-  String settingsDailyGoalSubtitle(int xp) => '$xp XP';
-  @override
-  String get settingsDailyGoalDialogTitle => 'Daily XP goal';
-  @override
-  String get settingsDailyGoalHint => 'Daily XP goal (10–500)';
-  @override
-  String get settingsDailyGoalValidationError =>
-      'Enter a value between 10 and 500';
-  @override
-  String get parentalInfoTitle => 'For parents';
-  @override
-  String get parentalInfoBody =>
-      "FoxStreak works fully offline on this device. There's no chat, no "
-      'social features, and no ads. All progress stays local and is never '
-      'uploaded anywhere.';
-  @override
-  String get onboardingSlide1Title => 'Welcome to FoxStreak!';
-  @override
-  String get onboardingSlide1Body =>
-      'Practice a little every day and watch your streak grow.';
-  @override
-  String get onboardingSlide2Title => 'Earn XP, level up';
-  @override
-  String get onboardingSlide2Body =>
-      'Correct answers earn XP. Collect enough to level up!';
-  @override
-  String get onboardingSlide3Title => 'What should we call you?';
-  @override
-  String get onboardingSlide3Body =>
-      'Totally optional — you can always change this later.';
-  @override
-  String get onboardingNameHint => 'Your name (optional)';
-  @override
-  String get onboardingSkip => 'Skip';
-  @override
-  String get onboardingNext => 'Next';
-  @override
-  String get onboardingGetStarted => 'Get started';
-  @override
-  String mascotSemanticLabel(String emoji) => 'Mascot $emoji';
-  @override
-  String mascotEquippedSemanticLabel(String emoji) => 'Mascot $emoji, equipped';
-  @override
-  String get mascotLockedSemanticLabel => 'Locked mascot';
-  @override
-  String get homeMascotSemanticLabel => 'Open your mascot collection';
-  @override
-  String get mascotCollectionTitle => 'Your mascots';
-  @override
-  String get lootboxHeading => 'Daily lootbox!';
-  @override
-  String get lootboxTapPrompt => 'Tap to reveal your new mascot!';
-  @override
-  String get lootboxRevealedTitle => 'You got a new mascot!';
-}
-
-class AppLocalizationsDe extends AppLocalizations {
-  AppLocalizationsDe() : super('de');
-
-  @override
-  String get appTitle => 'FoxStreak';
-  @override
-  String get libraryTitle => 'Meine Sets';
-  @override
-  String get libraryEmptyTitle => 'Noch keine Sets';
-  @override
-  String get libraryEmptyMessage =>
-      'Erstelle dein erstes Set oder probiere das Demo-Set.';
-  @override
-  String get libraryTryDemo => 'Demo-Set ausprobieren';
-  @override
-  String get libraryLoading => 'Sets werden geladen…';
-  @override
-  String get librarySeedError =>
-      'Demo-Set konnte nicht geladen werden. Bitte erneut versuchen.';
-  @override
-  String get librarySeedLoading => 'Demo-Set wird geladen…';
-  @override
-  String setItemCount(int count) => intl.Intl.plural(
-    count,
-    locale: localeName,
-    zero: 'Keine Einträge',
-    one: '1 Eintrag',
-    other: '$count Einträge',
-  );
-  @override
-  String get newSet => 'Neues Set';
-  @override
-  String get createSet => 'Set erstellen';
-  @override
-  String get editSet => 'Set bearbeiten';
-  @override
-  String get editItem => 'Eintrag bearbeiten';
-  @override
-  String get setTitleLabel => 'Titel';
-  @override
-  String get setCreatorLabel => 'Dein Name';
-  @override
-  String get setDescriptionLabel => 'Beschreibung (optional)';
-  @override
-  String get setCategoryLabel => 'Kategorie';
-  @override
-  String get categoryVocab => 'Vokabeln';
-  @override
-  String get categoryMath => 'Mathe';
-  @override
-  String get categoryGeography => 'Geografie';
-  @override
-  String get categoryGeneral => 'Allgemein';
-  @override
-  String get cancel => 'Abbrechen';
-  @override
-  String get save => 'Speichern';
-  @override
-  String get edit => 'Bearbeiten';
-  @override
-  String get create => 'Erstellen';
-  @override
-  String get rename => 'Umbenennen';
-  @override
-  String get duplicate => 'Duplizieren';
-  @override
-  String get delete => 'Löschen';
-  @override
-  String get deleteSetTitle => 'Set löschen?';
-  @override
-  String deleteSetMessage(String title) =>
-      '"$title" mit allen Einträgen löschen? Das kann nicht rückgängig gemacht werden.';
-  @override
-  String get deleteItemTitle => 'Eintrag löschen?';
-  @override
-  String get deleteItemMessage =>
-      'Diesen Eintrag löschen? Das kann nicht rückgängig gemacht werden.';
-  @override
-  String get confirmDelete => 'Löschen';
-  @override
-  String get setDetailAddItem => 'Eintrag hinzufügen';
-  @override
-  String get setDetailEmpty => 'Noch keine Einträge. Füge den ersten hinzu!';
-  @override
-  String get itemPromptLabel => 'Frage';
-  @override
-  String get itemAnswerLabel => 'Antwort';
-  @override
-  String get itemTypeLabel => 'Typ';
-  @override
-  String get typeChoice => 'Wort (Auswahl)';
-  @override
-  String get typeFreeText => 'Wort (eintippen)';
-  @override
-  String get typePhone => 'Telefon';
-  @override
-  String get typeDate => 'Geburtstag';
-  @override
-  String get languageDe => 'Deutsch';
-  @override
-  String get languageEn => 'Englisch';
-  @override
-  String exerciseDirectionLabel(String fromLanguage, String toLanguage) =>
-      '$fromLanguage → $toLanguage';
-  @override
-  String get itemLanguagePairToggleLabel => 'Vokabel-Übersetzung';
-  @override
-  String get itemPromptLangLabel => 'Von Sprache';
-  @override
-  String get itemAnswerLangLabel => 'Zu Sprache';
-  @override
-  String get errorLanguagePairRequired => 'Wähle beide Sprachen';
-  @override
-  String get errorLanguagePairSame => 'Sprachen müssen sich unterscheiden';
-  @override
-  String get shareSet => 'Teilen';
-  @override
-  String get importSet => 'Importieren';
-  @override
-  String get setActions => 'Set-Aktionen';
-  @override
-  String get shareFailed => 'Teilen fehlgeschlagen. Bitte versuch es erneut.';
-  @override
-  String get importFailed =>
-      'Importieren fehlgeschlagen. Bitte versuch es erneut.';
-  @override
-  String get errorRequired => 'Dieses Feld ist erforderlich';
-  @override
-  String get errorCreatorLength => 'Max. 50 Zeichen';
-  @override
-  String get errorInvalidPhone => '3–15 Ziffern eingeben';
-  @override
-  String get errorInvalidDate => 'JJJJ-MM-TT nutzen (1900-01-01…heute)';
-  @override
-  String itemDistractorLabel(int index) => 'Distraktor $index';
-  @override
-  String get itemDistractorHint => 'Optional';
-  @override
-  String get itemDayLabel => 'Tag';
-  @override
-  String get itemMonthLabel => 'Monat';
-  @override
-  String get itemYearLabel => 'Jahr';
-  @override
-  String get itemDateHint => 'Tag, Monat und Jahr eingeben';
-  @override
-  String get errorDuplicateChoice => 'Muss sich von der Antwort unterscheiden';
-  @override
-  String get errorInvalidDay => 'Tag 1–31 eingeben';
-  @override
-  String get errorInvalidMonth => 'Monat 1–12 eingeben';
-  @override
-  String get errorInvalidYear => 'Jahr 1900–heute eingeben';
-
-  // Phone exercise (#008)
-  @override
-  String get exercisePhoneDialPrompt => 'Wähle die Nummer';
-  @override
-  String get exercisePhoneRevealHint => 'Nummer zeigen';
-  @override
-  String get exercisePhoneRevealHintAria =>
-      'Telefonnummer anzeigen (kostet Hinweis-Bonus)';
-  @override
-  String get exercisePhoneMaskedDigit => '●';
-  @override
-  String get exercisePhoneCorrect => 'Richtig!';
-  @override
-  String exercisePhoneWrongAnswer(String answer) => 'Die Nummer war $answer';
-  @override
-  String get exerciseDateRevealHintAria =>
-      'Datum anzeigen (kostet Hinweis-Bonus)';
-
-  // Free-text exercise (#007)
-  @override
-  String get exerciseFreeTextPlaceholder => 'Antwort eingeben';
-  @override
-  String get exerciseFreeTextRevealHintAria =>
-      'Ersten Buchstaben anzeigen (kostet Hinweis-Bonus)';
-  @override
-  String exerciseFreeTextHintLabel(String letter) => 'Beginnt mit: $letter';
-
-  // Multiple-choice exercise (#006)
-  @override
-  String exerciseChoicePlaceholderOption(int index) => 'Option $index';
-  @override
-  String exerciseChoiceOptionSemanticLabel(
-    String label,
-    int position,
-    int total,
-  ) => '$label, Option $position von $total';
-
-  // Lesson shell (#005)
-  @override
-  String get lessonStart => 'Üben';
-  @override
-  String get lessonTitle => 'Lektion';
-  @override
-  String get lessonActions => 'Lektionsaktionen';
-  @override
-  String get lessonQuit => 'Lektion verlassen';
-  @override
-  String get lessonProgressLabel => 'Lektionsfortschritt';
-  @override
-  String get lessonCorrect => 'Richtig!';
-  @override
-  String lessonWrongAnswer(String answer) => 'Die Antwort war $answer';
-  @override
-  String get lessonCheck => 'PRÜFEN';
-  @override
-  String get lessonContinue => 'WEITER';
-  @override
-  String get lessonSkip => 'Überspringen';
-  @override
-  String get lessonQuitTitle => 'Lektion verlassen?';
-  @override
-  String get lessonQuitMessage =>
-      'Dein Fortschritt geht verloren. Wirklich verlassen?';
-  @override
-  String get lessonConfirmQuit => 'Verlassen';
-  @override
-  String lessonScoreSummary(int correct, int total, int pct) =>
-      '$correct von $total richtig ($pct%)';
-  @override
-  String xpEarnedLabel(int xp) => '+$xp XP';
-  @override
-  String lessonXpBonusCallout(int bonus) => '+$bonus Perfekt!';
-  @override
-  String lessonLevelUpCallout(int level) => 'Level-Aufstieg! Level $level';
-  @override
-  String levelLabel(int level) => 'Level $level';
-  @override
-  String get levelProgressLabel => 'Fortschritt zum nächsten Level';
-  @override
-  String levelProgressText(int xpIntoLevel, int xpForNextLevel) =>
-      '$xpIntoLevel / $xpForNextLevel XP bis zum nächsten Level';
-  @override
-  String lessonStreakResultText(int streakCount) => '$streakCount Tage Serie!';
-  @override
-  String streakCountLabel(int streakCount) => '$streakCount';
-  @override
-  String get streakTodayDoneLabel => 'Heutige Lektion gezählt';
-  @override
-  String get lessonPracticeAgain => 'Nochmal üben';
-  @override
-  String get lessonBackToLibrary => 'Zurück zur Bibliothek';
-  @override
-  String get lessonBackToHome => 'Zurück zur Startseite';
-  @override
-  String get lessonEmptySetNote => 'Füge Einträge hinzu, um zu üben!';
-
-  // Home dashboard / onboarding / parental info (#012)
-  @override
-  String get homeGreetingNight => 'Noch wach?';
-  @override
-  String homeGreetingNightNamed(String name) => 'Noch wach, $name?';
-  @override
-  String get homeGreetingMorning => 'Guten Morgen!';
-  @override
-  String homeGreetingMorningNamed(String name) => 'Guten Morgen, $name!';
-  @override
-  String get homeGreetingAfternoon => 'Guten Tag!';
-  @override
-  String homeGreetingAfternoonNamed(String name) => 'Guten Tag, $name!';
-  @override
-  String get homeGreetingEvening => 'Guten Abend!';
-  @override
-  String homeGreetingEveningNamed(String name) => 'Guten Abend, $name!';
-
-  // Holiday + funny-rotation greetings on Home (#061)
-  @override
-  String get homeGreetingNewYear => 'Frohes neues Jahr!';
-  @override
-  String get homeGreetingAprilFools => 'Vorsicht, heute ist Aprilscherz-Tag!';
-  @override
-  String get homeGreetingHalloween => 'Frohes Halloween!';
-  @override
-  String get homeGreetingChristmasEve => 'Heiligabend ist da!';
-  @override
-  String get homeGreetingChristmasDay => 'Frohe Weihnachten!';
-  @override
-  String get homeGreetingFunny1 => 'Bereit, heute aufzusteigen?';
-  @override
-  String get homeGreetingFunny2 => 'Dein Fuchsgehirn wärmt sich auf!';
-  @override
-  String get homeGreetingFunny3 => 'Lass uns den Tag nutzen!';
-  @override
-  String get homeGreetingFunny4 => 'Wissens-Snacks kommen sofort!';
-  @override
-  String get homeGreetingFunny5 => 'Zeit, den Fuchs mit Fakten zu füttern!';
-  @override
-  String get homeGreetingFunny6 => 'Gehirn-Gains warten auf dich!';
-  @override
-  String get homeGreetingFunny7 =>
-      'Heute ist ein toller Tag, um etwas Neues zu lernen!';
-  @override
-  String get homeGreetingFunny8 => 'Fuchs-Modus: aktiviert!';
-
-  @override
-  String get homeEditNameTooltip => 'Namen bearbeiten';
-  @override
-  String get homeEditNameDialogTitle => 'Dein Name';
-  @override
-  String get homeEditNameHint => 'Gib deinen Namen ein (optional)';
-  @override
-  String get homeContinueButton => 'Weiter üben';
-  @override
-  String get homeBrowseSetsButton => 'Sets durchsuchen';
-  @override
-  String get homeGoalRingLabel => 'Tagesziel-Fortschritt';
-  @override
-  String homeGoalRingValue(int earnedXp, int goalXp) =>
-      '$earnedXp / $goalXp XP heute';
-  @override
-  String homeGoalRingXp(int earnedXp) => '$earnedXp XP';
-  @override
-  String get homeGoalRingToday => 'heute';
-  @override
-  String get homeOverflowMenuTooltip => 'Weitere Optionen';
-  @override
-  String get homeParentalInfoTooltip => 'Für Eltern';
-  @override
-  String get homeSettingsMenuItem => 'Einstellungen';
-  @override
-  String get settingsTitle => 'Einstellungen';
-  @override
-  String get settingsHapticsLabel => 'Haptik';
-  @override
-  String get settingsHapticsSubtitle => 'Beim Antworten vibrieren';
-  @override
-  String get settingsSoundLabel => 'Ton';
-  @override
-  String get settingsSoundSubtitle =>
-      'Töne beim Level-Aufstieg und bei richtigen Antworten abspielen';
-  @override
-  String get settingsDisplayNameLabel => 'Anzeigename';
-  @override
-  String get settingsDisplayNameUnset => 'Nicht festgelegt';
-  @override
-  String get settingsDisplayNameDialogTitle => 'Anzeigename';
-  @override
-  String get settingsDisplayNameHint => 'Gib deinen Namen ein (optional)';
-  @override
-  String get settingsDailyGoalLabel => 'Tages-XP-Ziel';
-  @override
-  String settingsDailyGoalSubtitle(int xp) => '$xp XP';
-  @override
-  String get settingsDailyGoalDialogTitle => 'Tages-XP-Ziel';
-  @override
-  String get settingsDailyGoalHint => 'Tages-XP-Ziel (10–500)';
-  @override
-  String get settingsDailyGoalValidationError =>
-      'Gib einen Wert zwischen 10 und 500 ein';
-  @override
-  String get parentalInfoTitle => 'Für Eltern';
-  @override
-  String get parentalInfoBody =>
-      'FoxStreak funktioniert komplett offline auf diesem Gerät. Es gibt '
-      'keinen Chat, keine sozialen Funktionen und keine Werbung. Der '
-      'Fortschritt bleibt lokal und wird nirgendwo hochgeladen.';
-  @override
-  String get onboardingSlide1Title => 'Willkommen bei FoxStreak!';
-  @override
-  String get onboardingSlide1Body =>
-      'Übe jeden Tag ein bisschen und lass deine Serie wachsen.';
-  @override
-  String get onboardingSlide2Title => 'XP sammeln, aufsteigen';
-  @override
-  String get onboardingSlide2Body =>
-      'Richtige Antworten bringen XP. Sammle genug, um ein Level '
-      'aufzusteigen!';
-  @override
-  String get onboardingSlide3Title => 'Wie sollen wir dich nennen?';
-  @override
-  String get onboardingSlide3Body =>
-      'Ganz optional — du kannst das später jederzeit ändern.';
-  @override
-  String get onboardingNameHint => 'Dein Name (optional)';
-  @override
-  String get onboardingSkip => 'Überspringen';
-  @override
-  String get onboardingNext => 'Weiter';
-  @override
-  String get onboardingGetStarted => "Los geht's";
-  @override
-  String mascotSemanticLabel(String emoji) => 'Maskottchen $emoji';
-  @override
-  String mascotEquippedSemanticLabel(String emoji) =>
-      'Maskottchen $emoji, ausgerüstet';
-  @override
-  String get mascotLockedSemanticLabel => 'Gesperrtes Maskottchen';
-  @override
-  String get homeMascotSemanticLabel => 'Deine Maskottchen-Sammlung öffnen';
-  @override
-  String get mascotCollectionTitle => 'Deine Maskottchen';
-  @override
-  String get lootboxHeading => 'Tägliche Schatzkiste!';
-  @override
-  String get lootboxTapPrompt =>
-      'Tippe, um dein neues Maskottchen aufzudecken!';
-  @override
-  String get lootboxRevealedTitle => 'Du hast ein neues Maskottchen bekommen!';
 }
 
 class _AppLocalizationsDelegate
@@ -1038,23 +1158,31 @@ class _AppLocalizationsDelegate
   const _AppLocalizationsDelegate();
 
   @override
+  Future<AppLocalizations> load(Locale locale) {
+    return SynchronousFuture<AppLocalizations>(lookupAppLocalizations(locale));
+  }
+
+  @override
   bool isSupported(Locale locale) =>
       <String>['de', 'en'].contains(locale.languageCode);
 
   @override
-  Future<AppLocalizations> load(Locale locale) async {
-    final String name =
-        locale.countryCode == null || locale.countryCode!.isEmpty
-        ? locale.languageCode
-        : '${locale.languageCode}_${locale.countryCode}';
-    final String localeName = intl.Intl.canonicalizedLocale(name);
-    intl.Intl.defaultLocale = localeName;
-    if (locale.languageCode == 'de') {
+  bool shouldReload(_AppLocalizationsDelegate old) => false;
+}
+
+AppLocalizations lookupAppLocalizations(Locale locale) {
+  // Lookup logic when only language code is specified.
+  switch (locale.languageCode) {
+    case 'de':
       return AppLocalizationsDe();
-    }
-    return AppLocalizationsEn();
+    case 'en':
+      return AppLocalizationsEn();
   }
 
-  @override
-  bool shouldReload(_AppLocalizationsDelegate old) => false;
+  throw FlutterError(
+    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.',
+  );
 }

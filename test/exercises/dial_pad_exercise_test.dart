@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:fox_streak_app/l10n/app_localizations.dart';
+import 'package:fox_streak_app/l10n/app_localizations_en.dart';
 import 'package:fox_streak_app/src/data/database.dart';
 import 'package:fox_streak_app/src/exercises/dial_pad_exercise.dart';
 import 'package:fox_streak_app/src/lesson/exercise_card.dart';
