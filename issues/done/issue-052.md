@@ -1,6 +1,6 @@
 # Issue 052: Fix category picker wrapping on narrow phone screens
 
-Status: open | Priority: P3 | Type: bug | Refined-at: 2026-10-17
+Status: done | Priority: P3 | Type: bug | Refined-at: 2026-10-17 | Completed-at: 2026-10-17
 
 ## Goal
 
@@ -39,23 +39,23 @@ phone widths.
 
 ## Acceptance criteria
 
-- [ ] Category picker in `set_editor_screen.dart` is wrapped in a
+- [x] Category picker in `set_editor_screen.dart` is wrapped in a
       horizontally scrollable container; segments keep their intrinsic
       (unstretched) width.
-- [ ] No segment label wraps to multiple lines at any screen width, in
+- [x] No segment label wraps to multiple lines at any screen width, in
       both `en` and `de`.
-- [ ] At 360dp width, all 4 segments are reachable (by scrolling if
+- [x] At 360dp width, all 4 segments are reachable (by scrolling if
       needed) with single-line labels and no horizontal overflow error.
-- [ ] When the row overflows, there's a visible cue that more content is
+- [x] When the row overflows, there's a visible cue that more content is
       scrollable (e.g. a partially visible next segment).
-- [ ] 48dp min segment size (#015 a11y floor) preserved.
-- [ ] New widget test: renders `SetEditorScreen` at a narrow surface size
+- [x] 48dp min segment size (#015 a11y floor) preserved.
+- [x] New widget test: renders `SetEditorScreen` at a narrow surface size
       (360dp wide) and asserts the category segments render without
       wrapping/overflow (e.g. assert each label `Text` renders on a single
       line, or assert no `RenderFlex` overflow error is thrown) — this is
       a general regression guard against this class of narrow-screen
       layout bug, not just this one picker.
-- [ ] `flutter analyze` / `dart format` / `dart fix --dry-run` /
+- [x] `flutter analyze` / `dart format` / `dart fix --dry-run` /
       `flutter test` clean.
 
 ## Out of scope
@@ -79,3 +79,29 @@ dart format --output=none --set-exit-if-changed .
 dart fix --dry-run
 flutter test
 ```
+
+## Summary
+
+Wrapped the category `SegmentedButton` in `SingleChildScrollView(scrollDirection:
+Axis.horizontal)` so segments keep their intrinsic single-line width instead
+of being stretched by the enclosing `ListView`. New widget test
+(`test/library/set_editor_screen_test.dart`) pumps at 360dp in en/de; new
+integration test (`issue052_category_picker_scroll_test.dart`) scrolls to and
+selects the off-screen "General" segment through the real app. Screenshots:
+`issue052-category_picker_{en,de}_360dp.png`.
+
+## Code review
+
+- Fix makes the picker always use its intrinsic (unstretched) width, even on
+  screens wide enough that the old stretched layout spanned the full row.
+  Not fixed — this is the explicit behavior the issue's Decision section
+  calls for ("instead of letting it stretch to the available width"), not a
+  width-conditional one.
+- `softWrap: false` on segment labels was redundant (layout already
+  guarantees single-line) and would silently clip instead of wrap if a
+  future change ever reintroduced a tight width, conflicting with the kit's
+  "never clipped" a11y floor. Fixed — removed.
+- Reviewer flagged "no visual scroll affordance" on narrow screens.
+  Not fixed — already satisfied: the 360dp screenshots show the next
+  segment cut off at the edge, which is the exact treatment the issue's
+  Decision section suggested.

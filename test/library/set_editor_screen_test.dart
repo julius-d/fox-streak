@@ -3,13 +3,15 @@
 // Pumps `SetEditorScreen` with an in-memory DB + `FakeClock` override.
 // Covers: new sets default to `vocab`, picking a category persists it on
 // create, editing an existing set pre-fills the picker from
-// `existing.category` (null -> vocab).
+// `existing.category` (null -> vocab), and (#052) segment labels stay
+// single-line at narrow (360dp) phone widths in both `en` and `de`.
 //
 // NOTE on pumping: do NOT use `pumpAndSettle()` — same drift `watch()`
 // fake-async caveat as `library_screen_test.dart`'s own `settle()`.
 
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fox_streak_app/l10n/app_localizations.dart';
@@ -43,6 +45,7 @@ Future<void> pumpEditor(
   AppDatabase db,
   FakeClock clock, [
   QuestionSet? existing,
+  Locale locale = const Locale('en'),
 ]) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -51,6 +54,7 @@ Future<void> pumpEditor(
         systemClockProvider.overrideWithValue(clock),
       ],
       child: MaterialApp(
+        locale: locale,
         theme: FoxStreakTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -59,6 +63,15 @@ Future<void> pumpEditor(
     ),
   );
   await settle(tester);
+}
+
+/// Render height of the category segment labeled [category], via its
+/// `categoryOption-<category>` keyed `Text`.
+double _categoryLabelHeight(WidgetTester tester, String category) {
+  final paragraph = tester.renderObject<RenderParagraph>(
+    find.byKey(Key('categoryOption-$category')),
+  );
+  return paragraph.size.height;
 }
 
 void main() {
@@ -184,4 +197,50 @@ void main() {
 
     await unmount(tester);
   });
+
+  // Issue #052: at phone widths, Material used to stretch the segmented
+  // button's 4 segments to equally share the available width, which is
+  // narrower than a segment's label, so the label wrapped mid-word. The
+  // picker is now wrapped in a horizontal scroll view so segments keep
+  // their intrinsic single-line width; this is a general regression guard
+  // against that class of narrow-screen layout bug, not just this picker.
+  for (final locale in [const Locale('en'), const Locale('de')]) {
+    testWidgets(
+      'category segments stay single-line at 360dp width (${locale.languageCode})',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(360, 800));
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.binding.setSurfaceSize(null);
+          tester.view.resetDevicePixelRatio();
+        });
+
+        final clock = FakeClock(kTestToday);
+        final db = AppDatabase.forTesting(NativeDatabase.memory());
+        addTearDown(() async => db.close());
+
+        await pumpEditor(tester, db, clock, null, locale);
+
+        expect(tester.takeException(), isNull);
+
+        const categories = ['vocab', 'math', 'geography', 'general'];
+        final heights = {
+          for (final category in categories)
+            category: _categoryLabelHeight(tester, category),
+        };
+        final singleLineHeight = heights['vocab']!;
+        for (final category in categories) {
+          expect(
+            heights[category],
+            closeTo(singleLineHeight, 0.5),
+            reason:
+                'category "$category" label should render on a single '
+                'line, like "vocab" does',
+          );
+        }
+
+        await unmount(tester);
+      },
+    );
+  }
 }

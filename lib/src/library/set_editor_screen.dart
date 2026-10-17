@@ -141,35 +141,45 @@ class _SetEditorScreenState extends ConsumerState<SetEditorScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            SegmentedButton<String>(
-              key: const Key('categoryField'),
-              // Material's default segment height (40dp) is below the
-              // kit's 48dp a11y floor (#015) — raise it explicitly, same as
-              // every other interactive control in the kit.
-              style: const ButtonStyle(
-                minimumSize: WidgetStatePropertyAll(
-                  Size(FoxButtonMetrics.minSize, FoxButtonMetrics.minSize),
-                ),
-              ),
-              segments: [
-                for (final category in const [
-                  'vocab',
-                  'math',
-                  'geography',
-                  'general',
-                ])
-                  ButtonSegment(
-                    value: category,
-                    icon: Icon(iconForSetCategory(category)),
-                    label: Text(
-                      _categoryLabel(l10n, category),
-                      key: Key('categoryOption-$category'),
-                    ),
+            // #052: a bare SegmentedButton gets a tight width constraint
+            // from the enclosing ListView, which makes Material stretch
+            // every segment to share that width equally — on narrow phones
+            // that's narrower than a segment's label, so it wraps mid-word.
+            // Wrapping in a horizontal scroll view gives the button an
+            // unbounded width instead, so it keeps its intrinsic
+            // (unstretched, single-line) size and scrolls if it overflows.
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SegmentedButton<String>(
+                key: const Key('categoryField'),
+                // Material's default segment height (40dp) is below the
+                // kit's 48dp a11y floor (#015) — raise it explicitly, same
+                // as every other interactive control in the kit.
+                style: const ButtonStyle(
+                  minimumSize: WidgetStatePropertyAll(
+                    Size(FoxButtonMetrics.minSize, FoxButtonMetrics.minSize),
                   ),
-              ],
-              selected: {_category},
-              onSelectionChanged: (selection) =>
-                  setState(() => _category = selection.first),
+                ),
+                segments: [
+                  for (final category in const [
+                    'vocab',
+                    'math',
+                    'geography',
+                    'general',
+                  ])
+                    ButtonSegment(
+                      value: category,
+                      icon: Icon(iconForSetCategory(category)),
+                      label: Text(
+                        _categoryLabel(l10n, category),
+                        key: Key('categoryOption-$category'),
+                      ),
+                    ),
+                ],
+                selected: {_category},
+                onSelectionChanged: (selection) =>
+                    setState(() => _category = selection.first),
+              ),
             ),
             if (_saveError != null) ...[
               const SizedBox(height: 12),
