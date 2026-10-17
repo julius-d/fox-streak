@@ -286,7 +286,7 @@ class _LevelUpEffectsState extends ConsumerState<_LevelUpEffects> {
           confettiController: controller,
           blastDirectionality: BlastDirectionality.explosive,
           shouldLoop: false,
-          numberOfParticles: 24,
+          numberOfParticles: 60,
         ),
       ),
     );
