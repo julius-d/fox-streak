@@ -28,6 +28,7 @@ class FoxStreakApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'FoxStreak',
+      debugShowCheckedModeBanner: false,
       theme: FoxStreakTheme.light(),
       darkTheme: FoxStreakTheme.dark(),
       themeMode: ThemeMode.system,
