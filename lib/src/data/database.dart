@@ -10,6 +10,8 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 
+import '../mascot/mascot_catalog.dart' show kDefaultMascotId;
+
 part 'database.g.dart';
 
 /// Question sets (lesson packs).
@@ -72,6 +74,13 @@ class Attempts extends Table {
 /// - `dailyGoalXp` — editable (see #012), written by [StatsRepository].
 /// - `displayName` / `hasOnboarded` — written exclusively by #012's
 ///   [StatsRepository.setDisplayName]/[StatsRepository.setOnboarded].
+/// - `equippedMascotId` / `lessonsCompletedToday` / `lessonsCompletedDay` —
+///   written exclusively by #059 `MascotService`, via
+///   [StatsRepository.setEquippedMascot]/
+///   [StatsRepository.setMascotLessonCounter]. `lessonsCompletedToday`
+///   resets on a new local day (vs. `lessonsCompletedDay`), mirroring
+///   `todayXp`'s own day-scoped reset — it cannot reuse `lastActiveDay`
+///   (StreakService-owned-write, see above).
 class ProfileStats extends Table {
   IntColumn get id => integer()();
   IntColumn get xpTotal => integer().withDefault(const Constant(0))();
@@ -85,9 +94,33 @@ class ProfileStats extends Table {
   TextColumn get displayName => text().nullable()();
   // v5 (#012): true once first-run onboarding has completed/been skipped.
   BoolColumn get hasOnboarded => boolean().withDefault(const Constant(false))();
+  // v8 (#059): the currently-equipped mascot's catalog ID.
+  TextColumn get equippedMascotId =>
+      text().withDefault(const Constant(kDefaultMascotId))();
+  // v8 (#059): lesson-completion counter for the current
+  // `lessonsCompletedDay`, driving the twice-a-day lootbox trigger.
+  IntColumn get lessonsCompletedToday =>
+      integer().withDefault(const Constant(0))();
+  // v8 (#059): YYYY-MM-DD in local tz the counter above is scoped to, NULL
+  // until the first lesson completion.
+  TextColumn get lessonsCompletedDay => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
+}
+
+/// Mascots the profile has unlocked (issue #059). One row per owned mascot,
+/// keyed by its stable catalog ID — never an array index, so the catalog
+/// surviving new files being added later never invalidates existing rows.
+///
+/// Sole writer: `MascotService`, via `MascotRepository.addOwnedMascot`.
+class OwnedMascots extends Table {
+  TextColumn get mascotId => text()();
+  // Epoch millis.
+  IntColumn get acquiredAt => integer()();
+
+  @override
+  Set<Column> get primaryKey => {mascotId};
 }
 
 /// Single-row app preferences (id fixed to 0), separate from [ProfileStats]
@@ -106,7 +139,14 @@ class AppSettings extends Table {
 }
 
 @DriftDatabase(
-  tables: [QuestionSets, Items, Attempts, ProfileStats, AppSettings],
+  tables: [
+    QuestionSets,
+    Items,
+    Attempts,
+    ProfileStats,
+    AppSettings,
+    OwnedMascots,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   /// Production constructor backed by `drift_flutter`.
@@ -116,7 +156,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -164,6 +204,16 @@ class AppDatabase extends _$AppDatabase {
       if (from < 7) {
         await m.createTable(appSettings);
       }
+      // v8 (#059): adds the owned-mascots table + profileStats's
+      // mascot-collection columns. `addColumn` applies each column's Dart
+      // default (the fox for `equippedMascotId`, 0/NULL for the
+      // no-activity-yet lesson counter) to existing rows too.
+      if (from < 8) {
+        await m.createTable(ownedMascots);
+        await m.addColumn(profileStats, profileStats.equippedMascotId);
+        await m.addColumn(profileStats, profileStats.lessonsCompletedToday);
+        await m.addColumn(profileStats, profileStats.lessonsCompletedDay);
+      }
     },
     beforeOpen: (details) async {
       // SQLite disables FK enforcement by default; without this,
@@ -176,7 +226,9 @@ class AppDatabase extends _$AppDatabase {
   // v3 (#010) added `profileStats.todayXp`; v4 (#022) replaced
   // `items.direction` with `promptLang`/`answerLang`; v5 (#012) added
   // `profileStats.displayName`/`hasOnboarded`; v6 (#045) added
-  // `questionSets.category`; v7 (#055) added the `appSettings` table.
+  // `questionSets.category`; v7 (#055) added the `appSettings` table; v8
+  // (#059) added the `ownedMascots` table + `profileStats.equippedMascotId`/
+  // `lessonsCompletedToday`/`lessonsCompletedDay`.
 }
 
 DatabaseConnection _openConnection() => driftDatabase(name: 'fox_streak');

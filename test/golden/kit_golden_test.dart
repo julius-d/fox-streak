@@ -17,6 +17,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fox_streak_app/src/mascot/mascot_catalog.dart';
 import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
 import 'package:fox_streak_app/src/widgets/widgets.dart';
 
@@ -198,6 +199,7 @@ void main() {
           'fox_empty_state_$themeName',
           FoxEmptyState(
             title: 'No sets yet',
+            mascot: MascotCatalog.defaultEntry,
             message: 'Create one to start learning.',
             ctaLabel: 'Try demo set',
             onCta: () {},
@@ -211,19 +213,15 @@ void main() {
 
   group('mascot', () {
     for (final (String themeName, ThemeData theme) in themes) {
-      for (final FoxMascotState state in FoxMascotState.values) {
-        testWidgets('mascot ${state.name} ($themeName)', (
-          WidgetTester tester,
-        ) async {
-          await _expectGolden(
-            tester,
-            'fox_mascot_${state.name}_$themeName',
-            FoxMascot(state: state),
-            theme: theme,
-            surfaceSize: const Size(140, 140),
-          );
-        });
-      }
+      testWidgets('mascot ($themeName)', (WidgetTester tester) async {
+        await _expectGolden(
+          tester,
+          'fox_mascot_$themeName',
+          FoxMascot(mascot: MascotCatalog.defaultEntry),
+          theme: theme,
+          surfaceSize: const Size(140, 140),
+        );
+      });
     }
   });
 }

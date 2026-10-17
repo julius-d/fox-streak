@@ -44,6 +44,7 @@ void main() {
     expect(find.byKey(const Key('homeScreen')), findsOneWidget);
     expect(find.byKey(const Key('homeBrowseSetsButton')), findsOneWidget);
 
+    await tester.ensureVisible(find.byKey(const Key('homeBrowseSetsButton')));
     await tester.tap(find.byKey(const Key('homeBrowseSetsButton')));
     await settle();
     expect(find.text('My Sets'), findsOneWidget);

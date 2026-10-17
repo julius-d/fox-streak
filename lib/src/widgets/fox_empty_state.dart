@@ -7,6 +7,7 @@
 // user-visible strings live in the kit.
 import 'package:flutter/material.dart';
 
+import '../mascot/mascot_catalog.dart';
 import '../theme/fox_streak_theme.dart';
 import 'feedback_banner.dart';
 import 'fox_buttons.dart';
@@ -28,7 +29,7 @@ class FoxEmptyState extends StatelessWidget {
   final bool isLoading;
   final String? loadingLabel;
   final String? errorMessage;
-  final FoxMascotState mascotState;
+  final MascotEntry mascot;
   final String? mascotSemanticLabel;
   final Key? titleKey;
   final Key? ctaKey;
@@ -38,13 +39,13 @@ class FoxEmptyState extends StatelessWidget {
   const FoxEmptyState({
     super.key,
     required this.title,
+    required this.mascot,
     this.message,
     this.ctaLabel,
     this.onCta,
     this.isLoading = false,
     this.loadingLabel,
     this.errorMessage,
-    this.mascotState = FoxMascotState.empty,
     this.mascotSemanticLabel,
     this.titleKey,
     this.ctaKey,
@@ -61,7 +62,7 @@ class FoxEmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            FoxMascot(state: mascotState, semanticLabel: mascotSemanticLabel),
+            FoxMascot(mascot: mascot, semanticLabel: mascotSemanticLabel),
             const SizedBox(height: FoxSpacing.lg),
             Text(
               title,

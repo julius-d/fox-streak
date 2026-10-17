@@ -2,6 +2,7 @@
 
 import 'package:drift/drift.dart';
 
+import '../mascot/mascot_catalog.dart' show kDefaultMascotId;
 import 'clock.dart';
 import 'database.dart';
 
@@ -22,6 +23,9 @@ const int kDefaultDailyGoalXp = 100;
 ///   exists) and MUST NOT touch `streakCount`/`lastActiveDay` — or `xpTotal`.
 /// - This repository owns `dailyGoalXp`, `displayName` and `hasOnboarded`
 ///   (see #012).
+/// - `equippedMascotId`/`lessonsCompletedToday`/`lessonsCompletedDay` are
+///   written exclusively by #059 `MascotService`, via
+///   [setEquippedMascot]/[setMascotLessonCounter].
 class StatsRepository {
   final AppDatabase _db;
   final Clock _clock;
@@ -48,6 +52,9 @@ class StatsRepository {
             todayXp: Value(0),
             displayName: Value(null),
             hasOnboarded: Value(false),
+            equippedMascotId: Value(kDefaultMascotId),
+            lessonsCompletedToday: Value(0),
+            lessonsCompletedDay: Value(null),
           ),
         );
     return const ProfileStat(
@@ -59,6 +66,9 @@ class StatsRepository {
       todayXp: 0,
       displayName: null,
       hasOnboarded: false,
+      equippedMascotId: kDefaultMascotId,
+      lessonsCompletedToday: 0,
+      lessonsCompletedDay: null,
     );
   }
 
@@ -77,6 +87,9 @@ class StatsRepository {
             todayXp: 0,
             displayName: null,
             hasOnboarded: false,
+            equippedMascotId: kDefaultMascotId,
+            lessonsCompletedToday: 0,
+            lessonsCompletedDay: null,
           ),
     );
   }
@@ -155,6 +168,32 @@ class StatsRepository {
     await getProfile();
     await (_db.update(_db.profileStats)..where((t) => t.id.equals(kProfileId)))
         .write(const ProfileStatsCompanion(hasOnboarded: Value(true)));
+  }
+
+  /// Sets the equipped mascot shown on Home/lesson result/onboarding/
+  /// `FoxEmptyState` (issue #059). Sole caller: #059 `MascotService.equip`.
+  Future<void> setEquippedMascot(String mascotId) async {
+    await getProfile();
+    await (_db.update(_db.profileStats)..where((t) => t.id.equals(kProfileId)))
+        .write(ProfileStatsCompanion(equippedMascotId: Value(mascotId)));
+  }
+
+  /// Overwrites the day-scoped lesson-completion counter driving #059's
+  /// twice-a-day lootbox trigger. Sole caller:
+  /// #059 `MascotService.recordLessonCompletion`.
+  Future<void> setMascotLessonCounter({
+    required int count,
+    required String day,
+  }) async {
+    await getProfile();
+    await (_db.update(
+      _db.profileStats,
+    )..where((t) => t.id.equals(kProfileId))).write(
+      ProfileStatsCompanion(
+        lessonsCompletedToday: Value(count),
+        lessonsCompletedDay: Value(day),
+      ),
+    );
   }
 
   /// The `setId` of the most recently attempted item, or `null` if no

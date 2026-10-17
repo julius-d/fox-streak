@@ -1,5 +1,6 @@
 // Schema v1 -> v2 (issue #026), v2 -> v3 (issue #010), v3 -> v4 (issue
-// #022), and v4 -> v5 (issue #012) migration tests.
+// #022), v4 -> v5 (issue #012), v5 -> v6 (issue #045), v6 -> v7 (issue
+// #055), and v7 -> v8 (issue #059) migration tests.
 //
 // Simulates pre-migration databases on disk, then reopens them with the
 // real (current schemaVersion) `AppDatabase` and asserts `onUpgrade` applied
@@ -16,6 +17,8 @@ import 'package:drift/drift.dart'
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fox_streak_app/src/data/database.dart';
+import 'package:fox_streak_app/src/mascot/mascot_catalog.dart'
+    show kDefaultMascotId;
 
 /// Creates the pre-#022 `items` shape (`direction` TEXT instead of
 /// `promptLang`/`answerLang`) — the current Dart `Items` definition no
@@ -199,10 +202,33 @@ Future<void> _createQuestionSetsWithoutCategory(Migrator m) async {
   ''');
 }
 
+/// Creates the pre-#059 `profile_stats` shape (`display_name`/
+/// `has_onboarded` present, but no `equipped_mascot_id`/
+/// `lessons_completed_today`/`lessons_completed_day`) — the current Dart
+/// `ProfileStats` definition already has those, so `m.createTable(db.
+/// profileStats)` can't be used for any pre-v8 fixture, even ones (v5, v6,
+/// v7) that predate #059 by several migrations and aren't under test here.
+Future<void> _createProfileStatsPreMascotColumns(Migrator m) async {
+  await m.database.customStatement('''
+    CREATE TABLE profile_stats (
+      id INTEGER NOT NULL,
+      xp_total INTEGER NOT NULL DEFAULT 0,
+      streak_count INTEGER NOT NULL DEFAULT 0,
+      last_active_day TEXT NULL,
+      daily_goal_xp INTEGER NOT NULL DEFAULT 30,
+      today_xp INTEGER NOT NULL DEFAULT 0,
+      display_name TEXT NULL,
+      has_onboarded INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (id)
+    )
+  ''');
+}
+
 /// A schemaVersion-5 view of [AppDatabase], used only to seed a pre-#045
-/// file at the exact version #045's migration upgrades from: `items` and
-/// `profile_stats` are already in their current (post-#012) shape, but
-/// `question_sets` still lacks `category`.
+/// file at the exact version #045's migration upgrades from: `items` is
+/// already in its current (post-#012) shape, but `question_sets` still
+/// lacks `category` and `profile_stats` still lacks #059's mascot columns
+/// (see [_createProfileStatsPreMascotColumns]).
 class _LegacyV5Database extends AppDatabase {
   _LegacyV5Database(QueryExecutor executor) : super.forTesting(executor); // ignore: use_super_parameters — must forward to the named forTesting() ctor, not the default unnamed one
 
@@ -213,18 +239,19 @@ class _LegacyV5Database extends AppDatabase {
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
       await _createQuestionSetsWithoutCategory(m);
+      await _createProfileStatsPreMascotColumns(m);
       final db = m.database as AppDatabase;
       await m.createTable(db.items);
       await m.createTable(db.attempts);
-      await m.createTable(db.profileStats);
     },
   );
 }
 
 /// A schemaVersion-6 view of [AppDatabase], used only to seed a pre-#055
 /// file at the exact version #055's migration upgrades from: every table
-/// is already in its current shape except `app_settings`, which doesn't
-/// exist yet.
+/// is already in its current shape except `app_settings` (doesn't exist
+/// yet) and `profile_stats` (still lacks #059's mascot columns, see
+/// [_createProfileStatsPreMascotColumns]).
 class _LegacyV6Database extends AppDatabase {
   _LegacyV6Database(QueryExecutor executor) : super.forTesting(executor); // ignore: use_super_parameters — must forward to the named forTesting() ctor, not the default unnamed one
 
@@ -234,11 +261,35 @@ class _LegacyV6Database extends AppDatabase {
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
+      await _createProfileStatsPreMascotColumns(m);
       final db = m.database as AppDatabase;
       await m.createTable(db.questionSets);
       await m.createTable(db.items);
       await m.createTable(db.attempts);
-      await m.createTable(db.profileStats);
+    },
+  );
+}
+
+/// A schemaVersion-7 view of [AppDatabase], used only to seed a pre-#059
+/// file at the exact version #059's migration upgrades from: every table
+/// is already in its current shape except `profile_stats` (still lacks
+/// #059's mascot columns, see [_createProfileStatsPreMascotColumns]) and
+/// `owned_mascots`, which doesn't exist yet.
+class _LegacyV7Database extends AppDatabase {
+  _LegacyV7Database(QueryExecutor executor) : super.forTesting(executor); // ignore: use_super_parameters — must forward to the named forTesting() ctor, not the default unnamed one
+
+  @override
+  int get schemaVersion => 7;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) async {
+      await _createProfileStatsPreMascotColumns(m);
+      final db = m.database as AppDatabase;
+      await m.createTable(db.questionSets);
+      await m.createTable(db.items);
+      await m.createTable(db.attempts);
+      await m.createTable(db.appSettings);
     },
   );
 }
@@ -532,6 +583,61 @@ void main() {
       containsAll(<String>['id', 'haptics_enabled', 'sound_enabled']),
     );
     expect(await (upgradedDb.select(upgradedDb.appSettings)).get(), isEmpty);
+  });
+
+  test('onUpgrade (v7 -> v8) creates owned_mascots + adds profileStats '
+      'mascot columns, defaulting equippedMascotId to the fox and '
+      'preserving existing xpTotal/streakCount/todayXp', () async {
+    final dir = Directory.systemTemp.createTempSync('foxstreak_migration_v8');
+    final file = File('${dir.path}/test.sqlite');
+    addTearDown(() {
+      if (dir.existsSync()) dir.deleteSync(recursive: true);
+    });
+
+    // 1. Seed a v7 database directly on disk (profile_stats has no mascot
+    // columns yet, owned_mascots doesn't exist) with a pre-existing row.
+    final legacyDb = _LegacyV7Database(NativeDatabase(file));
+    await legacyDb
+        .into(legacyDb.profileStats)
+        .insert(
+          const ProfileStatsCompanion(
+            id: Value(0),
+            xpTotal: Value(42),
+            streakCount: Value(3),
+            lastActiveDay: Value('2026-10-10'),
+            dailyGoalXp: Value(30),
+            todayXp: Value(12),
+            displayName: Value(null),
+            hasOnboarded: Value(false),
+          ),
+        );
+    await legacyDb.close();
+
+    // 2. Reopen the SAME file with the real (current schemaVersion)
+    // database; drift sees user_version=7 < schemaVersion=8 and runs
+    // onUpgrade's `createTable`/`addColumn`s.
+    final upgradedDb = AppDatabase.forTesting(NativeDatabase(file));
+    addTearDown(upgradedDb.close);
+
+    final profile = await (upgradedDb.select(
+      upgradedDb.profileStats,
+    )..where((t) => t.id.equals(0))).getSingle();
+    expect(profile.equippedMascotId, kDefaultMascotId);
+    expect(profile.lessonsCompletedToday, 0);
+    expect(profile.lessonsCompletedDay, isNull);
+    expect(profile.xpTotal, 42);
+    expect(profile.streakCount, 3);
+    expect(profile.todayXp, 12);
+    expect(profile.lastActiveDay, '2026-10-10');
+
+    final columns = await upgradedDb
+        .customSelect("PRAGMA table_info('owned_mascots')")
+        .get();
+    expect(
+      columns.map((row) => row.read<String>('name')),
+      containsAll(<String>['mascot_id', 'acquired_at']),
+    );
+    expect(await (upgradedDb.select(upgradedDb.ownedMascots)).get(), isEmpty);
   });
 }
 

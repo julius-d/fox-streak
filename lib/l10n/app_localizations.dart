@@ -142,8 +142,6 @@ abstract class AppLocalizations {
   String get lessonQuitTitle;
   String get lessonQuitMessage;
   String get lessonConfirmQuit;
-  String get lessonCelebrate;
-  String get lessonNoScore;
   String lessonScoreSummary(int correct, int total, int pct);
   String xpEarnedLabel(int xp);
   String lessonXpBonusCallout(int bonus);
@@ -206,6 +204,16 @@ abstract class AppLocalizations {
   String get onboardingSkip;
   String get onboardingNext;
   String get onboardingGetStarted;
+
+  // Mascot collection / lootbox (#059)
+  String mascotSemanticLabel(String emoji);
+  String mascotEquippedSemanticLabel(String emoji);
+  String get mascotLockedSemanticLabel;
+  String get homeMascotSemanticLabel;
+  String get mascotCollectionTitle;
+  String get lootboxHeading;
+  String get lootboxTapPrompt;
+  String get lootboxRevealedTitle;
 }
 
 class AppLocalizationsEn extends AppLocalizations {
@@ -425,10 +433,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get lessonConfirmQuit => 'Quit';
   @override
-  String get lessonCelebrate => 'Well done!';
-  @override
-  String get lessonNoScore => 'Keep practicing!';
-  @override
   String lessonScoreSummary(int correct, int total, int pct) =>
       '$correct of $total correct ($pct%)';
   @override
@@ -562,6 +566,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingNext => 'Next';
   @override
   String get onboardingGetStarted => 'Get started';
+  @override
+  String mascotSemanticLabel(String emoji) => 'Mascot $emoji';
+  @override
+  String mascotEquippedSemanticLabel(String emoji) => 'Mascot $emoji, equipped';
+  @override
+  String get mascotLockedSemanticLabel => 'Locked mascot';
+  @override
+  String get homeMascotSemanticLabel => 'Open your mascot collection';
+  @override
+  String get mascotCollectionTitle => 'Your mascots';
+  @override
+  String get lootboxHeading => 'Daily lootbox!';
+  @override
+  String get lootboxTapPrompt => 'Tap to reveal your new mascot!';
+  @override
+  String get lootboxRevealedTitle => 'You got a new mascot!';
 }
 
 class AppLocalizationsDe extends AppLocalizations {
@@ -784,10 +804,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get lessonConfirmQuit => 'Verlassen';
   @override
-  String get lessonCelebrate => 'Gut gemacht!';
-  @override
-  String get lessonNoScore => 'Weiter üben!';
-  @override
   String lessonScoreSummary(int correct, int total, int pct) =>
       '$correct von $total richtig ($pct%)';
   @override
@@ -921,6 +937,24 @@ class AppLocalizationsDe extends AppLocalizations {
   String get onboardingNext => 'Weiter';
   @override
   String get onboardingGetStarted => "Los geht's";
+  @override
+  String mascotSemanticLabel(String emoji) => 'Maskottchen $emoji';
+  @override
+  String mascotEquippedSemanticLabel(String emoji) =>
+      'Maskottchen $emoji, ausgerüstet';
+  @override
+  String get mascotLockedSemanticLabel => 'Gesperrtes Maskottchen';
+  @override
+  String get homeMascotSemanticLabel => 'Deine Maskottchen-Sammlung öffnen';
+  @override
+  String get mascotCollectionTitle => 'Deine Maskottchen';
+  @override
+  String get lootboxHeading => 'Tägliche Schatzkiste!';
+  @override
+  String get lootboxTapPrompt =>
+      'Tippe, um dein neues Maskottchen aufzudecken!';
+  @override
+  String get lootboxRevealedTitle => 'Du hast ein neues Maskottchen bekommen!';
 }
 
 class _AppLocalizationsDelegate

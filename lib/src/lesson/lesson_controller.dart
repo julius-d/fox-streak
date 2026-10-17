@@ -13,6 +13,8 @@ import '../data/clock.dart';
 import '../data/database.dart';
 import '../data/providers.dart';
 import '../data/stats_repository.dart';
+import '../mascot/mascot_catalog.dart';
+import '../stats/mascot_service.dart';
 import '../stats/streak_service.dart';
 import '../stats/xp_service.dart';
 import 'exercise_card.dart';
@@ -39,8 +41,18 @@ import 'exercise_card.dart';
 ///   `XpService.levelForXp(before) != XpService.levelForXp(after)` and show
 ///   the level-up celebration without a second database query.
 /// [streakCountAfterLesson] is the `streak_count` returned by #011's streak
-///   write, handed to the result screen the same way for `StreakBadge` /
-///   the mascot's on-fire check.
+///   write, handed to the result screen the same way for `StreakBadge`.
+/// [wonMascot] is the catalog entry #059's `MascotService` returned for
+///   this lesson completion (the twice-a-day lootbox trigger), or null if
+///   no lootbox should be shown — handed to `LessonScreen` so it can insert
+///   the lootbox reveal before continuing to the caller's destination.
+/// [equippedMascotId] is the profile's `equippedMascotId` at completion
+///   time, snapshotted the same one-shot way as `xpTotalAfterLesson` —
+///   the result screen resolves it against `mascotCatalogProvider` (no
+///   drift involved) instead of watching the live `profileProvider`
+///   stream, which it would otherwise have to hold open for a screen
+///   that, like the XP/streak fields above, is a one-shot snapshot, not
+///   a live-updating dashboard.
 /// [busy] mirrors the controller's in-flight guard (issue #031) so the
 ///   shell can disable CHECK/CONTINUE and hide Skip while a prior
 ///   submitGrade/skip/next call hasn't resolved yet — otherwise e.g. a
@@ -62,6 +74,8 @@ class LessonState {
   final int? xpTotalBeforeLesson;
   final int? xpTotalAfterLesson;
   final int? streakCountAfterLesson;
+  final MascotEntry? wonMascot;
+  final String? equippedMascotId;
   final bool busy;
 
   const LessonState({
@@ -77,6 +91,8 @@ class LessonState {
     this.xpTotalBeforeLesson,
     this.xpTotalAfterLesson,
     this.streakCountAfterLesson,
+    this.wonMascot,
+    this.equippedMascotId,
     this.busy = false,
   });
 
@@ -93,6 +109,8 @@ class LessonState {
     int? xpTotalBeforeLesson,
     int? xpTotalAfterLesson,
     int? streakCountAfterLesson,
+    MascotEntry? wonMascot,
+    String? equippedMascotId,
     bool? busy,
     bool clearDraft = false,
     bool clearLastCorrect = false,
@@ -113,6 +131,8 @@ class LessonState {
       xpTotalAfterLesson: xpTotalAfterLesson ?? this.xpTotalAfterLesson,
       streakCountAfterLesson:
           streakCountAfterLesson ?? this.streakCountAfterLesson,
+      wonMascot: wonMascot ?? this.wonMascot,
+      equippedMascotId: equippedMascotId ?? this.equippedMascotId,
       busy: busy ?? this.busy,
     );
   }
@@ -154,6 +174,8 @@ class LessonState {
           other.xpTotalBeforeLesson == xpTotalBeforeLesson &&
           other.xpTotalAfterLesson == xpTotalAfterLesson &&
           other.streakCountAfterLesson == streakCountAfterLesson &&
+          other.wonMascot == wonMascot &&
+          other.equippedMascotId == equippedMascotId &&
           other.busy == busy);
 
   @override
@@ -170,6 +192,8 @@ class LessonState {
     xpTotalBeforeLesson,
     streakCountAfterLesson,
     xpTotalAfterLesson,
+    wonMascot,
+    equippedMascotId,
     busy,
   );
 }
@@ -184,6 +208,7 @@ class LessonController extends Notifier<LessonState> {
   late final Clock _clock;
   late final XpService _xpService;
   late final StreakService _streakService;
+  late final MascotService _mascotService;
   Random? _random;
 
   // Guards submitGrade/skip/next against a double-tap (or two
@@ -241,6 +266,7 @@ class LessonController extends Notifier<LessonState> {
     _clock = ref.read(systemClockProvider);
     _xpService = ref.read(xpServiceProvider);
     _streakService = ref.read(streakServiceProvider);
+    _mascotService = ref.read(mascotServiceProvider);
     return const LessonState();
   }
 
@@ -390,17 +416,19 @@ class LessonController extends Notifier<LessonState> {
     }
   }
 
-  /// Transitions to `phase: done` and applies this lesson's XP (issue #010)
-  /// and streak (issue #011) writes as one atomic step.
+  /// Transitions to `phase: done` and applies this lesson's XP (issue #010),
+  /// streak (issue #011), and mascot-lootbox (issue #059) writes as one
+  /// atomic step.
   ///
-  /// Deliberately does *not* flip `phase` to `done` until both writes (and
-  /// their resulting `xpTotal`/`streakCount`) are known: setting `phase`
-  /// first and the `*AfterLesson` fields only after a later `await` would
-  /// let the result screen render in between on transient pre-write values
-  /// (e.g. "Level 1" at 0 XP for a learner who is actually much further
-  /// along). [LessonState.xpApplied], flipped synchronously before the
-  /// `await`s, guards both writes against double-apply on repeated calls —
-  /// #011 reuses this single gate rather than adding a second one.
+  /// Deliberately does *not* flip `phase` to `done` until all three writes
+  /// (and their resulting `xpTotal`/`streakCount`/`wonMascot`) are known:
+  /// setting `phase` first and the `*AfterLesson` fields only after a later
+  /// `await` would let the result screen render in between on transient
+  /// pre-write values (e.g. "Level 1" at 0 XP for a learner who is actually
+  /// much further along). [LessonState.xpApplied], flipped synchronously
+  /// before the `await`s, guards all three writes against double-apply on
+  /// repeated calls — #011/#059 reuse this single gate rather than adding
+  /// their own.
   Future<void> _completeLesson(
     List<LessonItemOutcome> outcomes,
     int generation,
@@ -410,7 +438,7 @@ class LessonController extends Notifier<LessonState> {
       // overlapping, so this path is mainly reached via rebuild/rotation
       // replaying the same state (see class doc) — kept as defense-in-depth
       // regardless. Just make sure this call also lands on `done` without
-      // re-applying XP/streak.
+      // re-applying XP/streak/mascot.
       state = state.copyWith(
         outcomes: outcomes,
         phase: LessonPhase.done,
@@ -420,19 +448,25 @@ class LessonController extends Notifier<LessonState> {
     }
     state = state.copyWith(xpApplied: true);
     final result = _buildResultFromOutcomes(outcomes);
-    // The XP/streak writes below persist real activity (the outcomes were
-    // genuinely answered) regardless of a start()/restart() racing this
-    // `await` (issue #033), so they still run even for an abandoned
-    // session. Only the final `state = ...` is skipped when stale, since
-    // that's the one that would overwrite the fresh post-restart state —
-    // there's no longer a result screen for this session left to show it
-    // to.
+    // The writes below persist real activity (the outcomes were genuinely
+    // answered) regardless of a start()/restart() racing this `await`
+    // (issue #033), so they still run even for an abandoned session. Only
+    // the final `state = ...` is skipped when stale, since that's the one
+    // that would overwrite the fresh post-restart state — there's no longer
+    // a result screen for this session left to show it to.
     final xpApplication = result == null
         ? null
         : await _xpService.applyLessonResult(result);
     final streakCount = result == null
         ? null
         : (await _streakService.recordActivity()).streakCount;
+    // One-shot read (not a `watch()` stream) for the result screen's
+    // mascot celebration — see [LessonState.equippedMascotId]. Returned
+    // alongside wonMascot from the same `getProfile()` call rather than
+    // re-querying the row a second time here.
+    final mascotUpdate = result == null
+        ? null
+        : await _mascotService.recordLessonCompletion();
     if (generation != _generation) return;
     state = state.copyWith(
       outcomes: outcomes,
@@ -441,6 +475,8 @@ class LessonController extends Notifier<LessonState> {
       xpTotalBeforeLesson: xpApplication?.xpTotalBefore,
       xpTotalAfterLesson: xpApplication?.xpTotal,
       streakCountAfterLesson: streakCount,
+      wonMascot: mascotUpdate?.wonMascot,
+      equippedMascotId: mascotUpdate?.equippedMascotId,
     );
   }
 

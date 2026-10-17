@@ -1,6 +1,6 @@
 # Issue 059: Collectible mascots via daily lootbox
 
-Status: open | Priority: P2 | Type: feature | Refined-at: 2026-10-17
+Status: done | Priority: P2 | Type: feature | Refined-at: 2026-10-17 | Completed-at: 2026-10-17
 
 ## Goal
 
@@ -89,46 +89,46 @@ on-fire) everywhere it appears.
 
 ## Acceptance criteria
 
-- [ ] `lottie` added to `dependencies`, verified to build/run on Android,
+- [x] `lottie` added to `dependencies`, verified to build/run on Android,
   iOS, Windows, and macOS.
-- [ ] `pubspec.yaml` declares `assets/mascot/noto-emoji/` as a directory
+- [x] `pubspec.yaml` declares `assets/mascot/noto-emoji/` as a directory
   asset (not individual files).
-- [ ] A mascot catalog is built at runtime from `AssetManifest`, filtering
+- [x] A mascot catalog is built at runtime from `AssetManifest`, filtering
   to `assets/mascot/noto-emoji/*_lottie.json`; each entry's ID is its
   filename stem; adding a new `..._lottie.json` file requires no other
   code change (covered by a test — see Tasks).
-- [ ] New schema (next `schemaVersion`): an owned-mascots table (mascot ID
+- [x] New schema (next `schemaVersion`): an owned-mascots table (mascot ID
   + acquired timestamp) and `profileStats` gains `equippedMascotId`
   (default `emoji_u1f98a_lottie`) + a day-scoped lesson-count column (owned
   exclusively by the new service, per `database.dart`'s ownership
   convention); fresh profiles seed one owned row for the default mascot.
-- [ ] Completing a lesson increments the day-scoped lesson counter
+- [x] Completing a lesson increments the day-scoped lesson counter
   (resetting on a new local day); on the count reaching exactly 2 *and*
   at least one mascot remains unowned, the lootbox screen is shown once,
   after the result screen, before continuing to the caller's original
   destination (Home/Library, same as today's "back" labels, #034).
-- [ ] Lootbox screen: tap-to-open interaction, reveals a uniformly-random
+- [x] Lootbox screen: tap-to-open interaction, reveals a uniformly-random
   not-yet-owned mascot, persists it as owned, shows its Lottie + emoji
   label, single continue action.
-- [ ] If the full catalog is already owned when the trigger fires, the
+- [x] If the full catalog is already owned when the trigger fires, the
   lootbox screen is skipped entirely.
-- [ ] Tapping the mascot on Home opens a collection screen: full catalog
+- [x] Tapping the mascot on Home opens a collection screen: full catalog
   grid, owned mascots tappable to set `equippedMascotId`, unowned ones
   rendered locked/greyed (not tappable).
-- [ ] Home, lesson result screen, onboarding, and `FoxEmptyState`
+- [x] Home, lesson result screen, onboarding, and `FoxEmptyState`
   (library/set-detail) all render the equipped mascot's Lottie animation
   instead of the retired `FoxMascot` `empty`/`lit`/`on-fire` painter.
   `FoxMascotState` enum and `_FoxPainter` are removed.
-- [ ] A11y: equipped-mascot label uses the generic `mascotSemanticLabel`
+- [x] A11y: equipped-mascot label uses the generic `mascotSemanticLabel`
   arb template with the decoded emoji character — no per-animal arb keys.
-- [ ] Follows #015: kit tokens/spacing for the new lootbox/collection
+- [x] Follows #015: kit tokens/spacing for the new lootbox/collection
   screens, no ad-hoc styling; all new strings via `lib/l10n` arb params
   (DE + EN).
-- [ ] `assets/mascot/noto-emoji/attribution.md` filename no longer has a
+- [x] `assets/mascot/noto-emoji/attribution.md` filename no longer has a
   trailing space; root `README.md` gets a one-line attribution pointer.
-- [ ] `test/golden/kit_golden_test.dart` and `test/widgets/kit_test.dart`
+- [x] `test/golden/kit_golden_test.dart` and `test/widgets/kit_test.dart`
   updated for the retired `FoxMascot` states.
-- [ ] Unit + widget tests green (see Tasks).
+- [x] Unit + widget tests green (see Tasks).
 
 ## Tasks
 
@@ -199,3 +199,45 @@ dart format --output=none --set-exit-if-changed .  # must be clean
 dart fix --dry-run     # nothing auto-fixable left
 flutter test           # must be green, incl. updated goldens
 ```
+
+## Summary
+
+Implemented as planned: `lottie` dependency (pure-Dart, verified on macOS;
+Android/iOS/Windows deferred to CI per toolchain notes), runtime
+`MascotCatalog` off `AssetManifest`, schema v8 (`ownedMascots` table +
+`profileStats.equippedMascotId`/`lessonsCompletedToday`/
+`lessonsCompletedDay`), `MascotService` (day-scoped lootbox trigger,
+injectable catalog-loader seam for tests), `LootboxScreen` +
+`MascotCollectionScreen`, and the full `FoxMascot`/`FoxEmptyState` retrofit
+off the retired state painter. New: `flutter test` suite (415 tests),
+`integration_test/issue059_mascot_lootbox_test.dart` (full app-level
+lootbox + equip flow), screenshots in this folder.
+
+**Known gap**: `test/golden/goldens/linux/` baselines for the new/changed
+mascot widgets were not regenerated (can only be done via the `ubuntu-latest`
+`workflow_dispatch` job per AGENTS.md's golden-test note) — `flutter test`
+on Linux CI will fail on `fox_mascot_*`/`fox_empty_state_*` until that job
+runs.
+
+## Code review
+
+- Linux golden baselines for the mascot/empty-state widgets are stale/missing (vector-painter era).
+  Not fixed — can't regenerate from macOS; needs the existing CI `workflow_dispatch` job (see Summary).
+- `_completeLesson` has no try/catch around `MascotService.recordLessonCompletion`, so a thrown asset-load error would strand `phase` before `done`.
+  Not fixed — consistent with the same method's existing (also try/catch-free) XP/streak write calls; no new risk introduced.
+- `recordLessonCompletion`'s counter-bump and reward-persist are two separate writes, not one transaction.
+  Not fixed — consistent with the rest of the codebase's no-DB-transaction pattern (e.g. `addXp`'s `xpTotal`/`todayXp`); an app-kill in that exact window is an accepted, pre-existing class of risk here.
+- `mascotCatalogProvider` called `MascotCatalog.load()` directly instead of through the injectable `mascotCatalogLoaderProvider` seam, so overriding that seam in a test didn't actually stop every catalog read from hitting the real asset bundle.
+  Fixed — it now reads through `mascotCatalogLoaderProvider`.
+- `_continueFromResult` had no reentrancy guard, so two near-simultaneous callers (overflow-menu quit + the result screen's own back button) could pop the just-pushed `LootboxScreen` instead of waiting their turn.
+  Fixed — added a `_continuingFromResult` guard, same shape as `LessonController`'s existing `_actionInFlight` pattern.
+- `watchOwnedMascotIds()` seeded the default mascot inside `asyncMap`, so its first emission could reflect the pre-seed (empty) row set.
+  Fixed — seeds before subscribing, so the first real emission already includes it.
+- `profileStats.equippedMascotId`'s column default duplicated `'emoji_u1f98a_lottie'` as a literal instead of referencing `kDefaultMascotId`.
+  Fixed — now references the constant.
+- `_ClosedLootbox`/`_MascotTile` introduce one-off tappable-box styling with no design-reason comment, per AGENTS.md's "reuse the kit" rule.
+  Fixed — added design-reason comments (same precedent as `home_screen.dart`'s `_EditNameDialog`).
+- `_lootboxShown` is per-`LessonScreen`-instance, so it wouldn't reset if the same instance survived a local-day rollover (e.g. repeated Practice-again across midnight).
+  Not fixed — requires an already-narrow scenario (one screen instance alive across midnight) to also win mascots on both days; not worth the added state for that combination.
+- `_completeLesson` re-read `getProfile()` a second time just for `equippedMascotId`, right after `MascotService` had already loaded the same row.
+  Fixed — `recordLessonCompletion` now returns `equippedMascotId` alongside the reward, so the caller needs only one read.

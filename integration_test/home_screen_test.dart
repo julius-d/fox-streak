@@ -63,6 +63,7 @@ void main() {
         findsNWidgets(2),
       ); // Continue CTA + the dedicated button
 
+      await tester.ensureVisible(find.byKey(const Key('homeBrowseSetsButton')));
       await tester.tap(find.byKey(const Key('homeBrowseSetsButton')));
       await tester.pumpAndSettle();
       expect(find.text('My Sets'), findsOneWidget);

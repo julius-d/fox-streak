@@ -12,6 +12,7 @@ import '../data/database.dart';
 import '../data/providers.dart';
 import '../data/set_json_codec.dart';
 import '../data/validation.dart';
+import '../mascot/mascot_providers.dart';
 import '../theme/fox_streak_theme.dart';
 import '../widgets/widgets.dart';
 import '../lesson/lesson.dart';
@@ -157,7 +158,7 @@ class SetDetailScreen extends ConsumerWidget {
             return FoxEmptyState(
               title: l10n.setDetailEmpty,
               message: l10n.lessonEmptySetNote,
-              mascotState: FoxMascotState.empty,
+              mascot: ref.watch(equippedMascotProvider),
               ctaLabel: l10n.lessonBackToLibrary,
               onCta: () => Navigator.of(context).pop(),
               ctaKey: const Key('emptySetBackToLibraryButton'),

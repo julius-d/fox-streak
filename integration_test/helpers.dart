@@ -42,6 +42,8 @@ import 'package:fox_streak_app/src/data/clock.dart';
 import 'package:fox_streak_app/src/data/database.dart';
 import 'package:fox_streak_app/src/data/providers.dart';
 import 'package:fox_streak_app/src/lesson/lesson_screen.dart';
+import 'package:fox_streak_app/src/mascot/mascot_catalog.dart';
+import 'package:fox_streak_app/src/stats/mascot_service.dart';
 import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
 
 export 'package:fox_streak_app/test/data/test_helpers.dart' show FakeClock;
@@ -77,16 +79,26 @@ Future<void> settle(WidgetTester tester, {int cap = 150}) async {
 ///
 /// Every flow spec uses this (not a bare screen pump) so the harness proves
 /// the real app wiring — navigation, providers, l10n — not just one widget.
+///
+/// [mascotCatalogLoader], if given, overrides #059's
+/// `mascotCatalogLoaderProvider` — for a flow that completes several
+/// same-day lessons and doesn't care about mascots, so the lootbox
+/// trigger never touches the real asset bundle (a disconnected `Future`
+/// the widget-test pump loop has no scheduled frame to wait on, which can
+/// leave a dangling platform-channel timer at teardown).
 Future<void> pumpFoxStreakApp(
   WidgetTester tester, {
   required AppDatabase db,
   required Clock clock,
+  Future<List<MascotEntry>> Function()? mascotCatalogLoader,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         appDatabaseProvider.overrideWithValue(db),
         systemClockProvider.overrideWithValue(clock),
+        if (mascotCatalogLoader != null)
+          mascotCatalogLoaderProvider.overrideWithValue(mascotCatalogLoader),
       ],
       child: const FoxStreakApp(),
     ),
@@ -138,18 +150,25 @@ Finder playSetButton(String title) => find.descendant(
 /// `initState`'s `controller.start()` would never re-run and the screen
 /// would keep showing the previous lesson's already-`done` state. Keying on
 /// the item ids forces a real remount each time.
+///
+/// [mascotCatalogLoader] — see `pumpFoxStreakApp`'s doc for why a flow
+/// that completes several same-day lessons without caring about mascots
+/// should pass one here.
 Future<void> pumpLessonScreen(
   WidgetTester tester, {
   required AppDatabase db,
   required Clock clock,
   required int setId,
   required List<Item> items,
+  Future<List<MascotEntry>> Function()? mascotCatalogLoader,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         appDatabaseProvider.overrideWithValue(db),
         systemClockProvider.overrideWithValue(clock),
+        if (mascotCatalogLoader != null)
+          mascotCatalogLoaderProvider.overrideWithValue(mascotCatalogLoader),
       ],
       child: MaterialApp(
         theme: FoxStreakTheme.light(),

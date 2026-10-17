@@ -2,38 +2,37 @@
 // skippable, shown exactly once — gated on `has_onboarded` by the caller
 // (`HomeScreen`), not inferred from lesson activity.
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../mascot/mascot_catalog.dart';
+import '../mascot/mascot_providers.dart';
 import '../theme/fox_streak_theme.dart';
 import '../widgets/widgets.dart';
 
-/// Copy + mascot for one onboarding slide.
+/// Copy for one onboarding slide. All slides show the same equipped mascot
+/// (#059 retired the old per-slide empty/lit/on-fire states).
 class _OnboardingSlideData {
   final String title;
   final String body;
-  final FoxMascotState mascot;
 
-  const _OnboardingSlideData({
-    required this.title,
-    required this.body,
-    required this.mascot,
-  });
+  const _OnboardingSlideData({required this.title, required this.body});
 }
 
 /// Max-3-slide, skippable first-run flow. [onDone] is called exactly once
 /// — on Skip (from any slide) or on finishing the last slide — with
 /// whatever name is currently typed (possibly blank); the caller persists
 /// it + marks onboarding done. Skip does not discard an already-typed name.
-class OnboardingScreen extends StatefulWidget {
+class OnboardingScreen extends ConsumerStatefulWidget {
   final Future<void> Function(String? name) onDone;
 
   const OnboardingScreen({super.key, required this.onDone});
 
   @override
-  State<OnboardingScreen> createState() => _OnboardingScreenState();
+  ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final PageController _pageController = PageController();
   final TextEditingController _nameController = TextEditingController();
   int _page = 0;
@@ -68,21 +67,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
+    final mascot = ref.watch(equippedMascotProvider);
     final List<_OnboardingSlideData> slides = <_OnboardingSlideData>[
       _OnboardingSlideData(
         title: l10n.onboardingSlide1Title,
         body: l10n.onboardingSlide1Body,
-        mascot: FoxMascotState.lit,
       ),
       _OnboardingSlideData(
         title: l10n.onboardingSlide2Title,
         body: l10n.onboardingSlide2Body,
-        mascot: FoxMascotState.onFire,
       ),
       _OnboardingSlideData(
         title: l10n.onboardingSlide3Title,
         body: l10n.onboardingSlide3Body,
-        mascot: FoxMascotState.empty,
       ),
     ];
     final bool isLast = _page == slides.length - 1;
@@ -111,6 +108,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   for (final _OnboardingSlideData slide in slides)
                     _OnboardingSlide(
                       data: slide,
+                      mascot: mascot,
                       nameField: slide == slides.last
                           ? TextField(
                               key: const Key('onboardingNameField'),
@@ -144,9 +142,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
 class _OnboardingSlide extends StatelessWidget {
   final _OnboardingSlideData data;
+  final MascotEntry mascot;
   final Widget? nameField;
 
-  const _OnboardingSlide({required this.data, this.nameField});
+  const _OnboardingSlide({
+    required this.data,
+    required this.mascot,
+    this.nameField,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -156,7 +159,7 @@ class _OnboardingSlide extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            FoxMascot(state: data.mascot, size: 120),
+            FoxMascot(mascot: mascot, size: 120),
             const SizedBox(height: FoxSpacing.xl),
             Text(
               data.title,

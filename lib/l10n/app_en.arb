@@ -264,16 +264,6 @@
     "placeholders": {}
   },
   "lessonConfirmQuit": "Quit",
-  "@lessonCelebrate": {
-    "description": "Accessibility label for celebration mascot when score > 0",
-    "placeholders": {}
-  },
-  "lessonCelebrate": "Well done!",
-  "@lessonNoScore": {
-    "description": "Accessibility label for empty mascot when score is 0",
-    "placeholders": {}
-  },
-  "lessonNoScore": "Keep practicing!",
   "@lessonScoreSummary": {
     "description": "Score summary with correct count, total, and percentage",
     "placeholders": {
@@ -602,5 +592,49 @@
     "description": "Final onboarding slide's primary button label (issue #012)",
     "placeholders": {}
   },
-  "onboardingGetStarted": "Get started"
+  "onboardingGetStarted": "Get started",
+  "@mascotSemanticLabel": {
+    "description": "Generic a11y/visible label for an equipped or revealed mascot, decoded from its filename into the literal emoji — no per-animal arb keys (issue #059)",
+    "placeholders": {
+      "emoji": {"type": "String"}
+    }
+  },
+  "mascotSemanticLabel": "Mascot {emoji}",
+  "@mascotEquippedSemanticLabel": {
+    "description": "A11y label for the currently-equipped mascot tile in the collection grid (issue #059)",
+    "placeholders": {
+      "emoji": {"type": "String"}
+    }
+  },
+  "mascotEquippedSemanticLabel": "Mascot {emoji}, equipped",
+  "@mascotLockedSemanticLabel": {
+    "description": "A11y label for a not-yet-owned mascot tile in the collection grid (issue #059)",
+    "placeholders": {}
+  },
+  "mascotLockedSemanticLabel": "Locked mascot",
+  "@homeMascotSemanticLabel": {
+    "description": "A11y label for Home's tap-to-collect mascot button (issue #059)",
+    "placeholders": {}
+  },
+  "homeMascotSemanticLabel": "Open your mascot collection",
+  "@mascotCollectionTitle": {
+    "description": "App bar title of the mascot collection/equip screen (issue #059)",
+    "placeholders": {}
+  },
+  "mascotCollectionTitle": "Your mascots",
+  "@lootboxHeading": {
+    "description": "Heading on the unopened lootbox screen (issue #059)",
+    "placeholders": {}
+  },
+  "lootboxHeading": "Daily lootbox!",
+  "@lootboxTapPrompt": {
+    "description": "Tap-to-open prompt on the unopened lootbox screen (issue #059)",
+    "placeholders": {}
+  },
+  "lootboxTapPrompt": "Tap to reveal your new mascot!",
+  "@lootboxRevealedTitle": {
+    "description": "Heading shown once the lootbox has been opened (issue #059)",
+    "placeholders": {}
+  },
+  "lootboxRevealedTitle": "You got a new mascot!"
 }

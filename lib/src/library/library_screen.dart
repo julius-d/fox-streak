@@ -12,6 +12,7 @@ import '../../l10n/app_localizations.dart';
 import '../data/database.dart';
 import '../data/providers.dart';
 import '../lesson/lesson.dart';
+import '../mascot/mascot_providers.dart';
 import '../widgets/widgets.dart';
 import 'library_providers.dart';
 import 'set_detail_screen.dart';
@@ -122,7 +123,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       isLoading: _seeding,
       loadingLabel: l10n.librarySeedLoading,
       errorMessage: _seedError != null ? l10n.librarySeedError : null,
-      mascotState: FoxMascotState.empty,
+      mascot: ref.watch(equippedMascotProvider),
       titleKey: const Key('libraryEmptyTitle'),
       ctaKey: const Key('tryDemoSetButton'),
       errorKey: const Key('librarySeedError'),

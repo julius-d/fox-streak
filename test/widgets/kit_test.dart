@@ -8,6 +8,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fox_streak_app/src/mascot/mascot_catalog.dart';
 import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
 import 'package:fox_streak_app/src/widgets/widgets.dart';
 
@@ -523,6 +524,7 @@ void main() {
       tester,
       FoxEmptyState(
         title: 'No sets yet',
+        mascot: MascotCatalog.defaultEntry,
         message: 'Create one.',
         ctaLabel: 'Try demo set',
         onCta: () => cta = true,
@@ -539,33 +541,32 @@ void main() {
 
     await pumpKit(
       tester,
-      const FoxEmptyState(
+      FoxEmptyState(
         title: 'No sets yet',
+        mascot: MascotCatalog.defaultEntry,
         isLoading: true,
         loadingLabel: 'Loading…',
-        loadingKey: Key('kitEmptyLoading'),
+        loadingKey: const Key('kitEmptyLoading'),
       ),
     );
     expect(find.byKey(const Key('kitEmptyLoading')), findsOneWidget);
     expect(find.byType(FoxPrimaryButton), findsNothing);
   });
 
-  testWidgets('mascot states render with stable keys', (
+  testWidgets('mascot renders with a stable key + semantic label', (
     WidgetTester tester,
   ) async {
     await pumpKit(
       tester,
-      const Column(
-        children: <Widget>[
-          FoxMascot(state: FoxMascotState.empty, semanticLabel: 'Sleepy fox'),
-          FoxMascot(state: FoxMascotState.lit),
-          FoxMascot(state: FoxMascotState.onFire),
-        ],
+      FoxMascot(
+        mascot: MascotCatalog.defaultEntry,
+        semanticLabel: 'Sleepy fox',
       ),
     );
-    expect(find.byKey(const Key('foxMascot-empty')), findsOneWidget);
-    expect(find.byKey(const Key('foxMascot-lit')), findsOneWidget);
-    expect(find.byKey(const Key('foxMascot-onFire')), findsOneWidget);
+    expect(
+      find.byKey(Key('foxMascot-${MascotCatalog.defaultEntry.id}')),
+      findsOneWidget,
+    );
     expect(find.bySemanticsLabel('Sleepy fox'), findsOneWidget);
   });
 

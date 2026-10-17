@@ -18,6 +18,8 @@ import 'package:fox_streak_app/src/data/providers.dart';
 import 'package:fox_streak_app/src/data/stats_repository.dart';
 import 'package:fox_streak_app/src/lesson/exercise_card.dart';
 import 'package:fox_streak_app/src/lesson/lesson_controller.dart';
+import 'package:fox_streak_app/src/mascot/mascot_catalog.dart';
+import 'package:fox_streak_app/src/stats/mascot_service.dart';
 import 'package:fox_streak_app/src/stats/xp_service.dart';
 
 import '../data/test_helpers.dart';
@@ -85,6 +87,9 @@ void main() {
       overrides: [
         appDatabaseProvider.overrideWithValue(db),
         systemClockProvider.overrideWithValue(FakeClock(kTestToday)),
+        mascotCatalogLoaderProvider.overrideWithValue(
+          () async => const <MascotEntry>[],
+        ),
         xpServiceProvider.overrideWithValue(pausingXp),
       ],
     );

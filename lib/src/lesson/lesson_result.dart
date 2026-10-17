@@ -1,10 +1,11 @@
 // Lesson result screen (issue #005, XP/level wiring from #010, streak
 // wiring from #011).
 //
-// Shows score % + correct/total, FoxMascot celebration (on-fire when this
-// lesson just hit a streak milestone, else lit if score > 0, empty on 0),
-// FoxCelebration micro-moment, XP-earned count-up + perfect-score bonus
-// callout + level-progress bar (#010), streak headline + StreakBadge
+// Shows score % + correct/total, FoxMascot celebration of the equipped
+// mascot (#059 retired the old on-fire/lit/empty state painter — outcome
+// feedback now relies entirely on the XP count-up/score%/confetti+chime/
+// StreakBadge below, not the mascot), XP-earned count-up + perfect-score
+// bonus callout + level-progress bar (#010), streak headline + StreakBadge
 // (#011), Practice again + Back to library buttons. Level-up callout +
 // animated bar fill + confetti + chime added by #053.
 
@@ -15,7 +16,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/app_localizations.dart';
-import '../stats/streak_service.dart';
+import '../mascot/mascot_catalog.dart';
+import '../mascot/mascot_providers.dart';
 import '../stats/xp_service.dart';
 import '../theme/fox_streak_theme.dart';
 import '../widgets/widgets.dart';
@@ -59,11 +61,19 @@ class LessonResultScreen extends ConsumerWidget {
     final streakCount = ref.watch(
       lessonControllerProvider.select((s) => s.streakCountAfterLesson),
     );
-    final isMilestone =
-        streakCount != null && StreakService.isMilestone(streakCount);
-    final mascotState = isMilestone
-        ? FoxMascotState.onFire
-        : (result.scorePct > 0 ? FoxMascotState.lit : FoxMascotState.empty);
+    // Resolved against the asset-backed catalog (not drift) — see
+    // [LessonState.equippedMascotId] for why this avoids `equippedMascotProvider`
+    // (which would watch the live, drift-backed `profileProvider` stream).
+    final equippedMascotId = ref.watch(
+      lessonControllerProvider.select((s) => s.equippedMascotId),
+    );
+    final catalog = ref.watch(mascotCatalogProvider).asData?.value;
+    final mascot = catalog == null
+        ? MascotCatalog.defaultEntry
+        : catalog.firstWhere(
+            (entry) => entry.id == equippedMascotId,
+            orElse: () => MascotCatalog.defaultEntry,
+          );
     // Multi-level jumps in a single lesson still show one callout for the
     // final level reached (issue #053's decision), since this only compares
     // the before/after level, not every threshold crossed in between.
@@ -84,13 +94,9 @@ class LessonResultScreen extends ConsumerWidget {
                   // Celebration wrapper for the micro-moment
                   FoxCelebration(
                     child: FoxMascot(
-                      state: mascotState,
+                      mascot: mascot,
                       size: 120,
-                      semanticLabel: isMilestone
-                          ? l10n.lessonStreakResultText(streakCount)
-                          : (result.scorePct > 0
-                                ? l10n.lessonCelebrate
-                                : l10n.lessonNoScore),
+                      semanticLabel: l10n.mascotSemanticLabel(mascot.emoji),
                     ),
                   ),
                   const SizedBox(height: FoxSpacing.xl),

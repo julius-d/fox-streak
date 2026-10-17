@@ -49,6 +49,10 @@ dependencies:
   # Level-up chime (issue #053); #054 (per-question correct-answer sound)
   # will likely share this dependency once refined.
   audioplayers: ^6.8.1
+  # Collectible mascot animations (issue #059); pure-Dart Lottie player, no
+  # native plugin code, so all 4 kept platforms stay supported. #032 (lottie
+  # question images) reuses this same dependency.
+  lottie: ^3.6.1
 
 dev_dependencies:
   flutter_test:
@@ -89,6 +93,7 @@ flutter:
   assets:
     - assets/seed/
     - assets/sfx/
+    - assets/mascot/noto-emoji/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

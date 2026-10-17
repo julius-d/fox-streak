@@ -232,6 +232,7 @@ void main() {
       final clock = FakeClock(kTestToday);
       await pumpOnboardedHome(tester, clock);
 
+      await tester.ensureVisible(find.byKey(const Key('homeBrowseSetsButton')));
       await tester.tap(find.byKey(const Key('homeBrowseSetsButton')));
       await settle(tester);
       expect(find.text('My Sets'), findsOneWidget);

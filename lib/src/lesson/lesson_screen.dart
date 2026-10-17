@@ -15,6 +15,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../l10n/app_localizations.dart';
 import '../data/database.dart';
 import '../library/library_providers.dart';
+import '../mascot/lootbox_screen.dart';
 import '../theme/fox_streak_theme.dart';
 import '../widgets/widgets.dart';
 import '../exercises/date_exercise.dart';
@@ -95,6 +96,17 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
     with TickerProviderStateMixin {
   late final PageController _pageController;
   bool _lessonStarted = false;
+  // Guards against showing the lootbox twice for the same session (e.g. the
+  // overflow menu's quit path and the result screen's own back button both
+  // ultimately call `_continueFromResult`).
+  bool _lootboxShown = false;
+  // Guards `_continueFromResult` itself against a second near-simultaneous
+  // call landing mid-`await` (e.g. the overflow menu's quit and the result
+  // screen's own back button both tapped before the first call's lootbox
+  // push resolves) — without this, the second call would see `_lootboxShown`
+  // already true and immediately pop whatever is currently on top (the
+  // first call's just-pushed `LootboxScreen`) instead of waiting its turn.
+  bool _continuingFromResult = false;
 
   @override
   void initState() {
@@ -140,11 +152,17 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
     final controller = ref.read(lessonControllerProvider.notifier);
 
     // Once the lesson is done there's nothing left to lose: back nav (system
-    // back or the X) pops straight to detail with the result, no confirm.
-    // Mid-lesson, back nav goes through the quit-confirm dialog instead.
+    // back or the X) pops straight to detail with the result, no confirm —
+    // but still gives the #059 lootbox a chance to show first. Mid-lesson,
+    // back nav goes through the quit-confirm dialog instead.
     Future<void> handleBack() async {
       if (state.isDone) {
-        Navigator.of(context).pop(controller.buildResult());
+        final result = controller.buildResult();
+        if (result != null) {
+          await _continueFromResult(result, l10n);
+        } else {
+          Navigator.of(context).pop();
+        }
         return;
       }
       final shouldQuit = await _showQuitDialog(context, l10n);
@@ -392,6 +410,29 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
     }
   }
 
+  /// Shows the #059 lootbox reveal once, if this lesson's completion won
+  /// one, then pops [result] to the caller's original destination —
+  /// shared by the result screen's own "back" button and the overflow
+  /// menu/system-back path (both of which land on the same done state).
+  Future<void> _continueFromResult(
+    LessonResult result,
+    AppLocalizations l10n,
+  ) async {
+    if (_continuingFromResult) return;
+    _continuingFromResult = true;
+    final wonMascot = ref.read(lessonControllerProvider).wonMascot;
+    if (wonMascot != null && !_lootboxShown) {
+      _lootboxShown = true;
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute<void>(
+          builder: (_) => LootboxScreen(reward: wonMascot, l10n: l10n),
+        ),
+      );
+      if (!mounted) return;
+    }
+    Navigator.of(context).pop(result);
+  }
+
   Future<bool?> _showQuitDialog(BuildContext context, AppLocalizations l10n) {
     return FoxConfirmDialog.show(
       context: context,
@@ -418,7 +459,7 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
       result: result,
       l10n: l10n,
       onPracticeAgain: () => controller.restart(),
-      onBackToLibrary: () => Navigator.of(context).pop(result),
+      onBackToLibrary: () => _continueFromResult(result, l10n),
       backLabel: widget.backLabel ?? l10n.lessonBackToLibrary,
     );
   }
