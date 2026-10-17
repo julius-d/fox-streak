@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "fox_streak_app" "\0"
+            VALUE "FileDescription", "Fox Streak" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "fox_streak_app" "\0"
+            VALUE "InternalName", "Fox Streak" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 com.example. All rights reserved." "\0"
             VALUE "OriginalFilename", "fox_streak_app.exe" "\0"
-            VALUE "ProductName", "fox_streak_app" "\0"
+            VALUE "ProductName", "Fox Streak" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

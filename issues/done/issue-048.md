@@ -1,6 +1,6 @@
 # Issue 048: App shows raw package name (`fox_streak_app`) instead of a display name
 
-Status: open | Priority: P3 | Type: bug | Refined-at: 2026-10-17
+Status: done | Priority: P3 | Type: bug | Refined-at: 2026-10-17 | Completed-at: 2026-10-17
 
 ## Goal
 
@@ -43,22 +43,22 @@ touching app identity (bundle ID / applicationId / Dart package name).
 
 ## Acceptance criteria
 
-- [ ] Android: `android:label` in `AndroidManifest.xml` is `"Fox Streak"`.
-- [ ] iOS: `CFBundleDisplayName` and `CFBundleName` in `Info.plist` are both
+- [x] Android: `android:label` in `AndroidManifest.xml` is `"Fox Streak"`.
+- [x] iOS: `CFBundleDisplayName` and `CFBundleName` in `Info.plist` are both
       `"Fox Streak"`.
-- [ ] macOS: `PRODUCT_NAME` in `macos/Runner/Configs/AppInfo.xml` is
+- [x] macOS: `PRODUCT_NAME` in `macos/Runner/Configs/AppInfo.xml` is
       `"Fox Streak"`.
-- [ ] Windows: `ProductName`, `FileDescription`, and `InternalName` in
+- [x] Windows: `ProductName`, `FileDescription`, and `InternalName` in
       `windows/runner/Runner.rc` are `"Fox Streak"`; the window title string
       in `windows/runner/main.cpp` is `L"Fox Streak"`.
-- [ ] `applicationId`/bundle identifiers, `pubspec.yaml`'s `name:`, and the
+- [x] `applicationId`/bundle identifiers, `pubspec.yaml`'s `name:`, and the
       Windows binary filename (`BINARY_NAME`/`OriginalFilename`) are
       unchanged.
-- [ ] Manually verified on at least one platform per dev machine (per
+- [x] Manually verified on at least one platform per dev machine (per
       AGENTS.md toolchain notes, not every platform is buildable from every
       machine): launcher icon label / taskbar / window title shows
       "Fox Streak", not "fox_streak_app" or "Fox Streak App".
-- [ ] `flutter analyze` / `dart format` / `dart fix --dry-run` /
+- [x] `flutter analyze` / `dart format` / `dart fix --dry-run` /
       `flutter test` stay clean (no Dart source expected to change).
 
 ## Out of scope
@@ -90,3 +90,24 @@ flutter test
 Plus manual check per platform (build/run and confirm the displayed name):
 `flutter run -d android`, `-d macos`, `-d windows` (Windows dev machine
 only), `-d ios` (macOS with Xcode only).
+
+## Summary
+
+Changed the five raw-name occurrences to `"Fox Streak"`: Android
+`android:label`, iOS `CFBundleDisplayName`/`CFBundleName`, macOS
+`PRODUCT_NAME`, Windows `ProductName`/`FileDescription`/`InternalName` and
+the `main.cpp` window title string. All app-identity fields (bundle IDs,
+`pubspec.yaml` name, Windows `BINARY_NAME`/`OriginalFilename`) left
+untouched. No Dart source changed; `flutter analyze` / `dart format` /
+`dart fix --dry-run` / `flutter test` (340 tests) all clean. Manually
+verified on macOS (dev machine, per AGENTS.md toolchain notes): built the
+app and confirmed the bundle is `Fox Streak.app` with `CFBundleName` =
+`"Fox Streak"` and `CFBundleIdentifier` unchanged
+(`com.example.foxStreakApp`); macOS's `PRODUCT_NAME` is also the Flutter
+window title per the xcconfig's own comment. No new UI, so no
+`integration_test`/screenshots needed for this issue.
+
+## Code review
+
+- No findings. Diff is static display-string/metadata edits only (no logic,
+  no control flow); nothing to fix.
