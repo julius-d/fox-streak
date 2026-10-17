@@ -185,6 +185,15 @@ abstract class AppLocalizations {
   String get settingsHapticsSubtitle;
   String get settingsSoundLabel;
   String get settingsSoundSubtitle;
+  String get settingsDisplayNameLabel;
+  String get settingsDisplayNameUnset;
+  String get settingsDisplayNameDialogTitle;
+  String get settingsDisplayNameHint;
+  String get settingsDailyGoalLabel;
+  String settingsDailyGoalSubtitle(int xp);
+  String get settingsDailyGoalDialogTitle;
+  String get settingsDailyGoalHint;
+  String get settingsDailyGoalValidationError;
   String get parentalInfoTitle;
   String get parentalInfoBody;
   String get onboardingSlide1Title;
@@ -504,6 +513,25 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get settingsSoundSubtitle =>
       'Play chimes on level-up and correct answers';
+  @override
+  String get settingsDisplayNameLabel => 'Display name';
+  @override
+  String get settingsDisplayNameUnset => 'Not set';
+  @override
+  String get settingsDisplayNameDialogTitle => 'Display name';
+  @override
+  String get settingsDisplayNameHint => 'Enter your name (optional)';
+  @override
+  String get settingsDailyGoalLabel => 'Daily XP goal';
+  @override
+  String settingsDailyGoalSubtitle(int xp) => '$xp XP';
+  @override
+  String get settingsDailyGoalDialogTitle => 'Daily XP goal';
+  @override
+  String get settingsDailyGoalHint => 'Daily XP goal (10–500)';
+  @override
+  String get settingsDailyGoalValidationError =>
+      'Enter a value between 10 and 500';
   @override
   String get parentalInfoTitle => 'For parents';
   @override
@@ -843,6 +871,25 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get settingsSoundSubtitle =>
       'Töne beim Level-Aufstieg und bei richtigen Antworten abspielen';
+  @override
+  String get settingsDisplayNameLabel => 'Anzeigename';
+  @override
+  String get settingsDisplayNameUnset => 'Nicht festgelegt';
+  @override
+  String get settingsDisplayNameDialogTitle => 'Anzeigename';
+  @override
+  String get settingsDisplayNameHint => 'Gib deinen Namen ein (optional)';
+  @override
+  String get settingsDailyGoalLabel => 'Tages-XP-Ziel';
+  @override
+  String settingsDailyGoalSubtitle(int xp) => '$xp XP';
+  @override
+  String get settingsDailyGoalDialogTitle => 'Tages-XP-Ziel';
+  @override
+  String get settingsDailyGoalHint => 'Tages-XP-Ziel (10–500)';
+  @override
+  String get settingsDailyGoalValidationError =>
+      'Gib einen Wert zwischen 10 und 500 ein';
   @override
   String get parentalInfoTitle => 'Für Eltern';
   @override

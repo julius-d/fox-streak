@@ -496,6 +496,53 @@
     "placeholders": {}
   },
   "settingsSoundSubtitle": "Play chimes on level-up and correct answers",
+  "@settingsDisplayNameLabel": {
+    "description": "Title of the display name ListTile on the settings screen (issue #057)",
+    "placeholders": {}
+  },
+  "settingsDisplayNameLabel": "Display name",
+  "@settingsDisplayNameUnset": {
+    "description": "Placeholder subtitle of the display name ListTile when no name is set (issue #057)",
+    "placeholders": {}
+  },
+  "settingsDisplayNameUnset": "Not set",
+  "@settingsDisplayNameDialogTitle": {
+    "description": "Title of the settings display name edit dialog (issue #057)",
+    "placeholders": {}
+  },
+  "settingsDisplayNameDialogTitle": "Display name",
+  "@settingsDisplayNameHint": {
+    "description": "Hint text in the settings display name edit dialog's text field (issue #057)",
+    "placeholders": {}
+  },
+  "settingsDisplayNameHint": "Enter your name (optional)",
+  "@settingsDailyGoalLabel": {
+    "description": "Title of the daily XP goal ListTile on the settings screen (issue #057)",
+    "placeholders": {}
+  },
+  "settingsDailyGoalLabel": "Daily XP goal",
+  "@settingsDailyGoalSubtitle": {
+    "description": "Subtitle of the daily XP goal ListTile, showing the current goal (issue #057)",
+    "placeholders": {
+      "xp": {"type": "int"}
+    }
+  },
+  "settingsDailyGoalSubtitle": "{xp} XP",
+  "@settingsDailyGoalDialogTitle": {
+    "description": "Title of the settings daily XP goal edit dialog (issue #057)",
+    "placeholders": {}
+  },
+  "settingsDailyGoalDialogTitle": "Daily XP goal",
+  "@settingsDailyGoalHint": {
+    "description": "Hint text in the settings daily XP goal edit dialog's text field (issue #057)",
+    "placeholders": {}
+  },
+  "settingsDailyGoalHint": "Daily XP goal (10–500)",
+  "@settingsDailyGoalValidationError": {
+    "description": "Validation message shown in the daily XP goal dialog for non-numeric or out-of-range input (issue #057)",
+    "placeholders": {}
+  },
+  "settingsDailyGoalValidationError": "Enter a value between 10 and 500",
   "@parentalInfoTitle": {
     "description": "App bar title for the static parental info screen (issue #012)",
     "placeholders": {}

@@ -78,7 +78,7 @@ class ProfileStats extends Table {
   IntColumn get streakCount => integer().withDefault(const Constant(0))();
   // YYYY-MM-DD in local tz, NULL until first activity.
   TextColumn get lastActiveDay => text().nullable()();
-  IntColumn get dailyGoalXp => integer().withDefault(const Constant(30))();
+  IntColumn get dailyGoalXp => integer().withDefault(const Constant(100))();
   // v3 (#010): XP earned on the current `lastActiveDay`, day-scoped.
   IntColumn get todayXp => integer().withDefault(const Constant(0))();
   // v5 (#012): optional display name, settable via onboarding/tap-to-rename.

@@ -1,6 +1,6 @@
 # Issue 057: Settings screen: edit daily XP goal + display name
 
-Status: open | Priority: P3 | Type: feature | Refined-at: 2026-10-17
+Status: done | Priority: P3 | Type: feature | Refined-at: 2026-10-17 | Completed-at: 2026-10-17
 
 ## Goal
 
@@ -50,33 +50,33 @@ Settings. Also bump the fresh-install default daily goal from 30 to 100.
 
 ## Acceptance criteria
 
-- [ ] `SettingsScreen` has a "Display name" `ListTile` that opens an
+- [x] `SettingsScreen` has a "Display name" `ListTile` that opens an
       edit dialog (prefilled with the current name), saves via
       `StatsRepository.setDisplayName`, and reflects the updated value
       immediately (including in Home's greeting, without needing to
       reopen Home).
-- [ ] `SettingsScreen` has a "Daily XP goal" `ListTile` that opens an edit
+- [x] `SettingsScreen` has a "Daily XP goal" `ListTile` that opens an edit
       dialog (prefilled with the current goal), saves via
       `StatsRepository.updateDailyGoal`, and reflects the updated value
       immediately (including Home's goal-ring target).
-- [ ] The daily XP goal dialog rejects non-numeric input and values
+- [x] The daily XP goal dialog rejects non-numeric input and values
       outside 10–500 inclusive — save is disabled or blocked, with
       feedback, until the value is valid.
-- [ ] Home's existing tap-to-rename greeting is unchanged and still works
+- [x] Home's existing tap-to-rename greeting is unchanged and still works
       independently of the new Settings entry — both write the same
       `displayName` column.
-- [ ] `kDefaultDailyGoalXp` is `100`; a fresh profile row (new install)
+- [x] `kDefaultDailyGoalXp` is `100`; a fresh profile row (new install)
       gets `dailyGoalXp = 100`. No migration touches existing rows.
-- [ ] New strings via `lib/l10n` arb params (DE + EN): both `ListTile`
+- [x] New strings via `lib/l10n` arb params (DE + EN): both `ListTile`
       labels/subtitles, both dialog titles/hints, and any validation
       message — following the `settings*`/`homeEditName*` naming
       pattern already in `app_en.arb`/`app_de.arb`.
-- [ ] New/updated tests: `stats_repository_test.dart` already covers
+- [x] New/updated tests: `stats_repository_test.dart` already covers
       `updateDailyGoal`/`setDisplayName` at the repository level — add
       widget/integration coverage for the two new `SettingsScreen` fields
       (open dialog, edit, save, value reflected), following #055's
       `integration_test/issue055_settings_test.dart` style.
-- [ ] `flutter analyze` / `dart format` / `dart fix --dry-run` /
+- [x] `flutter analyze` / `dart format` / `dart fix --dry-run` /
       `flutter test` clean.
 
 ## Out of scope
@@ -101,3 +101,21 @@ dart format --output=none --set-exit-if-changed .
 dart fix --dry-run
 flutter test
 ```
+
+## Summary
+
+Added "Display name" and "Daily XP goal" `ListTile`s to `SettingsScreen`,
+each opening a private `AlertDialog` (mirroring Home's `_EditNameDialog`)
+that writes through `StatsRepository`. `SettingsScreen` now gates on
+`profileProvider` (same async pattern as Home) to read current values.
+`kDefaultDailyGoalXp` bumped 30 → 100, including the Drift column's own
+default. New coverage: `integration_test/issue057_settings_test.dart`.
+Screenshots: `issue-057-settings_screen.png`,
+`issue-057-daily_goal_dialog_validation.png`.
+
+## Code review
+
+- `database.dart`'s `dailyGoalXp` column still had `withDefault(Constant(30))` while `kDefaultDailyGoalXp` became 100 — a second, now-stale default.
+  Fixed: bumped the column default to 100 too (dormant today since `getProfile()` always passes the value explicitly, but a real footgun for future insert paths).
+- `_EditDisplayNameDialog` duplicates Home's `_EditNameDialog` almost verbatim (own dialog instance, not a shared widget).
+  Not fixed: this duplication was an explicit, scoped decision in this issue itself (see "Widget shape" and "Out of scope" — no new kit dialog widget until a third field needs one).

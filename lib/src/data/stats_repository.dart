@@ -9,7 +9,7 @@ import 'database.dart';
 const int kProfileId = 0;
 
 /// Default daily XP goal for fresh profiles.
-const int kDefaultDailyGoalXp = 30;
+const int kDefaultDailyGoalXp = 100;
 
 /// Repository for `profile_stats` + `attempts`.
 ///
