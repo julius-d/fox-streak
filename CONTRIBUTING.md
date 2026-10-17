@@ -128,7 +128,7 @@ Generated files (`*.g.dart`) are committed. After editing
 `lib/src/data/database.dart` (or any `@DriftDatabase` file), regenerate:
 
 ```shell
-dart run build_runner build --delete-conflicting-outputs
+dart run build_runner build
 ```
 
 ## Project docs

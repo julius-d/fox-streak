@@ -1,6 +1,6 @@
 # Issue 021: Update codegen docs — `--delete-conflicting-outputs` flag removed
 
-Status: open | Priority: P3 | Type: chore | Reviewed-at: 2026-10-17
+Status: done | Priority: P3 | Type: chore | Reviewed-at: 2026-10-17 | Completed-at: 2026-10-17
 
 ## Goal
 Fix stale `build_runner` command docs after the flag removal.
@@ -15,11 +15,11 @@ found the identical stale command in `CONTRIBUTING.md` (`## Codegen (Drift)`,
 line 131) — same fix applies there.
 
 ## Acceptance criteria
-- [ ] `AGENTS.md` codegen command updated to the flag-less form
+- [x] `AGENTS.md` codegen command updated to the flag-less form
       (`dart run build_runner build`); #002-owned data-layer note kept otherwise.
-- [ ] `CONTRIBUTING.md` codegen command (`## Codegen (Drift)`) updated to the
+- [x] `CONTRIBUTING.md` codegen command (`## Codegen (Drift)`) updated to the
       same flag-less form.
-- [ ] No behavior change; `flutter analyze` clean, `flutter test` green.
+- [x] No behavior change; `flutter analyze` clean, `flutter test` green.
 
 ## Out of scope
 - Drift schema changes; codegen output changes (`database.g.dart` stays as-is).
@@ -35,3 +35,12 @@ grep -n "delete-conflicting-outputs" AGENTS.md CONTRIBUTING.md  # expect no matc
 flutter analyze               # must be clean
 flutter test                  # must be green
 ```
+
+## Code review
+- Reviewed the two doc edits plus the issue-file update for stray references and consistency.
+  No findings — doc-only change, nothing to fix.
+
+## Summary
+Removed the stale `--delete-conflicting-outputs` flag from the `build_runner`
+command in `AGENTS.md` and `CONTRIBUTING.md`. No code or generated output
+changed; `flutter analyze` and `flutter test` (368 tests) stayed green.

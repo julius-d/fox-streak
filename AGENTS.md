@@ -48,7 +48,7 @@ Lints via `flutter_lints` + `riverpod_lint` surface through `flutter analyze`;
 - Drift + SQLite (`drift`, `drift_flutter`; codegen `drift_dev`+`build_runner`).
   Generated `*.g.dart` files are committed; regenerate with:
   ```shell
-  dart run build_runner build --delete-conflicting-outputs
+  dart run build_runner build
   ```
 - `lib/src/data/`: `database.dart`, `clock.dart`, `validation.dart`,
   `set_json_codec.dart`, `sets_repository.dart`, `stats_repository.dart`,
