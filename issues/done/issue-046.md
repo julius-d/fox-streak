@@ -1,6 +1,6 @@
 # Issue 046: Phone input field cursor jumps to the end on every mid-string edit
 
-Status: open | Priority: P2 | Type: bug | Refined-at: 2026-10-17
+Status: done | Priority: P2 | Type: bug | Refined-at: 2026-10-17 | Completed-at: 2026-10-17
 
 ## Goal
 
@@ -46,26 +46,26 @@ experience than fixing the cursor math.)
 
 ## Acceptance criteria
 
-- [ ] Deleting a character anywhere in the phone field (not just at the end)
+- [x] Deleting a character anywhere in the phone field (not just at the end)
       leaves the caret immediately after the deletion point, not at the end
       of the field — verified for deleting from the middle and deleting a
       leading country-code-like prefix (e.g. typing/pasting `+49 171 234567`
       then backspacing through the leading `49`).
-- [ ] Inserting/typing a character anywhere in the middle of the field
+- [x] Inserting/typing a character anywhere in the middle of the field
       (not just appending at the end) leaves the caret immediately after the
       inserted character, not at the end of the field.
-- [ ] Appending at the end (the original common case) keeps working exactly
+- [x] Appending at the end (the original common case) keeps working exactly
       as before — caret stays at the end while typing a new number forward.
-- [ ] Existing behavior unchanged: non-digit/invalid characters still get
+- [x] Existing behavior unchanged: non-digit/invalid characters still get
       rejected (formatter returns `newValue` untouched), paste still
       auto-strips separators (`normalizePhone`) and re-groups, clearing the
       field still resets to an empty collapsed selection at offset 0.
-- [ ] Unit tests added to `test/library/formatting_test.dart` covering
+- [x] Unit tests added to `test/library/formatting_test.dart` covering
       `PhoneGroupingFormatter.formatEditUpdate` directly: delete from the
       middle, delete a leading prefix, insert in the middle, append at the
       end — asserting both the resulting grouped text and the resulting
       caret offset.
-- [ ] `flutter analyze` / `dart format --output=none --set-exit-if-changed .`
+- [x] `flutter analyze` / `dart format --output=none --set-exit-if-changed .`
       / `dart fix --dry-run` / `flutter test` stay clean/green.
 
 ## Out of scope
@@ -94,3 +94,22 @@ dart format --output=none --set-exit-if-changed .
 dart fix --dry-run
 flutter test
 ```
+
+## Summary
+
+`PhoneGroupingFormatter.formatEditUpdate` now counts digits before the raw
+edit cursor in `newValue.text` (not `oldValue` as the decision text above
+literally says — using `oldValue` gives the wrong offset for inserts/deletes
+away from the end; `newValue.selection` already reflects the raw post-edit
+cursor, which is what the credit-card-mask technique needs) and places the
+new caret after the same digit count in the re-grouped string. 4 new unit
+tests in `test/library/formatting_test.dart` cover delete-middle,
+delete-leading-prefix (2-step), insert-middle, and append-at-end.
+
+## Code review
+
+- Reuse: hand-rolled `_digitCount`/`_isDigit` reimplemented digit-extraction
+  logic already provided by `normalizePhone`/`kPhoneStripPattern`.
+  Fixed — replaced with `normalizePhone(text.substring(0, rawCursor)).length`;
+  `_isDigit` kept only for walking the grouped (digits+spaces) string in
+  `_offsetAfterDigits`, where it isn't duplicative.

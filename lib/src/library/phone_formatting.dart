@@ -31,8 +31,16 @@ String groupPhoneForDisplay(String digits) {
 /// Strips separators via [normalizePhone] (spaces, `-`, `/`, `(`, `)`, `.`,
 /// `+`) so pasted numbers are accepted, then re-applies [groupPhoneForDisplay].
 /// Input containing other characters (e.g. letters) passes through untouched
-/// so `isValidPhoneAnswer` still rejects it. The caret is parked at the end,
-/// which keeps typing cursor-stable for a single appended-at-end field.
+/// so `isValidPhoneAnswer` still rejects it.
+///
+/// Caret placement is cursor-preserving (issue #046): [newValue]'s selection
+/// already reflects where the user's raw edit landed in [newValue.text], so
+/// the formatter counts how many digits sit at-or-before that raw cursor
+/// position, then places the new caret right after the same digit count in
+/// the re-grouped string. This keeps the caret stable for edits anywhere in
+/// the field (not just appends at the end), since the digit count on either
+/// side of an insertion/deletion point doesn't shift when separators are
+/// re-flowed around it.
 class PhoneGroupingFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
@@ -50,9 +58,32 @@ class PhoneGroupingFormatter extends TextInputFormatter {
       );
     }
     final grouped = groupPhoneForDisplay(digits);
+    final rawCursor = newValue.selection.baseOffset.clamp(0, text.length);
+    final digitsBeforeCursor = normalizePhone(text.substring(0, rawCursor))
+        .length;
+    final newOffset = _offsetAfterDigits(grouped, digitsBeforeCursor);
     return TextEditingValue(
       text: grouped,
-      selection: TextSelection.collapsed(offset: grouped.length),
+      selection: TextSelection.collapsed(offset: newOffset),
     );
+  }
+
+  /// Finds the offset right after the [digitCount]-th digit in [text],
+  /// or the end of [text] if it has fewer digits than that.
+  static int _offsetAfterDigits(String text, int digitCount) {
+    if (digitCount <= 0) return 0;
+    var seen = 0;
+    for (var i = 0; i < text.length; i++) {
+      if (_isDigit(text, i)) {
+        seen++;
+        if (seen == digitCount) return i + 1;
+      }
+    }
+    return text.length;
+  }
+
+  static bool _isDigit(String text, int index) {
+    final code = text.codeUnitAt(index);
+    return code >= 0x30 && code <= 0x39;
   }
 }

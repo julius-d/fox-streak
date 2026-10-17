@@ -78,5 +78,104 @@ void main() {
     test('letters pass through untouched', () {
       expect(edit('abc').text, 'abc');
     });
+
+    test('clearing the field resets to an empty collapsed selection', () {
+      final result = formatter.formatEditUpdate(
+        const TextEditingValue(
+          text: '017 123 456 7',
+          selection: TextSelection.collapsed(offset: 13),
+        ),
+        const TextEditingValue(
+          text: '',
+          selection: TextSelection.collapsed(offset: 0),
+        ),
+      );
+      expect(result.text, '');
+      expect(result.selection, const TextSelection.collapsed(offset: 0));
+    });
+
+    // Cursor-preserving regroup (#046): formatEditUpdate places the new
+    // caret after the same digit count that preceded the raw edit cursor,
+    // instead of always collapsing to the end.
+    group('cursor-preserving regroup (#046)', () {
+      TextEditingValue editAt(
+        TextEditingValue old,
+        String rawText,
+        int rawCursor,
+      ) => formatter.formatEditUpdate(
+        old,
+        TextEditingValue(
+          text: rawText,
+          selection: TextSelection.collapsed(offset: rawCursor),
+        ),
+      );
+
+      test('deleting a digit from the middle keeps the caret there', () {
+        // "017 123 456 7" with the '1' right after "017" backspaced out.
+        final result = editAt(
+          const TextEditingValue(
+            text: '017 123 456 7',
+            selection: TextSelection.collapsed(offset: 5),
+          ),
+          '017 23 456 7',
+          4,
+        );
+        expect(result.text, '017 234 567');
+        expect(result.selection, const TextSelection.collapsed(offset: 3));
+      });
+
+      test('deleting a leading country-code-like prefix digit by digit', () {
+        // Pasted "+49 171 234567" groups to "491 712 345 67"; backspacing
+        // through the leading "49" should walk the caret back to the
+        // start, not snap it to the end after every keystroke.
+        final pasted = edit('+49 171 234567');
+        expect(pasted.text, '491 712 345 67');
+
+        final afterFirstBackspace = editAt(pasted, '41 712 345 67', 1);
+        expect(afterFirstBackspace.text, '417 123 456 7');
+        expect(
+          afterFirstBackspace.selection,
+          const TextSelection.collapsed(offset: 1),
+        );
+
+        final afterSecondBackspace = editAt(
+          afterFirstBackspace,
+          '17 123 456 7',
+          0,
+        );
+        expect(afterSecondBackspace.text, '171 234 567');
+        expect(
+          afterSecondBackspace.selection,
+          const TextSelection.collapsed(offset: 0),
+        );
+      });
+
+      test('inserting a digit in the middle places caret after it', () {
+        // "017 123 456 7" with a '9' typed between the '1' and the '7'.
+        final result = editAt(
+          const TextEditingValue(
+            text: '017 123 456 7',
+            selection: TextSelection.collapsed(offset: 2),
+          ),
+          '0197 123 456 7',
+          3,
+        );
+        expect(result.text, '019 712 345 67');
+        expect(result.selection, const TextSelection.collapsed(offset: 3));
+      });
+
+      test('appending at the end keeps the caret at the end', () {
+        final result = editAt(
+          const TextEditingValue(
+            text: '017 123 456 7',
+            selection: TextSelection.collapsed(offset: 13),
+          ),
+          '017 123 456 78',
+          14,
+        );
+        expect(result.text, '017 123 456 78');
+        expect(result.selection, const TextSelection.collapsed(offset: 14));
+      });
+    });
   });
 }
