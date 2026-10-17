@@ -10,12 +10,15 @@ import '../../l10n/app_localizations.dart';
 import '../data/database.dart';
 import '../data/providers.dart';
 import '../data/set_json_codec.dart';
+import '../data/validation.dart';
 import '../theme/fox_streak_theme.dart';
 import '../widgets/widgets.dart';
 import '../lesson/lesson.dart';
+import 'date_display.dart';
 import 'item_editor.dart';
 import 'item_type_icons.dart';
 import 'library_providers.dart';
+import 'phone_formatting.dart';
 import 'share_actions.dart';
 
 /// Detail view for one set: its items plus share/import overflow menu.
@@ -169,6 +172,14 @@ class SetDetailScreen extends ConsumerWidget {
                 'date' => l10n.typeDate,
                 _ => item.type,
               };
+              final displayAnswer = switch (item.type) {
+                'date' => formatDateForDisplay(
+                  item.answer,
+                  Localizations.localeOf(context),
+                ),
+                'phone' => groupPhoneForDisplay(normalizePhone(item.answer)),
+                _ => item.answer,
+              };
               return ListTile(
                 key: Key('itemTile-${item.id}'),
                 leading: Icon(
@@ -177,7 +188,7 @@ class SetDetailScreen extends ConsumerWidget {
                   color: colorForItemType(context, item.type, category),
                 ),
                 title: Text(item.prompt),
-                subtitle: Text('$typeLabel · ${item.answer}'),
+                subtitle: Text('$typeLabel · $displayAnswer'),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [

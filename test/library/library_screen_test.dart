@@ -214,11 +214,11 @@ void main() {
     await tester.tap(find.byKey(const Key('saveItemButton')));
     await settle(tester);
 
-    // Stored digits-only.
+    // Stored digits-only; displayed grouped for readability (issue #049).
     final items = await repo.getItemsForSet(id);
     expect(items, hasLength(1));
     expect(items.single.answer, '01711234567');
-    expect(find.textContaining('01711234567'), findsOneWidget);
+    expect(find.textContaining('017 112 345 67'), findsOneWidget);
     await unmount(tester);
   });
 
