@@ -1404,7 +1404,7 @@ class $ProfileStatsTable extends ProfileStats
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
-    defaultValue: const Constant(30),
+    defaultValue: const Constant(100),
   );
   static const VerificationMeta _todayXpMeta = const VerificationMeta(
     'todayXp',
@@ -1454,7 +1454,7 @@ class $ProfileStatsTable extends ProfileStats
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultValue: const Constant('emoji_u1f98a_lottie'),
+    defaultValue: const Constant(kDefaultMascotId),
   );
   static const VerificationMeta _lessonsCompletedTodayMeta =
       const VerificationMeta('lessonsCompletedToday');
