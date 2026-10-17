@@ -1,7 +1,10 @@
 // Mascot catalog (issue #059): discovers collectible mascots at *runtime*
 // from `AssetManifest`, never a hardcoded Dart list — dropping one more
-// `..._lottie.json` file into `assets/mascot/noto-emoji/` is the entire
-// change needed to add a mascot later.
+// `..._lottie.json` file into `assets/noto-emoji/mascot/` is the entire
+// change needed to add a mascot later. One-off, non-collectible effect
+// animations (e.g. the lootbox-opening Lottie, issue #062) live in the
+// sibling `assets/noto-emoji/other/` instead, which this catalog never
+// scans.
 //
 // Stable ID = filename stem (e.g. `emoji_u1f98a_lottie` for
 // `emoji_u1f98a_lottie.json`), used as the primary/foreign key everywhere
@@ -16,9 +19,10 @@
 // arb template.
 import 'package:flutter/services.dart';
 
-/// Directory holding every collectible mascot's Lottie animation (and the
-/// non-mascot `attribution.md`, filtered out by the `_lottie.json` suffix).
-const String kMascotAssetDir = 'assets/mascot/noto-emoji/';
+/// Directory holding every collectible mascot's Lottie animation. Sibling to
+/// `assets/noto-emoji/other/` (non-collectible effect animations) and
+/// `assets/noto-emoji/attribution.md`, neither of which this scans.
+const String kMascotAssetDir = 'assets/noto-emoji/mascot/';
 
 const String _kLottieSuffix = '_lottie.json';
 
@@ -76,7 +80,7 @@ abstract final class MascotCatalog {
   /// The default fox entry, available without loading the asset manifest.
   static final MascotEntry defaultEntry = mascotEntryForId(kDefaultMascotId);
 
-  /// Loads every `assets/mascot/noto-emoji/*_lottie.json` asset from
+  /// Loads every `assets/noto-emoji/mascot/*_lottie.json` asset from
   /// [bundle] (defaults to [rootBundle]) and returns one [MascotEntry] per
   /// file, sorted by [MascotEntry.id] for a stable iteration order.
   static Future<List<MascotEntry>> load({AssetBundle? bundle}) async {

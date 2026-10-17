@@ -38,7 +38,7 @@ Future<void> unmount(WidgetTester tester) async {
 
 const _reward = MascotEntry(
   id: 'emoji_u1f980_lottie',
-  assetPath: 'assets/mascot/noto-emoji/emoji_u1f980_lottie.json',
+  assetPath: 'assets/noto-emoji/mascot/emoji_u1f980_lottie.json',
   emoji: '🦀',
 );
 
@@ -64,27 +64,45 @@ Future<AppDatabase> pumpCollectionScreen(
 
 void main() {
   group('LootboxScreen', () {
-    testWidgets('tap-to-open reveals the reward + a single continue action', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: LootboxScreen(reward: _reward, l10n: AppLocalizationsEn()),
-        ),
-      );
-      await tester.pump();
+    testWidgets(
+      'tap starts the opening animation (no immediate reveal, no longer '
+      'tappable); it reveals the reward + a single continue action only '
+      'once the animation finishes',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: LootboxScreen(reward: _reward, l10n: AppLocalizationsEn()),
+          ),
+        );
+        await tester.pump();
 
-      expect(find.byKey(const Key('lootboxOpenButton')), findsOneWidget);
-      expect(find.byKey(const Key('lootboxContinueButton')), findsNothing);
-      expect(find.byKey(Key('foxMascot-${_reward.id}')), findsNothing);
+        expect(find.byKey(const Key('lootboxOpenButton')), findsOneWidget);
+        expect(find.byKey(const Key('lootboxAnimation')), findsOneWidget);
+        expect(find.byKey(const Key('lootboxContinueButton')), findsNothing);
+        expect(find.byKey(Key('foxMascot-${_reward.id}')), findsNothing);
 
-      await tester.tap(find.byKey(const Key('lootboxOpenButton')));
-      await tester.pump();
+        await tester.tap(find.byKey(const Key('lootboxOpenButton')));
+        await tester.pump();
 
-      expect(find.byKey(const Key('lootboxOpenButton')), findsNothing);
-      expect(find.byKey(Key('foxMascot-${_reward.id}')), findsOneWidget);
-      expect(find.byKey(const Key('lootboxContinueButton')), findsOneWidget);
-    });
+        // Opening: no longer a tap target, not yet revealed.
+        expect(find.byKey(const Key('lootboxOpenButton')), findsNothing);
+        expect(find.byKey(const Key('lootboxAnimation')), findsOneWidget);
+        expect(find.byKey(const Key('lootboxContinueButton')), findsNothing);
+        expect(find.byKey(Key('foxMascot-${_reward.id}')), findsNothing);
+
+        // A re-tap at the same spot mid-animation is a no-op (there is no
+        // tap target there anymore).
+        await tester.tapAt(tester.getCenter(find.byType(MaterialApp)));
+        await tester.pump();
+        expect(find.byKey(const Key('lootboxContinueButton')), findsNothing);
+
+        // Revealed, once the animation completes.
+        await tester.pumpAndSettle();
+        expect(find.byKey(const Key('lootboxAnimation')), findsNothing);
+        expect(find.byKey(Key('foxMascot-${_reward.id}')), findsOneWidget);
+        expect(find.byKey(const Key('lootboxContinueButton')), findsOneWidget);
+      },
+    );
 
     testWidgets('continue pops the screen', (tester) async {
       await tester.pumpWidget(
@@ -112,7 +130,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.tap(find.byKey(const Key('lootboxOpenButton')));
-      await tester.pump();
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('lootboxContinueButton')));
       await tester.pumpAndSettle();
 

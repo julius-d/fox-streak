@@ -1,6 +1,6 @@
 # Issue 062: Loot box opening animation + Noto Emoji asset reorg
 
-Status: open | Priority: P2 | Type: feature | Refined-at: 2026-10-17
+Status: done | Priority: P2 | Type: feature | Refined-at: 2026-10-17 | Completed-at: 2026-10-17
 
 ## Goal
 
@@ -46,30 +46,32 @@ assets never land in the scanned, collectible path.
 
 ## Acceptance criteria
 
-- [ ] `assets/mascot/noto-emoji/` no longer exists. The 7 existing mascot
+- [x] `assets/mascot/noto-emoji/` no longer exists. The 7 existing mascot
   `*_lottie.json` files live in `assets/noto-emoji/mascot/`,
   `emoji_u1fa8e_lottie.json` lives in `assets/noto-emoji/other/`, and
   `attribution.md` lives in `assets/noto-emoji/attribution.md`.
-- [ ] `pubspec.yaml` declares `assets/noto-emoji/mascot/`,
+- [x] `pubspec.yaml` declares `assets/noto-emoji/mascot/`,
   `assets/noto-emoji/other/`, and `assets/noto-emoji/`; `flutter pub get`
   and `flutter analyze` are clean.
-- [ ] `MascotCatalog.kMascotAssetDir` and every other reference to the old
+- [x] `MascotCatalog.kMascotAssetDir` and every other reference to the old
   path (`README.md`, `test/mascot/mascot_catalog_test.dart`,
   `test/mascot/mascot_screens_test.dart`) point at the new mascot path.
-- [ ] The mascot catalog still discovers exactly the 7 existing mascots
+- [x] The mascot catalog still discovers exactly the 7 existing mascots
   (not 8) — a test asserts `other/emoji_u1fa8e_lottie.json` is excluded
   from the catalog.
-- [ ] `LootboxScreen`'s closed state renders the new Lottie (via an
+- [x] `LootboxScreen`'s closed state renders the new Lottie (via an
   `AnimationController`), frozen on frame 0 until tapped; tapping plays it
   once; the screen advances to the existing revealed-mascot view only on
   animation completion, not on tap. Tapping again while it's playing has
   no effect.
-- [ ] The tap target's button semantics/label apply only in the closed
+- [x] The tap target's button semantics/label apply only in the closed
   state, not during the "opening" animation.
-- [ ] `test/mascot/mascot_screens_test.dart` (and
+- [x] `test/mascot/mascot_screens_test.dart` (and
   `test/golden/kit_golden_test.dart` if it renders the lootbox) are
   updated for the new closed-state visuals and the extra "opening" state.
-- [ ] `flutter analyze`, `dart format --output=none --set-exit-if-changed .`,
+  (`kit_golden_test.dart` doesn't render the lootbox, so no golden change
+  was needed there.)
+- [x] `flutter analyze`, `dart format --output=none --set-exit-if-changed .`,
   `dart fix --dry-run`, and `flutter test` are all clean per AGENTS.md's
   Verify section.
 
@@ -105,3 +107,22 @@ assets never land in the scanned, collectible path.
 ## Dependencies
 
 - Builds on #059 (`LootboxScreen`, `MascotCatalog`, `FoxMascot`).
+
+## Summary
+
+Implemented as planned: assets reorganized into `assets/noto-emoji/{mascot,other}/`
++ shared `attribution.md`; `MascotCatalog.kMascotAssetDir` and all other
+old-path references updated; `LootboxScreen` reworked with a 3-phase
+`_LootboxPhase` (closed → opening → revealed) state machine driven by an
+`AnimationController` over the new `kLootboxOpenAnimationAsset` Lottie,
+gating both the tap target and its a11y semantics to the closed phase.
+New: `test/mascot/mascot_catalog_test.dart` exact-7/excludes-`other/` test,
+`integration_test/issue062_lootbox_animation_test.dart` (full app-level
+tap→opening→revealed flow, incl. re-tap no-op), screenshots in this folder.
+`flutter test` (439 tests), `flutter analyze`, `dart format`, `dart fix
+--dry-run` all clean.
+
+## Code review
+
+- The `AnimationController`'s fallback duration (1200ms) didn't match the real Lottie's duration (~2267ms), and reassigning `controller.duration` in `onLoaded` has no effect once `forward()` has already started — a tap racing a slow asset decode would play at the wrong speed.
+  Fixed — `_open()` now defers `forward()` via `_openRequested` until `onLoaded` has actually set the real duration, instead of guessing a fallback.

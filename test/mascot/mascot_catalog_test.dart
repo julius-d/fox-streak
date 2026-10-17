@@ -58,6 +58,14 @@ void main() {
       }
     });
 
+    test('discovers exactly the 7 collectible mascots, excluding the '
+        "lootbox-opening effect animation bundled in the sibling 'other/' "
+        'directory (#062)', () async {
+      final entries = await MascotCatalog.load();
+      expect(entries, hasLength(7));
+      expect(entries.map((e) => e.id), isNot(contains('emoji_u1fa8e_lottie')));
+    });
+
     test('adding a fake extra asset to the manifest surfaces it with no '
         'catalog code change', () async {
       final bundle = _FakeAssetBundle(
