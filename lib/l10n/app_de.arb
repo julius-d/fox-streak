@@ -361,6 +361,71 @@
     }
   },
   "homeGreetingEveningNamed": "Guten Abend, {name}!",
+  "@homeGreetingNewYear": {
+    "description": "Fixed-date holiday greeting on Home for Jan 1, overriding the time-of-day greeting (issue #061)",
+    "placeholders": {}
+  },
+  "homeGreetingNewYear": "Frohes neues Jahr!",
+  "@homeGreetingAprilFools": {
+    "description": "Fixed-date holiday greeting on Home for Apr 1, overriding the time-of-day greeting (issue #061)",
+    "placeholders": {}
+  },
+  "homeGreetingAprilFools": "Vorsicht, heute ist Aprilscherz-Tag!",
+  "@homeGreetingHalloween": {
+    "description": "Fixed-date holiday greeting on Home for Oct 31, overriding the time-of-day greeting (issue #061)",
+    "placeholders": {}
+  },
+  "homeGreetingHalloween": "Frohes Halloween!",
+  "@homeGreetingChristmasEve": {
+    "description": "Fixed-date holiday greeting on Home for Dec 24, overriding the time-of-day greeting (issue #061)",
+    "placeholders": {}
+  },
+  "homeGreetingChristmasEve": "Heiligabend ist da!",
+  "@homeGreetingChristmasDay": {
+    "description": "Fixed-date holiday greeting on Home for Dec 25, overriding the time-of-day greeting (issue #061)",
+    "placeholders": {}
+  },
+  "homeGreetingChristmasDay": "Frohe Weihnachten!",
+  "@homeGreetingFunny1": {
+    "description": "Playful rotation greeting on Home, shown on some non-holiday days instead of the plain time-of-day greeting; generic copy, no name personalization (issue #061)",
+    "placeholders": {}
+  },
+  "homeGreetingFunny1": "Bereit, heute aufzusteigen?",
+  "@homeGreetingFunny2": {
+    "description": "Playful rotation greeting on Home (issue #061)",
+    "placeholders": {}
+  },
+  "homeGreetingFunny2": "Dein Fuchsgehirn wärmt sich auf!",
+  "@homeGreetingFunny3": {
+    "description": "Playful rotation greeting on Home (issue #061)",
+    "placeholders": {}
+  },
+  "homeGreetingFunny3": "Lass uns den Tag nutzen!",
+  "@homeGreetingFunny4": {
+    "description": "Playful rotation greeting on Home (issue #061)",
+    "placeholders": {}
+  },
+  "homeGreetingFunny4": "Wissens-Snacks kommen sofort!",
+  "@homeGreetingFunny5": {
+    "description": "Playful rotation greeting on Home (issue #061)",
+    "placeholders": {}
+  },
+  "homeGreetingFunny5": "Zeit, den Fuchs mit Fakten zu füttern!",
+  "@homeGreetingFunny6": {
+    "description": "Playful rotation greeting on Home (issue #061)",
+    "placeholders": {}
+  },
+  "homeGreetingFunny6": "Gehirn-Gains warten auf dich!",
+  "@homeGreetingFunny7": {
+    "description": "Playful rotation greeting on Home (issue #061)",
+    "placeholders": {}
+  },
+  "homeGreetingFunny7": "Heute ist ein toller Tag, um etwas Neues zu lernen!",
+  "@homeGreetingFunny8": {
+    "description": "Playful rotation greeting on Home (issue #061)",
+    "placeholders": {}
+  },
+  "homeGreetingFunny8": "Fuchs-Modus: aktiviert!",
   "@homeEditNameTooltip": {
     "description": "Tooltip/accessibility label on Home's tappable greeting, opening the rename dialog (issue #012)",
     "placeholders": {}

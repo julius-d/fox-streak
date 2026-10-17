@@ -166,6 +166,22 @@ abstract class AppLocalizations {
   String homeGreetingAfternoonNamed(String name);
   String get homeGreetingEvening;
   String homeGreetingEveningNamed(String name);
+
+  // Holiday + funny-rotation greetings on Home (#061)
+  String get homeGreetingNewYear;
+  String get homeGreetingAprilFools;
+  String get homeGreetingHalloween;
+  String get homeGreetingChristmasEve;
+  String get homeGreetingChristmasDay;
+  String get homeGreetingFunny1;
+  String get homeGreetingFunny2;
+  String get homeGreetingFunny3;
+  String get homeGreetingFunny4;
+  String get homeGreetingFunny5;
+  String get homeGreetingFunny6;
+  String get homeGreetingFunny7;
+  String get homeGreetingFunny8;
+
   String get homeEditNameTooltip;
   String get homeEditNameDialogTitle;
   String get homeEditNameHint;
@@ -480,6 +496,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeGreetingEvening => 'Good evening!';
   @override
   String homeGreetingEveningNamed(String name) => 'Good evening, $name!';
+
+  // Holiday + funny-rotation greetings on Home (#061)
+  @override
+  String get homeGreetingNewYear => 'Happy New Year!';
+  @override
+  String get homeGreetingAprilFools => 'Watch out for pranks today!';
+  @override
+  String get homeGreetingHalloween => 'Happy Halloween!';
+  @override
+  String get homeGreetingChristmasEve => 'Christmas Eve is here!';
+  @override
+  String get homeGreetingChristmasDay => 'Merry Christmas!';
+  @override
+  String get homeGreetingFunny1 => 'Ready to level up today?';
+  @override
+  String get homeGreetingFunny2 => 'Your foxy brain is warming up!';
+  @override
+  String get homeGreetingFunny3 => "Let's make today count!";
+  @override
+  String get homeGreetingFunny4 => 'Knowledge snacks, coming right up!';
+  @override
+  String get homeGreetingFunny5 => 'Time to feed the fox some facts!';
+  @override
+  String get homeGreetingFunny6 => 'Brain gains await!';
+  @override
+  String get homeGreetingFunny7 =>
+      "Today's a great day to learn something new!";
+  @override
+  String get homeGreetingFunny8 => 'Fox mode: activated!';
+
   @override
   String get homeEditNameTooltip => 'Edit your name';
   @override
@@ -851,6 +897,36 @@ class AppLocalizationsDe extends AppLocalizations {
   String get homeGreetingEvening => 'Guten Abend!';
   @override
   String homeGreetingEveningNamed(String name) => 'Guten Abend, $name!';
+
+  // Holiday + funny-rotation greetings on Home (#061)
+  @override
+  String get homeGreetingNewYear => 'Frohes neues Jahr!';
+  @override
+  String get homeGreetingAprilFools => 'Vorsicht, heute ist Aprilscherz-Tag!';
+  @override
+  String get homeGreetingHalloween => 'Frohes Halloween!';
+  @override
+  String get homeGreetingChristmasEve => 'Heiligabend ist da!';
+  @override
+  String get homeGreetingChristmasDay => 'Frohe Weihnachten!';
+  @override
+  String get homeGreetingFunny1 => 'Bereit, heute aufzusteigen?';
+  @override
+  String get homeGreetingFunny2 => 'Dein Fuchsgehirn wärmt sich auf!';
+  @override
+  String get homeGreetingFunny3 => 'Lass uns den Tag nutzen!';
+  @override
+  String get homeGreetingFunny4 => 'Wissens-Snacks kommen sofort!';
+  @override
+  String get homeGreetingFunny5 => 'Zeit, den Fuchs mit Fakten zu füttern!';
+  @override
+  String get homeGreetingFunny6 => 'Gehirn-Gains warten auf dich!';
+  @override
+  String get homeGreetingFunny7 =>
+      'Heute ist ein toller Tag, um etwas Neues zu lernen!';
+  @override
+  String get homeGreetingFunny8 => 'Fuchs-Modus: aktiviert!';
+
   @override
   String get homeEditNameTooltip => 'Namen bearbeiten';
   @override

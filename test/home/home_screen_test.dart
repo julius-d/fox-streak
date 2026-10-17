@@ -208,6 +208,36 @@ void main() {
   });
 
   testWidgets(
+    'a fixed-date holiday overrides the time-of-day greeting, even with a '
+    'display name set (issue #061)',
+    (tester) async {
+      final clock = FakeClock(DateTime(2026, 12, 25, 8));
+      await pumpOnboardedHome(
+        tester,
+        clock,
+        seed: (stats, sets) => stats.setDisplayName('Mia'),
+      );
+      expect(find.text('Merry Christmas!'), findsOneWidget);
+      expect(find.text('Good morning, Mia!'), findsNothing);
+      await unmount(tester);
+    },
+  );
+
+  testWidgets(
+    'on a day the funny rotation selects, Home shows that variant instead '
+    'of the plain time-of-day greeting (issue #061)',
+    (tester) async {
+      // Deterministic per-day pick (see test/home/greeting_test.dart):
+      // 2026-01-03 is selected, pool index 0.
+      final clock = FakeClock(DateTime(2026, 1, 3, 9));
+      await pumpOnboardedHome(tester, clock);
+      expect(find.text('Ready to level up today?'), findsOneWidget);
+      expect(find.text('Good morning!'), findsNothing);
+      await unmount(tester);
+    },
+  );
+
+  testWidgets(
     'with no attempts yet, the Continue slot shows a Browse-sets CTA that '
     'opens the library (no dead button)',
     (tester) async {

@@ -30,33 +30,12 @@ import '../stats/stats_providers.dart';
 import '../stats/xp_service.dart';
 import '../theme/fox_streak_theme.dart';
 import '../widgets/widgets.dart';
+import 'greeting.dart';
 import 'onboarding_screen.dart';
 import 'parental_info_screen.dart';
 
 /// Overflow-menu entry values for Home's app bar menu.
 enum _HomeMenuAction { parentalInfo, settings }
-
-/// Generic (no display name) or named time-of-day greeting.
-String _greeting(AppLocalizations l10n, DateTime now, String? displayName) {
-  final String? name = displayName?.trim();
-  final bool hasName = name != null && name.isNotEmpty;
-  if (now.hour < 5) {
-    return hasName ? l10n.homeGreetingNightNamed(name) : l10n.homeGreetingNight;
-  }
-  if (now.hour < 12) {
-    return hasName
-        ? l10n.homeGreetingMorningNamed(name)
-        : l10n.homeGreetingMorning;
-  }
-  if (now.hour < 18) {
-    return hasName
-        ? l10n.homeGreetingAfternoonNamed(name)
-        : l10n.homeGreetingAfternoon;
-  }
-  return hasName
-      ? l10n.homeGreetingEveningNamed(name)
-      : l10n.homeGreetingEvening;
-}
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -227,7 +206,7 @@ class _HomeDashboard extends ConsumerWidget {
                     button: true,
                     label: l10n.homeEditNameTooltip,
                     child: Text(
-                      _greeting(l10n, now, profile.displayName),
+                      greetingText(l10n, now, profile.displayName),
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
                   ),
