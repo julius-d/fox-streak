@@ -58,11 +58,11 @@ void main() {
       }
     });
 
-    test('discovers exactly the 7 collectible mascots, excluding the '
+    test('discovers exactly the 11 collectible mascots, excluding the '
         "lootbox-opening effect animation bundled in the sibling 'other/' "
         'directory (#062)', () async {
       final entries = await MascotCatalog.load();
-      expect(entries, hasLength(7));
+      expect(entries, hasLength(11));
       expect(entries.map((e) => e.id), isNot(contains('emoji_u1fa8e_lottie')));
     });
 
@@ -152,6 +152,75 @@ void main() {
       const a = MascotEntry(id: 'x', assetPath: 'a.json', emoji: '🦊');
       const b = MascotEntry(id: 'y', assetPath: 'a.json', emoji: '🦊');
       expect(a, isNot(b));
+    });
+  });
+
+  group('isMascotInSeason', () {
+    test('a mascot with no seasonal-window entry is always in season', () {
+      expect(isMascotInSeason(kDefaultMascotId, DateTime(2026, 1, 1)), isTrue);
+      expect(
+        isMascotInSeason('emoji_u1f416_lottie', DateTime(2026, 7, 4)), // pig
+        isTrue,
+      );
+      expect(
+        isMascotInSeason('emoji_u1f425_lottie', DateTime(2026, 7, 4)), // chick
+        isTrue,
+      );
+    });
+
+    test('snowman (Dec 6-26) excludes Dec 5 and Dec 27', () {
+      expect(
+        isMascotInSeason('emoji_u2603_lottie', DateTime(2026, 12, 5)),
+        isFalse,
+      );
+      expect(
+        isMascotInSeason('emoji_u2603_lottie', DateTime(2026, 12, 27)),
+        isFalse,
+      );
+    });
+
+    test('snowman (Dec 6-26) includes Dec 6 and Dec 26', () {
+      expect(
+        isMascotInSeason('emoji_u2603_lottie', DateTime(2026, 12, 6)),
+        isTrue,
+      );
+      expect(
+        isMascotInSeason('emoji_u2603_lottie', DateTime(2026, 12, 26)),
+        isTrue,
+      );
+    });
+
+    test('spider (Oct 25 - Nov 1) excludes Oct 24 and Nov 2', () {
+      expect(
+        isMascotInSeason('emoji_u1f577_lottie', DateTime(2026, 10, 24)),
+        isFalse,
+      );
+      expect(
+        isMascotInSeason('emoji_u1f577_lottie', DateTime(2026, 11, 2)),
+        isFalse,
+      );
+    });
+
+    test('spider (Oct 25 - Nov 1) includes Oct 25 and Nov 1', () {
+      expect(
+        isMascotInSeason('emoji_u1f577_lottie', DateTime(2026, 10, 25)),
+        isTrue,
+      );
+      expect(
+        isMascotInSeason('emoji_u1f577_lottie', DateTime(2026, 11, 1)),
+        isTrue,
+      );
+    });
+
+    test('the year is ignored (window recurs every year)', () {
+      expect(
+        isMascotInSeason('emoji_u2603_lottie', DateTime(1999, 12, 15)),
+        isTrue,
+      );
+      expect(
+        isMascotInSeason('emoji_u2603_lottie', DateTime(2099, 12, 15)),
+        isTrue,
+      );
     });
   });
 }

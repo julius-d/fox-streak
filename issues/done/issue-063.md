@@ -1,6 +1,6 @@
 # Issue 063: Seasonal mascots (snowman + spider) + 2 new ordinary mascots
 
-Status: open | Priority: P3 | Type: feature | Refined-at: 2026-10-18
+Status: done | Priority: P3 | Type: feature | Refined-at: 2026-10-18 | Completed-at: 2026-10-18
 
 ## Goal
 
@@ -56,28 +56,28 @@ the new seasonal-eligibility logic this issue introduces.
 
 ## Acceptance criteria
 
-- [ ] `MascotCatalog.load()` discovers pig (`emoji_u1f416_lottie`), chick
+- [x] `MascotCatalog.load()` discovers pig (`emoji_u1f416_lottie`), chick
   (`emoji_u1f425_lottie`), snowman (`emoji_u2603_lottie`), and spider
   (`emoji_u1f577_lottie`) as 4 additional catalog entries (11 total with
   the existing 7); the `mascot_catalog_test.dart` "discovers exactly the 7
   collectible mascots" test is updated to the new count.
-- [ ] A seasonal-window lookup exists, keyed by mascot ID, checked via the
+- [x] A seasonal-window lookup exists, keyed by mascot ID, checked via the
   injected `Clock` — not `DateTime.now()`.
-- [ ] Snowman (`emoji_u2603_lottie`) is winnable from the lootbox only when
+- [x] Snowman (`emoji_u2603_lottie`) is winnable from the lootbox only when
   the local date is Dec 6-26 (inclusive); outside that window it's
   excluded from `MascotService.recordLessonCompletion`'s random-pick pool
   even if otherwise unowned.
-- [ ] Spider (`emoji_u1f577_lottie`) has the same seasonal-window wiring for
+- [x] Spider (`emoji_u1f577_lottie`) has the same seasonal-window wiring for
   Oct 25-Nov 1 (inclusive).
-- [ ] Pig and chick have no seasonal restriction — winnable any day, same
+- [x] Pig and chick have no seasonal restriction — winnable any day, same
   as the 7 pre-existing mascots.
-- [ ] Boundary dates are covered by tests: Dec 5 and Dec 27 exclude the
+- [x] Boundary dates are covered by tests: Dec 5 and Dec 27 exclude the
   snowman; Dec 6 and Dec 26 include it; Oct 24 and Nov 2 exclude the
   spider; Oct 25 and Nov 1 include it.
-- [ ] The collection grid's locked-tile rendering is unchanged (verified
+- [x] The collection grid's locked-tile rendering is unchanged (verified
   by not touching `mascot_collection_screen.dart`, or by a test asserting
   the generic lock tile still renders for an out-of-season mascot).
-- [ ] `flutter analyze`, `dart format --output=none --set-exit-if-changed .`,
+- [x] `flutter analyze`, `dart format --output=none --set-exit-if-changed .`,
   `dart fix --dry-run`, and `flutter test` are all clean per AGENTS.md's
   Verify section.
 
@@ -124,3 +124,22 @@ dart format --output=none --set-exit-if-changed .
 dart fix --dry-run
 flutter test
 ```
+
+## Summary
+
+Added `MascotSeasonWindow` + `kMascotSeasonWindows` + `isMascotInSeason()`
+to `mascot_catalog.dart`, and filtered `MascotService.recordLessonCompletion`'s
+unowned pool by it (using `_clock.now()`). Pig/chick needed no code change
+beyond the catalog-count test bump (7 -> 11). Fixed a pre-existing (already
+broken on `main`) widget test whose tapped tile had scrolled out of the
+grid's viewport once the catalog grew past 7 entries.
+
+## Code review
+
+- Seasonal date-window boundary/inclusivity and year-independence logic.
+  Verified correct by the review agent; not fixed because no issue found.
+- `Clock` usage consistency (`_clock.now()` vs `DateTime.now()`) in
+  `MascotService`. Verified correct; not fixed because no issue found.
+- `mascot_screens_test.dart`'s `ensureVisible` fix masking a real bug.
+  Reviewer reverted it and reproduced a genuine mis-tap, confirming the
+  fix is legitimate; no change needed.

@@ -110,3 +110,68 @@ abstract final class MascotCatalog {
     return entries;
   }
 }
+
+/// A fixed, year-independent `(month, day)` date range during which a
+/// seasonal mascot is winnable from the lootbox, checked against the local
+/// calendar date's month/day only (the year is ignored, so the window
+/// recurs automatically every year). Both ends are inclusive.
+///
+/// Intentionally non-wrapping (see #063's "Out of scope") — a window
+/// spanning Dec 31 -> Jan 1 needs different comparison logic this doesn't
+/// implement; every window in [kMascotSeasonWindows] today fits within a
+/// single calendar month-pair.
+class MascotSeasonWindow {
+  final int startMonth;
+  final int startDay;
+  final int endMonth;
+  final int endDay;
+
+  const MascotSeasonWindow({
+    required this.startMonth,
+    required this.startDay,
+    required this.endMonth,
+    required this.endDay,
+  });
+
+  /// Whether [now]'s local calendar date falls within this window
+  /// (inclusive), ignoring year.
+  bool includes(DateTime now) {
+    final (int, int) date = (now.month, now.day);
+    return _compareMonthDay(date, (startMonth, startDay)) >= 0 &&
+        _compareMonthDay(date, (endMonth, endDay)) <= 0;
+  }
+
+  static int _compareMonthDay((int, int) a, (int, int) b) {
+    if (a.$1 != b.$1) return a.$1.compareTo(b.$1);
+    return a.$2.compareTo(b.$2);
+  }
+}
+
+/// Seasonal-eligibility table, keyed by mascot ID (#063). A mascot ID with
+/// no entry here is winnable from the lootbox year-round — today's
+/// behavior for every pre-#063 mascot, plus the pig/chick this issue also
+/// adds as ordinary (non-seasonal) mascots.
+const Map<String, MascotSeasonWindow> kMascotSeasonWindows = {
+  // Snowman: Christmas season, Dec 6-26.
+  'emoji_u2603_lottie': MascotSeasonWindow(
+    startMonth: 12,
+    startDay: 6,
+    endMonth: 12,
+    endDay: 26,
+  ),
+  // Spider: an 8-day Halloween window, Oct 25 - Nov 1.
+  'emoji_u1f577_lottie': MascotSeasonWindow(
+    startMonth: 10,
+    startDay: 25,
+    endMonth: 11,
+    endDay: 1,
+  ),
+};
+
+/// Whether mascot [id] is currently winnable from the lootbox at [now] —
+/// always true for a non-seasonal mascot, and true for a seasonal one only
+/// inside its [MascotSeasonWindow] (see [kMascotSeasonWindows]).
+bool isMascotInSeason(String id, DateTime now) {
+  final MascotSeasonWindow? window = kMascotSeasonWindows[id];
+  return window == null || window.includes(now);
+}

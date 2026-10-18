@@ -6,6 +6,10 @@
 // [MascotRepository.addOwnedMascot] / [StatsRepository.setMascotLessonCounter];
 // [MascotService.equip] is the only thing that ever calls
 // [StatsRepository.setEquippedMascot].
+//
+// The random-reward pool additionally excludes any seasonal mascot outside
+// its fixed window (issue #063) — equipping an already-owned seasonal
+// mascot stays unrestricted year-round, so [equip] itself needs no change.
 
 import 'dart:math';
 
@@ -60,8 +64,12 @@ class MascotService {
 
     final catalog = await _loadCatalog();
     final owned = await _mascotRepo.getOwnedMascotIds();
+    final now = _clock.now();
     final unowned = catalog
-        .where((entry) => !owned.contains(entry.id))
+        .where(
+          (entry) =>
+              !owned.contains(entry.id) && isMascotInSeason(entry.id, now),
+        )
         .toList();
     if (unowned.isEmpty) {
       return (wonMascot: null, equippedMascotId: equippedMascotId);

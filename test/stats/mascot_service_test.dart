@@ -32,6 +32,23 @@ final List<MascotEntry> _threeMascotCatalog = [
   const MascotEntry(id: 'c', assetPath: 'c.json', emoji: '🦀'),
 ];
 
+/// Fixture catalog pairing the default (always owned in these tests) with
+/// one seasonal mascot (#063's snowman, `emoji_u2603_lottie`, Dec 6-26) and
+/// one ordinary mascot — isolates the seasonal filter from the "is the pool
+/// non-empty" check.
+final List<MascotEntry> _seasonalFixtureCatalog = [
+  MascotCatalog.defaultEntry,
+  const MascotEntry(
+    id: 'emoji_u2603_lottie',
+    assetPath: 'snowman.json',
+    emoji: '☃️',
+  ),
+  const MascotEntry(id: 'c', assetPath: 'c.json', emoji: '🦀'),
+];
+
+const String _kSnowmanId = 'emoji_u2603_lottie';
+const String _kSpiderId = 'emoji_u1f577_lottie';
+
 void main() {
   late AppDatabase db;
   late FakeClock clock;
@@ -167,6 +184,106 @@ void main() {
       expect(profile.equippedMascotId, 'b');
       expect(profile.lessonsCompletedToday, 0);
       expect(profile.lessonsCompletedDay, isNull);
+    });
+  });
+
+  group('recordLessonCompletion seasonal exclusion (#063)', () {
+    Future<MascotEntry?> winOnDate(DateTime date) async {
+      clock.setNow(date);
+      final service = buildService(catalog: _seasonalFixtureCatalog);
+      await service.recordLessonCompletion();
+      final update = await service.recordLessonCompletion(
+        random: _ZeroRandom(),
+      );
+      return update.wonMascot;
+    }
+
+    test('in-window: the snowman is eligible and can be won (pool is '
+        '[snowman, c], _ZeroRandom picks the first)', () async {
+      final reward = await winOnDate(DateTime(2026, 12, 15));
+      expect(reward?.id, _kSnowmanId);
+    });
+
+    test('out-of-window: the snowman is excluded from the pool, leaving only '
+        'the ordinary mascot winnable', () async {
+      final reward = await winOnDate(DateTime(2026, 11, 1));
+      expect(reward?.id, 'c');
+    });
+
+    test('boundary: Dec 5 excludes the snowman', () async {
+      expect((await winOnDate(DateTime(2026, 12, 5)))?.id, 'c');
+    });
+
+    test('boundary: Dec 6 includes the snowman', () async {
+      expect((await winOnDate(DateTime(2026, 12, 6)))?.id, _kSnowmanId);
+    });
+
+    test('boundary: Dec 26 includes the snowman', () async {
+      expect((await winOnDate(DateTime(2026, 12, 26)))?.id, _kSnowmanId);
+    });
+
+    test('boundary: Dec 27 excludes the snowman', () async {
+      expect((await winOnDate(DateTime(2026, 12, 27)))?.id, 'c');
+    });
+
+    test('the lootbox is skipped entirely (no win, counter still advances) '
+        "when the only unowned mascot is a seasonal one that's out of "
+        'window', () async {
+      clock.setNow(DateTime(2026, 6, 1));
+      final service = buildService(
+        catalog: [
+          MascotCatalog.defaultEntry,
+          const MascotEntry(
+            id: _kSnowmanId,
+            assetPath: 'snowman.json',
+            emoji: '☃️',
+          ),
+        ],
+      );
+      await service.recordLessonCompletion();
+      final update = await service.recordLessonCompletion(
+        random: _ZeroRandom(),
+      );
+      expect(update.wonMascot, isNull);
+      expect((await statsRepo.getProfile()).lessonsCompletedToday, 2);
+    });
+  });
+
+  group('recordLessonCompletion spider seasonal exclusion (#063)', () {
+    Future<MascotEntry?> winOnDate(DateTime date) async {
+      clock.setNow(date);
+      final service = buildService(
+        catalog: [
+          MascotCatalog.defaultEntry,
+          const MascotEntry(
+            id: _kSpiderId,
+            assetPath: 'spider.json',
+            emoji: '🕷️',
+          ),
+          const MascotEntry(id: 'c', assetPath: 'c.json', emoji: '🦀'),
+        ],
+      );
+      await service.recordLessonCompletion();
+      final update = await service.recordLessonCompletion(
+        random: _ZeroRandom(),
+      );
+      return update.wonMascot;
+    }
+
+    test('boundary: Oct 24 excludes the spider', () async {
+      expect((await winOnDate(DateTime(2026, 10, 24)))?.id, 'c');
+    });
+
+    test('boundary: Oct 25 includes the spider', () async {
+      expect((await winOnDate(DateTime(2026, 10, 25)))?.id, _kSpiderId);
+    });
+
+    test('boundary: Nov 1 includes the spider', () async {
+      expect((await winOnDate(DateTime(2026, 11, 1)))?.id, _kSpiderId);
+    });
+
+    test('boundary: Nov 2 excludes the spider', () async {
+      expect((await winOnDate(DateTime(2026, 11, 2)))?.id, 'c');
     });
   });
 }

@@ -166,6 +166,11 @@ void main() {
 
       await pumpCollectionScreen(tester, database: db);
 
+      // The catalog has grown past #059's original 7 entries (#063), so the
+      // tile isn't guaranteed to already be within the scrollable grid's
+      // viewport.
+      await tester.ensureVisible(find.byKey(Key('mascotTile-${_reward.id}')));
+      await settle(tester);
       await tester.tap(find.byKey(Key('mascotTile-${_reward.id}')));
       await settle(tester);
 
