@@ -16,6 +16,18 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # The Android build step needs several GB for the NDK/CMake it downloads;
+      # ubuntu-latest's preinstalled toolchains (dotnet, ghc, unused NDK/SDK
+      # versions, CodeQL) eat into that and have made the build step fail with
+      # "No space left on device" (confirmed 2026-10-18, runs 39109076040 and
+      # 39067060068). None of these are used by this Flutter-only repo.
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup \
+            /usr/local/lib/android/sdk/ndk /opt/hostedtoolcache/CodeQL
+          docker image prune --all --force
+          df -h /
+
       - name: Set up Java
         uses: actions/setup-java@v5
         with:

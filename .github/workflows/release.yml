@@ -78,6 +78,15 @@ jobs:
       - name: Pull latest changes
         run: git pull origin ${{ github.ref_name }}
 
+      # Same disk-space margin issue as ci.yml's Android build step; see the
+      # comment there for details.
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup \
+            /usr/local/lib/android/sdk/ndk /opt/hostedtoolcache/CodeQL
+          docker image prune --all --force
+          df -h /
+
       - name: Set up Java
         uses: actions/setup-java@v5
         with:
