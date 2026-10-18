@@ -1,5 +1,6 @@
 // Unit tests for MascotService's lootbox-trigger algorithm + equip wiring
-// (issue #059).
+// (issue #059; #064 removed the owned-mascot pool filter, making duplicate
+// draws possible).
 
 import 'dart:math';
 
@@ -26,18 +27,37 @@ class _ZeroRandom implements Random {
   bool nextBool() => false;
 }
 
+/// A fixed, non-random "random" that always picks the given [index] —
+/// lets a test target a specific pool entry regardless of pool size.
+class _FixedIndexRandom implements Random {
+  _FixedIndexRandom(this.index);
+
+  final int index;
+
+  @override
+  int nextInt(int max) => index;
+
+  @override
+  double nextDouble() => 0;
+
+  @override
+  bool nextBool() => false;
+}
+
 final List<MascotEntry> _threeMascotCatalog = [
   MascotCatalog.defaultEntry,
   const MascotEntry(id: 'b', assetPath: 'b.json', emoji: '🐝'),
   const MascotEntry(id: 'c', assetPath: 'c.json', emoji: '🦀'),
 ];
 
-/// Fixture catalog pairing the default (always owned in these tests) with
-/// one seasonal mascot (#063's snowman, `emoji_u2603_lottie`, Dec 6-26) and
-/// one ordinary mascot — isolates the seasonal filter from the "is the pool
-/// non-empty" check.
+/// Fixture catalog pairing one seasonal mascot (#063's snowman,
+/// `emoji_u2603_lottie`, Dec 6-26) with one ordinary mascot — isolates the
+/// seasonal filter: with `_ZeroRandom`, index 0 of the season-filtered pool
+/// is the snowman when in-window (pool `[snowman, c]`) and `c` when
+/// out-of-window (pool `[c]`), so the same `_ZeroRandom` pick proves the
+/// filter either way. No default-fox entry here — #064 made ownership
+/// irrelevant to the pool, so it would otherwise just be a 3rd pool slot.
 final List<MascotEntry> _seasonalFixtureCatalog = [
-  MascotCatalog.defaultEntry,
   const MascotEntry(
     id: 'emoji_u2603_lottie',
     assetPath: 'snowman.json',
@@ -91,17 +111,17 @@ void main() {
       expect(profile.lessonsCompletedDay, clock.todayDayString());
     });
 
-    test('the 2nd completion of the day wins a uniformly-random unowned '
-        'mascot and persists it as owned', () async {
+    test('the 2nd completion of the day wins a uniformly-random mascot from '
+        'the full catalog, owned or not, and persists the win', () async {
       final service = buildService();
       await service.recordLessonCompletion();
       final update = await service.recordLessonCompletion(
-        random: _ZeroRandom(),
+        random: _FixedIndexRandom(1), // _threeMascotCatalog[1] == 'b'
       );
 
       final reward = update.wonMascot;
       expect(reward, isNotNull);
-      expect(reward!.id, isNot(kDefaultMascotId)); // default is already owned
+      expect(reward!.id, 'b');
 
       final owned = await mascotRepo.getOwnedMascotIds();
       expect(owned, containsAll(<String>[kDefaultMascotId, reward.id]));
@@ -144,26 +164,33 @@ void main() {
       expect(secondOfNewDay.wonMascot, isNotNull);
     });
 
-    test('the lootbox is skipped when the full catalog is already owned, '
-        'but the counter still advances', () async {
+    test('a fully-owned catalog still produces a wonMascot, since #064 '
+        'removed the unowned-only pool filter', () async {
       final service = buildService(catalog: [MascotCatalog.defaultEntry]);
       await service.recordLessonCompletion();
       final update = await service.recordLessonCompletion();
 
-      expect(update.wonMascot, isNull);
+      expect(update.wonMascot?.id, kDefaultMascotId);
       expect((await statsRepo.getProfile()).lessonsCompletedToday, 2);
     });
 
-    test('never re-wins a mascot already owned from a prior lootbox', () async {
+    test('drawing an already-owned mascot is possible, incrementing its '
+        'count and leaving firstAcquiredAt unchanged (issue #064)', () async {
       final service = buildService();
-      await mascotRepo.addOwnedMascot('b', now: clock.now());
+      final firstWin = clock.now();
+      await mascotRepo.addOwnedMascot('b', now: firstWin);
 
       await service.recordLessonCompletion();
       final update = await service.recordLessonCompletion(
-        random: _ZeroRandom(),
+        random: _FixedIndexRandom(1), // _threeMascotCatalog[1] == 'b'
       );
 
-      expect(update.wonMascot!.id, 'c'); // only unowned entry left
+      expect(update.wonMascot!.id, 'b');
+      final row = await (db.select(
+        db.ownedMascots,
+      )..where((t) => t.mascotId.equals('b'))).getSingle();
+      expect(row.count, 2);
+      expect(row.firstAcquiredAt, firstWin.millisecondsSinceEpoch);
     });
 
     test('equippedMascotId in the return value matches the profile row, '
@@ -227,12 +254,11 @@ void main() {
     });
 
     test('the lootbox is skipped entirely (no win, counter still advances) '
-        "when the only unowned mascot is a seasonal one that's out of "
-        'window', () async {
+        'in the defensive zero-time-eligible-entries edge case — the only '
+        "catalog entry is a seasonal one that's out of window", () async {
       clock.setNow(DateTime(2026, 6, 1));
       final service = buildService(
         catalog: [
-          MascotCatalog.defaultEntry,
           const MascotEntry(
             id: _kSnowmanId,
             assetPath: 'snowman.json',
@@ -250,11 +276,14 @@ void main() {
   });
 
   group('recordLessonCompletion spider seasonal exclusion (#063)', () {
+    // No default-fox entry — see _seasonalFixtureCatalog's doc comment for
+    // why: with `_ZeroRandom`, index 0 of the season-filtered pool is the
+    // spider when in-window (`[spider, c]`) and `c` when out-of-window
+    // (`[c]`).
     Future<MascotEntry?> winOnDate(DateTime date) async {
       clock.setNow(date);
       final service = buildService(
         catalog: [
-          MascotCatalog.defaultEntry,
           const MascotEntry(
             id: _kSpiderId,
             assetPath: 'spider.json',

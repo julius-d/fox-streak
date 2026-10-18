@@ -1,6 +1,6 @@
 # Issue 064: Lootbox draws from the full mascot pool, duplicates allowed
 
-Status: open | Priority: P3 | Type: feature | Refined-at: 2026-10-18
+Status: done | Priority: P3 | Type: feature | Refined-at: 2026-10-18 | Completed-at: 2026-10-18
 
 ## Goal
 
@@ -139,3 +139,20 @@ dart format --output=none --set-exit-if-changed .
 dart fix --dry-run
 flutter test
 ```
+
+## Code review
+
+- Reviewed with the `code-review` skill (medium effort) after implementation.
+  No findings — reviewer called out clean migration handling and test coverage.
+
+## Summary
+
+- Schema v8 -> v9: `owned_mascots.acquired_at` renamed to `first_acquired_at`,
+  `count` added (default 1), migrated with a dedicated test.
+- `recordLessonCompletion`'s pool is now every season-eligible catalog entry
+  regardless of ownership; `MascotRepository.addOwnedMascot` upserts via
+  `DoUpdate` (insert sets `firstAcquiredAt`/`count: 1`, conflict bumps
+  `count` only).
+- `integration_test/issue059_mascot_lootbox_test.dart` switched to a
+  default-fox-free fixture catalog to stay deterministic now that the real
+  catalog's draw can hit an already-owned entry.

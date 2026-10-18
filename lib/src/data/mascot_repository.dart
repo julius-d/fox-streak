@@ -2,6 +2,8 @@
 // (progress/XP/streak/equipped-mascot, see `StatsRepository`) — mirrors
 // `SettingsRepository`'s one-table-per-repository shape.
 
+import 'package:drift/drift.dart';
+
 import '../mascot/mascot_catalog.dart' show kDefaultMascotId;
 import 'clock.dart';
 import 'database.dart';
@@ -39,16 +41,22 @@ class MascotRepository {
         .map((rows) => rows.map((row) => row.mascotId).toList());
   }
 
-  /// Records [mascotId] as owned (idempotent — a mascot is unlocked at most
-  /// once, ever, per issue #059's decisions). Sole caller: #059
-  /// `MascotService.recordLessonCompletion`.
+  /// Records a win of [mascotId]: inserts a new row (`firstAcquiredAt` =
+  /// now, `count` = 1) the first time it's drawn, or bumps `count` by one on
+  /// every later draw — `firstAcquiredAt` stays pinned to the first win
+  /// (issue #064). Sole caller: #059 `MascotService.recordLessonCompletion`.
   Future<void> addOwnedMascot(String mascotId, {DateTime? now}) async {
     await _db
         .into(_db.ownedMascots)
-        .insertOnConflictUpdate(
+        .insert(
           OwnedMascotsCompanion.insert(
             mascotId: mascotId,
-            acquiredAt: (now ?? _clock.now()).millisecondsSinceEpoch,
+            firstAcquiredAt: (now ?? _clock.now()).millisecondsSinceEpoch,
+          ),
+          onConflict: DoUpdate(
+            (old) => OwnedMascotsCompanion.custom(
+              count: old.count + const Constant(1),
+            ),
           ),
         );
   }

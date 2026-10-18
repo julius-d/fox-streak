@@ -9,6 +9,15 @@
 // tap-to-collect mascot button opens the collection screen showing the
 // full catalog (owned tiles tappable, not-yet-owned ones locked), and
 // tapping the newly-won mascot's tile there equips it.
+//
+// Uses a fixture catalog (real mascot IDs/assets, but no default-fox entry)
+// via `mascotCatalogLoader` instead of the real asset-bundle catalog: #064
+// made the draw pick from every catalog entry regardless of ownership, so
+// with the real (unseeded) `Random` and the real, default-fox-inclusive
+// catalog, this flow's "won a 2nd, distinct mascot" assertions would
+// occasionally — and flakily — hit the already-owned default fox instead.
+// A fixture pool with no default entry guarantees a win is always a
+// newly-owned mascot, which is what this flow is actually testing.
 
 import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
@@ -21,6 +30,12 @@ import 'package:fox_streak_app/src/data/stats_repository.dart';
 import 'package:fox_streak_app/src/mascot/mascot_catalog.dart';
 
 import 'helpers.dart';
+
+final List<MascotEntry> _fixtureCatalog = [
+  mascotEntryForId('emoji_u1f980_lottie'), // crab
+  mascotEntryForId('emoji_u1f989_lottie'), // owl
+  mascotEntryForId('emoji_u1f996_lottie'), // sauropod
+];
 
 Future<({int setId, int itemId})> _insertSingleItemSet(AppDatabase db) async {
   final setId = await db
@@ -90,7 +105,12 @@ void main() {
         now: DateTime(2026, 10, 16, 9),
       );
 
-      await pumpFoxStreakApp(tester, db: db, clock: clock);
+      await pumpFoxStreakApp(
+        tester,
+        db: db,
+        clock: clock,
+        mascotCatalogLoader: () async => _fixtureCatalog,
+      );
       expect(find.byKey(const Key('homeScreen')), findsOneWidget);
       expect(await mascotRepo.getOwnedMascotIds(), [kDefaultMascotId]);
 

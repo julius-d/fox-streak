@@ -10,6 +10,11 @@
 // The random-reward pool additionally excludes any seasonal mascot outside
 // its fixed window (issue #063) — equipping an already-owned seasonal
 // mascot stays unrestricted year-round, so [equip] itself needs no change.
+//
+// v#064: the pool is every time-eligible catalog entry regardless of
+// ownership — duplicates are possible and increment `OwnedMascots.count`
+// instead of being filtered out, so the lootbox always has a mascot
+// available (barring the defensive zero-time-eligible-entries edge case).
 
 import 'dart:math';
 
@@ -43,8 +48,9 @@ class MascotService {
   ///
   /// Bumps the day-scoped `lessonsCompletedToday` counter, resetting it to 1
   /// on a new local day (mirroring `todayXp`'s own day-scoped reset). On the
-  /// count reaching exactly 2, with at least one catalog mascot not yet
-  /// owned, picks one uniformly at random and persists it as owned.
+  /// count reaching exactly 2, picks a catalog entry uniformly at random
+  /// from every time-eligible mascot (owned or not — issue #064) and
+  /// persists the win.
   ///
   /// Also returns the profile's `equippedMascotId` as of this same
   /// [StatsRepository.getProfile] read, so the caller (which needs it for
@@ -63,19 +69,15 @@ class MascotService {
     }
 
     final catalog = await _loadCatalog();
-    final owned = await _mascotRepo.getOwnedMascotIds();
     final now = _clock.now();
-    final unowned = catalog
-        .where(
-          (entry) =>
-              !owned.contains(entry.id) && isMascotInSeason(entry.id, now),
-        )
+    final pool = catalog
+        .where((entry) => isMascotInSeason(entry.id, now))
         .toList();
-    if (unowned.isEmpty) {
+    if (pool.isEmpty) {
       return (wonMascot: null, equippedMascotId: equippedMascotId);
     }
 
-    final reward = unowned[(random ?? Random()).nextInt(unowned.length)];
+    final reward = pool[(random ?? Random()).nextInt(pool.length)];
     await _mascotRepo.addOwnedMascot(reward.id, now: _clock.now());
     return (wonMascot: reward, equippedMascotId: equippedMascotId);
   }

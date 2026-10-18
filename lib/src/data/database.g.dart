@@ -2310,19 +2310,29 @@ class $OwnedMascotsTable extends OwnedMascots
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _acquiredAtMeta = const VerificationMeta(
-    'acquiredAt',
+  static const VerificationMeta _firstAcquiredAtMeta = const VerificationMeta(
+    'firstAcquiredAt',
   );
   @override
-  late final GeneratedColumn<int> acquiredAt = GeneratedColumn<int>(
-    'acquired_at',
+  late final GeneratedColumn<int> firstAcquiredAt = GeneratedColumn<int>(
+    'first_acquired_at',
     aliasedName,
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _countMeta = const VerificationMeta('count');
   @override
-  List<GeneratedColumn> get $columns => [mascotId, acquiredAt];
+  late final GeneratedColumn<int> count = GeneratedColumn<int>(
+    'count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [mascotId, firstAcquiredAt, count];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -2343,13 +2353,22 @@ class $OwnedMascotsTable extends OwnedMascots
     } else if (isInserting) {
       context.missing(_mascotIdMeta);
     }
-    if (data.containsKey('acquired_at')) {
+    if (data.containsKey('first_acquired_at')) {
       context.handle(
-        _acquiredAtMeta,
-        acquiredAt.isAcceptableOrUnknown(data['acquired_at']!, _acquiredAtMeta),
+        _firstAcquiredAtMeta,
+        firstAcquiredAt.isAcceptableOrUnknown(
+          data['first_acquired_at']!,
+          _firstAcquiredAtMeta,
+        ),
       );
     } else if (isInserting) {
-      context.missing(_acquiredAtMeta);
+      context.missing(_firstAcquiredAtMeta);
+    }
+    if (data.containsKey('count')) {
+      context.handle(
+        _countMeta,
+        count.isAcceptableOrUnknown(data['count']!, _countMeta),
+      );
     }
     return context;
   }
@@ -2364,9 +2383,13 @@ class $OwnedMascotsTable extends OwnedMascots
         DriftSqlType.string,
         data['${effectivePrefix}mascot_id'],
       )!,
-      acquiredAt: attachedDatabase.typeMapping.read(
+      firstAcquiredAt: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
-        data['${effectivePrefix}acquired_at'],
+        data['${effectivePrefix}first_acquired_at'],
+      )!,
+      count: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}count'],
       )!,
     );
   }
@@ -2379,20 +2402,27 @@ class $OwnedMascotsTable extends OwnedMascots
 
 class OwnedMascot extends DataClass implements Insertable<OwnedMascot> {
   final String mascotId;
-  final int acquiredAt;
-  const OwnedMascot({required this.mascotId, required this.acquiredAt});
+  final int firstAcquiredAt;
+  final int count;
+  const OwnedMascot({
+    required this.mascotId,
+    required this.firstAcquiredAt,
+    required this.count,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['mascot_id'] = Variable<String>(mascotId);
-    map['acquired_at'] = Variable<int>(acquiredAt);
+    map['first_acquired_at'] = Variable<int>(firstAcquiredAt);
+    map['count'] = Variable<int>(count);
     return map;
   }
 
   OwnedMascotsCompanion toCompanion(bool nullToAbsent) {
     return OwnedMascotsCompanion(
       mascotId: Value(mascotId),
-      acquiredAt: Value(acquiredAt),
+      firstAcquiredAt: Value(firstAcquiredAt),
+      count: Value(count),
     );
   }
 
@@ -2403,7 +2433,8 @@ class OwnedMascot extends DataClass implements Insertable<OwnedMascot> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return OwnedMascot(
       mascotId: serializer.fromJson<String>(json['mascotId']),
-      acquiredAt: serializer.fromJson<int>(json['acquiredAt']),
+      firstAcquiredAt: serializer.fromJson<int>(json['firstAcquiredAt']),
+      count: serializer.fromJson<int>(json['count']),
     );
   }
   @override
@@ -2411,20 +2442,24 @@ class OwnedMascot extends DataClass implements Insertable<OwnedMascot> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'mascotId': serializer.toJson<String>(mascotId),
-      'acquiredAt': serializer.toJson<int>(acquiredAt),
+      'firstAcquiredAt': serializer.toJson<int>(firstAcquiredAt),
+      'count': serializer.toJson<int>(count),
     };
   }
 
-  OwnedMascot copyWith({String? mascotId, int? acquiredAt}) => OwnedMascot(
-    mascotId: mascotId ?? this.mascotId,
-    acquiredAt: acquiredAt ?? this.acquiredAt,
-  );
+  OwnedMascot copyWith({String? mascotId, int? firstAcquiredAt, int? count}) =>
+      OwnedMascot(
+        mascotId: mascotId ?? this.mascotId,
+        firstAcquiredAt: firstAcquiredAt ?? this.firstAcquiredAt,
+        count: count ?? this.count,
+      );
   OwnedMascot copyWithCompanion(OwnedMascotsCompanion data) {
     return OwnedMascot(
       mascotId: data.mascotId.present ? data.mascotId.value : this.mascotId,
-      acquiredAt: data.acquiredAt.present
-          ? data.acquiredAt.value
-          : this.acquiredAt,
+      firstAcquiredAt: data.firstAcquiredAt.present
+          ? data.firstAcquiredAt.value
+          : this.firstAcquiredAt,
+      count: data.count.present ? data.count.value : this.count,
     );
   }
 
@@ -2432,56 +2467,65 @@ class OwnedMascot extends DataClass implements Insertable<OwnedMascot> {
   String toString() {
     return (StringBuffer('OwnedMascot(')
           ..write('mascotId: $mascotId, ')
-          ..write('acquiredAt: $acquiredAt')
+          ..write('firstAcquiredAt: $firstAcquiredAt, ')
+          ..write('count: $count')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(mascotId, acquiredAt);
+  int get hashCode => Object.hash(mascotId, firstAcquiredAt, count);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is OwnedMascot &&
           other.mascotId == this.mascotId &&
-          other.acquiredAt == this.acquiredAt);
+          other.firstAcquiredAt == this.firstAcquiredAt &&
+          other.count == this.count);
 }
 
 class OwnedMascotsCompanion extends UpdateCompanion<OwnedMascot> {
   final Value<String> mascotId;
-  final Value<int> acquiredAt;
+  final Value<int> firstAcquiredAt;
+  final Value<int> count;
   final Value<int> rowid;
   const OwnedMascotsCompanion({
     this.mascotId = const Value.absent(),
-    this.acquiredAt = const Value.absent(),
+    this.firstAcquiredAt = const Value.absent(),
+    this.count = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   OwnedMascotsCompanion.insert({
     required String mascotId,
-    required int acquiredAt,
+    required int firstAcquiredAt,
+    this.count = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : mascotId = Value(mascotId),
-       acquiredAt = Value(acquiredAt);
+       firstAcquiredAt = Value(firstAcquiredAt);
   static Insertable<OwnedMascot> custom({
     Expression<String>? mascotId,
-    Expression<int>? acquiredAt,
+    Expression<int>? firstAcquiredAt,
+    Expression<int>? count,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (mascotId != null) 'mascot_id': mascotId,
-      if (acquiredAt != null) 'acquired_at': acquiredAt,
+      if (firstAcquiredAt != null) 'first_acquired_at': firstAcquiredAt,
+      if (count != null) 'count': count,
       if (rowid != null) 'rowid': rowid,
     });
   }
 
   OwnedMascotsCompanion copyWith({
     Value<String>? mascotId,
-    Value<int>? acquiredAt,
+    Value<int>? firstAcquiredAt,
+    Value<int>? count,
     Value<int>? rowid,
   }) {
     return OwnedMascotsCompanion(
       mascotId: mascotId ?? this.mascotId,
-      acquiredAt: acquiredAt ?? this.acquiredAt,
+      firstAcquiredAt: firstAcquiredAt ?? this.firstAcquiredAt,
+      count: count ?? this.count,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2492,8 +2536,11 @@ class OwnedMascotsCompanion extends UpdateCompanion<OwnedMascot> {
     if (mascotId.present) {
       map['mascot_id'] = Variable<String>(mascotId.value);
     }
-    if (acquiredAt.present) {
-      map['acquired_at'] = Variable<int>(acquiredAt.value);
+    if (firstAcquiredAt.present) {
+      map['first_acquired_at'] = Variable<int>(firstAcquiredAt.value);
+    }
+    if (count.present) {
+      map['count'] = Variable<int>(count.value);
     }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
@@ -2505,7 +2552,8 @@ class OwnedMascotsCompanion extends UpdateCompanion<OwnedMascot> {
   String toString() {
     return (StringBuffer('OwnedMascotsCompanion(')
           ..write('mascotId: $mascotId, ')
-          ..write('acquiredAt: $acquiredAt, ')
+          ..write('firstAcquiredAt: $firstAcquiredAt, ')
+          ..write('count: $count, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -4161,13 +4209,15 @@ typedef $$AppSettingsTableProcessedTableManager =
 typedef $$OwnedMascotsTableCreateCompanionBuilder =
     OwnedMascotsCompanion Function({
       required String mascotId,
-      required int acquiredAt,
+      required int firstAcquiredAt,
+      Value<int> count,
       Value<int> rowid,
     });
 typedef $$OwnedMascotsTableUpdateCompanionBuilder =
     OwnedMascotsCompanion Function({
       Value<String> mascotId,
-      Value<int> acquiredAt,
+      Value<int> firstAcquiredAt,
+      Value<int> count,
       Value<int> rowid,
     });
 
@@ -4185,8 +4235,13 @@ class $$OwnedMascotsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<int> get acquiredAt => $composableBuilder(
-    column: $table.acquiredAt,
+  ColumnFilters<int> get firstAcquiredAt => $composableBuilder(
+    column: $table.firstAcquiredAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get count => $composableBuilder(
+    column: $table.count,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -4205,8 +4260,13 @@ class $$OwnedMascotsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get acquiredAt => $composableBuilder(
-    column: $table.acquiredAt,
+  ColumnOrderings<int> get firstAcquiredAt => $composableBuilder(
+    column: $table.firstAcquiredAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get count => $composableBuilder(
+    column: $table.count,
     builder: (column) => ColumnOrderings(column),
   );
 }
@@ -4223,10 +4283,13 @@ class $$OwnedMascotsTableAnnotationComposer
   GeneratedColumn<String> get mascotId =>
       $composableBuilder(column: $table.mascotId, builder: (column) => column);
 
-  GeneratedColumn<int> get acquiredAt => $composableBuilder(
-    column: $table.acquiredAt,
+  GeneratedColumn<int> get firstAcquiredAt => $composableBuilder(
+    column: $table.firstAcquiredAt,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get count =>
+      $composableBuilder(column: $table.count, builder: (column) => column);
 }
 
 class $$OwnedMascotsTableTableManager
@@ -4261,21 +4324,25 @@ class $$OwnedMascotsTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> mascotId = const Value.absent(),
-                Value<int> acquiredAt = const Value.absent(),
+                Value<int> firstAcquiredAt = const Value.absent(),
+                Value<int> count = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => OwnedMascotsCompanion(
                 mascotId: mascotId,
-                acquiredAt: acquiredAt,
+                firstAcquiredAt: firstAcquiredAt,
+                count: count,
                 rowid: rowid,
               ),
           createCompanionCallback:
               ({
                 required String mascotId,
-                required int acquiredAt,
+                required int firstAcquiredAt,
+                Value<int> count = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => OwnedMascotsCompanion.insert(
                 mascotId: mascotId,
-                acquiredAt: acquiredAt,
+                firstAcquiredAt: firstAcquiredAt,
+                count: count,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

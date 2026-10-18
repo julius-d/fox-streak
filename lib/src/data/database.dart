@@ -109,15 +109,22 @@ class ProfileStats extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-/// Mascots the profile has unlocked (issue #059). One row per owned mascot,
-/// keyed by its stable catalog ID — never an array index, so the catalog
+/// Mascots the profile has won at least once (issue #059). One row per
+/// distinct catalog ID ever drawn — never an array index, so the catalog
 /// surviving new files being added later never invalidates existing rows.
+///
+/// v9 (#064): the lootbox draw no longer excludes already-won mascots, so a
+/// catalog entry can be drawn repeatedly; [count] tracks how many times,
+/// while [firstAcquiredAt] (renamed from `acquiredAt`) keeps the original
+/// first-win timestamp unchanged on repeat wins.
 ///
 /// Sole writer: `MascotService`, via `MascotRepository.addOwnedMascot`.
 class OwnedMascots extends Table {
   TextColumn get mascotId => text()();
-  // Epoch millis.
-  IntColumn get acquiredAt => integer()();
+  // Epoch millis; set once on first win, never overwritten.
+  IntColumn get firstAcquiredAt => integer()();
+  // v9 (#064): number of times this mascot has been drawn.
+  IntColumn get count => integer().withDefault(const Constant(1))();
 
   @override
   Set<Column> get primaryKey => {mascotId};
@@ -156,7 +163,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -208,11 +215,36 @@ class AppDatabase extends _$AppDatabase {
       // mascot-collection columns. `addColumn` applies each column's Dart
       // default (the fox for `equippedMascotId`, 0/NULL for the
       // no-activity-yet lesson counter) to existing rows too.
+      //
+      // `ownedMascots` is created in its original (`acquired_at`, no
+      // `count`) shape via raw DDL, not `m.createTable(ownedMascots)` —
+      // that would build the table from the *current* Dart definition
+      // (post-#064's `firstAcquiredAt`/`count`), which the v9 step below
+      // would then fail to rename/add onto.
       if (from < 8) {
-        await m.createTable(ownedMascots);
+        await customStatement('''
+          CREATE TABLE owned_mascots (
+            mascot_id TEXT NOT NULL,
+            acquired_at INTEGER NOT NULL,
+            PRIMARY KEY (mascot_id)
+          )
+        ''');
         await m.addColumn(profileStats, profileStats.equippedMascotId);
         await m.addColumn(profileStats, profileStats.lessonsCompletedToday);
         await m.addColumn(profileStats, profileStats.lessonsCompletedDay);
+      }
+      // v9 (#064): the lootbox draw is no longer filtered to unowned
+      // mascots, so a catalog entry can be won more than once;
+      // `acquiredAt` is renamed to `firstAcquiredAt` (same semantics, new
+      // name) and `count` is added, defaulting existing rows to 1 (every
+      // existing row represents exactly one win today).
+      if (from < 9) {
+        await m.renameColumn(
+          ownedMascots,
+          'acquired_at',
+          ownedMascots.firstAcquiredAt,
+        );
+        await m.addColumn(ownedMascots, ownedMascots.count);
       }
     },
     beforeOpen: (details) async {
@@ -228,7 +260,9 @@ class AppDatabase extends _$AppDatabase {
   // `profileStats.displayName`/`hasOnboarded`; v6 (#045) added
   // `questionSets.category`; v7 (#055) added the `appSettings` table; v8
   // (#059) added the `ownedMascots` table + `profileStats.equippedMascotId`/
-  // `lessonsCompletedToday`/`lessonsCompletedDay`.
+  // `lessonsCompletedToday`/`lessonsCompletedDay`; v9 (#064) renamed
+  // `ownedMascots.acquiredAt` to `firstAcquiredAt` and added
+  // `ownedMascots.count`.
 }
 
 DatabaseConnection _openConnection() => driftDatabase(name: 'fox_streak');

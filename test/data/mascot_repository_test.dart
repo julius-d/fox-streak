@@ -1,5 +1,5 @@
 // Unit tests for MascotRepository's `owned_mascots` table wiring
-// (issue #059).
+// (issue #059, duplicate-draw counting added in #064).
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -48,16 +48,34 @@ void main() {
       expect(owned, hasLength(2));
     });
 
-    test(
-      'recording the same mascot twice does not duplicate it '
-      '(idempotent, per #059\'s one-mascot-per-catalog-entry-ever rule)',
-      () async {
-        await repo.addOwnedMascot('emoji_u1f980_lottie', now: clock.now());
-        await repo.addOwnedMascot('emoji_u1f980_lottie', now: clock.now());
-        final owned = await repo.getOwnedMascotIds();
-        expect(owned.where((id) => id == 'emoji_u1f980_lottie'), hasLength(1));
-      },
-    );
+    test('recording the same mascot twice does not duplicate the row, but '
+        'increments its count (issue #064)', () async {
+      await repo.addOwnedMascot('emoji_u1f980_lottie', now: clock.now());
+      await repo.addOwnedMascot('emoji_u1f980_lottie', now: clock.now());
+      final owned = await repo.getOwnedMascotIds();
+      expect(owned.where((id) => id == 'emoji_u1f980_lottie'), hasLength(1));
+
+      final row = await (db.select(
+        db.ownedMascots,
+      )..where((t) => t.mascotId.equals('emoji_u1f980_lottie'))).getSingle();
+      expect(row.count, 2);
+    });
+
+    test('firstAcquiredAt stays pinned to the first win across repeat draws '
+        '(issue #064)', () async {
+      final firstWin = clock.now();
+      await repo.addOwnedMascot('emoji_u1f980_lottie', now: firstWin);
+      await repo.addOwnedMascot(
+        'emoji_u1f980_lottie',
+        now: firstWin.add(const Duration(days: 1)),
+      );
+
+      final row = await (db.select(
+        db.ownedMascots,
+      )..where((t) => t.mascotId.equals('emoji_u1f980_lottie'))).getSingle();
+      expect(row.firstAcquiredAt, firstWin.millisecondsSinceEpoch);
+      expect(row.count, 2);
+    });
   });
 
   group('watchOwnedMascotIds', () {

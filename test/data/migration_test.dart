@@ -1,6 +1,6 @@
 // Schema v1 -> v2 (issue #026), v2 -> v3 (issue #010), v3 -> v4 (issue
 // #022), v4 -> v5 (issue #012), v5 -> v6 (issue #045), v6 -> v7 (issue
-// #055), and v7 -> v8 (issue #059) migration tests.
+// #055), v7 -> v8 (issue #059), and v8 -> v9 (issue #064) migration tests.
 //
 // Simulates pre-migration databases on disk, then reopens them with the
 // real (current schemaVersion) `AppDatabase` and asserts `onUpgrade` applied
@@ -290,6 +290,45 @@ class _LegacyV7Database extends AppDatabase {
       await m.createTable(db.items);
       await m.createTable(db.attempts);
       await m.createTable(db.appSettings);
+    },
+  );
+}
+
+/// Creates the pre-#064 `owned_mascots` shape (`acquired_at`, no `count`) —
+/// the current Dart `OwnedMascots` definition already has
+/// `first_acquired_at` + `count`, so `m.createTable(db.ownedMascots)` can't
+/// be used for this pre-v9 fixture.
+Future<void> _createOwnedMascotsPreCount(Migrator m) async {
+  await m.database.customStatement('''
+    CREATE TABLE owned_mascots (
+      mascot_id TEXT NOT NULL,
+      acquired_at INTEGER NOT NULL,
+      PRIMARY KEY (mascot_id)
+    )
+  ''');
+}
+
+/// A schemaVersion-8 view of [AppDatabase], used only to seed a pre-#064
+/// file at the exact version #064's migration upgrades from: every table
+/// is already in its current shape (v9 didn't touch `profile_stats`)
+/// except `owned_mascots` (still has `acquired_at`, no `count`, see
+/// [_createOwnedMascotsPreCount]).
+class _LegacyV8Database extends AppDatabase {
+  _LegacyV8Database(QueryExecutor executor) : super.forTesting(executor); // ignore: use_super_parameters — must forward to the named forTesting() ctor, not the default unnamed one
+
+  @override
+  int get schemaVersion => 8;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) async {
+      final db = m.database as AppDatabase;
+      await m.createTable(db.questionSets);
+      await m.createTable(db.items);
+      await m.createTable(db.attempts);
+      await m.createTable(db.profileStats);
+      await m.createTable(db.appSettings);
+      await _createOwnedMascotsPreCount(m);
     },
   );
 }
@@ -630,14 +669,61 @@ void main() {
     expect(profile.todayXp, 12);
     expect(profile.lastActiveDay, '2026-10-10');
 
+    // Reopening at the current (v9) schemaVersion also runs #064's v8->v9
+    // step, so `owned_mascots` already has `first_acquired_at`/`count`
+    // rather than the v8-only `acquired_at` — see the v8->v9 test below for
+    // that migration step's own coverage.
     final columns = await upgradedDb
         .customSelect("PRAGMA table_info('owned_mascots')")
         .get();
     expect(
       columns.map((row) => row.read<String>('name')),
-      containsAll(<String>['mascot_id', 'acquired_at']),
+      containsAll(<String>['mascot_id', 'first_acquired_at', 'count']),
     );
     expect(await (upgradedDb.select(upgradedDb.ownedMascots)).get(), isEmpty);
+  });
+
+  test('onUpgrade (v8 -> v9) renames acquiredAt to firstAcquiredAt and adds '
+      'count, defaulting existing rows to 1', () async {
+    final dir = Directory.systemTemp.createTempSync('foxstreak_migration_v9');
+    final file = File('${dir.path}/test.sqlite');
+    addTearDown(() {
+      if (dir.existsSync()) dir.deleteSync(recursive: true);
+    });
+
+    // 1. Seed a v8 database directly on disk (owned_mascots has
+    // acquired_at but no count yet) with a pre-existing owned-mascot row.
+    final legacyDb = _LegacyV8Database(NativeDatabase(file));
+    await legacyDb.customInsert(
+      'INSERT INTO owned_mascots (mascot_id, acquired_at) VALUES (?, ?)',
+      variables: [
+        Variable.withString(kDefaultMascotId),
+        Variable.withInt(1000),
+      ],
+    );
+    await legacyDb.close();
+
+    // 2. Reopen the SAME file with the real (current schemaVersion)
+    // database; drift sees user_version=8 < schemaVersion=9 and runs
+    // onUpgrade's `renameColumn`/`addColumn`.
+    final upgradedDb = AppDatabase.forTesting(NativeDatabase(file));
+    addTearDown(upgradedDb.close);
+
+    final row = await (upgradedDb.select(
+      upgradedDb.ownedMascots,
+    )..where((t) => t.mascotId.equals(kDefaultMascotId))).getSingle();
+    expect(row.firstAcquiredAt, 1000);
+    expect(row.count, 1);
+
+    final columns = await upgradedDb
+        .customSelect("PRAGMA table_info('owned_mascots')")
+        .get();
+    final columnNames = columns.map((row) => row.read<String>('name'));
+    expect(
+      columnNames,
+      containsAll(<String>['mascot_id', 'first_acquired_at', 'count']),
+    );
+    expect(columnNames, isNot(contains('acquired_at')));
   });
 }
 
