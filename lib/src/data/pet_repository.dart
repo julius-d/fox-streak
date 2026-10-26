@@ -41,6 +41,18 @@ class PetRepository {
         .map((rows) => rows.map((row) => row.petId).toList());
   }
 
+  /// Live view of every owned pet's catalog ID mapped to its
+  /// [OwnedPets.count] (issue #069's collection-screen "×N" badge) — a
+  /// superset of [watchOwnedPetIds]'s ids, since every owned id is a key
+  /// here too. Seeding behaves the same as [watchOwnedPetIds].
+  Stream<Map<String, int>> watchOwnedPetCounts() async* {
+    await _ensureDefaultOwned();
+    yield* _db
+        .select(_db.ownedPets)
+        .watch()
+        .map((rows) => {for (final row in rows) row.petId: row.count});
+  }
+
   /// Records a win of [petId]: inserts a new row (`firstAcquiredAt` =
   /// now, `count` = 1) the first time it's drawn, or bumps `count` by one on
   /// every later draw — `firstAcquiredAt` stays pinned to the first win

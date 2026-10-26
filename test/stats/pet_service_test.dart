@@ -73,10 +73,28 @@ class _ScriptedRandom implements Random {
   double nextDouble() => 0;
 }
 
+// Every fixture pet below shares the same PetRarity.common tier, so
+// `drawPet`'s tier-select draw is always a no-op (only one tier is ever
+// present) and `_ZeroRandom`/`_FixedIndexRandom`'s single fixed `nextInt`
+// answer resolves both the (trivial) tier-select call and the
+// within-tier-index call identically to the pre-#069 uniform
+// `pool[rng.nextInt(pool.length)]` pick these tests were written against.
 final List<PetEntry> _threePetCatalog = [
   PetCatalog.defaultEntry,
-  const PetEntry(id: 'b', assetPath: 'b.json', emoji: '🐝'),
-  const PetEntry(id: 'c', assetPath: 'c.json', emoji: '🦀'),
+  const PetEntry(
+    id: 'b',
+    assetPath: 'b.json',
+    emoji: '🐝',
+    rarity: PetRarity.common,
+    sortOrder: 1,
+  ),
+  const PetEntry(
+    id: 'c',
+    assetPath: 'c.json',
+    emoji: '🦀',
+    rarity: PetRarity.common,
+    sortOrder: 2,
+  ),
 ];
 
 /// Fixture catalog pairing one seasonal pet (#063's snowman,
@@ -91,8 +109,22 @@ final List<PetEntry> _seasonalFixtureCatalog = [
     id: 'emoji_u2603_lottie',
     assetPath: 'snowman.json',
     emoji: '☃️',
+    rarity: PetRarity.common,
+    sortOrder: 0,
+    seasonWindow: PetSeasonWindow(
+      startMonth: 12,
+      startDay: 6,
+      endMonth: 12,
+      endDay: 26,
+    ),
   ),
-  const PetEntry(id: 'c', assetPath: 'c.json', emoji: '🦀'),
+  const PetEntry(
+    id: 'c',
+    assetPath: 'c.json',
+    emoji: '🦀',
+    rarity: PetRarity.common,
+    sortOrder: 1,
+  ),
 ];
 
 const String _kSnowmanId = 'emoji_u2603_lottie';
@@ -399,6 +431,14 @@ void main() {
             id: _kSnowmanId,
             assetPath: 'snowman.json',
             emoji: '☃️',
+            rarity: PetRarity.common,
+            sortOrder: 0,
+            seasonWindow: PetSeasonWindow(
+              startMonth: 12,
+              startDay: 6,
+              endMonth: 12,
+              endDay: 26,
+            ),
           ),
         ],
       );
@@ -424,8 +464,22 @@ void main() {
             id: _kSpiderId,
             assetPath: 'spider.json',
             emoji: '🕷️',
+            rarity: PetRarity.common,
+            sortOrder: 0,
+            seasonWindow: PetSeasonWindow(
+              startMonth: 10,
+              startDay: 25,
+              endMonth: 11,
+              endDay: 1,
+            ),
           ),
-          const PetEntry(id: 'c', assetPath: 'c.json', emoji: '🦀'),
+          const PetEntry(
+            id: 'c',
+            assetPath: 'c.json',
+            emoji: '🦀',
+            rarity: PetRarity.common,
+            sortOrder: 1,
+          ),
         ],
       );
       await service.recordLessonCompletion();

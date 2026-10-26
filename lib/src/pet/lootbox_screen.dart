@@ -103,7 +103,7 @@ class _LootboxScreenState extends State<LootboxScreen>
   }
 
   String _revealedTitle(AppLocalizations l10n) => switch (widget.reward) {
-    PetReward() => l10n.lootboxRevealedTitle,
+    PetReward(entry: final entry) => l10n.lootboxRevealedTitle(entry.rarityKey),
     CoinsReward(amount: final amount) => l10n.lootboxCoinsRevealedTitle(amount),
   };
 

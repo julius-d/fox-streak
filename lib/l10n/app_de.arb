@@ -642,6 +642,13 @@
     "placeholders": {}
   },
   "petLockedSemanticLabel": "Gesperrtes Pet",
+  "@petRarityLabel": {
+    "description": "Visible rarity/seasonal label shown under a collection-screen tile, owned or locked (issue #069). rarity is one of: common, uncommon, epic, legendary, mythic, seasonal",
+    "placeholders": {
+      "rarity": {"type": "String"}
+    }
+  },
+  "petRarityLabel": "{rarity, select, common{Gewöhnlich} uncommon{Ungewöhnlich} epic{Episch} legendary{Legendär} mythic{Mythisch} seasonal{Saisonal} other{Gewöhnlich}}",
   "@homePetSemanticLabel": {
     "description": "A11y label for Home's tap-to-collect pet button (issue #059)",
     "placeholders": {}
@@ -658,15 +665,17 @@
   },
   "lootboxHeading": "Tägliche Schatzkiste!",
   "@lootboxTapPrompt": {
-    "description": "Tap-to-open prompt on the unopened lootbox screen (issue #059)",
+    "description": "Tap-to-open prompt on the unopened lootbox screen (issue #059; reworded reward-agnostic by #069 since the reward may be coins, not a pet)",
     "placeholders": {}
   },
-  "lootboxTapPrompt": "Tippe, um dein neues Pet aufzudecken!",
+  "lootboxTapPrompt": "Tippe, um deine Belohnung aufzudecken!",
   "@lootboxRevealedTitle": {
-    "description": "Heading shown once the lootbox has been opened with a pet reward (issue #059)",
-    "placeholders": {}
+    "description": "Heading shown once the lootbox has been opened with a pet reward, naming the won pet's rarity/seasonal label (issue #059; reworded by #069). rarity is one of: common, uncommon, epic, legendary, mythic, seasonal",
+    "placeholders": {
+      "rarity": {"type": "String"}
+    }
   },
-  "lootboxRevealedTitle": "Du hast ein neues Pet bekommen!",
+  "lootboxRevealedTitle": "{rarity, select, common{Du hast ein gewöhnliches Pet bekommen!} uncommon{Du hast ein ungewöhnliches Pet bekommen!} epic{Du hast ein episches Pet bekommen!} legendary{Du hast ein legendäres Pet bekommen!} mythic{Du hast ein mythisches Pet bekommen!} seasonal{Du hast ein saisonales Pet bekommen!} other{Du hast ein neues Pet bekommen!}}",
   "@lootboxCoinsRevealedTitle": {
     "description": "Heading shown once the lootbox has been opened with a coins reward (issue #065)",
     "placeholders": {

@@ -60,10 +60,10 @@ class PetService {
   /// on a new local day (mirroring `todayXp`'s own day-scoped reset). On
   /// that count landing on 2, 5, 8, 11, ... (issue #067: the 2nd completion
   /// of the day, then every 3rd one after that, uncapped), flips a coin
-  /// (issue #065): on heads, picks a catalog entry uniformly at random from
-  /// every time-eligible pet (owned or not — issue #064) and persists
-  /// the win; on tails, draws a weighted coin amount and adds it to
-  /// `coinsTotal`.
+  /// (issue #065): on heads, draws a catalog entry weighted by [PetRarity]
+  /// tier from every time-eligible pet (owned or not — issue #064, odds by
+  /// issue #069) and persists the win; on tails, draws a weighted coin
+  /// amount and adds it to `coinsTotal`.
   ///
   /// Also returns the profile's `equippedPetId` as of this same
   /// [StatsRepository.getProfile] read, so the caller (which needs it for
@@ -94,14 +94,12 @@ class PetService {
 
     final catalog = await _loadCatalog();
     final now = _clock.now();
-    final pool = catalog
-        .where((entry) => isPetInSeason(entry.id, now))
-        .toList();
+    final pool = catalog.where((entry) => entry.isInSeasonAt(now)).toList();
     if (pool.isEmpty) {
       return (reward: null, equippedPetId: equippedPetId);
     }
 
-    final wonEntry = pool[rng.nextInt(pool.length)];
+    final wonEntry = drawPet(pool, rng);
     await _petRepo.addOwnedPet(wonEntry.id, now: _clock.now());
     return (reward: PetReward(wonEntry), equippedPetId: equippedPetId);
   }
@@ -119,11 +117,10 @@ final petRepositoryProvider = Provider<PetRepository>((ref) {
   );
 });
 
-/// Seam between [PetService] and the real asset bundle — override with a
-/// fake in tests that don't render a widget tree (plain `test()`, no
-/// `testWidgets`), so they never touch `rootBundle`/`AssetManifest`, which
-/// need a Flutter services binding that only `testWidgets` sets up. Mirrors
-/// `foxSoundPlayerProvider`'s seam for `audioplayers`.
+/// Seam between [PetService] and [PetCatalog.load] — override with a fixture
+/// catalog in tests that want a reduced or reordered pool instead of the
+/// full static catalog. Mirrors `foxSoundPlayerProvider`'s seam for
+/// `audioplayers`.
 final petCatalogLoaderProvider = Provider<Future<List<PetEntry>> Function()>(
   (ref) => PetCatalog.load,
 );

@@ -1122,6 +1122,12 @@ abstract class AppLocalizations {
   /// **'Locked pet'**
   String get petLockedSemanticLabel;
 
+  /// Visible rarity/seasonal label shown under a collection-screen tile, owned or locked (issue #069). rarity is one of: common, uncommon, epic, legendary, mythic, seasonal
+  ///
+  /// In en, this message translates to:
+  /// **'{rarity, select, common{Common} uncommon{Uncommon} epic{Epic} legendary{Legendary} mythic{Mythic} seasonal{Seasonal} other{Common}}'**
+  String petRarityLabel(String rarity);
+
   /// A11y label for Home's tap-to-collect pet button (issue #059)
   ///
   /// In en, this message translates to:
@@ -1140,17 +1146,17 @@ abstract class AppLocalizations {
   /// **'Daily lootbox!'**
   String get lootboxHeading;
 
-  /// Tap-to-open prompt on the unopened lootbox screen (issue #059)
+  /// Tap-to-open prompt on the unopened lootbox screen (issue #059; reworded reward-agnostic by #069 since the reward may be coins, not a pet)
   ///
   /// In en, this message translates to:
-  /// **'Tap to reveal your new pet!'**
+  /// **'Tap to reveal your reward!'**
   String get lootboxTapPrompt;
 
-  /// Heading shown once the lootbox has been opened with a pet reward (issue #059)
+  /// Heading shown once the lootbox has been opened with a pet reward, naming the won pet's rarity/seasonal label (issue #059; reworded by #069). rarity is one of: common, uncommon, epic, legendary, mythic, seasonal
   ///
   /// In en, this message translates to:
-  /// **'You got a new pet!'**
-  String get lootboxRevealedTitle;
+  /// **'{rarity, select, common{You got a Common pet!} uncommon{You got an Uncommon pet!} epic{You got an Epic pet!} legendary{You got a Legendary pet!} mythic{You got a Mythic pet!} seasonal{You got a Seasonal pet!} other{You got a new pet!}}'**
+  String lootboxRevealedTitle(String rarity);
 
   /// Heading shown once the lootbox has been opened with a coins reward (issue #065)
   ///

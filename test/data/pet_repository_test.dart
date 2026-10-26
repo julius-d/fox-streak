@@ -95,4 +95,33 @@ void main() {
       );
     });
   });
+
+  group('watchOwnedPetCounts (issue #069)', () {
+    test('emits the seeded default at count 1, then a newly-won pet also '
+        'at count 1', () async {
+      final emissions = <Map<String, int>>[];
+      final subscription = repo.watchOwnedPetCounts().listen(emissions.add);
+      addTearDown(subscription.cancel);
+
+      await pumpEventQueue();
+      expect(emissions.last, {kDefaultPetId: 1});
+
+      await repo.addOwnedPet('emoji_u1f989_lottie', now: clock.now());
+      await pumpEventQueue();
+      expect(emissions.last, {kDefaultPetId: 1, 'emoji_u1f989_lottie': 1});
+    });
+
+    test('a repeat draw bumps that pet\'s count in the emitted map', () async {
+      final emissions = <Map<String, int>>[];
+      final subscription = repo.watchOwnedPetCounts().listen(emissions.add);
+      addTearDown(subscription.cancel);
+      await pumpEventQueue();
+
+      await repo.addOwnedPet('emoji_u1f980_lottie', now: clock.now());
+      await repo.addOwnedPet('emoji_u1f980_lottie', now: clock.now());
+      await pumpEventQueue();
+
+      expect(emissions.last, {kDefaultPetId: 1, 'emoji_u1f980_lottie': 2});
+    });
+  });
 }

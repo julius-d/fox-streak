@@ -1,6 +1,6 @@
 # Issue 069: Rarity levels for pets
 
-Status: open | Priority: P2 | Type: feature | Refined-at: 2026-10-26
+Status: done | Priority: P2 | Type: feature | Refined-at: 2026-10-26 | Completed-at: 2026-10-26
 
 ## Goal
 
@@ -203,3 +203,35 @@ dart format --output=none --set-exit-if-changed .
 dart fix --dry-run
 flutter test
 ```
+
+## Summary
+
+- `lib/src/pet/pet_catalog.dart`: `MascotCatalog.load`'s `AssetManifest`
+  scan replaced by a static `PetCatalog.entries` list (11 hardcoded
+  entries, `PetRarity` enum with fixed 55/30/10/4/1 weights, `sortOrder`,
+  per-entry `PetSeasonWindow?`). New `drawPet` does the weighted draw with
+  built-in empty-tier redistribution (skips tiers with no eligible pet).
+- `PetService.recordLessonCompletion` now calls `drawPet` instead of a
+  uniform pool pick; seasonal filtering moved from a global
+  `kPetSeasonWindows` map to `PetEntry.isInSeasonAt`.
+- `PetRepository.watchOwnedPetCounts` (+ `ownedPetCountsProvider`) exposes
+  `OwnedPets.count` to the UI for the first time.
+- `PetCollectionScreen` sorts by `sortOrder`, shows a rarity/seasonal
+  label under every tile (owned or locked), and a "×N" badge when
+  `count > 1`.
+- `lootboxRevealedTitle`/`lootboxTapPrompt` (DE+EN) reworded via ICU
+  `select` on the won pet's `rarityKey` (`common`/.../`seasonal`);
+  `lootboxCoinsRevealedTitle` untouched.
+- New `integration_test/issue069_pet_rarity_test.dart` drives the real app
+  through two forced-deterministic lootbox wins, asserting the reworded
+  strings and the collection screen's rarity labels + owned-count badge.
+
+## Code review
+
+- Reviewed with the `code-review` skill (medium effort) after
+  implementation, covering the full diff.
+- No findings survived verification. One soft candidate (the "×N" badge
+  text being a hardcoded literal instead of routed through l10n) was
+  checked against `set_detail_screen.dart`'s existing precedent for
+  hardcoded interpolated `Text`, and dismissed as consistent with
+  established practice, not fixed.

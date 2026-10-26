@@ -12,20 +12,20 @@ import '../stats/pet_service.dart';
 import '../stats/stats_providers.dart';
 import 'pet_catalog.dart';
 
-/// The full pet catalog, discovered once from the asset manifest.
+/// The full pet catalog.
 ///
 /// Goes through [petCatalogLoaderProvider] (not `PetCatalog.load`
 /// directly) so overriding that one seam in a test genuinely keeps every
-/// catalog read — this provider included — off the real asset bundle, not
+/// catalog read — this provider included — on a fixture catalog, not
 /// just `PetService`'s own lootbox-trigger check.
 final petCatalogProvider = FutureProvider<List<PetEntry>>((ref) {
   return ref.watch(petCatalogLoaderProvider)();
 });
 
-/// Live view of every pet ID this profile has unlocked, for the
-/// collection screen.
-final ownedPetIdsProvider = StreamProvider<List<String>>((ref) {
-  return ref.watch(petRepositoryProvider).watchOwnedPetIds();
+/// Live view of every pet ID this profile has unlocked, mapped to its
+/// owned count (issue #069's "×N" badge) — for the collection screen.
+final ownedPetCountsProvider = StreamProvider<Map<String, int>>((ref) {
+  return ref.watch(petRepositoryProvider).watchOwnedPetCounts();
 });
 
 /// Resolves the equipped pet as a full catalog entry (ID + asset path +

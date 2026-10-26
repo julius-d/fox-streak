@@ -598,6 +598,20 @@ class AppLocalizationsDe extends AppLocalizations {
   String get petLockedSemanticLabel => 'Gesperrtes Pet';
 
   @override
+  String petRarityLabel(String rarity) {
+    String _temp0 = intl.Intl.selectLogic(rarity, {
+      'common': 'Gewöhnlich',
+      'uncommon': 'Ungewöhnlich',
+      'epic': 'Episch',
+      'legendary': 'Legendär',
+      'mythic': 'Mythisch',
+      'seasonal': 'Saisonal',
+      'other': 'Gewöhnlich',
+    });
+    return '$_temp0';
+  }
+
+  @override
   String get homePetSemanticLabel => 'Deine Pet-Sammlung öffnen';
 
   @override
@@ -607,10 +621,21 @@ class AppLocalizationsDe extends AppLocalizations {
   String get lootboxHeading => 'Tägliche Schatzkiste!';
 
   @override
-  String get lootboxTapPrompt => 'Tippe, um dein neues Pet aufzudecken!';
+  String get lootboxTapPrompt => 'Tippe, um deine Belohnung aufzudecken!';
 
   @override
-  String get lootboxRevealedTitle => 'Du hast ein neues Pet bekommen!';
+  String lootboxRevealedTitle(String rarity) {
+    String _temp0 = intl.Intl.selectLogic(rarity, {
+      'common': 'Du hast ein gewöhnliches Pet bekommen!',
+      'uncommon': 'Du hast ein ungewöhnliches Pet bekommen!',
+      'epic': 'Du hast ein episches Pet bekommen!',
+      'legendary': 'Du hast ein legendäres Pet bekommen!',
+      'mythic': 'Du hast ein mythisches Pet bekommen!',
+      'seasonal': 'Du hast ein saisonales Pet bekommen!',
+      'other': 'Du hast ein neues Pet bekommen!',
+    });
+    return '$_temp0';
+  }
 
   @override
   String lootboxCoinsRevealedTitle(int amount) {

@@ -596,6 +596,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get petLockedSemanticLabel => 'Locked pet';
 
   @override
+  String petRarityLabel(String rarity) {
+    String _temp0 = intl.Intl.selectLogic(rarity, {
+      'common': 'Common',
+      'uncommon': 'Uncommon',
+      'epic': 'Epic',
+      'legendary': 'Legendary',
+      'mythic': 'Mythic',
+      'seasonal': 'Seasonal',
+      'other': 'Common',
+    });
+    return '$_temp0';
+  }
+
+  @override
   String get homePetSemanticLabel => 'Open your pet collection';
 
   @override
@@ -605,10 +619,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lootboxHeading => 'Daily lootbox!';
 
   @override
-  String get lootboxTapPrompt => 'Tap to reveal your new pet!';
+  String get lootboxTapPrompt => 'Tap to reveal your reward!';
 
   @override
-  String get lootboxRevealedTitle => 'You got a new pet!';
+  String lootboxRevealedTitle(String rarity) {
+    String _temp0 = intl.Intl.selectLogic(rarity, {
+      'common': 'You got a Common pet!',
+      'uncommon': 'You got an Uncommon pet!',
+      'epic': 'You got an Epic pet!',
+      'legendary': 'You got a Legendary pet!',
+      'mythic': 'You got a Mythic pet!',
+      'seasonal': 'You got a Seasonal pet!',
+      'other': 'You got a new pet!',
+    });
+    return '$_temp0';
+  }
 
   @override
   String lootboxCoinsRevealedTitle(int amount) {

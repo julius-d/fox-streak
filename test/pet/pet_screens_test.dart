@@ -1,9 +1,9 @@
 // Widget tests for the lootbox reveal + pet collection screens
-// (issue #059).
+// (issue #059; rarity/seasonal labels + owned-count badge by #069).
 //
 // NOTE on pumping: do NOT use `pumpAndSettle()` for `PetCollectionScreen`
 // — same drift `watch()` fake-async caveat as `library_screen_test.dart`'s
-// own `settle()` (it watches `profileProvider`/`ownedPetIdsProvider`).
+// own `settle()` (it watches `profileProvider`/`ownedPetCountsProvider`).
 
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -19,6 +19,7 @@ import 'package:fox_streak_app/src/pet/lootbox_reward.dart';
 import 'package:fox_streak_app/src/pet/lootbox_screen.dart';
 import 'package:fox_streak_app/src/pet/pet_catalog.dart';
 import 'package:fox_streak_app/src/pet/pet_collection_screen.dart';
+import 'package:fox_streak_app/src/stats/pet_service.dart';
 
 /// Pumps frames until none are scheduled (or [cap] is hit, which fails).
 Future<void> settle(WidgetTester tester, {int cap = 50}) async {
@@ -37,23 +38,31 @@ Future<void> unmount(WidgetTester tester) async {
   await tester.pump(const Duration(milliseconds: 100));
 }
 
-const _reward = PetEntry(
-  id: 'emoji_u1f980_lottie',
-  assetPath: 'assets/noto-emoji/pet/emoji_u1f980_lottie.json',
-  emoji: '🦀',
-);
-const _petReward = PetReward(_reward);
+// Crab: a real catalog entry (Uncommon rarity), used throughout instead of
+// a hand-rolled fixture so it carries correct rarity/sortOrder/season data.
+final _reward = petEntryForId('emoji_u1f980_lottie');
+final _petReward = PetReward(_reward);
 const _coinsReward = CoinsReward(40);
 
 Future<AppDatabase> pumpCollectionScreen(
   WidgetTester tester, {
   AppDatabase? database,
+  Future<List<PetEntry>> Function()? catalog,
 }) async {
   final db = database ?? AppDatabase.forTesting(NativeDatabase.memory());
   addTearDown(() async => db.close());
+  // Tall enough that every one of the catalog's 11 tiles (4 rows of 3) is
+  // already built, so tests can find any tile's key directly without
+  // scrolling/`ensureVisible` racing the grid's lazy build.
+  await tester.binding.setSurfaceSize(const Size(800, 1200));
+  addTearDown(() => tester.binding.setSurfaceSize(null));
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [appDatabaseProvider.overrideWithValue(db)],
+      overrides: [
+        appDatabaseProvider.overrideWithValue(db),
+        if (catalog != null)
+          petCatalogLoaderProvider.overrideWithValue(catalog),
+      ],
       child: const MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -211,6 +220,89 @@ void main() {
       await settle(tester);
 
       expect((await statsRepo.getProfile()).equippedPetId, before);
+
+      await unmount(tester);
+    });
+
+    testWidgets('tiles are ordered by sortOrder ascending (fox first) even '
+        'if the catalog loader returns a different order (issue #069)', (
+      tester,
+    ) async {
+      await pumpCollectionScreen(
+        tester,
+        catalog: () async => PetCatalog.entries.reversed.toList(),
+      );
+
+      final double foxTop = tester
+          .getTopLeft(find.byKey(const Key('petTile-$kDefaultPetId')))
+          .dy;
+      final double phoenixTop = tester
+          .getTopLeft(
+            find.byKey(const Key('petTile-emoji_u1f426_200d_1f525_lottie')),
+          )
+          .dy;
+      expect(foxTop, lessThan(phoenixTop));
+
+      await unmount(tester);
+    });
+
+    testWidgets('every tile shows its rarity label under the pet, owned or '
+        'locked, and a seasonal pet always labels "Seasonal" (issue #069)', (
+      tester,
+    ) async {
+      await pumpCollectionScreen(tester);
+
+      // Fox: owned, Common.
+      expect(
+        tester
+            .widget<Text>(
+              find.byKey(const Key('petRarityLabel-$kDefaultPetId')),
+            )
+            .data,
+        'Common',
+      );
+
+      // Crab: locked, Uncommon.
+      final rewardLabelKey = Key('petRarityLabel-${_reward.id}');
+      await tester.ensureVisible(find.byKey(rewardLabelKey));
+      await settle(tester);
+      expect(tester.widget<Text>(find.byKey(rewardLabelKey)).data, 'Uncommon');
+
+      // Snowman: locked, but always "Seasonal" rather than "Common".
+      const snowmanId = 'emoji_u2603_lottie';
+      await tester.ensureVisible(
+        find.byKey(const Key('petRarityLabel-$snowmanId')),
+      );
+      await settle(tester);
+      expect(
+        tester
+            .widget<Text>(find.byKey(const Key('petRarityLabel-$snowmanId')))
+            .data,
+        'Seasonal',
+      );
+
+      await unmount(tester);
+    });
+
+    testWidgets('a pet owned more than once shows a "×N" badge; owned '
+        'exactly once shows none (issue #069)', (tester) async {
+      final db = AppDatabase.forTesting(NativeDatabase.memory());
+      final petRepo = PetRepository(db);
+      await petRepo.addOwnedPet(_reward.id);
+      await petRepo.addOwnedPet(_reward.id); // crab's count is now 2
+
+      await pumpCollectionScreen(tester, database: db);
+
+      await tester.ensureVisible(find.byKey(Key('petTile-${_reward.id}')));
+      await settle(tester);
+
+      expect(find.byKey(Key('petOwnedCount-${_reward.id}')), findsOneWidget);
+      expect(find.text('×2'), findsOneWidget);
+      // Default fox, owned exactly once, shows no badge.
+      expect(
+        find.byKey(const Key('petOwnedCount-$kDefaultPetId')),
+        findsNothing,
+      );
 
       await unmount(tester);
     });
