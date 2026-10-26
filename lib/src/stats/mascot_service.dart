@@ -18,6 +18,9 @@
 // v#065: once triggered, a 50/50 coin flip decides between #064's mascot
 // pool and a weighted coin amount (`drawCoinAmount`) — never both in the
 // same trigger.
+//
+// v#067: the trigger isn't a single once-a-day event — it repeats every 3rd
+// completion after the first (2, 5, 8, 11, ...), uncapped for the day.
 
 import 'dart:math';
 
@@ -54,11 +57,13 @@ class MascotService {
   /// and #011's streak writes (`LessonController._completeLesson`).
   ///
   /// Bumps the day-scoped `lessonsCompletedToday` counter, resetting it to 1
-  /// on a new local day (mirroring `todayXp`'s own day-scoped reset). On the
-  /// count reaching exactly 2, flips a coin (issue #065): on heads, picks a
-  /// catalog entry uniformly at random from every time-eligible mascot
-  /// (owned or not — issue #064) and persists the win; on tails, draws a
-  /// weighted coin amount and adds it to `coinsTotal`.
+  /// on a new local day (mirroring `todayXp`'s own day-scoped reset). On
+  /// that count landing on 2, 5, 8, 11, ... (issue #067: the 2nd completion
+  /// of the day, then every 3rd one after that, uncapped), flips a coin
+  /// (issue #065): on heads, picks a catalog entry uniformly at random from
+  /// every time-eligible mascot (owned or not — issue #064) and persists
+  /// the win; on tails, draws a weighted coin amount and adds it to
+  /// `coinsTotal`.
   ///
   /// Also returns the profile's `equippedMascotId` as of this same
   /// [StatsRepository.getProfile] read, so the caller (which needs it for
@@ -72,7 +77,10 @@ class MascotService {
     final sameDay = profile.lessonsCompletedDay == today;
     final newCount = sameDay ? profile.lessonsCompletedToday + 1 : 1;
     await _statsRepo.setMascotLessonCounter(count: newCount, day: today);
-    if (newCount != 2) {
+    // Issue #067: the 2nd completion of the day, then every 3rd one after
+    // that (5, 8, 11, ...), uncapped.
+    final triggers = newCount >= 2 && (newCount - 2) % 3 == 0;
+    if (!triggers) {
       return (reward: null, equippedMascotId: equippedMascotId);
     }
 

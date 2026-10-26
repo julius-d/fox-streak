@@ -43,10 +43,11 @@ import 'exercise_card.dart';
 /// [streakCountAfterLesson] is the `streak_count` returned by #011's streak
 ///   write, handed to the result screen the same way for `StreakBadge`.
 /// [lootboxReward] is what #059's `MascotService` returned for this lesson
-///   completion (the twice-a-day lootbox trigger) — a mascot, a coin
-///   amount (issue #065's 50/50 coin flip), or null if no lootbox should be
-///   shown — handed to `LessonScreen` so it can insert the lootbox reveal
-///   before continuing to the caller's destination.
+///   completion (the lootbox trigger, which fires on the day's 2nd
+///   completion and then repeats every 3rd one after that — issue #067) —
+///   a mascot, a coin amount (issue #065's 50/50 coin flip), or null if no
+///   lootbox should be shown — handed to `LessonScreen` so it can insert
+///   the lootbox reveal before continuing to the caller's destination.
 /// [equippedMascotId] is the profile's `equippedMascotId` at completion
 ///   time, snapshotted the same one-shot way as `xpTotalAfterLesson` —
 ///   the result screen resolves it against `mascotCatalogProvider` (no

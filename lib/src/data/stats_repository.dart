@@ -184,8 +184,8 @@ class StatsRepository {
   }
 
   /// Overwrites the day-scoped lesson-completion counter driving #059's
-  /// twice-a-day lootbox trigger. Sole caller:
-  /// #059 `MascotService.recordLessonCompletion`.
+  /// repeating lootbox trigger (2, 5, 8, 11, ... — issue #067). Sole
+  /// caller: #059 `MascotService.recordLessonCompletion`.
   Future<void> setMascotLessonCounter({
     required int count,
     required String day,

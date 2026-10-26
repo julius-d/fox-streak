@@ -1,6 +1,6 @@
 # Issue 067: Multiple lootboxes per day
 
-Status: open | Priority: P3 | Type: feature | Refined-at: 2026-10-26
+Status: done | Priority: P3 | Type: feature | Refined-at: 2026-10-26 | Completed-at: 2026-10-26
 
 ## Goal
 
@@ -42,27 +42,27 @@ with no daily cap.
 
 ## Acceptance criteria
 
-- [ ] `MascotService.recordLessonCompletion` triggers a lootbox when
+- [x] `MascotService.recordLessonCompletion` triggers a lootbox when
   `newCount == 2`, and again whenever `newCount > 2` and
   `(newCount - 2) % 3 == 0` — i.e. on 2, 5, 8, 11, ... for the current
   local day.
-- [ ] No daily cap: a user who finishes enough sets in one local day can
+- [x] No daily cap: a user who finishes enough sets in one local day can
   trigger arbitrarily many lootboxes.
-- [ ] Each triggered lootbox is independently reward-rolled with the same
+- [x] Each triggered lootbox is independently reward-rolled with the same
   pool/odds as today (uniform mascot pick / #065's 50/50 coin flip) —
   rolling the Nth box of the day never special-cases N.
-- [ ] Each trigger still pushes `LootboxScreen` immediately after that
+- [x] Each trigger still pushes `LootboxScreen` immediately after that
   set's result screen, unchanged from today's single-trigger flow;
   back-to-back triggers (e.g. finishing set #5 right after set #2 in the
   same sitting isn't possible, but #5 then #8 in two later sittings is)
   each show their own reveal in turn.
-- [ ] The local-day reset behavior for `lessonsCompletedToday` is
+- [x] The local-day reset behavior for `lessonsCompletedToday` is
   unchanged — the 2/5/8/11/... sequence restarts each new local day.
-- [ ] `mascot_service_test.dart`: new tests cover triggering at 5, 8, and
+- [x] `mascot_service_test.dart`: new tests cover triggering at 5, 8, and
   11 (not just 2), confirm no trigger at 3, 4, 6, 7, etc., and confirm an
   arbitrarily high count (e.g. 50) still triggers correctly on its
   matching multiple.
-- [ ] `flutter analyze`, `dart format --output=none --set-exit-if-changed .`,
+- [x] `flutter analyze`, `dart format --output=none --set-exit-if-changed .`,
   `dart fix --dry-run`, and `flutter test` are all clean per AGENTS.md's
   Verify section.
 
@@ -106,3 +106,26 @@ dart format --output=none --set-exit-if-changed .
 dart fix --dry-run
 flutter test
 ```
+
+## Summary
+
+Replaced the `newCount != 2` early-return in `MascotService.recordLessonCompletion`
+with `newCount >= 2 && (newCount - 2) % 3 == 0`, firing on 2, 5, 8, 11, ...,
+uncapped. Updated stale "twice-a-day"/"exactly 2" comments in
+`lootbox_screen.dart`, `lesson_controller.dart`, `stats_repository.dart`, and
+`database.dart`. Added unit tests (3rd/4th no-trigger, 5th/8th/11th trigger,
+50th trigger) plus a new end-to-end `integration_test` driving 5 real app
+completions to prove the repeating cadence reaches `LootboxScreen` through
+the full stack, not just `MascotService` in isolation.
+
+## Code review
+
+- Trigger condition had a redundant `newCount == 2` disjunct alongside the
+  general `(newCount - 2) % 3 == 0` rule (both equivalent for `newCount == 2`).
+  Fixed: simplified to `newCount >= 2 && (newCount - 2) % 3 == 0`.
+- The new integration test's forced-mascot `Random` delegated pool-index
+  picks to a genuinely random `Random()`, so the 2nd and 5th trigger could
+  draw the same mascot and collapse into 2 owned rows instead of 3 (~33%
+  flake rate via `OwnedMascots`' PK-based upsert).
+  Fixed: replaced with a deterministic, call-count-indexed `Random` so the
+  two triggers always draw distinct pool entries.

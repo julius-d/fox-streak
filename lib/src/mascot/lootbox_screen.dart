@@ -1,10 +1,14 @@
 // Daily lootbox reveal screen (issue #059; opening animation + asset-folder
-// reorg by #062; coin-reward outcome by #065).
+// reorg by #062; coin-reward outcome by #065; repeating trigger cadence by
+// #067).
 //
-// Shown once, after the lesson result screen, on the 2nd lesson completion
-// of the local day — see `LessonController._completeLesson`/`LessonScreen`.
-// The reward itself was already picked + persisted (as an owned mascot or
-// added coins) by `MascotService.recordLessonCompletion`; this screen is
+// Shown after the lesson result screen, on the 2nd lesson completion of the
+// local day and then again every 3rd completion after that (5, 8, 11, ...,
+// uncapped) — see `MascotService.recordLessonCompletion`/
+// `LessonController._completeLesson`/`LessonScreen`. Each trigger pushes its
+// own instance of this screen in turn. The reward itself was already picked
+// + persisted (as an owned mascot or added coins) by
+// `MascotService.recordLessonCompletion`; this screen is
 // purely the tap-to-open reveal moment, switching on [LootboxReward] only
 // for what's shown *after* the box finishes opening — the opening phase
 // and its Lottie are the same for both outcomes. Pops itself on Continue,

@@ -1,6 +1,7 @@
 // Unit tests for MascotService's lootbox-trigger algorithm + equip wiring
 // (issue #059; #064 removed the owned-mascot pool filter, making duplicate
-// draws possible; #065 added the 50/50 coin-flip alternative outcome).
+// draws possible; #065 added the 50/50 coin-flip alternative outcome; #067
+// made the trigger repeat every 3rd completion after the first, uncapped).
 
 import 'dart:math';
 
@@ -159,21 +160,58 @@ void main() {
       expect(profile.lessonsCompletedToday, 2);
     });
 
+    test('the 3rd and 4th completions of the day do not retrigger the lootbox '
+        '(issue #067: the next trigger is the 5th)', () async {
+      final service = buildService();
+      await service.recordLessonCompletion();
+      await service.recordLessonCompletion(random: _ZeroRandom());
+      final third = await service.recordLessonCompletion(random: _ZeroRandom());
+      final fourth = await service.recordLessonCompletion(
+        random: _ZeroRandom(),
+      );
+
+      expect(_wonMascot(third.reward), isNull);
+      expect(_wonMascot(fourth.reward), isNull);
+      final profile = await statsRepo.getProfile();
+      expect(profile.lessonsCompletedToday, 4);
+    });
+
     test(
-      'the 3rd+ completion of the day never retriggers the lootbox',
+      'issue #067: the lootbox retriggers on the 5th, 8th, and 11th '
+      'completions of the day, with no trigger on the ones in between',
       () async {
         final service = buildService();
-        await service.recordLessonCompletion();
-        await service.recordLessonCompletion(random: _ZeroRandom());
-        final third = await service.recordLessonCompletion(
-          random: _ZeroRandom(),
-        );
+        final triggeredCounts = <int>{};
+        for (var count = 1; count <= 11; count++) {
+          final update = await service.recordLessonCompletion(
+            random: _ZeroRandom(),
+          );
+          if (_wonMascot(update.reward) != null) {
+            triggeredCounts.add(count);
+          }
+        }
 
-        expect(_wonMascot(third.reward), isNull);
+        expect(triggeredCounts, {2, 5, 8, 11});
         final profile = await statsRepo.getProfile();
-        expect(profile.lessonsCompletedToday, 3);
+        expect(profile.lessonsCompletedToday, 11);
       },
     );
+
+    test('issue #067: an arbitrarily high count (50) still triggers on its '
+        'matching multiple, uncapped', () async {
+      final service = buildService();
+      // (50 - 2) % 3 == 0, so the 50th completion is a trigger.
+      for (var count = 1; count < 50; count++) {
+        await service.recordLessonCompletion(random: _ZeroRandom());
+      }
+      final fiftieth = await service.recordLessonCompletion(
+        random: _ZeroRandom(),
+      );
+
+      expect(_wonMascot(fiftieth.reward), isNotNull);
+      final profile = await statsRepo.getProfile();
+      expect(profile.lessonsCompletedToday, 50);
+    });
 
     test('a new local day resets the counter to 1, re-arming the trigger '
         'for that day\'s 2nd completion', () async {

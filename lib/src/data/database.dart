@@ -102,7 +102,8 @@ class ProfileStats extends Table {
   TextColumn get equippedMascotId =>
       text().withDefault(const Constant(kDefaultMascotId))();
   // v8 (#059): lesson-completion counter for the current
-  // `lessonsCompletedDay`, driving the twice-a-day lootbox trigger.
+  // `lessonsCompletedDay`, driving the repeating lootbox trigger
+  // (2, 5, 8, 11, ... — issue #067).
   IntColumn get lessonsCompletedToday =>
       integer().withDefault(const Constant(0))();
   // v8 (#059): YYYY-MM-DD in local tz the counter above is scoped to, NULL
