@@ -32,6 +32,14 @@ jobs:
           release_branches: main
           fetch_all_tags: true
           tag_prefix: ''
+          # TEMPORARY: v6.2 missed the `feat!:` breaking-change marker on the
+          # applicationId rename (it analyzed bumps with the Angular preset,
+          # which only understands a `BREAKING CHANGE:` footer, not the `!`
+          # shorthand), so that release shipped as 0.5.0 instead of 1.0.0.
+          # Force the next release to 1.0.0 to correct for it, then remove
+          # this line so later releases resume normal commit analysis (now
+          # correctly major-bumping on `!` since the v7 upgrade).
+          force_bump: major
 
       - name: Calculate new build number
         id: version_bump
