@@ -81,6 +81,10 @@ class Attempts extends Table {
 ///   resets on a new local day (vs. `lessonsCompletedDay`), mirroring
 ///   `todayXp`'s own day-scoped reset — it cannot reuse `lastActiveDay`
 ///   (StreakService-owned-write, see above).
+/// - `coinsTotal` — written exclusively by #065 `MascotService`'s
+///   coin-reward branch, via [StatsRepository.addCoins]. Lifetime-only
+///   (no day-scoped twin, unlike `todayXp`/`lessonsCompletedToday`); no
+///   spending mechanic yet (a future "streak on ice" issue).
 class ProfileStats extends Table {
   IntColumn get id => integer()();
   IntColumn get xpTotal => integer().withDefault(const Constant(0))();
@@ -104,6 +108,9 @@ class ProfileStats extends Table {
   // v8 (#059): YYYY-MM-DD in local tz the counter above is scoped to, NULL
   // until the first lesson completion.
   TextColumn get lessonsCompletedDay => text().nullable()();
+  // v10 (#065): lifetime coin balance, accumulated from the lootbox's
+  // coin-reward outcome. No spending mechanic yet.
+  IntColumn get coinsTotal => integer().withDefault(const Constant(0))();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -163,7 +170,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -246,6 +253,11 @@ class AppDatabase extends _$AppDatabase {
         );
         await m.addColumn(ownedMascots, ownedMascots.count);
       }
+      // v10 (#065): adds the lifetime `coinsTotal` balance, defaulting
+      // existing rows to 0.
+      if (from < 10) {
+        await m.addColumn(profileStats, profileStats.coinsTotal);
+      }
     },
     beforeOpen: (details) async {
       // SQLite disables FK enforcement by default; without this,
@@ -262,7 +274,7 @@ class AppDatabase extends _$AppDatabase {
   // (#059) added the `ownedMascots` table + `profileStats.equippedMascotId`/
   // `lessonsCompletedToday`/`lessonsCompletedDay`; v9 (#064) renamed
   // `ownedMascots.acquiredAt` to `firstAcquiredAt` and added
-  // `ownedMascots.count`.
+  // `ownedMascots.count`; v10 (#065) added `profileStats.coinsTotal`.
 }
 
 DatabaseConnection _openConnection() => driftDatabase(name: 'fox_streak');

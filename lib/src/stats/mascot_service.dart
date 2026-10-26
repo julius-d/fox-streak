@@ -3,18 +3,21 @@
 // `lessonsCompletedDay` and the `owned_mascots` table (issue #059).
 //
 // [MascotService.recordLessonCompletion] is the only thing that ever calls
-// [MascotRepository.addOwnedMascot] / [StatsRepository.setMascotLessonCounter];
-// [MascotService.equip] is the only thing that ever calls
-// [StatsRepository.setEquippedMascot].
+// [MascotRepository.addOwnedMascot] / [StatsRepository.setMascotLessonCounter]
+// / [StatsRepository.addCoins]; [MascotService.equip] is the only thing
+// that ever calls [StatsRepository.setEquippedMascot].
 //
-// The random-reward pool additionally excludes any seasonal mascot outside
+// The mascot-reward pool additionally excludes any seasonal mascot outside
 // its fixed window (issue #063) — equipping an already-owned seasonal
 // mascot stays unrestricted year-round, so [equip] itself needs no change.
 //
-// v#064: the pool is every time-eligible catalog entry regardless of
+// v#064: the mascot pool is every time-eligible catalog entry regardless of
 // ownership — duplicates are possible and increment `OwnedMascots.count`
-// instead of being filtered out, so the lootbox always has a mascot
-// available (barring the defensive zero-time-eligible-entries edge case).
+// instead of being filtered out.
+//
+// v#065: once triggered, a 50/50 coin flip decides between #064's mascot
+// pool and a weighted coin amount (`drawCoinAmount`) — never both in the
+// same trigger.
 
 import 'dart:math';
 
@@ -24,39 +27,44 @@ import '../data/clock.dart';
 import '../data/mascot_repository.dart';
 import '../data/providers.dart';
 import '../data/stats_repository.dart';
+import '../mascot/lootbox_reward.dart';
 import '../mascot/mascot_catalog.dart';
 
-/// Sole writer of the mascot-collection columns/table (via
+/// Sole writer of the mascot-collection columns/table and `coinsTotal` (via
 /// [StatsRepository.setEquippedMascot]/[StatsRepository.setMascotLessonCounter]/
-/// [MascotRepository.addOwnedMascot]).
+/// [MascotRepository.addOwnedMascot]/[StatsRepository.addCoins]).
 class MascotService {
   final StatsRepository _statsRepo;
   final MascotRepository _mascotRepo;
   final Clock _clock;
   final Future<List<MascotEntry>> Function() _loadCatalog;
+  final Random Function() _randomFactory;
 
   MascotService(
     this._statsRepo,
     this._mascotRepo, [
     Clock? clock,
     Future<List<MascotEntry>> Function()? loadCatalog,
+    Random Function()? randomFactory,
   ]) : _clock = clock ?? SystemClock(),
-       _loadCatalog = loadCatalog ?? MascotCatalog.load;
+       _loadCatalog = loadCatalog ?? MascotCatalog.load,
+       _randomFactory = randomFactory ?? Random.new;
 
   /// Called from the same lesson-completion call site that feeds #010's XP
   /// and #011's streak writes (`LessonController._completeLesson`).
   ///
   /// Bumps the day-scoped `lessonsCompletedToday` counter, resetting it to 1
   /// on a new local day (mirroring `todayXp`'s own day-scoped reset). On the
-  /// count reaching exactly 2, picks a catalog entry uniformly at random
-  /// from every time-eligible mascot (owned or not — issue #064) and
-  /// persists the win.
+  /// count reaching exactly 2, flips a coin (issue #065): on heads, picks a
+  /// catalog entry uniformly at random from every time-eligible mascot
+  /// (owned or not — issue #064) and persists the win; on tails, draws a
+  /// weighted coin amount and adds it to `coinsTotal`.
   ///
   /// Also returns the profile's `equippedMascotId` as of this same
   /// [StatsRepository.getProfile] read, so the caller (which needs it for
   /// the result screen's celebration either way) doesn't have to re-query
   /// the same row a second time right after this call returns.
-  Future<({MascotEntry? wonMascot, String equippedMascotId})>
+  Future<({LootboxReward? reward, String equippedMascotId})>
   recordLessonCompletion({Random? random}) async {
     final profile = await _statsRepo.getProfile();
     final equippedMascotId = profile.equippedMascotId;
@@ -65,7 +73,15 @@ class MascotService {
     final newCount = sameDay ? profile.lessonsCompletedToday + 1 : 1;
     await _statsRepo.setMascotLessonCounter(count: newCount, day: today);
     if (newCount != 2) {
-      return (wonMascot: null, equippedMascotId: equippedMascotId);
+      return (reward: null, equippedMascotId: equippedMascotId);
+    }
+
+    final rng = random ?? _randomFactory();
+    // 50/50 coin flip (issue #065): true wins coins, false wins a mascot.
+    if (rng.nextBool()) {
+      final amount = drawCoinAmount(rng);
+      await _statsRepo.addCoins(amount);
+      return (reward: CoinsReward(amount), equippedMascotId: equippedMascotId);
     }
 
     final catalog = await _loadCatalog();
@@ -74,12 +90,12 @@ class MascotService {
         .where((entry) => isMascotInSeason(entry.id, now))
         .toList();
     if (pool.isEmpty) {
-      return (wonMascot: null, equippedMascotId: equippedMascotId);
+      return (reward: null, equippedMascotId: equippedMascotId);
     }
 
-    final reward = pool[(random ?? Random()).nextInt(pool.length)];
-    await _mascotRepo.addOwnedMascot(reward.id, now: _clock.now());
-    return (wonMascot: reward, equippedMascotId: equippedMascotId);
+    final wonEntry = pool[rng.nextInt(pool.length)];
+    await _mascotRepo.addOwnedMascot(wonEntry.id, now: _clock.now());
+    return (reward: MascotReward(wonEntry), equippedMascotId: equippedMascotId);
   }
 
   /// Equips [mascotId] as the one shown on Home/lesson result/onboarding/
@@ -103,11 +119,20 @@ final mascotRepositoryProvider = Provider<MascotRepository>((ref) {
 final mascotCatalogLoaderProvider =
     Provider<Future<List<MascotEntry>> Function()>((ref) => MascotCatalog.load);
 
+/// Seam for [MascotService]'s default `Random` (issue #065's coin flip +
+/// #064's mascot pick) — real callers (`LessonController`) never pass a
+/// `random` to [MascotService.recordLessonCompletion], so without this
+/// override point, a widget/integration test driving the real provider
+/// stack would get a genuinely random (and thus flaky-to-assert-on)
+/// outcome. Mirrors [mascotCatalogLoaderProvider]'s override shape.
+final mascotRandomProvider = Provider<Random Function()>((ref) => Random.new);
+
 final mascotServiceProvider = Provider<MascotService>((ref) {
   return MascotService(
     ref.watch(statsRepositoryProvider),
     ref.watch(mascotRepositoryProvider),
     ref.watch(systemClockProvider),
     ref.watch(mascotCatalogLoaderProvider),
+    ref.watch(mascotRandomProvider),
   );
 });

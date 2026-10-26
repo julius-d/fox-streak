@@ -1,6 +1,6 @@
 // Unit tests for MascotService's lootbox-trigger algorithm + equip wiring
 // (issue #059; #064 removed the owned-mascot pool filter, making duplicate
-// draws possible).
+// draws possible; #065 added the 50/50 coin-flip alternative outcome).
 
 import 'dart:math';
 
@@ -9,10 +9,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fox_streak_app/src/data/database.dart';
 import 'package:fox_streak_app/src/data/mascot_repository.dart';
 import 'package:fox_streak_app/src/data/stats_repository.dart';
+import 'package:fox_streak_app/src/mascot/lootbox_reward.dart';
 import 'package:fox_streak_app/src/mascot/mascot_catalog.dart';
 import 'package:fox_streak_app/src/stats/mascot_service.dart';
 
 import '../data/test_helpers.dart';
+
+/// Unwraps a [MascotReward]'s entry, or null for any other outcome (no
+/// reward or a [CoinsReward]) — lets pre-#065 assertions written against
+/// the old `wonMascot` field keep reading as "the won mascot, if any".
+MascotEntry? _wonMascot(LootboxReward? reward) =>
+    reward is MascotReward ? reward.entry : null;
 
 /// A fixed, non-random "random" for deterministic reward selection in tests
 /// — always picks the first candidate `nextInt` is asked to range over.
@@ -42,6 +49,27 @@ class _FixedIndexRandom implements Random {
 
   @override
   bool nextBool() => false;
+}
+
+/// A fully scripted "random": [boolValue] answers every `nextBool()` call
+/// (issue #065's coin-flip branch pick) and [intValue] answers every
+/// `nextInt(max)` call regardless of [max] (the mascot-pool index or the
+/// coin-amount cumulative-weight draw) — lets a test force both the branch
+/// and its sub-pick deterministically.
+class _ScriptedRandom implements Random {
+  _ScriptedRandom({this.boolValue = false, this.intValue = 0});
+
+  final bool boolValue;
+  final int intValue;
+
+  @override
+  bool nextBool() => boolValue;
+
+  @override
+  int nextInt(int max) => intValue;
+
+  @override
+  double nextDouble() => 0;
 }
 
 final List<MascotEntry> _threeMascotCatalog = [
@@ -103,7 +131,7 @@ void main() {
       final update = await service.recordLessonCompletion(
         random: _ZeroRandom(),
       );
-      expect(update.wonMascot, isNull);
+      expect(_wonMascot(update.reward), isNull);
       expect(update.equippedMascotId, kDefaultMascotId);
 
       final profile = await statsRepo.getProfile();
@@ -119,7 +147,7 @@ void main() {
         random: _FixedIndexRandom(1), // _threeMascotCatalog[1] == 'b'
       );
 
-      final reward = update.wonMascot;
+      final reward = _wonMascot(update.reward);
       expect(reward, isNotNull);
       expect(reward!.id, 'b');
 
@@ -141,7 +169,7 @@ void main() {
           random: _ZeroRandom(),
         );
 
-        expect(third.wonMascot, isNull);
+        expect(_wonMascot(third.reward), isNull);
         final profile = await statsRepo.getProfile();
         expect(profile.lessonsCompletedToday, 3);
       },
@@ -155,22 +183,24 @@ void main() {
 
       clock.setNow(kTestToday.add(const Duration(days: 1)));
       final firstOfNewDay = await service.recordLessonCompletion();
-      expect(firstOfNewDay.wonMascot, isNull);
+      expect(_wonMascot(firstOfNewDay.reward), isNull);
       expect((await statsRepo.getProfile()).lessonsCompletedToday, 1);
 
       final secondOfNewDay = await service.recordLessonCompletion(
         random: _ZeroRandom(),
       );
-      expect(secondOfNewDay.wonMascot, isNotNull);
+      expect(_wonMascot(secondOfNewDay.reward), isNotNull);
     });
 
     test('a fully-owned catalog still produces a wonMascot, since #064 '
         'removed the unowned-only pool filter', () async {
       final service = buildService(catalog: [MascotCatalog.defaultEntry]);
       await service.recordLessonCompletion();
-      final update = await service.recordLessonCompletion();
+      final update = await service.recordLessonCompletion(
+        random: _ScriptedRandom(boolValue: false, intValue: 0),
+      );
 
-      expect(update.wonMascot?.id, kDefaultMascotId);
+      expect(_wonMascot(update.reward)?.id, kDefaultMascotId);
       expect((await statsRepo.getProfile()).lessonsCompletedToday, 2);
     });
 
@@ -185,7 +215,7 @@ void main() {
         random: _FixedIndexRandom(1), // _threeMascotCatalog[1] == 'b'
       );
 
-      expect(update.wonMascot!.id, 'b');
+      expect(_wonMascot(update.reward)!.id, 'b');
       final row = await (db.select(
         db.ownedMascots,
       )..where((t) => t.mascotId.equals('b'))).getSingle();
@@ -199,6 +229,79 @@ void main() {
       await service.equip('b');
       final update = await service.recordLessonCompletion();
       expect(update.equippedMascotId, 'b');
+    });
+  });
+
+  group('recordLessonCompletion coin reward (#065)', () {
+    test('the coin-flip branch (nextBool()==true) wins coins, never a '
+        'mascot, and never touches the mascot pool', () async {
+      final service = buildService(catalog: const []);
+      await service.recordLessonCompletion();
+      final update = await service.recordLessonCompletion(
+        random: _ScriptedRandom(boolValue: true, intValue: 0),
+      );
+
+      expect(update.reward, isA<CoinsReward>());
+      expect((update.reward as CoinsReward).amount, 5);
+    });
+
+    test('the mascot-flip branch (nextBool()==false) wins a mascot, never '
+        'coins (#064 unchanged)', () async {
+      final service = buildService();
+      await service.recordLessonCompletion();
+      final update = await service.recordLessonCompletion(
+        random: _ScriptedRandom(boolValue: false, intValue: 0),
+      );
+
+      expect(update.reward, isA<MascotReward>());
+    });
+
+    test('coinsTotal accumulates across repeated coin wins', () async {
+      final service = buildService();
+      await service.recordLessonCompletion();
+      await service.recordLessonCompletion(
+        random: _ScriptedRandom(boolValue: true, intValue: 0), // -> 5 coins
+      );
+      expect((await statsRepo.getProfile()).coinsTotal, 5);
+
+      clock.setNow(kTestToday.add(const Duration(days: 1)));
+      await service.recordLessonCompletion();
+      await service.recordLessonCompletion(
+        random: _ScriptedRandom(
+          boolValue: true,
+          intValue: 1049,
+        ), // -> 100 coins
+      );
+      expect((await statsRepo.getProfile()).coinsTotal, 105);
+    });
+  });
+
+  group('drawCoinAmount (#065)', () {
+    test('the cumulative-weight table: boundary draws land on the right '
+        'amount', () {
+      // weight(5) == 100, so draws 0..99 land on 5.
+      expect(drawCoinAmount(_ScriptedRandom(intValue: 0)), 5);
+      expect(drawCoinAmount(_ScriptedRandom(intValue: 99)), 5);
+      // weight(10) == 95, the next bucket: draws 100..194 land on 10.
+      expect(drawCoinAmount(_ScriptedRandom(intValue: 100)), 10);
+      // weight(95) == 10, the second-to-last bucket: draws 1035..1044.
+      expect(drawCoinAmount(_ScriptedRandom(intValue: 1044)), 95);
+      // weight(100) == 5, the last bucket: draws 1045..1049.
+      expect(drawCoinAmount(_ScriptedRandom(intValue: 1045)), 100);
+      expect(drawCoinAmount(_ScriptedRandom(intValue: 1049)), 100);
+    });
+
+    test('distribution sanity: 5 is drawn more often than 100 over many '
+        'seeded trials, matching their 20x weight ratio', () {
+      final random = Random(42);
+      var fiveCount = 0;
+      var hundredCount = 0;
+      for (var i = 0; i < 5000; i++) {
+        final amount = drawCoinAmount(random);
+        if (amount == 5) fiveCount++;
+        if (amount == 100) hundredCount++;
+      }
+      expect(fiveCount, greaterThan(hundredCount));
     });
   });
 
@@ -222,7 +325,7 @@ void main() {
       final update = await service.recordLessonCompletion(
         random: _ZeroRandom(),
       );
-      return update.wonMascot;
+      return _wonMascot(update.reward);
     }
 
     test('in-window: the snowman is eligible and can be won (pool is '
@@ -270,7 +373,7 @@ void main() {
       final update = await service.recordLessonCompletion(
         random: _ZeroRandom(),
       );
-      expect(update.wonMascot, isNull);
+      expect(_wonMascot(update.reward), isNull);
       expect((await statsRepo.getProfile()).lessonsCompletedToday, 2);
     });
   });
@@ -296,7 +399,7 @@ void main() {
       final update = await service.recordLessonCompletion(
         random: _ZeroRandom(),
       );
-      return update.wonMascot;
+      return _wonMascot(update.reward);
     }
 
     test('boundary: Oct 24 excludes the spider', () async {

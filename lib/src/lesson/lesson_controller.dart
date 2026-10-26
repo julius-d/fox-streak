@@ -13,7 +13,7 @@ import '../data/clock.dart';
 import '../data/database.dart';
 import '../data/providers.dart';
 import '../data/stats_repository.dart';
-import '../mascot/mascot_catalog.dart';
+import '../mascot/lootbox_reward.dart';
 import '../stats/mascot_service.dart';
 import '../stats/streak_service.dart';
 import '../stats/xp_service.dart';
@@ -42,10 +42,11 @@ import 'exercise_card.dart';
 ///   the level-up celebration without a second database query.
 /// [streakCountAfterLesson] is the `streak_count` returned by #011's streak
 ///   write, handed to the result screen the same way for `StreakBadge`.
-/// [wonMascot] is the catalog entry #059's `MascotService` returned for
-///   this lesson completion (the twice-a-day lootbox trigger), or null if
-///   no lootbox should be shown — handed to `LessonScreen` so it can insert
-///   the lootbox reveal before continuing to the caller's destination.
+/// [lootboxReward] is what #059's `MascotService` returned for this lesson
+///   completion (the twice-a-day lootbox trigger) — a mascot, a coin
+///   amount (issue #065's 50/50 coin flip), or null if no lootbox should be
+///   shown — handed to `LessonScreen` so it can insert the lootbox reveal
+///   before continuing to the caller's destination.
 /// [equippedMascotId] is the profile's `equippedMascotId` at completion
 ///   time, snapshotted the same one-shot way as `xpTotalAfterLesson` —
 ///   the result screen resolves it against `mascotCatalogProvider` (no
@@ -74,7 +75,7 @@ class LessonState {
   final int? xpTotalBeforeLesson;
   final int? xpTotalAfterLesson;
   final int? streakCountAfterLesson;
-  final MascotEntry? wonMascot;
+  final LootboxReward? lootboxReward;
   final String? equippedMascotId;
   final bool busy;
 
@@ -91,7 +92,7 @@ class LessonState {
     this.xpTotalBeforeLesson,
     this.xpTotalAfterLesson,
     this.streakCountAfterLesson,
-    this.wonMascot,
+    this.lootboxReward,
     this.equippedMascotId,
     this.busy = false,
   });
@@ -109,7 +110,7 @@ class LessonState {
     int? xpTotalBeforeLesson,
     int? xpTotalAfterLesson,
     int? streakCountAfterLesson,
-    MascotEntry? wonMascot,
+    LootboxReward? lootboxReward,
     String? equippedMascotId,
     bool? busy,
     bool clearDraft = false,
@@ -131,7 +132,7 @@ class LessonState {
       xpTotalAfterLesson: xpTotalAfterLesson ?? this.xpTotalAfterLesson,
       streakCountAfterLesson:
           streakCountAfterLesson ?? this.streakCountAfterLesson,
-      wonMascot: wonMascot ?? this.wonMascot,
+      lootboxReward: lootboxReward ?? this.lootboxReward,
       equippedMascotId: equippedMascotId ?? this.equippedMascotId,
       busy: busy ?? this.busy,
     );
@@ -174,7 +175,7 @@ class LessonState {
           other.xpTotalBeforeLesson == xpTotalBeforeLesson &&
           other.xpTotalAfterLesson == xpTotalAfterLesson &&
           other.streakCountAfterLesson == streakCountAfterLesson &&
-          other.wonMascot == wonMascot &&
+          other.lootboxReward == lootboxReward &&
           other.equippedMascotId == equippedMascotId &&
           other.busy == busy);
 
@@ -192,7 +193,7 @@ class LessonState {
     xpTotalBeforeLesson,
     streakCountAfterLesson,
     xpTotalAfterLesson,
-    wonMascot,
+    lootboxReward,
     equippedMascotId,
     busy,
   );
@@ -421,7 +422,7 @@ class LessonController extends Notifier<LessonState> {
   /// atomic step.
   ///
   /// Deliberately does *not* flip `phase` to `done` until all three writes
-  /// (and their resulting `xpTotal`/`streakCount`/`wonMascot`) are known:
+  /// (and their resulting `xpTotal`/`streakCount`/`lootboxReward`) are known:
   /// setting `phase` first and the `*AfterLesson` fields only after a later
   /// `await` would let the result screen render in between on transient
   /// pre-write values (e.g. "Level 1" at 0 XP for a learner who is actually
@@ -462,8 +463,8 @@ class LessonController extends Notifier<LessonState> {
         : (await _streakService.recordActivity()).streakCount;
     // One-shot read (not a `watch()` stream) for the result screen's
     // mascot celebration — see [LessonState.equippedMascotId]. Returned
-    // alongside wonMascot from the same `getProfile()` call rather than
-    // re-querying the row a second time here.
+    // alongside lootboxReward from the same `getProfile()` call rather
+    // than re-querying the row a second time here.
     final mascotUpdate = result == null
         ? null
         : await _mascotService.recordLessonCompletion();
@@ -475,7 +476,7 @@ class LessonController extends Notifier<LessonState> {
       xpTotalBeforeLesson: xpApplication?.xpTotalBefore,
       xpTotalAfterLesson: xpApplication?.xpTotal,
       streakCountAfterLesson: streakCount,
-      wonMascot: mascotUpdate?.wonMascot,
+      lootboxReward: mascotUpdate?.reward,
       equippedMascotId: mascotUpdate?.equippedMascotId,
     );
   }

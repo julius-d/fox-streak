@@ -1,26 +1,33 @@
 // Daily lootbox reveal screen (issue #059; opening animation + asset-folder
-// reorg by #062).
+// reorg by #062; coin-reward outcome by #065).
 //
-// Shown once, after the lesson result screen, on the day the 2nd lesson
-// completion triggers it (and only while at least one mascot remains
-// unowned) — see `LessonController._completeLesson`/`LessonScreen`. The
-// reward itself was already picked + persisted as owned by
-// `MascotService.recordLessonCompletion`; this screen is purely the
-// tap-to-open reveal moment. Pops itself on Continue, so callers just
-// `await Navigator.push(...)` it like `FoxConfirmDialog`.
+// Shown once, after the lesson result screen, on the 2nd lesson completion
+// of the local day — see `LessonController._completeLesson`/`LessonScreen`.
+// The reward itself was already picked + persisted (as an owned mascot or
+// added coins) by `MascotService.recordLessonCompletion`; this screen is
+// purely the tap-to-open reveal moment, switching on [LootboxReward] only
+// for what's shown *after* the box finishes opening — the opening phase
+// and its Lottie are the same for both outcomes. Pops itself on Continue,
+// so callers just `await Navigator.push(...)` it like `FoxConfirmDialog`.
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../theme/fox_streak_theme.dart';
 import '../widgets/widgets.dart';
-import 'mascot_catalog.dart';
+import 'lootbox_reward.dart';
 
 /// The lootbox-opening Lottie: a one-off effect animation, not a
 /// collectible, so it lives in `other/` rather than `MascotCatalog`'s
 /// scanned `mascot/` directory (#062).
 const String kLootboxOpenAnimationAsset =
     'assets/noto-emoji/other/emoji_u1fa8e_lottie.json';
+
+/// The coin-reveal Lottie for a [CoinsReward] outcome (issue #065) — same
+/// `other/`-not-`mascot/` placement and rationale as
+/// [kLootboxOpenAnimationAsset]: a one-off effect, not a collectible.
+const String kLootboxCoinRevealAsset =
+    'assets/noto-emoji/other/emoji_u1fa99_lottie.json';
 
 /// The three states a lootbox moves through, in order, never backwards:
 /// frozen on frame 0 and tappable; tapped and playing once (no longer
@@ -29,7 +36,7 @@ enum _LootboxPhase { closed, opening, revealed }
 
 /// Tap-to-open lootbox reveal for a single already-won [reward].
 class LootboxScreen extends StatefulWidget {
-  final MascotEntry reward;
+  final LootboxReward reward;
   final AppLocalizations l10n;
 
   const LootboxScreen({super.key, required this.reward, required this.l10n});
@@ -91,6 +98,22 @@ class _LootboxScreenState extends State<LootboxScreen>
     }
   }
 
+  String _revealedTitle(AppLocalizations l10n) => switch (widget.reward) {
+    MascotReward() => l10n.lootboxRevealedTitle,
+    CoinsReward(amount: final amount) => l10n.lootboxCoinsRevealedTitle(amount),
+  };
+
+  Widget _revealedContent(AppLocalizations l10n) => switch (widget.reward) {
+    MascotReward(entry: final entry) => FoxMascot(
+      mascot: entry,
+      size: 160,
+      semanticLabel: l10n.mascotSemanticLabel(entry.emoji),
+    ),
+    CoinsReward(amount: final amount) => _CoinReveal(
+      semanticLabel: l10n.coinsSemanticLabel(amount),
+    ),
+  };
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = widget.l10n;
@@ -105,21 +128,13 @@ class _LootboxScreenState extends State<LootboxScreen>
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
                 Text(
-                  revealed ? l10n.lootboxRevealedTitle : l10n.lootboxHeading,
+                  revealed ? _revealedTitle(l10n) : l10n.lootboxHeading,
                   style: Theme.of(context).textTheme.headlineSmall,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: FoxSpacing.xl),
                 if (revealed)
-                  FoxCelebration(
-                    child: FoxMascot(
-                      mascot: widget.reward,
-                      size: 160,
-                      semanticLabel: l10n.mascotSemanticLabel(
-                        widget.reward.emoji,
-                      ),
-                    ),
-                  )
+                  FoxCelebration(child: _revealedContent(l10n))
                 else
                   _LootboxAnimation(
                     controller: _animationController,
@@ -197,6 +212,36 @@ class _LootboxAnimation extends StatelessWidget {
             minHeight: FoxButtonMetrics.minSize,
           ),
           child: lottie,
+        ),
+      ),
+    );
+  }
+}
+
+/// The #065 coin-reveal visual: [kLootboxCoinRevealAsset] plus an a11y
+/// label, mirroring `FoxMascot`'s Lottie-plus-semantic-label shape for the
+/// mascot case. Not tappable, so — unlike [_LootboxAnimation] — there's no
+/// interaction/gating to model; kept as a one-off here rather than
+/// promoted to the kit, same reasoning as `_MascotTile` in
+/// `mascot_collection_screen.dart`.
+class _CoinReveal extends StatelessWidget {
+  final String semanticLabel;
+
+  const _CoinReveal({required this.semanticLabel});
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: semanticLabel,
+      image: true,
+      child: SizedBox(
+        key: const Key('lootboxCoinReveal'),
+        width: 160,
+        height: 160,
+        child: Lottie.asset(
+          kLootboxCoinRevealAsset,
+          repeat: false,
+          fit: BoxFit.contain,
         ),
       ),
     );

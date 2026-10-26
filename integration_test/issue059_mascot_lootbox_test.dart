@@ -18,6 +18,12 @@
 // occasionally — and flakily — hit the already-owned default fox instead.
 // A fixture pool with no default entry guarantees a win is always a
 // newly-owned mascot, which is what this flow is actually testing.
+//
+// Also forces #065's 50/50 coin-flip to the mascot branch via
+// `mascotRandom`, since this flow specifically asserts on a won *mascot* —
+// without that, half of all runs would win coins instead and fail.
+
+import 'dart:math';
 
 import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
@@ -36,6 +42,22 @@ final List<MascotEntry> _fixtureCatalog = [
   mascotEntryForId('emoji_u1f989_lottie'), // owl
   mascotEntryForId('emoji_u1f996_lottie'), // sauropod
 ];
+
+/// Forces #065's coin-flip to the mascot branch (`nextBool()` always
+/// `false`), while leaving the mascot-pool pick itself genuinely random —
+/// this flow only cares that *a* mascot was won, not which one.
+class _ForcedMascotRandom implements Random {
+  final Random _real = Random();
+
+  @override
+  bool nextBool() => false;
+
+  @override
+  int nextInt(int max) => _real.nextInt(max);
+
+  @override
+  double nextDouble() => _real.nextDouble();
+}
 
 Future<({int setId, int itemId})> _insertSingleItemSet(AppDatabase db) async {
   final setId = await db
@@ -110,6 +132,7 @@ void main() {
         db: db,
         clock: clock,
         mascotCatalogLoader: () async => _fixtureCatalog,
+        mascotRandom: () => _ForcedMascotRandom(),
       );
       expect(find.byKey(const Key('homeScreen')), findsOneWidget);
       expect(await mascotRepo.getOwnedMascotIds(), [kDefaultMascotId]);

@@ -1,6 +1,6 @@
 # Issue 065: Lootbox can also award coins
 
-Status: open | Priority: P3 | Type: feature | Refined-at: 2026-10-18
+Status: done | Priority: P3 | Type: feature | Refined-at: 2026-10-18 | Completed-at: 2026-10-26
 
 ## Goal
 
@@ -154,3 +154,25 @@ dart format --output=none --set-exit-if-changed .
 dart fix --dry-run
 flutter test
 ```
+
+## Summary
+
+- `LootboxReward` (sealed: `MascotReward` | `CoinsReward`) replaces the old
+  nullable `MascotEntry?` outcome; `MascotService.recordLessonCompletion`
+  flips `Random.nextBool()` first, then either #064's mascot draw or
+  `drawCoinAmount` (weighted cumulative draw over `kLootboxCoinAmounts`,
+  `lib/src/mascot/lootbox_reward.dart`).
+- Schema v9 -> v10: `profileStats.coinsTotal` added (default 0), written
+  only via new `StatsRepository.addCoins`.
+- `LootboxScreen` switches on the reward type for the revealed-state
+  heading/visual; opening phase unchanged. New arb keys
+  `lootboxCoinsRevealedTitle`/`coinsSemanticLabel` (DE+EN).
+- Added `mascotRandomProvider` (mirrors `mascotCatalogLoaderProvider`) so
+  integration tests can force a deterministic coin-flip outcome — needed
+  since `LessonController` never passes an explicit `Random` itself.
+
+## Code review
+
+- Reviewed with the `code-review` skill (medium effort) after implementation.
+  No findings — reviewer traced every changed call site (recordLessonCompletion,
+  addCoins, drawCoinAmount, LootboxScreen's reveal switch, the v9->v10 migration) and confirmed the weighted-draw table, asset placement, and test coverage.

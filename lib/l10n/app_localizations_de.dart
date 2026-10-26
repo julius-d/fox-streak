@@ -612,4 +612,14 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get lootboxRevealedTitle => 'Du hast ein neues Maskottchen bekommen!';
+
+  @override
+  String lootboxCoinsRevealedTitle(int amount) {
+    return 'Du hast $amount Münzen gewonnen!';
+  }
+
+  @override
+  String coinsSemanticLabel(int amount) {
+    return '$amount Münzen';
+  }
 }

@@ -15,6 +15,7 @@ import 'package:fox_streak_app/src/data/database.dart';
 import 'package:fox_streak_app/src/data/mascot_repository.dart';
 import 'package:fox_streak_app/src/data/providers.dart';
 import 'package:fox_streak_app/src/data/stats_repository.dart';
+import 'package:fox_streak_app/src/mascot/lootbox_reward.dart';
 import 'package:fox_streak_app/src/mascot/lootbox_screen.dart';
 import 'package:fox_streak_app/src/mascot/mascot_catalog.dart';
 import 'package:fox_streak_app/src/mascot/mascot_collection_screen.dart';
@@ -41,6 +42,8 @@ const _reward = MascotEntry(
   assetPath: 'assets/noto-emoji/mascot/emoji_u1f980_lottie.json',
   emoji: '🦀',
 );
+const _mascotReward = MascotReward(_reward);
+const _coinsReward = CoinsReward(40);
 
 Future<AppDatabase> pumpCollectionScreen(
   WidgetTester tester, {
@@ -71,7 +74,10 @@ void main() {
       (tester) async {
         await tester.pumpWidget(
           MaterialApp(
-            home: LootboxScreen(reward: _reward, l10n: AppLocalizationsEn()),
+            home: LootboxScreen(
+              reward: _mascotReward,
+              l10n: AppLocalizationsEn(),
+            ),
           ),
         );
         await tester.pump();
@@ -114,7 +120,7 @@ void main() {
                   onPressed: () => Navigator.of(context).push<void>(
                     MaterialPageRoute<void>(
                       builder: (_) => LootboxScreen(
-                        reward: _reward,
+                        reward: _mascotReward,
                         l10n: AppLocalizationsEn(),
                       ),
                     ),
@@ -136,6 +142,25 @@ void main() {
 
       expect(find.byKey(const Key('lootboxScreen')), findsNothing);
       expect(find.text('open'), findsOneWidget);
+    });
+
+    testWidgets('a coins reward reveals the coin Lottie + amount, not a mascot '
+        '(issue #065)', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: LootboxScreen(reward: _coinsReward, l10n: AppLocalizationsEn()),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byKey(const Key('lootboxCoinReveal')), findsNothing);
+      await tester.tap(find.byKey(const Key('lootboxOpenButton')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('lootboxCoinReveal')), findsOneWidget);
+      expect(find.byKey(Key('foxMascot-${_reward.id}')), findsNothing);
+      expect(find.text('You won 40 coins!'), findsOneWidget);
+      expect(find.byKey(const Key('lootboxContinueButton')), findsOneWidget);
     });
   });
 

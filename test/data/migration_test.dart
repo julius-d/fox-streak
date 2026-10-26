@@ -1,6 +1,7 @@
 // Schema v1 -> v2 (issue #026), v2 -> v3 (issue #010), v3 -> v4 (issue
 // #022), v4 -> v5 (issue #012), v5 -> v6 (issue #045), v6 -> v7 (issue
-// #055), v7 -> v8 (issue #059), and v8 -> v9 (issue #064) migration tests.
+// #055), v7 -> v8 (issue #059), v8 -> v9 (issue #064), and v9 -> v10 (issue
+// #065) migration tests.
 //
 // Simulates pre-migration databases on disk, then reopens them with the
 // real (current schemaVersion) `AppDatabase` and asserts `onUpgrade` applied
@@ -308,11 +309,35 @@ Future<void> _createOwnedMascotsPreCount(Migrator m) async {
   ''');
 }
 
+/// Creates the pre-#065 `profile_stats` shape (has #059's mascot columns
+/// but not yet `coins_total`) — the current Dart `ProfileStats` definition
+/// already has `coinsTotal`, so `m.createTable(db.profileStats)` can't be
+/// used for any pre-v10 fixture.
+Future<void> _createProfileStatsPreCoinsTotal(Migrator m) async {
+  await m.database.customStatement('''
+    CREATE TABLE profile_stats (
+      id INTEGER NOT NULL,
+      xp_total INTEGER NOT NULL DEFAULT 0,
+      streak_count INTEGER NOT NULL DEFAULT 0,
+      last_active_day TEXT NULL,
+      daily_goal_xp INTEGER NOT NULL DEFAULT 30,
+      today_xp INTEGER NOT NULL DEFAULT 0,
+      display_name TEXT NULL,
+      has_onboarded INTEGER NOT NULL DEFAULT 0,
+      equipped_mascot_id TEXT NOT NULL DEFAULT 'emoji_u1f98a_lottie',
+      lessons_completed_today INTEGER NOT NULL DEFAULT 0,
+      lessons_completed_day TEXT NULL,
+      PRIMARY KEY (id)
+    )
+  ''');
+}
+
 /// A schemaVersion-8 view of [AppDatabase], used only to seed a pre-#064
 /// file at the exact version #064's migration upgrades from: every table
-/// is already in its current shape (v9 didn't touch `profile_stats`)
-/// except `owned_mascots` (still has `acquired_at`, no `count`, see
-/// [_createOwnedMascotsPreCount]).
+/// is already in its current shape except `owned_mascots` (still has
+/// `acquired_at`, no `count`, see [_createOwnedMascotsPreCount]) and
+/// `profile_stats` (still lacks #065's `coins_total`, see
+/// [_createProfileStatsPreCoinsTotal]).
 class _LegacyV8Database extends AppDatabase {
   _LegacyV8Database(QueryExecutor executor) : super.forTesting(executor); // ignore: use_super_parameters — must forward to the named forTesting() ctor, not the default unnamed one
 
@@ -326,9 +351,33 @@ class _LegacyV8Database extends AppDatabase {
       await m.createTable(db.questionSets);
       await m.createTable(db.items);
       await m.createTable(db.attempts);
-      await m.createTable(db.profileStats);
+      await _createProfileStatsPreCoinsTotal(m);
       await m.createTable(db.appSettings);
       await _createOwnedMascotsPreCount(m);
+    },
+  );
+}
+
+/// A schemaVersion-9 view of [AppDatabase], used only to seed a pre-#065
+/// file at the exact version #065's migration upgrades from: `owned_mascots`
+/// is already in its current (post-#064) shape, but `profile_stats` still
+/// lacks `coins_total` (see [_createProfileStatsPreCoinsTotal]).
+class _LegacyV9Database extends AppDatabase {
+  _LegacyV9Database(QueryExecutor executor) : super.forTesting(executor); // ignore: use_super_parameters — must forward to the named forTesting() ctor, not the default unnamed one
+
+  @override
+  int get schemaVersion => 9;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) async {
+      final db = m.database as AppDatabase;
+      await m.createTable(db.questionSets);
+      await m.createTable(db.items);
+      await m.createTable(db.attempts);
+      await _createProfileStatsPreCoinsTotal(m);
+      await m.createTable(db.appSettings);
+      await m.createTable(db.ownedMascots);
     },
   );
 }
@@ -724,6 +773,46 @@ void main() {
       containsAll(<String>['mascot_id', 'first_acquired_at', 'count']),
     );
     expect(columnNames, isNot(contains('acquired_at')));
+  });
+
+  test('onUpgrade (v9 -> v10) adds coinsTotal defaulting to 0, preserving '
+      'existing xpTotal/streakCount/todayXp', () async {
+    final dir = Directory.systemTemp.createTempSync('foxstreak_migration_v10');
+    final file = File('${dir.path}/test.sqlite');
+    addTearDown(() {
+      if (dir.existsSync()) dir.deleteSync(recursive: true);
+    });
+
+    // 1. Seed a v9 database directly on disk (profile_stats has no
+    // coins_total column yet) with a pre-existing profile row.
+    final legacyDb = _LegacyV9Database(NativeDatabase(file));
+    await legacyDb
+        .into(legacyDb.profileStats)
+        .insert(
+          ProfileStatsCompanion.insert(
+            id: const Value(0),
+            xpTotal: const Value(42),
+            streakCount: const Value(3),
+            lastActiveDay: const Value('2026-10-10'),
+            todayXp: const Value(12),
+          ),
+        );
+    await legacyDb.close();
+
+    // 2. Reopen the SAME file with the real (current schemaVersion)
+    // database; drift sees user_version=9 < schemaVersion=10 and runs
+    // onUpgrade's `addColumn`.
+    final upgradedDb = AppDatabase.forTesting(NativeDatabase(file));
+    addTearDown(upgradedDb.close);
+
+    final profile = await (upgradedDb.select(
+      upgradedDb.profileStats,
+    )..where((t) => t.id.equals(0))).getSingle();
+    expect(profile.coinsTotal, 0);
+    expect(profile.xpTotal, 42);
+    expect(profile.streakCount, 3);
+    expect(profile.todayXp, 12);
+    expect(profile.lastActiveDay, '2026-10-10');
   });
 }
 

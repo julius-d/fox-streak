@@ -26,6 +26,8 @@ const int kDefaultDailyGoalXp = 100;
 /// - `equippedMascotId`/`lessonsCompletedToday`/`lessonsCompletedDay` are
 ///   written exclusively by #059 `MascotService`, via
 ///   [setEquippedMascot]/[setMascotLessonCounter].
+/// - `coinsTotal` is written exclusively by #065 `MascotService`'s
+///   coin-reward branch, via [addCoins].
 class StatsRepository {
   final AppDatabase _db;
   final Clock _clock;
@@ -55,6 +57,7 @@ class StatsRepository {
             equippedMascotId: Value(kDefaultMascotId),
             lessonsCompletedToday: Value(0),
             lessonsCompletedDay: Value(null),
+            coinsTotal: Value(0),
           ),
         );
     return const ProfileStat(
@@ -69,6 +72,7 @@ class StatsRepository {
       equippedMascotId: kDefaultMascotId,
       lessonsCompletedToday: 0,
       lessonsCompletedDay: null,
+      coinsTotal: 0,
     );
   }
 
@@ -90,6 +94,7 @@ class StatsRepository {
             equippedMascotId: kDefaultMascotId,
             lessonsCompletedToday: 0,
             lessonsCompletedDay: null,
+            coinsTotal: 0,
           ),
     );
   }
@@ -193,6 +198,18 @@ class StatsRepository {
         lessonsCompletedToday: Value(count),
         lessonsCompletedDay: Value(day),
       ),
+    );
+  }
+
+  /// Adds [amount] coins to the lifetime `coinsTotal` balance (issue #065).
+  /// Sole caller: #065 `MascotService.recordLessonCompletion`'s coin-reward
+  /// branch.
+  Future<void> addCoins(int amount) async {
+    final profile = await getProfile();
+    await (_db.update(
+      _db.profileStats,
+    )..where((t) => t.id.equals(kProfileId))).write(
+      ProfileStatsCompanion(coinsTotal: Value(profile.coinsTotal + amount)),
     );
   }
 

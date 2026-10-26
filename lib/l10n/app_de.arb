@@ -663,8 +663,22 @@
   },
   "lootboxTapPrompt": "Tippe, um dein neues Maskottchen aufzudecken!",
   "@lootboxRevealedTitle": {
-    "description": "Heading shown once the lootbox has been opened (issue #059)",
+    "description": "Heading shown once the lootbox has been opened with a mascot reward (issue #059)",
     "placeholders": {}
   },
-  "lootboxRevealedTitle": "Du hast ein neues Maskottchen bekommen!"
+  "lootboxRevealedTitle": "Du hast ein neues Maskottchen bekommen!",
+  "@lootboxCoinsRevealedTitle": {
+    "description": "Heading shown once the lootbox has been opened with a coins reward (issue #065)",
+    "placeholders": {
+      "amount": {"type": "int"}
+    }
+  },
+  "lootboxCoinsRevealedTitle": "Du hast {amount} Münzen gewonnen!",
+  "@coinsSemanticLabel": {
+    "description": "A11y label for the coin-reveal animation on the opened lootbox screen (issue #065)",
+    "placeholders": {
+      "amount": {"type": "int"}
+    }
+  },
+  "coinsSemanticLabel": "{amount} Münzen"
 }

@@ -31,6 +31,8 @@
 // (`SharePlatform`/`FilePickerPlatform`) level in the share-round-trip flow
 // only — no real share sheet or file dialog ever opens in these tests.
 
+import 'dart:math';
+
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -86,11 +88,17 @@ Future<void> settle(WidgetTester tester, {int cap = 150}) async {
 /// trigger never touches the real asset bundle (a disconnected `Future`
 /// the widget-test pump loop has no scheduled frame to wait on, which can
 /// leave a dangling platform-channel timer at teardown).
+///
+/// [mascotRandom], if given, overrides #065's `mascotRandomProvider` — for
+/// a flow that asserts on which lootbox outcome was won (mascot vs. coins,
+/// or a specific mascot/pool index), so it isn't left to a genuinely
+/// random (and thus flaky-to-assert-on) real `Random()`.
 Future<void> pumpFoxStreakApp(
   WidgetTester tester, {
   required AppDatabase db,
   required Clock clock,
   Future<List<MascotEntry>> Function()? mascotCatalogLoader,
+  Random Function()? mascotRandom,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -99,6 +107,8 @@ Future<void> pumpFoxStreakApp(
         systemClockProvider.overrideWithValue(clock),
         if (mascotCatalogLoader != null)
           mascotCatalogLoaderProvider.overrideWithValue(mascotCatalogLoader),
+        if (mascotRandom != null)
+          mascotRandomProvider.overrideWithValue(mascotRandom),
       ],
       child: const FoxStreakApp(),
     ),

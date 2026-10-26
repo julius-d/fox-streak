@@ -420,12 +420,12 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
   ) async {
     if (_continuingFromResult) return;
     _continuingFromResult = true;
-    final wonMascot = ref.read(lessonControllerProvider).wonMascot;
-    if (wonMascot != null && !_lootboxShown) {
+    final lootboxReward = ref.read(lessonControllerProvider).lootboxReward;
+    if (lootboxReward != null && !_lootboxShown) {
       _lootboxShown = true;
       await Navigator.of(context).push<void>(
         MaterialPageRoute<void>(
-          builder: (_) => LootboxScreen(reward: wonMascot, l10n: l10n),
+          builder: (_) => LootboxScreen(reward: lootboxReward, l10n: l10n),
         ),
       );
       if (!mounted) return;

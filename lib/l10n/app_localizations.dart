@@ -1146,11 +1146,23 @@ abstract class AppLocalizations {
   /// **'Tap to reveal your new mascot!'**
   String get lootboxTapPrompt;
 
-  /// Heading shown once the lootbox has been opened (issue #059)
+  /// Heading shown once the lootbox has been opened with a mascot reward (issue #059)
   ///
   /// In en, this message translates to:
   /// **'You got a new mascot!'**
   String get lootboxRevealedTitle;
+
+  /// Heading shown once the lootbox has been opened with a coins reward (issue #065)
+  ///
+  /// In en, this message translates to:
+  /// **'You won {amount} coins!'**
+  String lootboxCoinsRevealedTitle(int amount);
+
+  /// A11y label for the coin-reveal animation on the opened lootbox screen (issue #065)
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} coins'**
+  String coinsSemanticLabel(int amount);
 }
 
 class _AppLocalizationsDelegate
