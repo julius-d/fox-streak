@@ -218,6 +218,7 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
               child: FoxProgressBar(
                 key: const Key('lessonProgressBar'),
                 value: state.progress,
+                animated: true,
                 semanticsLabel: l10n.lessonProgressLabel,
                 semanticsValue: '${(state.progress * 100).round()}%',
               ),

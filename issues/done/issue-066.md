@@ -1,6 +1,6 @@
 # Issue 066: Lesson progress bar grows with an animation
 
-Status: open | Priority: P3 | Type: polish | Refined-at: 2026-10-26
+Status: done | Priority: P3 | Type: polish | Refined-at: 2026-10-26 | Completed-at: 2026-10-26
 
 ## Goal
 
@@ -43,29 +43,29 @@ This is scoped to the *lesson* progress bar only. `FoxLevelProgressBar`
 
 ## Acceptance criteria
 
-- [ ] `FoxProgressBar` gains an `animated` bool param, default `false`;
+- [x] `FoxProgressBar` gains an `animated` bool param, default `false`;
   behavior for every existing caller (kit golden test, `kit_test.dart`'s
   clamping test, `FoxLevelProgressBar`'s plain and `_LevelUpFillAnimation`
   branches) is unchanged.
-- [ ] When `animated: true` and `MediaQuery.disableAnimations` is `false`,
+- [x] When `animated: true` and `MediaQuery.disableAnimations` is `false`,
   a `value` change (e.g. 0.2 → 0.3 across a rebuild) animates the fill
   over ~300ms with `Curves.easeInOut` instead of jumping instantly.
-- [ ] When `animated: true` and `MediaQuery.disableAnimations` is `true`,
+- [x] When `animated: true` and `MediaQuery.disableAnimations` is `true`,
   the fill jumps instantly to the new `value` (no tween).
-- [ ] The initial build of an `animated: true` bar renders its starting
+- [x] The initial build of an `animated: true` bar renders its starting
   `value` immediately — it does not animate in from 0 on first appearance.
-- [ ] `lesson_screen.dart`'s `lessonProgressBar` passes `animated: true`;
+- [x] `lesson_screen.dart`'s `lessonProgressBar` passes `animated: true`;
   manually answering/skipping items in a lesson shows the bar animating
   between steps instead of snapping.
-- [ ] New widget test(s) for `FoxProgressBar`'s `animated: true` behavior:
+- [x] New widget test(s) for `FoxProgressBar`'s `animated: true` behavior:
   value change animates over time (e.g. pump partway and assert an
   intermediate rendered value), and `disableAnimations: true` jumps
   instantly.
-- [ ] Existing `fox_progress_bar_*` golden images and
+- [x] Existing `fox_progress_bar_*` golden images and
   `kit_test.dart`'s `FoxProgressBar(value: 2, ...)` clamping test are
   unaffected (no golden regeneration needed, since the new param defaults
   to the current behavior).
-- [ ] `flutter analyze`, `dart format --output=none --set-exit-if-changed .`,
+- [x] `flutter analyze`, `dart format --output=none --set-exit-if-changed .`,
   `dart fix --dry-run`, and `flutter test` are all clean per AGENTS.md's
   Verify section.
 
@@ -102,3 +102,43 @@ dart format --output=none --set-exit-if-changed .
 dart fix --dry-run
 flutter test
 ```
+
+## Summary
+
+`FoxProgressBar` gained an `animated` bool param (default `false`); when
+`true` and `MediaQuery.disableAnimationsOf(context)` is `false`, it wraps
+the fill in a `TweenAnimationBuilder<double>` (300ms, `Curves.easeInOut`)
+keyed on `value`, otherwise rendering instantly. `lesson_screen.dart`'s
+`lessonProgressBar` now passes `animated: true`. Covered by new
+`kit_test.dart` widget tests (tween-over-time, reduced-motion instant
+jump, no animate-in-from-0 on first build) and a new
+`integration_test/issue066_progress_bar_animation_test.dart` driving the
+real `LessonScreen`.
+
+## Code review
+
+- Finding: `disableAnimations` was read via `MediaQuery.of(context)`
+  (subscribes to the whole `MediaQueryData`, causing extra rebuilds on any
+  change, e.g. keyboard open/close) instead of the scoped
+  `MediaQuery.disableAnimationsOf(context)`.
+  Fixed — switched to the scoped accessor.
+- Finding: `Theme.of(context)` was looked up inside `_fill()`, so the
+  animated path re-ran that lookup on every animation frame (~18× over
+  300ms) instead of once per build.
+  Fixed — `ColorScheme` is now resolved once in `build()` and passed into
+  `_fill()`.
+- Finding: tapping "Practice again" resets `LessonController` state, so
+  `progress` drops from `1.0` to `0.0` in one update; since the AppBar's
+  `FoxProgressBar` stays mounted across the restart, it now tweens that
+  drop backward over ~300ms instead of resetting instantly.
+  Not fixed — not covered by this issue's acceptance criteria (growth-only
+  animation), and a correct fix needs a way to force a fresh widget
+  instance per lesson attempt, which is more than a small/easy change.
+  Filed as #072.
+- Finding: nothing stops a future caller from passing `animated: true`
+  into `FoxLevelProgressBar` (which already drives its own value via
+  `_LevelUpFillAnimation`), which would double-animate.
+  Not fixed — no current caller does this (both existing call sites omit
+  `animated`, defaulting to `false`); the doc comment already warns
+  against it, and a runtime assert for a hypothetical future misuse isn't
+  warranted now.

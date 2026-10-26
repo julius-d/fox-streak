@@ -155,6 +155,109 @@ void main() {
     expect(semantics.properties.label, 'Lesson progress');
   });
 
+  testWidgets(
+    'animated progress bar renders its initial value immediately, with '
+    'no animate-in from 0 (issue #066)',
+    (WidgetTester tester) async {
+      await pumpKit(
+        tester,
+        const FoxProgressBar(
+          value: 0.4,
+          animated: true,
+          semanticsLabel: 'Lesson progress',
+        ),
+      );
+      expect(
+        tester
+            .widget<LinearProgressIndicator>(
+              find.byType(LinearProgressIndicator),
+            )
+            .value,
+        closeTo(0.4, 1e-9),
+      );
+    },
+  );
+
+  testWidgets(
+    'animated progress bar tweens a value change over ~300ms instead of '
+    'jumping (issue #066)',
+    (WidgetTester tester) async {
+      await pumpKit(
+        tester,
+        const FoxProgressBar(
+          value: 0.2,
+          animated: true,
+          semanticsLabel: 'Lesson progress',
+        ),
+      );
+      await pumpKit(
+        tester,
+        const FoxProgressBar(
+          value: 0.8,
+          animated: true,
+          semanticsLabel: 'Lesson progress',
+        ),
+      );
+
+      // Mid-tween: strictly between the old and new value, not snapped.
+      await tester.pump(const Duration(milliseconds: 150));
+      final double midway = tester
+          .widget<LinearProgressIndicator>(find.byType(LinearProgressIndicator))
+          .value!;
+      expect(midway, greaterThan(0.2));
+      expect(midway, lessThan(0.8));
+
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(
+        tester
+            .widget<LinearProgressIndicator>(
+              find.byType(LinearProgressIndicator),
+            )
+            .value,
+        closeTo(0.8, 1e-9),
+      );
+    },
+  );
+
+  testWidgets(
+    'animated progress bar jumps instantly when disableAnimations is true '
+    '(issue #066)',
+    (WidgetTester tester) async {
+      Future<void> pumpReducedMotion(double value) => tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            theme: FoxStreakTheme.light(),
+            builder: (BuildContext context, Widget? child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(disableAnimations: true),
+              child: child!,
+            ),
+            home: Scaffold(
+              body: FoxProgressBar(
+                value: value,
+                animated: true,
+                semanticsLabel: 'Lesson progress',
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await pumpReducedMotion(0.2);
+      await tester.pump();
+      await pumpReducedMotion(0.8);
+      await tester.pump();
+
+      expect(
+        tester
+            .widget<LinearProgressIndicator>(
+              find.byType(LinearProgressIndicator),
+            )
+            .value,
+        closeTo(0.8, 1e-9),
+      );
+    },
+  );
+
   testWidgets('level progress bar shows level label, gold fill, and '
       'progress text (issue #010)', (WidgetTester tester) async {
     await pumpKit(
