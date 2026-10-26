@@ -10,7 +10,7 @@
 // #078 found that `StreakSavedScreen`/the summary screen's pet celebration
 // has no milestone-specific visual — #059 retired the old on-fire/lit/
 // empty state painter without replacing it with anything streak-aware;
-// see issues/issue-080.md for that gap, tracked separately.)
+// see issues/issue-081.md for that gap, tracked separately.)
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';

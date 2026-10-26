@@ -175,7 +175,7 @@ order. Found and fixed a stale-closure race: re-pushing `LessonScreen` for
 a new session could briefly see the *previous* session's `done` state
 before `start()`'s own deferred reset ran, re-triggering the old
 completion sequence — `_runCompletionSequence` now re-reads live state and
-bails if its captured `attempt` no longer matches. Filed #080 for a
+bails if its captured `attempt` no longer matches. Filed #081 for a
 pre-existing stale `foxPet-onFire` assertion found in
 `streak_result_test.dart` (dead since #059, unrelated to this issue).
 New integration test: `issue078_completion_sequence_test.dart`. Screenshots
@@ -187,7 +187,7 @@ in this folder: `issue-078-streak-saved-screen.png`,
 Loot box/streak/XP-up screens don't block system back/swipe mid-sequence.
 Not fixed: `LootboxScreen`'s posture is explicitly unchanged by this
 issue, and fixing only the two new screens would be inconsistent with it
-— filed as issue #081 covering all three together.
+— filed as issue #082 covering all three together.
 
 `lessonResultProvider`'s doc comment claimed a value is still returned via
 `Navigator.pop(result)`, stale since `_goHome`/`_goToSetOverview` pop with
