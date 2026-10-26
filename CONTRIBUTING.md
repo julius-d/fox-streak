@@ -2,7 +2,7 @@
 
 Developed on both Windows and macOS.
 
-- Package: `fox_streak_app` (`com.example.fox_streak_app`), display name `FoxStreak`
+- Package: `fox_streak_app` (Android applicationId `io.github.juliusd.foxstreak`), display name `FoxStreak`
 - State management: **Riverpod** (`flutter_riverpod`)
 - Platforms: `android/`, `ios/`, `windows/`, `macos/` (from `flutter create`)
 - Android: `minSdk 24`, Java 17, Kotlin JVM 17

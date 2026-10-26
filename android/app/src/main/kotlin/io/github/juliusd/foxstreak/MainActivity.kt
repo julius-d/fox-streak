@@ -1,4 +1,4 @@
-package com.example.fox_streak_app
+package io.github.juliusd.foxstreak
 
 import io.flutter.embedding.android.FlutterActivity
 
