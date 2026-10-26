@@ -6,6 +6,7 @@
 // `audioplayers` directly from widgets, so tests can override it with a
 // no-op fake instead of hitting a real platform audio channel.
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Sound toggle. Default on; mutable from settings (#055).
@@ -30,6 +31,22 @@ abstract class FoxSoundPlayer {
   Future<void> playCorrect();
 }
 
+/// Duck (not stop) other apps' audio while a chime plays (issue #070).
+/// Android's `audioplayers` default is `AndroidAudioFocus.gain`, which tells
+/// Android this is the sole audio source and pauses/stops anything else
+/// playing; `gainTransientMayDuck` only lowers the other audio's volume for
+/// the chime's brief duration. `AVAudioSessionOptions.duckOthers` is the same
+/// behavior on iOS, layered onto the default `playback` category. macOS and
+/// Windows have no `AudioContext` support in `audioplayers` — this is a
+/// no-op there, same as before.
+@visibleForTesting
+AudioContext foxDuckingAudioContext() => AudioContext(
+  android: const AudioContextAndroid(
+    audioFocus: AndroidAudioFocus.gainTransientMayDuck,
+  ),
+  iOS: AudioContextIOS(options: const {AVAudioSessionOptions.duckOthers}),
+);
+
 /// Production implementation backed by `audioplayers`.
 class AudioPlayersSoundPlayer implements FoxSoundPlayer {
   // Separate players per sound so a correct-answer chime mid-lesson can't
@@ -37,13 +54,22 @@ class AudioPlayersSoundPlayer implements FoxSoundPlayer {
   final AudioPlayer _levelUpPlayer = AudioPlayer();
   final AudioPlayer _correctPlayer = AudioPlayer();
 
+  // `play(ctx:)` awaits `setAudioContext` internally before resuming
+  // playback (see audioplayers' `AudioPlayer.play`), so passing it here
+  // guarantees the ducking context is applied before every play — unlike
+  // setting it once via a fire-and-forget `setAudioContext()` call, which
+  // would race the very first `play()`.
   @override
-  Future<void> playLevelUp() =>
-      _levelUpPlayer.play(AssetSource('sfx/level_up.mp3'));
+  Future<void> playLevelUp() => _levelUpPlayer.play(
+    AssetSource('sfx/level_up.mp3'),
+    ctx: foxDuckingAudioContext(),
+  );
 
   @override
-  Future<void> playCorrect() =>
-      _correctPlayer.play(AssetSource('sfx/koiroylers-correct-356013.mp3'));
+  Future<void> playCorrect() => _correctPlayer.play(
+    AssetSource('sfx/koiroylers-correct-356013.mp3'),
+    ctx: foxDuckingAudioContext(),
+  );
 }
 
 final Provider<FoxSoundPlayer> foxSoundPlayerProvider =

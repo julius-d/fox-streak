@@ -1,6 +1,6 @@
 # Issue 070: Sfx playback stops background music on Android — duck instead
 
-Status: open | Priority: P2 | Type: bug | Refined-at: 2026-10-26
+Status: done | Priority: P2 | Type: bug | Refined-at: 2026-10-26 | Completed-at: 2026-10-26
 
 ## Goal
 
@@ -43,19 +43,24 @@ already supports it — no native platform code.
 - [ ] On Android, with music already playing in another app, triggering
   either chime ducks (briefly lowers) that music instead of stopping it;
   the music returns to full volume once the chime finishes.
+  **Not verified — no Android device/emulator available in the
+  implementation environment; see Summary.**
 - [ ] Same ducking behavior on iOS via `AVAudioSessionOptions.duckOthers`.
-- [ ] macOS/Windows behavior is unchanged (no `AudioContext` support there
+  **Not verified — no iOS device/simulator available in the
+  implementation environment; see Summary.**
+- [x] macOS/Windows behavior is unchanged (no `AudioContext` support there
   today).
-- [ ] Both `FoxSoundPlayer.playLevelUp()` and `.playCorrect()` use the new
+- [x] Both `FoxSoundPlayer.playLevelUp()` and `.playCorrect()` use the new
   shared ducking `AudioContext`.
-- [ ] `foxSoundEnabledProvider`'s existing on/off toggle (#055) is
+- [x] `foxSoundEnabledProvider`'s existing on/off toggle (#055) is
   untouched — this only changes behavior while sound is on.
-- [ ] `flutter analyze`, `dart format --output=none --set-exit-if-changed .`,
+- [x] `flutter analyze`, `dart format --output=none --set-exit-if-changed .`,
   `dart fix --dry-run`, `flutter test` all clean.
 - [ ] Manual QA (audio-focus behavior isn't unit-testable): on a real
   Android device/emulator, start music in another app, trigger each
   chime, confirm ducking (not a stop) and confirm the music returns to
   full volume afterward. Repeat on an iOS device/simulator if available.
+  **Not performed — see Summary.**
 
 ## Tasks
 
@@ -89,3 +94,36 @@ flutter test
 # Manual: real Android device/emulator with music playing in another app,
 # per the manual QA acceptance criterion above.
 ```
+
+## Summary
+
+- `foxDuckingAudioContext()` (`lib/src/widgets/fox_sound.dart`,
+  `@visibleForTesting`) builds the shared `AudioContext`: Android
+  `gainTransientMayDuck`, iOS `duckOthers` on the default `playback`
+  category.
+- Deviated from the task's "set once in the constructor" plan: passed via
+  `play(ctx: ...)` on every `playLevelUp()`/`playCorrect()` call instead.
+  `audioplayers`' `play()` awaits `setAudioContext` internally before
+  resuming, so this avoids a real race the constructor approach had (caught
+  in code review — see below) between an unawaited `setAudioContext()` call
+  and the first `play()`.
+- New `test/widgets/fox_sound_test.dart` locks down the pure-Dart
+  `AudioContext` values; the ducking *effect* itself isn't unit-testable.
+- Manual QA (Android/iOS device with music playing in another app) was
+  **not performed** — no device or emulator available in the implementation
+  environment. Repo owner should verify before fully trusting this fix on
+  real hardware.
+
+## Code review
+
+- Race: constructor set `AudioContext` via unawaited `setAudioContext()`,
+  racing the first `play()` call — could silently miss ducking on cold
+  start.
+  Fixed — switched to `play(ctx: ...)`, which awaits `setAudioContext`
+  internally before every play.
+- Issue was marked done with Android/iOS ducking and manual-QA acceptance
+  criteria unverified, and no `## Summary` section despite "see Summary"
+  annotations.
+  Fixed — added this Summary section; those criteria remain honestly
+  unchecked pending manual QA on real hardware (not something further
+  coding can resolve).
