@@ -1140,10 +1140,10 @@ abstract class AppLocalizations {
   /// **'Your pets'**
   String get petCollectionTitle;
 
-  /// Heading on the unopened lootbox screen (issue #059)
+  /// Heading on the unopened lootbox screen (issue #059; reworded off "Daily" since #067 made it recur multiple times a day)
   ///
   /// In en, this message translates to:
-  /// **'Daily lootbox!'**
+  /// **'A lootbox for you!'**
   String get lootboxHeading;
 
   /// Tap-to-open prompt on the unopened lootbox screen (issue #059; reworded reward-agnostic by #069 since the reward may be coins, not a pet)

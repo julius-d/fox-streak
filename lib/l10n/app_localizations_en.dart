@@ -616,7 +616,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get petCollectionTitle => 'Your pets';
 
   @override
-  String get lootboxHeading => 'Daily lootbox!';
+  String get lootboxHeading => 'A lootbox for you!';
 
   @override
   String get lootboxTapPrompt => 'Tap to reveal your reward!';

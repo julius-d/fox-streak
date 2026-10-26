@@ -1,6 +1,6 @@
-// Daily lootbox reveal screen (issue #059; opening animation + asset-folder
+// Lootbox reveal screen (issue #059; opening animation + asset-folder
 // reorg by #062; coin-reward outcome by #065; repeating trigger cadence by
-// #067).
+// #067 — no longer just once a day, so the heading dropped "Daily").
 //
 // Shown after the lesson result screen, on the 2nd lesson completion of the
 // local day and then again every 3rd completion after that (5, 8, 11, ...,
