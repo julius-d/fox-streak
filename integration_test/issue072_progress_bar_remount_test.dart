@@ -20,7 +20,8 @@ import 'package:fox_streak_app/src/data/database.dart';
 import 'package:fox_streak_app/src/data/providers.dart';
 import 'package:fox_streak_app/src/lesson/lesson_screen.dart';
 import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
-import 'package:fox_streak_app/test/data/test_helpers.dart';
+
+import 'helpers.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -95,6 +96,8 @@ void main() {
         await tester.tap(find.byKey(const Key('skipItemMenuItem')));
         await tester.pumpAndSettle();
       }
+      // This fresh profile's first-ever lesson also advances the streak.
+      await dismissCompletionScreens(tester);
       expect(find.byKey(const Key('lessonResultScreen')), findsOneWidget);
 
       Finder progressFill() => find.descendant(
@@ -109,7 +112,7 @@ void main() {
       // Tap Practice again, then pump for far less than the #066 300ms
       // tween duration — long enough for a backward-draining bar to still
       // read well above empty, too short for it to have resolved on its own.
-      await tester.tap(find.byKey(const Key('practiceAgainButton')));
+      await tester.tap(find.byKey(const Key('redoWholeSetButton')));
       await tester.pump(const Duration(milliseconds: 50));
       expect(
         tester.widget<LinearProgressIndicator>(progressFill()).value,

@@ -42,6 +42,11 @@ import 'exercise_card.dart';
 ///   the level-up celebration without a second database query.
 /// [streakCountAfterLesson] is the `streak_count` returned by #011's streak
 ///   write, handed to the result screen the same way for `StreakBadge`.
+/// [streakIsNewDayAfterLesson] is that same write's `StreakUpdate.isNewDay`
+///   (issue #078): true only when *this* completion is what advanced or
+///   started today's streak, vs. a same-day replay. `LessonScreen` uses it
+///   to decide whether the streak-saved screen appears in the post-lesson
+///   sequence at all.
 /// [lootboxReward] is what #059's `PetService` returned for this lesson
 ///   completion (the lootbox trigger, which fires on the day's 2nd
 ///   completion and then repeats every 3rd one after that — issue #067) —
@@ -80,6 +85,7 @@ class LessonState {
   final int? xpTotalBeforeLesson;
   final int? xpTotalAfterLesson;
   final int? streakCountAfterLesson;
+  final bool? streakIsNewDayAfterLesson;
   final LootboxReward? lootboxReward;
   final String? equippedPetId;
   final bool busy;
@@ -98,6 +104,7 @@ class LessonState {
     this.xpTotalBeforeLesson,
     this.xpTotalAfterLesson,
     this.streakCountAfterLesson,
+    this.streakIsNewDayAfterLesson,
     this.lootboxReward,
     this.equippedPetId,
     this.busy = false,
@@ -117,6 +124,7 @@ class LessonState {
     int? xpTotalBeforeLesson,
     int? xpTotalAfterLesson,
     int? streakCountAfterLesson,
+    bool? streakIsNewDayAfterLesson,
     LootboxReward? lootboxReward,
     String? equippedPetId,
     bool? busy,
@@ -140,6 +148,8 @@ class LessonState {
       xpTotalAfterLesson: xpTotalAfterLesson ?? this.xpTotalAfterLesson,
       streakCountAfterLesson:
           streakCountAfterLesson ?? this.streakCountAfterLesson,
+      streakIsNewDayAfterLesson:
+          streakIsNewDayAfterLesson ?? this.streakIsNewDayAfterLesson,
       lootboxReward: lootboxReward ?? this.lootboxReward,
       equippedPetId: equippedPetId ?? this.equippedPetId,
       busy: busy ?? this.busy,
@@ -184,6 +194,7 @@ class LessonState {
           other.xpTotalBeforeLesson == xpTotalBeforeLesson &&
           other.xpTotalAfterLesson == xpTotalAfterLesson &&
           other.streakCountAfterLesson == streakCountAfterLesson &&
+          other.streakIsNewDayAfterLesson == streakIsNewDayAfterLesson &&
           other.lootboxReward == lootboxReward &&
           other.equippedPetId == equippedPetId &&
           other.busy == busy &&
@@ -202,6 +213,7 @@ class LessonState {
     xpApplied,
     xpTotalBeforeLesson,
     streakCountAfterLesson,
+    streakIsNewDayAfterLesson,
     xpTotalAfterLesson,
     lootboxReward,
     equippedPetId,
@@ -320,6 +332,27 @@ class LessonController extends Notifier<LessonState> {
   void restart({Random? random}) {
     if (state.sourceItems.isEmpty) return;
     start(state.sourceItems, random: random);
+  }
+
+  /// Restarts with only [items] instead of reshuffling the full
+  /// [LessonState.sourceItems] — used by the summary screen's "Redo missed
+  /// items" button (issue #078). A no-op on an empty list rather than
+  /// clearing the session, mirroring [restart]'s empty-sourceItems guard.
+  void restartWithItems(List<Item> items, {Random? random}) {
+    if (items.isEmpty) return;
+    start(items, random: random);
+  }
+
+  /// This session's items whose outcome wasn't correct — skipping counts as
+  /// missed too (`LessonItemOutcome.correct == false` already covers both,
+  /// see [LessonItemOutcome]). Used to build "Redo missed items" and to
+  /// decide whether that button appears at all (issue #078).
+  List<Item> missedItems() {
+    final missedIds = state.outcomes
+        .where((o) => !o.correct)
+        .map((o) => o.itemId)
+        .toSet();
+    return state.queue.where((item) => missedIds.contains(item.id)).toList();
   }
 
   /// Called by the exercise card whenever its draft state changes.
@@ -474,9 +507,9 @@ class LessonController extends Notifier<LessonState> {
     final xpApplication = result == null
         ? null
         : await _xpService.applyLessonResult(result);
-    final streakCount = result == null
+    final streakUpdate = result == null
         ? null
-        : (await _streakService.recordActivity()).streakCount;
+        : await _streakService.recordActivity();
     // One-shot read (not a `watch()` stream) for the result screen's
     // pet celebration — see [LessonState.equippedPetId]. Returned
     // alongside lootboxReward from the same `getProfile()` call rather
@@ -491,7 +524,8 @@ class LessonController extends Notifier<LessonState> {
       clearLastCorrect: true,
       xpTotalBeforeLesson: xpApplication?.xpTotalBefore,
       xpTotalAfterLesson: xpApplication?.xpTotal,
-      streakCountAfterLesson: streakCount,
+      streakCountAfterLesson: streakUpdate?.streakCount,
+      streakIsNewDayAfterLesson: streakUpdate?.isNewDay,
       lootboxReward: petUpdate?.reward,
       equippedPetId: petUpdate?.equippedPetId,
     );
@@ -528,7 +562,6 @@ final lessonControllerProvider =
 /// Provider for the lesson result (null until lesson is done).
 ///
 /// #010 (XP) and #011 (streak) will watch this to consume the result.
-/// Also returned via Navigator.pop(result) from LessonScreen.
 final lessonResultProvider = Provider<LessonResult?>((ref) {
   final controller = ref.watch(lessonControllerProvider.notifier);
   return controller.buildResult();

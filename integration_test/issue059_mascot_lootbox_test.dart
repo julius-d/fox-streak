@@ -87,9 +87,10 @@ Future<({int setId, int itemId})> _insertSingleItemSet(AppDatabase db) async {
 }
 
 /// Resumes the (only) set via Home's Continue button and completes its
-/// single item correctly, leaving the result screen's "Back to home"
-/// button visible but not yet tapped — the caller decides whether to
-/// assert on the lootbox before/after tapping it.
+/// single item correctly, settling right after CONTINUE — leaving the
+/// caller to decide what's showing next: the #078 completion sequence's
+/// loot box (if this completion won one) is automatic now, no longer
+/// something a "Back to home" tap inserts.
 Future<void> _completeOneLessonFromHome(WidgetTester tester) async {
   await tester.tap(find.byKey(const Key('homeContinueButton')));
   await settle(tester);
@@ -99,8 +100,6 @@ Future<void> _completeOneLessonFromHome(WidgetTester tester) async {
   await settle(tester);
   await tester.tap(find.byKey(const Key('checkButton'))); // CONTINUE
   await settle(tester);
-  expect(find.byKey(const Key('lessonResultScreen')), findsOneWidget);
-  await tester.ensureVisible(find.byKey(const Key('backToLibraryButton')));
 }
 
 void main() {
@@ -137,18 +136,21 @@ void main() {
       expect(find.byKey(const Key('homeScreen')), findsOneWidget);
       expect(await petRepo.getOwnedPetIds(), [kDefaultPetId]);
 
-      // 1st completion of the day: no lootbox yet.
+      // 1st completion of the day: no lootbox yet. It's also this fresh
+      // profile's first-ever lesson, so the #078 completion sequence shows
+      // the streak-saved screen before XP up.
       await _completeOneLessonFromHome(tester);
-      await tester.tap(find.byKey(const Key('backToLibraryButton')));
-      await settle(tester);
       expect(find.byKey(const Key('lootboxScreen')), findsNothing);
+      await dismissCompletionScreens(tester);
+      await tester.tap(find.byKey(const Key('homeButton')));
+      await settle(tester);
       expect(find.byKey(const Key('homeScreen')), findsOneWidget);
       expect(await petRepo.getOwnedPetIds(), [kDefaultPetId]);
 
-      // 2nd completion of the day: triggers the lootbox instead of
-      // returning to Home immediately.
+      // 2nd completion of the day: the #078 sequence shows the lootbox
+      // automatically now, right on completion — same day, so no streak
+      // screen this time.
       await _completeOneLessonFromHome(tester);
-      await tester.tap(find.byKey(const Key('backToLibraryButton')));
       await settle(tester);
       expect(find.byKey(const Key('lootboxScreen')), findsOneWidget);
       expect(find.byKey(const Key('homeScreen')), findsNothing);
@@ -167,10 +169,15 @@ void main() {
       expect(find.byKey(Key('foxPet-$wonId')), findsOneWidget);
       expect(find.byKey(const Key('lootboxContinueButton')), findsOneWidget);
 
-      // Continue pops the lootbox, then the lesson, landing back on Home.
+      // Continue pops the lootbox, then XP up (always) runs before the
+      // summary screen; tapping Home there pops the lesson, landing back
+      // on Home.
       await tester.tap(find.byKey(const Key('lootboxContinueButton')));
       await settle(tester);
       expect(find.byKey(const Key('lootboxScreen')), findsNothing);
+      await dismissCompletionScreens(tester);
+      await tester.tap(find.byKey(const Key('homeButton')));
+      await settle(tester);
       expect(find.byKey(const Key('homeScreen')), findsOneWidget);
 
       // Tapping Home's pet opens the collection: the won pet is

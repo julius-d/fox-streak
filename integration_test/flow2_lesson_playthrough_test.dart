@@ -160,6 +160,9 @@ void main() {
         await _answerCurrentItemCorrectly(tester);
       }
 
+      // Steps through the #078 completion sequence (this fresh profile's
+      // first-ever lesson also advances the streak) to reach the summary.
+      await dismissCompletionScreens(tester);
       expect(find.byKey(const Key('lessonResultScreen')), findsOneWidget);
       final l10n = AppLocalizationsEn();
       expect(

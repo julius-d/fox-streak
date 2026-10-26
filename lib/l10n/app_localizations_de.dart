@@ -378,13 +378,22 @@ class AppLocalizationsDe extends AppLocalizations {
   String get streakTodayDoneLabel => 'Heutige Lektion gezählt';
 
   @override
-  String get lessonPracticeAgain => 'Nochmal üben';
-
-  @override
   String get lessonBackToLibrary => 'Zurück zur Bibliothek';
 
   @override
-  String get lessonBackToHome => 'Zurück zur Startseite';
+  String get lessonStreakSavedHeading => 'Serie gesichert!';
+
+  @override
+  String get lessonHome => 'Startseite';
+
+  @override
+  String get lessonSetOverview => 'Set-Übersicht';
+
+  @override
+  String get lessonRedoWholeSet => 'Ganzes Set wiederholen';
+
+  @override
+  String get lessonRedoMissedItems => 'Falsche Einträge wiederholen';
 
   @override
   String get homeGreetingNight => 'Noch wach?';

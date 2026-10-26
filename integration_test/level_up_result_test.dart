@@ -1,5 +1,6 @@
-// Integration test for the level-up celebration on the lesson result
-// screen (issue #053).
+// Integration test for the level-up celebration on the XP-up completion
+// screen (issue #053; moved from the combined lesson result screen onto
+// its own dedicated `XpUpScreen` by issue #078).
 //
 // Drives the real `LessonScreen` with the real `MultipleChoiceCard` (no
 // test card builder) through a lesson that crosses a level boundary,
@@ -9,15 +10,18 @@
 // stubbed via a fake `FoxSoundPlayer` override so this never touches a real
 // platform audio channel.
 //
-// Deliberately avoids `tester.pumpAndSettle()` once the level-up result
-// screen is showing: the `confetti` package's `ConfettiController` keeps
-// scheduling animation frames (it restarts its internal `AnimationController`
-// on every completed cycle until its particle system reports "finished",
-// which depends on real wall-clock deltas the test clock never advances) —
+// Deliberately avoids `tester.pumpAndSettle()` once the XP-up screen is
+// showing: the `confetti` package's `ConfettiController` keeps scheduling
+// animation frames (it restarts its internal `AnimationController` on every
+// completed cycle until its particle system reports "finished", which
+// depends on real wall-clock deltas the test clock never advances) —
 // `pumpAndSettle()` would spin for a very long time waiting for a frame
 // count that never reaches zero. A bounded `pump()` loop is used instead,
 // long enough to settle the (ordinary, finite) count-up/celebration/bar
-// animations without waiting on confetti.
+// animations without waiting on confetti. The streak-saved screen that
+// precedes it (this is each test's fresh profile's first-ever lesson, so
+// it always advances the streak) has no such unbounded animation, so it's
+// safe to settle normally.
 
 import 'package:confetti/confetti.dart';
 import 'package:drift/drift.dart';
@@ -164,15 +168,20 @@ void main() {
 
       await answerAllCorrectly(tester, itemsByAnswer);
 
-      // The final CONTINUE completes the lesson and mounts the level-up
-      // result screen (confetti starts playing) — see file doc for why this
-      // uses a bounded pump loop instead of pumpAndSettle().
+      // The final CONTINUE completes the lesson. This fresh profile's
+      // first-ever lesson also advances the streak, so the streak-saved
+      // screen appears first — no confetti there, safe to settle normally.
       await tester.tap(find.byKey(const Key('checkButton'))); // CONTINUE
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('streakSavedContinueButton')));
+
+      // XP up mounts next (confetti starts playing) — see file doc for why
+      // this uses a bounded pump loop instead of pumpAndSettle().
       for (var i = 0; i < 15; i++) {
         await tester.pump(const Duration(milliseconds: 100));
       }
 
-      expect(find.byKey(const Key('lessonResultScreen')), findsOneWidget);
+      expect(find.byKey(const Key('xpUpScreen')), findsOneWidget);
       expect(find.byKey(const Key('levelUpCallout')), findsOneWidget);
       expect(find.text('Level Up! Level 2'), findsOneWidget);
       expect(find.byKey(const Key('levelUpProgressAnimation')), findsOneWidget);
@@ -236,11 +245,15 @@ void main() {
     await answerAllCorrectly(tester, itemsByAnswer);
 
     // No level-up here, so there's no confetti to worry about: a plain
-    // pumpAndSettle() is safe, same as the other result-screen specs.
+    // pumpAndSettle() is safe throughout, same as the other result-screen
+    // specs. This fresh profile's first-ever lesson still advances the
+    // streak, so the streak-saved screen appears before XP up.
     await tester.tap(find.byKey(const Key('checkButton'))); // CONTINUE
     await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('streakSavedContinueButton')));
+    await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('lessonResultScreen')), findsOneWidget);
+    expect(find.byKey(const Key('xpUpScreen')), findsOneWidget);
     expect(find.byKey(const Key('levelUpCallout')), findsNothing);
     expect(find.byKey(const Key('levelUpProgressAnimation')), findsNothing);
     expect(find.byKey(const Key('levelUpConfetti')), findsNothing);

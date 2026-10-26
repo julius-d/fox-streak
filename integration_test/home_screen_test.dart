@@ -7,11 +7,11 @@
 //    dashboard, whose Continue slot is a "Browse sets" CTA (no attempts
 //    yet) that genuinely opens the real `LibraryScreen`.
 // 2. A profile with one prior attempt: Home's Continue button resumes the
-//    real `LessonScreen` for that set; completing the lesson and tapping
-//    "Back to home" (issue #034: labeled for this entry path, not the
-//    library-flow default) returns to Home, whose goal ring/streak badge/
-//    level-progress bar now reflect the just-written XP/streak, and whose
-//    Continue button still points at the same set.
+//    real `LessonScreen` for that set; completing the lesson (through the
+//    #078 completion sequence) and tapping the summary screen's "Home"
+//    button returns to Home, whose goal ring/streak badge/level-progress
+//    bar now reflect the just-written XP/streak, and whose Continue
+//    button still points at the same set.
 
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
@@ -25,6 +25,8 @@ import 'package:fox_streak_app/src/data/clock.dart';
 import 'package:fox_streak_app/src/data/database.dart';
 import 'package:fox_streak_app/src/data/providers.dart';
 import 'package:fox_streak_app/src/data/stats_repository.dart';
+
+import 'helpers.dart';
 
 class _FixedClock extends Clock {
   @override
@@ -143,17 +145,19 @@ void main() {
       await tester.tap(find.byKey(const Key('checkButton'))); // CONTINUE
       await tester.pumpAndSettle();
 
+      // This fresh profile's first-ever lesson also advances the streak,
+      // so the #078 completion sequence runs streak saved -> XP up before
+      // the summary screen is reachable.
+      await dismissCompletionScreens(tester);
       expect(find.byKey(const Key('lessonResultScreen')), findsOneWidget);
       // The result screen is a SingleChildScrollView taller than the test
       // window (800x600) — scroll the button into view before tapping.
-      await tester.ensureVisible(find.byKey(const Key('backToLibraryButton')));
+      // "Home" always returns Home regardless of entry point (issue #078
+      // retired #034's entry-point-specific "Back to home"/"Back to
+      // library" label distinction).
+      await tester.ensureVisible(find.byKey(const Key('homeButton')));
       await tester.pumpAndSettle();
-      // Reached via Home's Continue button (not the library/set-detail
-      // flow), so the button must say "Back to home" — it actually pops to
-      // Home, not the library (issue #034).
-      expect(find.text('Back to home'), findsOneWidget);
-      expect(find.text('Back to library'), findsNothing);
-      await tester.tap(find.byKey(const Key('backToLibraryButton')));
+      await tester.tap(find.byKey(const Key('homeButton')));
       await tester.pumpAndSettle();
 
       // Back on Home: the just-completed lesson's XP/streak show up, and

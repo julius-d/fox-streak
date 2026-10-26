@@ -1,5 +1,6 @@
-// Integration test for XP + level display on the lesson result screen
-// (issue #010).
+// Integration test for XP + level display on the XP-up completion screen
+// (issue #010; moved from the combined lesson result screen onto its own
+// dedicated `XpUpScreen` by issue #078).
 //
 // Drives the real `LessonScreen` with the real `MultipleChoiceCard` (no
 // test card builder) through a perfect-score lesson, proving the XP
@@ -91,11 +92,20 @@ void main() {
       await tester.pumpAndSettle();
 
       // Answer both items correctly, in whatever order they were shuffled.
+      // Keyed by prompt (unique) rather than answer: with exactly 2 items
+      // in the set, each question's sole distractor is the *other* item's
+      // answer, so both answer texts are simultaneously visible on every
+      // question screen — scanning for "whichever known answer is visible"
+      // would often tap the wrong (distractor) one.
+      final remainingPromptToAnswer = {
+        for (final item in itemsByAnswer.values) item.prompt: item.answer,
+      };
       for (var i = 0; i < 2; i++) {
-        final shown = itemsByAnswer.keys.firstWhere(
-          (a) => find.text(a).evaluate().isNotEmpty,
+        final shownPrompt = remainingPromptToAnswer.keys.firstWhere(
+          (p) => find.text(p).evaluate().isNotEmpty,
         );
-        await tester.tap(find.text(shown));
+        final correctAnswer = remainingPromptToAnswer.remove(shownPrompt)!;
+        await tester.tap(find.text(correctAnswer));
         await tester.pump();
         await tester.tap(find.byKey(const Key('checkButton'))); // CHECK
         await tester.pumpAndSettle();
@@ -103,8 +113,14 @@ void main() {
         await tester.pumpAndSettle();
       }
 
-      // Result screen: 100% score -> 10+10 per-item XP + 5 perfect bonus.
-      expect(find.byKey(const Key('lessonResultScreen')), findsOneWidget);
+      // This fresh profile's first-ever lesson also advances the streak,
+      // so the streak-saved screen appears before XP up (no level-up here,
+      // so plain pumpAndSettle() is safe throughout).
+      await tester.tap(find.byKey(const Key('streakSavedContinueButton')));
+      await tester.pumpAndSettle();
+
+      // XP up screen: 100% score -> 10+10 per-item XP + 5 perfect bonus.
+      expect(find.byKey(const Key('xpUpScreen')), findsOneWidget);
       expect(find.byKey(const Key('xpEarnedLabel')), findsOneWidget);
       expect(find.text('+25 XP'), findsOneWidget);
       expect(find.byKey(const Key('xpBonusCallout')), findsOneWidget);

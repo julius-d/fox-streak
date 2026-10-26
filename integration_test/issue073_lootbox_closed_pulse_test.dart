@@ -54,9 +54,11 @@ Future<({int setId, int itemId})> _insertSingleItemSet(AppDatabase db) async {
   return (setId: setId, itemId: itemId);
 }
 
-/// Resumes the (only) set via Home's Continue button, completes its single
-/// item correctly, and taps "Back to home" — landing either on
-/// `LootboxScreen` (a trigger completion) or straight back on `HomeScreen`.
+/// Resumes the (only) set via Home's Continue button and completes its
+/// single item correctly, settling right after CONTINUE — leaving the
+/// caller to decide what's showing next: the #078 completion sequence's
+/// loot box (if this completion won one) is automatic now, no longer
+/// something a "Back to home" tap inserts.
 Future<void> _completeOneLessonFromHome(WidgetTester tester) async {
   await tester.tap(find.byKey(const Key('homeContinueButton')));
   await settle(tester);
@@ -66,10 +68,16 @@ Future<void> _completeOneLessonFromHome(WidgetTester tester) async {
   await settle(tester);
   await tester.tap(find.byKey(const Key('checkButton'))); // CONTINUE
   await settle(tester);
-  expect(find.byKey(const Key('lessonResultScreen')), findsOneWidget);
-  await tester.ensureVisible(find.byKey(const Key('backToLibraryButton')));
-  await tester.tap(find.byKey(const Key('backToLibraryButton')));
+}
+
+/// Taps through a non-trigger completion's streak/XP screens (no loot box)
+/// to land back on Home.
+Future<void> _skipToHome(WidgetTester tester) async {
+  expect(find.byKey(const Key('lootboxScreen')), findsNothing);
+  await dismissCompletionScreens(tester);
+  await tester.tap(find.byKey(const Key('homeButton')));
   await settle(tester);
+  expect(find.byKey(const Key('homeScreen')), findsOneWidget);
 }
 
 void main() {
@@ -104,9 +112,9 @@ void main() {
 
       // 1st completion of the day: no lootbox yet.
       await _completeOneLessonFromHome(tester);
-      expect(find.byKey(const Key('lootboxScreen')), findsNothing);
+      await _skipToHome(tester);
 
-      // 2nd completion of the day: triggers the lootbox.
+      // 2nd completion of the day: triggers the lootbox automatically.
       await _completeOneLessonFromHome(tester);
       expect(find.byKey(const Key('lootboxScreen')), findsOneWidget);
       expect(find.byKey(const Key('lootboxContinueButton')), findsNothing);
@@ -130,6 +138,9 @@ void main() {
       await tester.tap(find.byKey(const Key('lootboxContinueButton')));
       await settle(tester);
       expect(find.byKey(const Key('lootboxScreen')), findsNothing);
+      await dismissCompletionScreens(tester);
+      await tester.tap(find.byKey(const Key('homeButton')));
+      await settle(tester);
       expect(find.byKey(const Key('homeScreen')), findsOneWidget);
     },
   );

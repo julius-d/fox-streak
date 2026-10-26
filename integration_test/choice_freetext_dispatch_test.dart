@@ -29,6 +29,8 @@ import 'package:fox_streak_app/src/data/providers.dart';
 import 'package:fox_streak_app/src/lesson/lesson_screen.dart';
 import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
 
+import 'helpers.dart';
+
 class _FixedClock extends Clock {
   @override
   DateTime now() => DateTime(2026, 10, 12, 12);
@@ -126,6 +128,8 @@ void main() {
     await tester.tap(find.byKey(const Key('checkButton')));
     await tester.pumpAndSettle();
 
+    // This fresh profile's first-ever lesson also advances the streak.
+    await dismissCompletionScreens(tester);
     expect(find.byKey(const Key('lessonResultScreen')), findsOneWidget);
   });
 
@@ -157,6 +161,8 @@ void main() {
       await tester.tap(find.byKey(const Key('checkButton')));
       await tester.pumpAndSettle();
 
+      // This fresh profile's first-ever lesson also advances the streak.
+      await dismissCompletionScreens(tester);
       expect(find.byKey(const Key('lessonResultScreen')), findsOneWidget);
     },
   );

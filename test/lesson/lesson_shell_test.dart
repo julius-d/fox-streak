@@ -104,6 +104,23 @@ Future<void> openLessonMenu(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
+/// Taps through the #078 post-lesson completion sequence's streak-saved
+/// screen (only present when this completion advanced today's streak) and
+/// XP-up screen (always present), landing on the summary screen
+/// (`lessonResultScreen`). None of these single-lesson-completion tests
+/// ever trigger the loot box — `PetService`'s trigger starts on the 2nd
+/// completion of the day (issue #059/#067).
+Future<void> dismissCompletionScreens(WidgetTester tester) async {
+  await tester.pumpAndSettle();
+  final streakContinue = find.byKey(const Key('streakSavedContinueButton'));
+  if (streakContinue.evaluate().isNotEmpty) {
+    await tester.tap(streakContinue);
+    await tester.pumpAndSettle();
+  }
+  await tester.tap(find.byKey(const Key('xpUpContinueButton')));
+  await tester.pumpAndSettle();
+}
+
 /// Minimal localizations delegate for tests.
 class _TestLocalizationsDelegate
     extends LocalizationsDelegate<AppLocalizations> {
@@ -659,8 +676,9 @@ void main() {
       // Should be on result screen
       expect(find.byKey(const Key('lessonResultScreen')), findsOneWidget);
 
-      // Tap Practice again
-      await tester.tap(find.byKey(const Key('practiceAgainButton')));
+      // Tap through the completion sequence, then Redo whole set.
+      await dismissCompletionScreens(tester);
+      await tester.tap(find.byKey(const Key('redoWholeSetButton')));
       await tester.pump();
 
       // Should be back at question 1 with reshuffled queue
@@ -711,11 +729,12 @@ void main() {
       }
       expect(find.byKey(const Key('lessonResultScreen')), findsOneWidget);
 
-      // Tap Practice again, then pump for far less than the #066 300ms
-      // tween duration — long enough for a backward-draining bar to
-      // still be visibly short of empty, too short for it to have
-      // resolved on its own.
-      await tester.tap(find.byKey(const Key('practiceAgainButton')));
+      // Tap through the completion sequence, then Redo whole set, then
+      // pump for far less than the #066 300ms tween duration — long
+      // enough for a backward-draining bar to still be visibly short of
+      // empty, too short for it to have resolved on its own.
+      await dismissCompletionScreens(tester);
+      await tester.tap(find.byKey(const Key('redoWholeSetButton')));
       await tester.pump(const Duration(milliseconds: 50));
 
       final double value = tester
@@ -955,17 +974,19 @@ void main() {
         await tester.tap(find.byKey(const Key('checkButton')));
         await tester.pumpAndSettle();
 
-        // The result screen must still be showing — it must not have
+        // The #078 completion sequence starts automatically (this is a
+        // first-ever lesson, so it advanced the streak too) — the summary
+        // screen itself is covered until the user taps through it.
+        expect(find.byKey(const Key('streakSavedScreen')), findsOneWidget);
+        await dismissCompletionScreens(tester);
+
+        // The summary screen must now be showing — it must not have
         // auto-popped itself before the user did anything.
         expect(find.byKey(const Key('lessonResultScreen')), findsOneWidget);
-        expect(find.byKey(const Key('practiceAgainButton')), findsOneWidget);
-
-        // No backLabel override (as the "Start lesson" FAB/play icon never
-        // pass one): defaults to the library-flow wording (issue #034).
-        expect(find.text('Back to library'), findsOneWidget);
+        expect(find.byKey(const Key('redoWholeSetButton')), findsOneWidget);
 
         // Only an explicit tap pops it back to the caller.
-        await tester.tap(find.byKey(const Key('backToLibraryButton')));
+        await tester.tap(find.byKey(const Key('homeButton')));
         await tester.pumpAndSettle();
         expect(find.text('go'), findsOneWidget);
         expect(find.byKey(const Key('lessonResultScreen')), findsNothing);

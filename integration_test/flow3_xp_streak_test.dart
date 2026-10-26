@@ -109,6 +109,8 @@ void main() {
         await tester.tap(find.byKey(const Key('checkButton'))); // CONTINUE
         await settle(tester);
       }
+      // This fresh profile's first-ever lesson also advances the streak.
+      await dismissCompletionScreens(tester);
       expect(find.byKey(const Key('lessonResultScreen')), findsOneWidget);
 
       var profile = await statsRepo.getProfile();
@@ -188,6 +190,8 @@ void main() {
         await tester.tap(find.byKey(const Key('checkButton'))); // CONTINUE
         await settle(tester);
       }
+      // Same-day replay: no streak screen, just XP up.
+      await dismissCompletionScreens(tester);
       expect(find.byKey(const Key('lessonResultScreen')), findsOneWidget);
 
       profile = await statsRepo.getProfile();
@@ -230,6 +234,8 @@ void main() {
       await settle(tester);
       await tester.tap(find.byKey(const Key('checkButton'))); // CONTINUE
       await settle(tester);
+      // New day: streak screen reappears before XP up.
+      await dismissCompletionScreens(tester);
       expect(find.byKey(const Key('lessonResultScreen')), findsOneWidget);
 
       profile = await statsRepo.getProfile();

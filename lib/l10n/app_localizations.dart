@@ -732,23 +732,41 @@ abstract class AppLocalizations {
   /// **'Today\'s lesson counted'**
   String get streakTodayDoneLabel;
 
-  /// Button label to practice the same set again
-  ///
-  /// In en, this message translates to:
-  /// **'Practice again'**
-  String get lessonPracticeAgain;
-
-  /// Button label to go back to library
+  /// Button label to go back to library (also reused by the empty-set CTA on SetDetailScreen)
   ///
   /// In en, this message translates to:
   /// **'Back to library'**
   String get lessonBackToLibrary;
 
-  /// Lesson result button label when the lesson was reached directly from Home (issue #034), not via the library/set-detail flow
+  /// Heading on the streak-saved completion screen, shown only when the lesson just completed advanced today's streak (issue #078)
   ///
   /// In en, this message translates to:
-  /// **'Back to home'**
-  String get lessonBackToHome;
+  /// **'Streak saved!'**
+  String get lessonStreakSavedHeading;
+
+  /// Summary screen button label returning to Home, regardless of lesson entry point (issue #078)
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get lessonHome;
+
+  /// Summary screen button label opening the practiced set's detail screen (issue #078)
+  ///
+  /// In en, this message translates to:
+  /// **'Set overview'**
+  String get lessonSetOverview;
+
+  /// Summary screen button label restarting the full set just practiced (issue #078)
+  ///
+  /// In en, this message translates to:
+  /// **'Redo whole set'**
+  String get lessonRedoWholeSet;
+
+  /// Summary screen button label restarting with only this session's wrong/skipped items; omitted on a perfect score (issue #078)
+  ///
+  /// In en, this message translates to:
+  /// **'Redo missed items'**
+  String get lessonRedoMissedItems;
 
   /// Generic late-night greeting on Home (before 5am) when no display name is set (issue #060)
   ///

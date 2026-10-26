@@ -54,8 +54,6 @@ Future<void> _completeOneLessonFromHome(WidgetTester tester) async {
   await settle(tester);
   await tester.tap(find.byKey(const Key('checkButton'))); // CONTINUE
   await settle(tester);
-  expect(find.byKey(const Key('lessonResultScreen')), findsOneWidget);
-  await tester.ensureVisible(find.byKey(const Key('backToLibraryButton')));
 }
 
 void main() {
@@ -82,15 +80,18 @@ void main() {
       await pumpFoxStreakApp(tester, db: db, clock: clock);
       expect(find.byKey(const Key('homeScreen')), findsOneWidget);
 
-      // 1st completion: no lootbox yet.
+      // 1st completion: no lootbox yet (and the fresh profile's first-ever
+      // lesson advances the streak, so the #078 sequence shows that screen
+      // before XP up).
       await _completeOneLessonFromHome(tester);
-      await tester.tap(find.byKey(const Key('backToLibraryButton')));
-      await settle(tester);
       expect(find.byKey(const Key('lootboxScreen')), findsNothing);
+      await dismissCompletionScreens(tester);
+      await tester.tap(find.byKey(const Key('homeButton')));
+      await settle(tester);
 
-      // 2nd completion: triggers the lootbox.
+      // 2nd completion: the #078 sequence shows the lootbox automatically,
+      // right on completion — same day, so no streak screen this time.
       await _completeOneLessonFromHome(tester);
-      await tester.tap(find.byKey(const Key('backToLibraryButton')));
       await settle(tester);
       expect(find.byKey(const Key('lootboxScreen')), findsOneWidget);
 
@@ -123,6 +124,9 @@ void main() {
       await tester.tap(find.byKey(const Key('lootboxContinueButton')));
       await settle(tester);
       expect(find.byKey(const Key('lootboxScreen')), findsNothing);
+      await dismissCompletionScreens(tester);
+      await tester.tap(find.byKey(const Key('homeButton')));
+      await settle(tester);
       expect(find.byKey(const Key('homeScreen')), findsOneWidget);
     },
   );

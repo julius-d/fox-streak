@@ -22,8 +22,14 @@
 //   `itemYearField`, `saveItemButton`.
 // - Lesson shell: `lessonProgressBar`, `lessonOverflowMenu`
 //   (`quitLessonMenuItem`/`skipItemMenuItem`), `checkButton` (CHECK then
-//   CONTINUE, same key), `lessonFeedbackBanner`, `lessonResultScreen`,
-//   `practiceAgainButton`, `backToLibraryButton`.
+//   CONTINUE, same key), `lessonFeedbackBanner`.
+// - Completion sequence (issue #078) — loot box (`lootboxScreen`,
+//   `lootboxOpenButton`/`lootboxContinueButton`, if won), streak saved
+//   (`streakSavedScreen`, `streakSavedContinueButton`, only when the
+//   completion advanced today's streak), XP up (`xpUpScreen`,
+//   `xpUpContinueButton`, always), summary (`lessonResultScreen`, always:
+//   `homeButton`/`setOverviewButton`/`redoWholeSetButton`/
+//   `redoMissedItemsButton`) — see `dismissCompletionScreens` below.
 // - Exercise cards: `choiceOption0`..`3`, `freeTextAnswerField`,
 //   `dialPadKey<digit|backspace>`, `dateExerciseDayField`/`...MonthField`/
 //   `...YearField`.
@@ -226,6 +232,37 @@ Future<void> pumpLessonScreen(
     ),
   );
   await settle(tester);
+}
+
+/// Taps through whichever of the #078 post-lesson completion sequence's
+/// screens are currently showing — loot box (#059, tap-to-open then
+/// Continue), streak saved (#011), XP up (#010/#053) — landing on the
+/// summary screen (`lessonResultScreen`). Each step is a no-op if that
+/// screen isn't present (e.g. no loot box won, or this completion didn't
+/// advance the streak), so it's safe to call unconditionally after any
+/// lesson completion a test doesn't care to inspect screen-by-screen.
+Future<void> dismissCompletionScreens(WidgetTester tester) async {
+  await settle(tester);
+  final lootboxOpen = find.byKey(const Key('lootboxOpenButton'));
+  if (lootboxOpen.evaluate().isNotEmpty) {
+    await tester.tap(lootboxOpen);
+    await settle(tester);
+  }
+  final lootboxContinue = find.byKey(const Key('lootboxContinueButton'));
+  if (lootboxContinue.evaluate().isNotEmpty) {
+    await tester.tap(lootboxContinue);
+    await settle(tester);
+  }
+  final streakContinue = find.byKey(const Key('streakSavedContinueButton'));
+  if (streakContinue.evaluate().isNotEmpty) {
+    await tester.tap(streakContinue);
+    await settle(tester);
+  }
+  final xpContinue = find.byKey(const Key('xpUpContinueButton'));
+  if (xpContinue.evaluate().isNotEmpty) {
+    await tester.tap(xpContinue);
+    await settle(tester);
+  }
 }
 
 /// Fresh installs land on first-run onboarding (#012); skips it and opens

@@ -5,7 +5,12 @@
 // Middle: ExerciseCard slot (dispatched by item.type).
 // Feedback: FoxFeedbackBanner (success/error with correct answer).
 // Bottom: FoxCheckButton (CHECK→CONTINUE, same key, tinted by correctState).
-// Result: LessonResultScreen (score, pet, celebrate, Practice again / Back).
+// Completion (issue #078): once the lesson is done, a sequential, non-
+// skippable, non-back-navigable set of full-screen pushes plays out — loot
+// box (#059, if won) -> streak saved (#011, if it advanced today's streak)
+// -> XP up (#010/#053, always) -> summary (LessonResultScreen, always:
+// pet celebration, score, Home/Set overview/Redo whole set/Redo missed
+// items).
 //
 // All strings via AppLocalizations (DE + EN). Follows #015 kit reuse only.
 
@@ -15,7 +20,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../l10n/app_localizations.dart';
 import '../data/database.dart';
 import '../library/library_providers.dart';
+import '../library/set_detail_screen.dart';
 import '../pet/lootbox_screen.dart';
+import '../pet/pet_catalog.dart';
+import '../pet/pet_providers.dart';
+import '../stats/xp_service.dart';
 import '../theme/fox_streak_theme.dart';
 import '../widgets/widgets.dart';
 import '../exercises/date_exercise.dart';
@@ -25,6 +34,8 @@ import '../exercises/multiple_choice_exercise.dart';
 import 'exercise_card.dart';
 import 'lesson_controller.dart';
 import 'lesson_result.dart';
+import 'streak_saved_screen.dart';
+import 'xp_up_screen.dart';
 
 /// Navigates into [LessonScreen] for [setId], or shows the
 /// `lessonEmptySetNote` snackbar instead when the set has no items.
@@ -62,13 +73,6 @@ void startLessonFromSet({
 class LessonScreen extends ConsumerStatefulWidget {
   final int setId;
   final List<Item> items; // If empty, fetches from itemsForSetProvider
-  // Result screen's "back" button label (issue #034): the button just pops
-  // the navigator, so the caller — whoever pushed this screen — is the only
-  // one who knows where that actually lands. Defaults to the library-flow
-  // wording (SetDetailScreen's "Start lesson" FAB, Library's play icon —
-  // #042); callers that push this screen directly from elsewhere (e.g.
-  // Home's Continue button) must pass their own accurate label.
-  final String? backLabel;
   // Test-only: custom card builder for exercise cards.
   // If null, uses the default placeholder (throws in prod, works in tests).
   final Widget Function({
@@ -84,7 +88,6 @@ class LessonScreen extends ConsumerStatefulWidget {
     super.key,
     required this.setId,
     this.items = const [],
-    this.backLabel,
     this.cardBuilder,
   });
 
@@ -96,17 +99,13 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
     with TickerProviderStateMixin {
   late final PageController _pageController;
   bool _lessonStarted = false;
-  // Guards against showing the lootbox twice for the same session (e.g. the
-  // overflow menu's quit path and the result screen's own back button both
-  // ultimately call `_continueFromResult`).
-  bool _lootboxShown = false;
-  // Guards `_continueFromResult` itself against a second near-simultaneous
-  // call landing mid-`await` (e.g. the overflow menu's quit and the result
-  // screen's own back button both tapped before the first call's lootbox
-  // push resolves) — without this, the second call would see `_lootboxShown`
-  // already true and immediately pop whatever is currently on top (the
-  // first call's just-pushed `LootboxScreen`) instead of waiting its turn.
-  bool _continuingFromResult = false;
+  // Which `state.attempt` the completion sequence (loot box -> streak saved
+  // -> XP up, each a full-screen push) has already been kicked off for —
+  // null before the first completion. Keyed on `attempt` (bumped by every
+  // `start`/`restart`, issue #072) rather than a plain bool so "Redo whole
+  // set"/"Redo missed items" correctly re-triggers the sequence for the new
+  // session's own completion instead of treating it as already shown.
+  int? _sequenceStartedForAttempt;
 
   @override
   void initState() {
@@ -150,19 +149,20 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
 
     final state = ref.watch(lessonControllerProvider);
     final controller = ref.read(lessonControllerProvider.notifier);
+    final result = state.isDone ? controller.buildResult() : null;
+
+    if (result != null) {
+      _ensureCompletionSequenceStarted(state);
+    }
 
     // Once the lesson is done there's nothing left to lose: back nav (system
-    // back or the X) pops straight to detail with the result, no confirm —
-    // but still gives the #059 lootbox a chance to show first. Mid-lesson,
-    // back nav goes through the quit-confirm dialog instead.
+    // back or the X) goes straight Home, no confirm. Mid-lesson, back nav
+    // goes through the quit-confirm dialog instead. The completion sequence
+    // itself (loot box/streak/XP, each pushed on top) has no back nav of its
+    // own, same as this screen's own PopScope while mid-lesson.
     Future<void> handleBack() async {
       if (state.isDone) {
-        final result = controller.buildResult();
-        if (result != null) {
-          await _continueFromResult(result, l10n);
-        } else {
-          Navigator.of(context).pop();
-        }
+        _goHome(context);
         return;
       }
       final shouldQuit = await _showQuitDialog(context, l10n);
@@ -235,8 +235,8 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
         ),
         body: items.isEmpty
             ? Center(child: Text(l10n.libraryLoading))
-            : state.isDone
-            ? _buildResultScreen(context, l10n, controller)
+            : result != null
+            ? _buildResultScreen(context, l10n, state, controller, result)
             : _buildLessonBody(context, ref, l10n, state, controller),
       ),
     );
@@ -419,27 +419,105 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
     }
   }
 
-  /// Shows the #059 lootbox reveal once, if this lesson's completion won
-  /// one, then pops [result] to the caller's original destination —
-  /// shared by the result screen's own "back" button and the overflow
-  /// menu/system-back path (both of which land on the same done state).
-  Future<void> _continueFromResult(
-    LessonResult result,
-    AppLocalizations l10n,
-  ) async {
-    if (_continuingFromResult) return;
-    _continuingFromResult = true;
-    final lootboxReward = ref.read(lessonControllerProvider).lootboxReward;
-    if (lootboxReward != null && !_lootboxShown) {
-      _lootboxShown = true;
-      await Navigator.of(context).push<void>(
-        MaterialPageRoute<void>(
-          builder: (_) => LootboxScreen(reward: lootboxReward, l10n: l10n),
-        ),
-      );
-      if (!mounted) return;
+  /// Kicks off the post-lesson completion sequence (issue #078) exactly
+  /// once per [LessonState.attempt] — guarded by [_sequenceStartedForAttempt]
+  /// so a rebuild while mid-sequence (or landing on `done` again via
+  /// rebuild/rotation replaying the same state, see `LessonController`'s
+  /// class doc) never re-triggers it. Deferred to after build (like
+  /// [_ensureLessonStarted]) since pushing a route during build isn't safe.
+  ///
+  /// Captures only [state.attempt], not [state]/[result] themselves: when
+  /// this same [LessonScreen] route is reused for a brand-new session
+  /// (Home's Continue button pushes a fresh `LessonScreen(setId: ...)`
+  /// with no `items`, so the *first* build of the new instance still sees
+  /// the *previous* instance's stale provider state for one frame, since
+  /// `_ensureLessonStarted`'s own `start()` call is deferred the same way
+  /// — issue #078 regression found via `issue062_lootbox_animation_test`),
+  /// a closure holding that stale `state`/`result` would still push the
+  /// wrong screen once its callback runs. [_runCompletionSequence]
+  /// re-reads the live state instead and bails if [attempt] no longer
+  /// matches it.
+  void _ensureCompletionSequenceStarted(LessonState state) {
+    if (_sequenceStartedForAttempt == state.attempt) return;
+    _sequenceStartedForAttempt = state.attempt;
+    final attempt = state.attempt;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _runCompletionSequence(attempt);
+      }
+    });
+  }
+
+  /// Pushes each applicable completion screen in turn — loot box (#059, if
+  /// [LessonState.lootboxReward] isn't null) -> streak saved (#011, if
+  /// [LessonState.streakIsNewDayAfterLesson]) -> XP up (#010/#053, always)
+  /// — awaiting each Continue tap before pushing the next. Once the last
+  /// one pops, the summary screen underneath (already the current body) is
+  /// revealed.
+  ///
+  /// Re-reads the controller's live state/result rather than trusting
+  /// values captured when this was scheduled, and bails entirely if
+  /// [attempt] no longer matches — see [_ensureCompletionSequenceStarted].
+  Future<void> _runCompletionSequence(int attempt) async {
+    final state = ref.read(lessonControllerProvider);
+    if (state.attempt != attempt || !state.isDone) return;
+    final result = ref.read(lessonControllerProvider.notifier).buildResult();
+    if (result == null) return;
+    final l10n = AppLocalizations.of(context)!;
+
+    final lootboxReward = state.lootboxReward;
+    if (lootboxReward != null) {
+      if (!await _pushAndWait(
+        (_) => LootboxScreen(reward: lootboxReward, l10n: l10n),
+      )) {
+        return;
+      }
     }
-    Navigator.of(context).pop(result);
+    if (state.streakIsNewDayAfterLesson == true) {
+      if (!await _pushAndWait(
+        (_) => StreakSavedScreen(
+          streakCount: state.streakCountAfterLesson ?? 0,
+          l10n: l10n,
+        ),
+      )) {
+        return;
+      }
+    }
+    await _pushAndWait(
+      (_) => XpUpScreen(
+        xpEarned: XpService.xpEarned(result),
+        bonus: XpService.lessonBonus(result),
+        xpTotal: state.xpTotalAfterLesson ?? 0,
+        xpTotalBefore: state.xpTotalBeforeLesson,
+        l10n: l10n,
+      ),
+    );
+  }
+
+  /// Pushes [builder] and awaits its pop, returning whether this screen is
+  /// still mounted afterward — the shared guard every completion-sequence
+  /// step needs before pushing the next one.
+  Future<bool> _pushAndWait(WidgetBuilder builder) async {
+    await Navigator.of(context)
+        .push<void>(MaterialPageRoute<void>(builder: builder));
+    return mounted;
+  }
+
+  /// Pops back to Home (the app's root route) regardless of how deep the
+  /// entry-point stack is — Home's Continue button, the Library row's play
+  /// icon, and a set's "Start lesson" FAB all land here identically (issue
+  /// #078 retires the old entry-point-specific `backLabel`).
+  void _goHome(BuildContext context) {
+    Navigator.of(context).popUntil((route) => route.isFirst);
+  }
+
+  /// Pops back to Home, then pushes `SetDetailScreen` for [setId] on top —
+  /// same "regardless of entry point" guarantee as [_goHome].
+  void _goToSetOverview(BuildContext context, int setId) {
+    Navigator.of(context).popUntil((route) => route.isFirst);
+    Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(builder: (_) => SetDetailScreen(setId: setId)),
+    );
   }
 
   Future<bool?> _showQuitDialog(BuildContext context, AppLocalizations l10n) {
@@ -456,20 +534,33 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
   Widget _buildResultScreen(
     BuildContext context,
     AppLocalizations l10n,
+    LessonState state,
     LessonController controller,
+    LessonResult result,
   ) {
-    final result = controller.buildResult();
-    if (result == null) return const SizedBox.shrink();
+    // Resolved against the asset-backed catalog (not drift) — see
+    // `LessonState.equippedPetId` for why this avoids `equippedPetProvider`
+    // (which would watch the live, drift-backed `profileProvider` stream).
+    final catalog = ref.watch(petCatalogProvider).asData?.value;
+    final pet = catalog == null
+        ? PetCatalog.defaultEntry
+        : catalog.firstWhere(
+            (entry) => entry.id == state.equippedPetId,
+            orElse: () => PetCatalog.defaultEntry,
+          );
+    final missedItems = controller.missedItems();
 
-    // Pop with result (user-initiated) so #010/#011 can consume it via
-    // Navigator return; also exposed via lessonResultProvider.
     return LessonResultScreen(
       key: const Key('lessonResultScreen'),
       result: result,
       l10n: l10n,
-      onPracticeAgain: () => controller.restart(),
-      onBackToLibrary: () => _continueFromResult(result, l10n),
-      backLabel: widget.backLabel ?? l10n.lessonBackToLibrary,
+      pet: pet,
+      onHome: () => _goHome(context),
+      onSetOverview: () => _goToSetOverview(context, result.setId),
+      onRedoWholeSet: () => controller.restart(),
+      onRedoMissedItems: missedItems.isEmpty
+          ? null
+          : () => controller.restartWithItems(missedItems),
     );
   }
 }

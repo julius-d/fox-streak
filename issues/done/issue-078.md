@@ -1,6 +1,6 @@
 # Issue 078: Split lesson completion into four sequential screens (loot box → streak → XP → summary)
 
-Status: open | Priority: P1 | Type: UX | Refined-at: 2026-10-26
+Status: done | Priority: P1 | Type: UX | Refined-at: 2026-10-26 | Completed-at: 2026-10-26
 
 ## Goal
 
@@ -78,40 +78,40 @@ own reward-specific visual.
 
 ## Acceptance Criteria
 
-- [ ] On lesson completion, screens are shown in order — loot box (if
+- [x] On lesson completion, screens are shown in order — loot box (if
       earned) → streak saved (if `isNewDay`) → XP up (always) → summary
       (always) — each a full screen the user must tap through, no
       skipping ahead and no back-navigation mid-sequence.
-- [ ] Loot box screen is unchanged in content/behavior (only its place in
+- [x] Loot box screen is unchanged in content/behavior (only its place in
       the sequence moves — it now appears immediately on lesson
       completion instead of on exit).
-- [ ] Streak saved screen only appears when `StreakUpdate.isNewDay` is
+- [x] Streak saved screen only appears when `StreakUpdate.isNewDay` is
       true for this lesson; a 2nd/3rd same-day lesson skips straight past
       it. Shows the existing streak text + `StreakBadge` content, moved
       from today's result screen.
-- [ ] XP up screen always appears and carries over, unchanged: XP count-up,
+- [x] XP up screen always appears and carries over, unchanged: XP count-up,
       perfect-score bonus callout, level-up callout + confetti + chime
       (only when leveled up), level progress bar.
-- [ ] Summary screen always appears last: pet celebration, score text
+- [x] Summary screen always appears last: pet celebration, score text
       (correct/total + %), and four buttons — Home, Set overview, Redo
       whole set, Redo missed items (omitted when there are zero missed
       items) — in that order, with the primary button chosen per the
       visual-weight rule above.
-- [ ] "Redo whole set" and "Redo missed items" both restart in place (same
+- [x] "Redo whole set" and "Redo missed items" both restart in place (same
       `LessonScreen`/`LessonController` instance, no re-navigation) the
       same way today's "Practice again" does.
-- [ ] "Home" and "Set overview" both work correctly regardless of which
+- [x] "Home" and "Set overview" both work correctly regardless of which
       entry point originally launched the lesson (Home, Library row,
       Set detail FAB).
-- [ ] `backLabel`/#034's entry-point-specific label plumbing is removed
+- [x] `backLabel`/#034's entry-point-specific label plumbing is removed
       from `LessonScreen`/`LessonResultScreen` call sites now that both
       Home and Set overview are always shown.
-- [ ] New/updated tests cover: the full sequence order (with and without a
+- [x] New/updated tests cover: the full sequence order (with and without a
       loot box reward, with and without `isNewDay`), the streak screen
       being skipped on a same-day repeat lesson, the summary screen's
       4-vs-3-button perfect-score case, and that redo-missed only
       includes wrong/skipped items.
-- [ ] `flutter analyze`, `dart format --output=none --set-exit-if-changed .`,
+- [x] `flutter analyze`, `dart format --output=none --set-exit-if-changed .`,
       `dart fix --dry-run`, and `flutter test` are all clean.
 
 ## Tasks
@@ -166,3 +166,40 @@ dart format --output=none --set-exit-if-changed .
 dart fix --dry-run
 flutter test
 ```
+
+## Summary
+
+New `StreakSavedScreen`/`XpUpScreen`, trimmed `LessonResultScreen` (summary,
+4 buttons), and `LessonScreen._runCompletionSequence` driving the push
+order. Found and fixed a stale-closure race: re-pushing `LessonScreen` for
+a new session could briefly see the *previous* session's `done` state
+before `start()`'s own deferred reset ran, re-triggering the old
+completion sequence — `_runCompletionSequence` now re-reads live state and
+bails if its captured `attempt` no longer matches. Filed #080 for a
+pre-existing stale `foxPet-onFire` assertion found in
+`streak_result_test.dart` (dead since #059, unrelated to this issue).
+New integration test: `issue078_completion_sequence_test.dart`. Screenshots
+in this folder: `issue-078-streak-saved-screen.png`,
+`issue-078-xp-up-screen.png`, `issue-078-summary-redo-missed-items.png`.
+
+## Code review
+
+Loot box/streak/XP-up screens don't block system back/swipe mid-sequence.
+Not fixed: `LootboxScreen`'s posture is explicitly unchanged by this
+issue, and fixing only the two new screens would be inconsistent with it
+— filed as issue #081 covering all three together.
+
+`lessonResultProvider`'s doc comment claimed a value is still returned via
+`Navigator.pop(result)`, stale since `_goHome`/`_goToSetOverview` pop with
+no value.
+Fixed: removed the stale line.
+
+`LessonResultScreen` took both `hasMissedItems: bool` and
+`onRedoMissedItems: VoidCallback?`, which a future caller could set
+inconsistently.
+Fixed: dropped `hasMissedItems`; button visibility/primary-ness now derive
+solely from `onRedoMissedItems != null`.
+
+`_runCompletionSequence` repeated the same push-and-check-mounted
+boilerplate three times.
+Fixed: extracted a `_pushAndWait` helper.

@@ -1,11 +1,16 @@
-// Integration test for streak display on the lesson result screen
-// (issue #011).
+// Integration test for streak display on the streak-saved completion
+// screen (issue #011; moved from the combined lesson result screen onto
+// its own dedicated `StreakSavedScreen` by issue #078).
 //
 // Drives the real `LessonScreen` with the real `MultipleChoiceCard` (no
 // test card builder) through a lesson that lands on a streak milestone,
-// proving the on-fire pet, streak headline, and `StreakBadge` genuinely
-// render with the right numbers — and that the underlying `streak_count`/
-// `last_active_day` columns were actually written exactly once.
+// proving the streak headline and `StreakBadge` genuinely render with the
+// right numbers — and that the underlying `streak_count`/`last_active_day`
+// columns were actually written exactly once. (Not covered here: issue
+// #078 found that `StreakSavedScreen`/the summary screen's pet celebration
+// has no milestone-specific visual — #059 retired the old on-fire/lit/
+// empty state painter without replacing it with anything streak-aware;
+// see issues/issue-080.md for that gap, tracked separately.)
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
@@ -107,10 +112,11 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    // Result screen: milestone hit -> on-fire pet, streak headline,
-    // and the StreakBadge both showing "3".
-    expect(find.byKey(const Key('lessonResultScreen')), findsOneWidget);
-    expect(find.byKey(const Key('foxPet-onFire')), findsOneWidget);
+    // This fresh profile's completion also advances the streak, so the
+    // streak-saved screen appears automatically (the loop above's final
+    // CONTINUE tap already settled its push): milestone hit -> streak
+    // headline and the StreakBadge both showing "3".
+    expect(find.byKey(const Key('streakSavedScreen')), findsOneWidget);
     expect(find.text('3-day streak!'), findsOneWidget);
     expect(find.byKey(const Key('streakBadge')), findsOneWidget);
     expect(find.byKey(const Key('streakCountLabel')), findsOneWidget);

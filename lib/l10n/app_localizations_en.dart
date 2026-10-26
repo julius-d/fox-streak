@@ -375,13 +375,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get streakTodayDoneLabel => 'Today\'s lesson counted';
 
   @override
-  String get lessonPracticeAgain => 'Practice again';
-
-  @override
   String get lessonBackToLibrary => 'Back to library';
 
   @override
-  String get lessonBackToHome => 'Back to home';
+  String get lessonStreakSavedHeading => 'Streak saved!';
+
+  @override
+  String get lessonHome => 'Home';
+
+  @override
+  String get lessonSetOverview => 'Set overview';
+
+  @override
+  String get lessonRedoWholeSet => 'Redo whole set';
+
+  @override
+  String get lessonRedoMissedItems => 'Redo missed items';
 
   @override
   String get homeGreetingNight => 'Up late?';

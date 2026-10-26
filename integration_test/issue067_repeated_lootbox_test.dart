@@ -83,9 +83,11 @@ Future<({int setId, int itemId})> _insertSingleItemSet(AppDatabase db) async {
   return (setId: setId, itemId: itemId);
 }
 
-/// Resumes the (only) set via Home's Continue button, completes its single
-/// item correctly, and taps "Back to home" — landing either on
-/// `LootboxScreen` (a trigger completion) or straight back on `HomeScreen`.
+/// Resumes the (only) set via Home's Continue button and completes its
+/// single item correctly, settling right after CONTINUE — leaving the
+/// caller to decide what's showing next: the #078 completion sequence's
+/// loot box (if this completion won one) is automatic now, no longer
+/// something a "Back to home" tap inserts.
 Future<void> _completeOneLessonFromHome(WidgetTester tester) async {
   await tester.tap(find.byKey(const Key('homeContinueButton')));
   await settle(tester);
@@ -95,14 +97,20 @@ Future<void> _completeOneLessonFromHome(WidgetTester tester) async {
   await settle(tester);
   await tester.tap(find.byKey(const Key('checkButton'))); // CONTINUE
   await settle(tester);
-  expect(find.byKey(const Key('lessonResultScreen')), findsOneWidget);
-  await tester.ensureVisible(find.byKey(const Key('backToLibraryButton')));
-  await tester.tap(find.byKey(const Key('backToLibraryButton')));
-  await settle(tester);
 }
 
-/// Opens and dismisses the lootbox currently on screen, landing back on
-/// Home.
+/// Taps through a non-trigger completion's streak/XP screens (no loot box)
+/// to land back on Home.
+Future<void> _skipToHome(WidgetTester tester) async {
+  expect(find.byKey(const Key('lootboxScreen')), findsNothing);
+  await dismissCompletionScreens(tester);
+  await tester.tap(find.byKey(const Key('homeButton')));
+  await settle(tester);
+  expect(find.byKey(const Key('homeScreen')), findsOneWidget);
+}
+
+/// Opens and dismisses the lootbox currently on screen, then taps through
+/// the always-present XP up screen, landing back on Home.
 Future<void> _openAndDismissLootbox(WidgetTester tester) async {
   expect(find.byKey(const Key('lootboxScreen')), findsOneWidget);
   await tester.tap(find.byKey(const Key('lootboxOpenButton')));
@@ -110,6 +118,9 @@ Future<void> _openAndDismissLootbox(WidgetTester tester) async {
   await tester.tap(find.byKey(const Key('lootboxContinueButton')));
   await settle(tester);
   expect(find.byKey(const Key('lootboxScreen')), findsNothing);
+  await dismissCompletionScreens(tester);
+  await tester.tap(find.byKey(const Key('homeButton')));
+  await settle(tester);
   expect(find.byKey(const Key('homeScreen')), findsOneWidget);
 }
 
@@ -144,8 +155,7 @@ void main() {
 
     // 1st completion: no lootbox yet.
     await _completeOneLessonFromHome(tester);
-    expect(find.byKey(const Key('lootboxScreen')), findsNothing);
-    expect(find.byKey(const Key('homeScreen')), findsOneWidget);
+    await _skipToHome(tester);
 
     // 2nd completion: the original #059 trigger still fires.
     await _completeOneLessonFromHome(tester);
@@ -156,12 +166,10 @@ void main() {
     // 3rd and 4th completions: no retrigger (issue #067's next one is
     // the 5th).
     await _completeOneLessonFromHome(tester);
-    expect(find.byKey(const Key('lootboxScreen')), findsNothing);
-    expect(find.byKey(const Key('homeScreen')), findsOneWidget);
+    await _skipToHome(tester);
 
     await _completeOneLessonFromHome(tester);
-    expect(find.byKey(const Key('lootboxScreen')), findsNothing);
-    expect(find.byKey(const Key('homeScreen')), findsOneWidget);
+    await _skipToHome(tester);
 
     // 5th completion: issue #067's repeating cadence retriggers the
     // lootbox, independently reward-rolled, winning a 3rd pet.
