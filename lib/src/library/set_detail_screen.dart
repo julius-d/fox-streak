@@ -1,8 +1,11 @@
-// Set detail: item list + overflow menu (issue #003).
+// Set detail: item list (issue #003).
 //
 // Shows items text-only (no images — #014). No field editing here; add/edit
 // goes through `ItemEditorScreen` (field widgets owned by #004; converted
-// from a dialog to a full screen by #047).
+// from a dialog to a full screen by #047). Share/Import used to live in an
+// `AppBar` overflow menu here — moved to the Library screen's card menu and
+// FAB speed-dial respectively, and the (now empty) overflow menu removed
+// entirely (issue #074).
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,7 +13,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../l10n/app_localizations.dart';
 import '../data/database.dart';
 import '../data/providers.dart';
-import '../data/set_json_codec.dart';
 import '../data/validation.dart';
 import '../pet/pet_providers.dart';
 import '../theme/fox_streak_theme.dart';
@@ -21,9 +23,8 @@ import 'item_editor.dart';
 import 'item_type_icons.dart';
 import 'library_providers.dart';
 import 'phone_formatting.dart';
-import 'share_actions.dart';
 
-/// Detail view for one set: its items plus share/import overflow menu.
+/// Detail view for one set: its items.
 class SetDetailScreen extends ConsumerWidget {
   final int setId;
 
@@ -63,7 +64,6 @@ class SetDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final setsRepo = ref.read(setsRepositoryProvider);
     final itemsAsync = ref.watch(itemsForSetProvider(setId));
     var title = l10n.libraryTitle;
     String? category;
@@ -76,44 +76,7 @@ class SetDetailScreen extends ConsumerWidget {
       }
     });
     return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-        actions: [
-          PopupMenuButton<String>(
-            key: const Key('setOverflowMenu'),
-            tooltip: l10n.setActions,
-            onSelected: (value) async {
-              if (value == 'share') {
-                try {
-                  final set = await setsRepo.getSetById(setId);
-                  if (!context.mounted) return;
-                  await shareSet(ref, setId, set?.title ?? 'set');
-                } catch (_) {
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context)
-                      .showSnackBar(SnackBar(content: Text(l10n.shareFailed)));
-                }
-              } else if (value == 'import') {
-                try {
-                  await importSetFromPicker(ref);
-                } on SetImportException catch (e) {
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context)
-                      .showSnackBar(SnackBar(content: Text(e.toString())));
-                } catch (_) {
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context)
-                      .showSnackBar(SnackBar(content: Text(l10n.importFailed)));
-                }
-              }
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(value: 'share', child: Text(l10n.shareSet)),
-              PopupMenuItem(value: 'import', child: Text(l10n.importSet)),
-            ],
-          ),
-        ],
-      ),
+      appBar: AppBar(title: Text(title)),
       // Two stacked FABs (#042): "Start lesson" (primary, bottom) stays
       // reachable without scrolling past the item list; "Add item"
       // (secondary) sits above it. Distinct heroTags since both are mounted

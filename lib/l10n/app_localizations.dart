@@ -1169,6 +1169,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{amount} coins'**
   String coinsSemanticLabel(int amount);
+
+  /// Label for the "Edit items" entry in a set card's three-dot menu, opening SetDetailScreen — distinct from editSet, which is SetEditorScreen's title (issue #074)
+  ///
+  /// In en, this message translates to:
+  /// **'Edit items'**
+  String get editItems;
+
+  /// Tooltip for the Library's main FAB when expanded into the New set/Import speed-dial, showing a close icon to collapse it without running either action (issue #074)
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get newSetFabCollapseTooltip;
 }
 
 class _AppLocalizationsDelegate

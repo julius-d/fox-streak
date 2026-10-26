@@ -40,14 +40,12 @@ void main() {
       await pumpFoxStreakApp(tester, db: db, clock: clock);
       await skipOnboardingAndOpenLibrary(tester);
 
-      await tester.tap(find.byKey(const Key('newSetFab')));
-      await settle(tester);
+      await openNewSetEditor(tester);
       await tester.enterText(find.byKey(const Key('titleField')), 'Family');
       await tester.enterText(find.byKey(const Key('creatorField')), 'Mama');
       await tester.tap(find.byKey(const Key('saveSetButton')));
       await settle(tester);
-      await tester.tap(editSetButton('Family'));
-      await settle(tester);
+      await openSetDetail(tester, 'Family');
 
       // --- Date item ---
       await tester.tap(find.byKey(const Key('addItemFab')));

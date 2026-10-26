@@ -6,14 +6,17 @@
 //
 // Stable finder keys this harness relies on (see each screen for the full
 // list; this is the cross-flow subset):
-// - Library: `newSetFab`, `setTile-<id>` (row, no longer a tap target —
-//   #042), `playSet-<id>` (opens `LessonScreen` directly), `editSet-<id>`
-//   (opens `SetDetailScreen`), `setMenu-<id>` (rename/duplicate/delete),
-//   `tryDemoSetButton`.
+// - Library: `newSetFab` (speed-dial toggle; expanded shows `newSetFabScrim`,
+//   `newSetMiniFab`, `importSetFab` — issue #074), `setTile-<id>` (row, no
+//   longer a tap target — #042), `playSet-<id>` (opens `LessonScreen`
+//   directly), `setMenu-<id>` (edit items/rename/duplicate/share/delete —
+//   issue #074; "Edit items" opens `SetDetailScreen`, same destination the
+//   removed pencil icon used to open), `tryDemoSetButton`.
 // - Set editor: `titleField`, `creatorField`, `descriptionField`,
 //   `saveSetButton`; delete confirm: `confirmDeleteSetButton`.
-// - Set detail: `addItemFab`, `startLessonFab`, `setOverflowMenu`
-//   (share/import), `itemTile-<id>`, `editItem-<id>`, `deleteItem-<id>`.
+// - Set detail: `addItemFab`, `startLessonFab` (no overflow menu — its
+//   share/import entries moved to the Library screen, issue #074),
+//   `itemTile-<id>`, `editItem-<id>`, `deleteItem-<id>`.
 // - Item editor: `itemTypeField`, `itemPromptField`, `itemAnswerField`
 //   (shared by choice/freeText/phone), `itemDayField`/`itemMonthField`/
 //   `itemYearField`, `saveItemButton`.
@@ -39,6 +42,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:fox_streak_app/l10n/app_localizations.dart';
+import 'package:fox_streak_app/l10n/app_localizations_en.dart';
 import 'package:fox_streak_app/main.dart';
 import 'package:fox_streak_app/src/data/clock.dart';
 import 'package:fox_streak_app/src/data/database.dart';
@@ -49,6 +53,12 @@ import 'package:fox_streak_app/src/stats/pet_service.dart';
 import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
 
 export 'package:fox_streak_app/test/data/test_helpers.dart' show FakeClock;
+
+/// Every flow spec in this suite runs under the device's real system locale,
+/// which is English in CI/dev (see `issue049_set_detail_date_phone_format_
+/// test.dart`'s header for why locale overrides don't apply to this
+/// device-mode harness) — safe to hardcode for finding menu-entry text.
+final _l10nEn = AppLocalizationsEn();
 
 /// Isolated in-memory DB for a single test — never the real on-device file.
 AppDatabase makeIntegrationTestDb() =>
@@ -134,13 +144,37 @@ Finder listTileWithText(String text) {
   return find.ancestor(of: textInTile, matching: find.byType(ListTile));
 }
 
-/// Finds the edit icon button for the Library set row titled [title], which
-/// opens `SetDetailScreen` — the row itself is no longer a tap target
-/// (issue #042).
-Finder editSetButton(String title) => find.descendant(
+/// Finds the three-dot menu button for the Library row titled [title]
+/// (issue #074: edit items/rename/duplicate/share/delete).
+Finder setMenuButton(String title) => find.descendant(
   of: listTileWithText(title),
-  matching: find.byIcon(Icons.edit),
+  matching: find.byType(PopupMenuButton<String>),
 );
+
+/// Opens `SetDetailScreen` for the Library row titled [title], via the
+/// card's three-dot menu "Edit items" entry — the entry's destination is
+/// the same screen the removed pencil icon (`editSet-<id>`) used to open
+/// directly (issue #074). [index] selects among rows sharing the same
+/// title (e.g. an original set and its import).
+Future<void> openSetDetail(
+  WidgetTester tester,
+  String title, {
+  int index = 0,
+}) async {
+  await tester.tap(setMenuButton(title).at(index));
+  await settle(tester);
+  await tester.tap(find.text(_l10nEn.editItems));
+  await settle(tester);
+}
+
+/// Opens `SetEditorScreen`'s create-set flow via `newSetFab`'s speed-dial
+/// (issue #074): expands the FAB, then taps its "New set" mini-FAB.
+Future<void> openNewSetEditor(WidgetTester tester) async {
+  await tester.tap(find.byKey(const Key('newSetFab')));
+  await settle(tester);
+  await tester.tap(find.byKey(const Key('newSetMiniFab')));
+  await settle(tester);
+}
 
 /// Finds the play icon button for the Library set row titled [title], which
 /// jumps straight into `LessonScreen`, skipping `SetDetailScreen` (#042).

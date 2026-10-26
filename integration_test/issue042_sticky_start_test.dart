@@ -33,8 +33,7 @@ void main() {
       await skipOnboardingAndOpenLibrary(tester);
 
       // --- Create an empty set ---
-      await tester.tap(find.byKey(const Key('newSetFab')));
-      await settle(tester);
+      await openNewSetEditor(tester);
       await tester.enterText(find.byKey(const Key('titleField')), 'Empty');
       await tester.enterText(find.byKey(const Key('creatorField')), 'Mama');
       await tester.tap(find.byKey(const Key('saveSetButton')));
@@ -50,8 +49,7 @@ void main() {
       await settle(tester);
 
       // --- SetDetailScreen's own "Start lesson" FAB: same behavior ---
-      await tester.tap(editSetButton('Empty'));
-      await settle(tester);
+      await openSetDetail(tester, 'Empty');
       // Reachable without scrolling, right after opening the screen.
       expect(find.byKey(const Key('startLessonFab')), findsOneWidget);
       await tester.tap(find.byKey(const Key('startLessonFab')));
@@ -64,14 +62,12 @@ void main() {
       await settle(tester);
 
       // --- Create a set with one item ---
-      await tester.tap(find.byKey(const Key('newSetFab')));
-      await settle(tester);
+      await openNewSetEditor(tester);
       await tester.enterText(find.byKey(const Key('titleField')), 'Animals');
       await tester.enterText(find.byKey(const Key('creatorField')), 'Mama');
       await tester.tap(find.byKey(const Key('saveSetButton')));
       await settle(tester);
-      await tester.tap(editSetButton('Animals'));
-      await settle(tester);
+      await openSetDetail(tester, 'Animals');
       await tester.tap(find.byKey(const Key('addItemFab')));
       await settle(tester);
       await tester.enterText(find.byKey(const Key('itemPromptField')), 'Hund');
@@ -85,8 +81,6 @@ void main() {
       await tester.tap(playSetButton('Animals'));
       await settle(tester);
       expect(find.byKey(const Key('lessonProgressBar')), findsOneWidget);
-      // No detail screen in between: its overflow menu never mounted.
-      expect(find.byKey(const Key('setOverflowMenu')), findsNothing);
 
       // Quit back out: lands on Library directly (detail was skipped).
       await tester.tap(find.byKey(const Key('lessonOverflowMenu')));
@@ -97,7 +91,6 @@ void main() {
       await settle(tester);
 
       expect(listTileWithText('Animals'), findsOneWidget);
-      expect(find.byKey(const Key('setOverflowMenu')), findsNothing);
       expect(find.text(l10n.libraryTitle), findsOneWidget);
     },
   );

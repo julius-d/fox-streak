@@ -173,11 +173,31 @@ void main() {
       await settle(tester);
 
       expect(find.byType(LessonScreen), findsOneWidget);
-      expect(find.byKey(const Key('setOverflowMenu')), findsNothing);
 
       await unmount(tester);
     },
   );
+
+  testWidgets('AppBar has no overflow menu — Share/Import moved to the Library '
+      'screen (issue #074)', (tester) async {
+    final clock = FakeClock(kTestToday);
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(() async => db.close());
+    final repo = SetsRepository(db, clock);
+    final setId = await repo.createSet(title: 'Animals', createdBy: 'Mama');
+
+    await pumpSetDetail(tester, db, clock, setId);
+
+    expect(
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.byType(PopupMenuButton<String>),
+      ),
+      findsNothing,
+    );
+
+    await unmount(tester);
+  });
 
   testWidgets('a choice item in a math set shows the math category icon, not '
       'translate (#045)', (tester) async {

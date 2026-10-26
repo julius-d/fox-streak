@@ -1,6 +1,6 @@
 # Issue 074: Rework set creation/import entry points and the card's three-dot menu
 
-Status: open | Priority: P2 | Type: UX | Refined-at: 2026-10-26
+Status: done | Priority: P2 | Type: UX | Refined-at: 2026-10-26 | Completed-at: 2026-10-26
 
 ## Goal
 
@@ -64,35 +64,35 @@ entirely.
 
 ## Acceptance criteria
 
-- [ ] Tapping `LibraryScreen`'s "New set" FAB expands it into two labeled
+- [x] Tapping `LibraryScreen`'s "New set" FAB expands it into two labeled
       mini-FABs, "New set" and "Import", behind a scrim.
-- [ ] Tapping the "New set" mini-FAB opens `SetEditorScreen` with no
+- [x] Tapping the "New set" mini-FAB opens `SetEditorScreen` with no
       `existing` set (today's create flow), then collapses the speed-dial.
-- [ ] Tapping the "Import" mini-FAB runs `importSetFromPicker`, surfaces
+- [x] Tapping the "Import" mini-FAB runs `importSetFromPicker`, surfaces
       `importFailed`/`SetImportException` errors via snackbar on failure,
       and collapses the speed-dial either way (including picker-cancel,
       which stays a no-op).
-- [ ] Tapping the scrim, the main FAB again, or the back gesture while
+- [x] Tapping the scrim, the main FAB again, or the back gesture while
       expanded collapses the speed-dial without running either action.
-- [ ] `SetDetailScreen`'s `AppBar` no longer has an overflow/three-dot menu
+- [x] `SetDetailScreen`'s `AppBar` no longer has an overflow/three-dot menu
       (the `setOverflowMenu` `PopupMenuButton` and its Share/Import entries
       are gone).
-- [ ] Each set card (`_SetCard`) shows exactly two trailing affordances: the
+- [x] Each set card (`_SetCard`) shows exactly two trailing affordances: the
       play icon and the three-dot menu — the pencil `editSet-<id>` icon is
       gone.
-- [ ] The card's three-dot menu has exactly these five entries, each with a
+- [x] The card's three-dot menu has exactly these five entries, each with a
       leading icon: Edit items, Rename, Duplicate, Share, Delete.
-- [ ] "Edit items" opens `SetDetailScreen` for that set (same destination
+- [x] "Edit items" opens `SetDetailScreen` for that set (same destination
       the removed pencil icon used to open).
-- [ ] "Share" runs today's `shareSet` flow with the existing
+- [x] "Share" runs today's `shareSet` flow with the existing
       `shareFailed`-snackbar error handling, now triggered from the card's
       menu instead of `SetDetailScreen`'s.
-- [ ] The card row itself remains non-tappable (`ListTile.onTap` unset) —
+- [x] The card row itself remains non-tappable (`ListTile.onTap` unset) —
       unchanged from #042.
-- [ ] 48dp min tap targets + screen-reader tooltips/semantics on the new
+- [x] 48dp min tap targets + screen-reader tooltips/semantics on the new
       mini-FABs, matching the a11y floor the rest of the kit follows
       (#015).
-- [ ] `flutter analyze`, `dart format --output=none --set-exit-if-changed .`,
+- [x] `flutter analyze`, `dart format --output=none --set-exit-if-changed .`,
       `dart fix --dry-run`, and `flutter test` are all clean per AGENTS.md's
       Verify section.
 
@@ -168,3 +168,33 @@ dart format --output=none --set-exit-if-changed .
 dart fix --dry-run
 flutter test
 ```
+
+## Summary
+
+`LibraryScreen.newSetFab` is now a speed-dial (`_fabMenuExpanded` state +
+`PopScope`): collapsed it's the old extended FAB, expanded it shows a
+black54 scrim plus "Import"/"New set" mini-FABs, closable via the scrim,
+re-tapping the main FAB (now an "×"), or the back gesture. `_SetCard`'s
+pencil icon is gone; its `setMenu-<id>` menu grew to five
+`ListTile`-leading-icon entries (Edit items/Rename/Duplicate/Share/Delete),
+with Share wired to `shareSet` using the same error handling
+`SetDetailScreen` used. `SetDetailScreen`'s now-empty overflow menu (and
+its share/import imports) was deleted outright. Added `editItems` and
+`newSetFabCollapseTooltip` l10n strings (en/de). Updated
+`integration_test/helpers.dart`'s `editSetButton` into an async
+`openSetDetail`/`openNewSetEditor` pair driving the new menu/speed-dial,
+and reworked `flow4_share_roundtrip_test.dart` to exercise Share/Import
+from their new entry points. Added widget tests for the speed-dial's
+expand/collapse paths and the card menu's "Edit items" entry; Share itself
+stays covered only by the integration test (per `share_actions_test.dart`'s
+existing note that `shareSet` opens a real platform channel and isn't
+safely widget-testable).
+
+## Code review
+
+- The speed-dial scrim was a plain `GestureDetector`/`Container`, not real modal-barrier infra, so it only dimmed the Library list visually — screen readers could still reach and "activate" cards/menus underneath it while the menu was expanded.
+  Fixed: wrapped the scrim+mini-FAB overlay in `BlockSemantics`, which hides the semantics of everything painted before it in the same tree.
+- No widget test calls out that `importSetFab` and Share both hit real plugin platform channels (file_picker/share_plus) and are only safely exercised by the integration suite — the issue's own test-coverage note only mentioned this for Share.
+  Not fixed: pure documentation/clarity gap, not a missing-coverage problem — `flow4_share_roundtrip_test.dart` already drives Import's success/bad-JSON/cancel paths end-to-end; filing a separate issue isn't warranted for a one-line comment gap.
+- `openNewSetEditor`'s shared helper never asserts the speed-dial collapsed after opening `SetEditorScreen`, relying on every caller's own subsequent assertions instead.
+  Not fixed: behavior is deterministic from `_createNewSet` calling `_collapseFabMenu()` before `await _openEditor()`, and is already exercised end-to-end by every test using the helper — adding a redundant assertion isn't worth the churn.

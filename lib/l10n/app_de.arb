@@ -689,5 +689,15 @@
       "amount": {"type": "int"}
     }
   },
-  "coinsSemanticLabel": "{amount} Münzen"
+  "coinsSemanticLabel": "{amount} Münzen",
+  "@editItems": {
+    "description": "Label for the \"Edit items\" entry in a set card's three-dot menu, opening SetDetailScreen — distinct from editSet, which is SetEditorScreen's title (issue #074)",
+    "placeholders": {}
+  },
+  "editItems": "Elemente bearbeiten",
+  "@newSetFabCollapseTooltip": {
+    "description": "Tooltip for the Library's main FAB when expanded into the New set/Import speed-dial, showing a close icon to collapse it without running either action (issue #074)",
+    "placeholders": {}
+  },
+  "newSetFabCollapseTooltip": "Schließen"
 }

@@ -45,6 +45,25 @@ Future<void> unmount(WidgetTester tester) async {
   await tester.pump(const Duration(milliseconds: 100));
 }
 
+/// Opens `SetDetailScreen` for set [id] via the card's three-dot menu's
+/// "Edit items" entry — the entry's destination is the same screen the
+/// removed pencil icon used to open directly (issue #074).
+Future<void> openSetDetail(WidgetTester tester, int id) async {
+  await tester.tap(find.byKey(Key('setMenu-$id')));
+  await settle(tester);
+  await tester.tap(find.text('Edit items'));
+  await settle(tester);
+}
+
+/// Opens `SetEditorScreen`'s create-set flow via `newSetFab`'s speed-dial
+/// (issue #074): expands the FAB, then taps its "New set" mini-FAB.
+Future<void> openNewSetEditor(WidgetTester tester) async {
+  await tester.tap(find.byKey(const Key('newSetFab')));
+  await settle(tester);
+  await tester.tap(find.byKey(const Key('newSetMiniFab')));
+  await settle(tester);
+}
+
 Future<AppDatabase> pumpLibrary(WidgetTester tester, FakeClock clock) async {
   final db = AppDatabase.forTesting(NativeDatabase.memory());
   addTearDown(() async => db.close());
@@ -77,8 +96,7 @@ void main() {
     // Empty state CTA is shown.
     expect(find.byKey(const Key('tryDemoSetButton')), findsOneWidget);
 
-    await tester.tap(find.byKey(const Key('newSetFab')));
-    await settle(tester);
+    await openNewSetEditor(tester);
 
     await tester.enterText(find.byKey(const Key('titleField')), 'Animals');
     await tester.enterText(find.byKey(const Key('creatorField')), 'Mama');
@@ -99,8 +117,7 @@ void main() {
     final clock = FakeClock(kTestToday);
     final db = await pumpLibrary(tester, clock);
 
-    await tester.tap(find.byKey(const Key('newSetFab')));
-    await settle(tester);
+    await openNewSetEditor(tester);
 
     await tester.enterText(find.byKey(const Key('creatorField')), 'Mama');
     await tester.tap(find.byKey(const Key('saveSetButton')));
@@ -115,6 +132,88 @@ void main() {
     expect(sets, isEmpty);
     await unmount(tester);
   });
+
+  testWidgets(
+    'newSetFab expands into a scrim + two labeled mini-FABs (issue #074)',
+    (tester) async {
+      final clock = FakeClock(kTestToday);
+      await pumpLibrary(tester, clock);
+
+      expect(find.byKey(const Key('newSetFabScrim')), findsNothing);
+      expect(find.byKey(const Key('newSetMiniFab')), findsNothing);
+      expect(find.byKey(const Key('importSetFab')), findsNothing);
+
+      await tester.tap(find.byKey(const Key('newSetFab')));
+      await settle(tester);
+
+      expect(find.byKey(const Key('newSetFabScrim')), findsOneWidget);
+      expect(find.byKey(const Key('newSetMiniFab')), findsOneWidget);
+      expect(find.byKey(const Key('importSetFab')), findsOneWidget);
+      expect(find.text('New set'), findsOneWidget);
+      expect(find.text('Import'), findsOneWidget);
+      await unmount(tester);
+    },
+  );
+
+  testWidgets(
+    'tapping the scrim collapses newSetFab\'s menu without running either '
+    'action (issue #074)',
+    (tester) async {
+      final clock = FakeClock(kTestToday);
+      await pumpLibrary(tester, clock);
+
+      await tester.tap(find.byKey(const Key('newSetFab')));
+      await settle(tester);
+      await tester.tap(find.byKey(const Key('newSetFabScrim')));
+      await settle(tester);
+
+      expect(find.byKey(const Key('newSetFabScrim')), findsNothing);
+      expect(find.byKey(const Key('newSetMiniFab')), findsNothing);
+      // Still on the empty-state Library screen — no editor was opened.
+      expect(find.byKey(const Key('tryDemoSetButton')), findsOneWidget);
+      await unmount(tester);
+    },
+  );
+
+  testWidgets(
+    'tapping newSetFab again while expanded collapses the menu without '
+    'running either action (issue #074)',
+    (tester) async {
+      final clock = FakeClock(kTestToday);
+      await pumpLibrary(tester, clock);
+
+      await tester.tap(find.byKey(const Key('newSetFab')));
+      await settle(tester);
+      await tester.tap(find.byKey(const Key('newSetFab')));
+      await settle(tester);
+
+      expect(find.byKey(const Key('newSetFabScrim')), findsNothing);
+      expect(find.byKey(const Key('newSetMiniFab')), findsNothing);
+      expect(find.byKey(const Key('tryDemoSetButton')), findsOneWidget);
+      await unmount(tester);
+    },
+  );
+
+  testWidgets(
+    'the device back gesture collapses newSetFab\'s expanded menu without '
+    'running either action (issue #074)',
+    (tester) async {
+      final clock = FakeClock(kTestToday);
+      await pumpLibrary(tester, clock);
+
+      await tester.tap(find.byKey(const Key('newSetFab')));
+      await settle(tester);
+
+      await tester.binding.handlePopRoute();
+      await settle(tester);
+
+      expect(find.byKey(const Key('newSetFabScrim')), findsNothing);
+      expect(find.byKey(const Key('newSetMiniFab')), findsNothing);
+      // The back gesture didn't pop the Library screen itself either.
+      expect(find.byKey(const Key('tryDemoSetButton')), findsOneWidget);
+      await unmount(tester);
+    },
+  );
 
   testWidgets('rename updates the set title', (tester) async {
     final clock = FakeClock(kTestToday);
@@ -134,6 +233,21 @@ void main() {
 
     expect(find.text('Renamed'), findsOneWidget);
     expect((await repo.getSetById(id))?.title, 'Renamed');
+    await unmount(tester);
+  });
+
+  testWidgets('"Edit items" opens SetDetailScreen for that set (issue #074)', (
+    tester,
+  ) async {
+    final clock = FakeClock(kTestToday);
+    final db = await pumpLibrary(tester, clock);
+    final repo = repoOf(db, clock);
+    final id = await repo.createSet(title: 'Animals', createdBy: 'Mama');
+    await settle(tester);
+
+    await openSetDetail(tester, id);
+
+    expect(find.byKey(const Key('addItemFab')), findsOneWidget);
     await unmount(tester);
   });
 
@@ -194,8 +308,7 @@ void main() {
     final id = await repo.createSet(title: 'Contacts', createdBy: 'Mama');
     await settle(tester);
 
-    await tester.tap(find.byKey(Key('editSet-$id')));
-    await settle(tester);
+    await openSetDetail(tester, id);
 
     await tester.tap(find.byKey(const Key('addItemFab')));
     await settle(tester);
@@ -229,8 +342,7 @@ void main() {
     final id = await repo.createSet(title: 'Birthdays', createdBy: 'Mama');
     await settle(tester);
 
-    await tester.tap(find.byKey(Key('editSet-$id')));
-    await settle(tester);
+    await openSetDetail(tester, id);
 
     await tester.tap(find.byKey(const Key('addItemFab')));
     await settle(tester);
@@ -293,7 +405,6 @@ void main() {
       await settle(tester);
 
       expect(find.byType(LessonScreen), findsOneWidget);
-      expect(find.byKey(const Key('setOverflowMenu')), findsNothing);
       await unmount(tester);
     },
   );

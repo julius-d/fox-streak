@@ -31,8 +31,7 @@ void main() {
     await pumpFoxStreakApp(tester, db: db, clock: clock);
     await skipOnboardingAndOpenLibrary(tester);
 
-    await tester.tap(find.byKey(const Key('newSetFab')));
-    await settle(tester);
+    await openNewSetEditor(tester);
 
     // "General" is the 4th segment — scrolled out of the visible
     // viewport (not hit-testable) at 360dp until it's scrolled into
@@ -63,11 +62,7 @@ void main() {
     // Re-open the editor (via rename) and confirm the picker pre-fills
     // from the saved category — proves the off-screen tap actually
     // registered on the scrolled-to segment, not a stale/visible one.
-    final setMenu = find.descendant(
-      of: listTileWithText('Random facts'),
-      matching: find.byType(PopupMenuButton<String>),
-    );
-    await tester.tap(setMenu);
+    await tester.tap(setMenuButton('Random facts'));
     await settle(tester);
     await tester.tap(find.text(l10n.rename));
     await settle(tester);

@@ -646,4 +646,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String coinsSemanticLabel(int amount) {
     return '$amount Münzen';
   }
+
+  @override
+  String get editItems => 'Elemente bearbeiten';
+
+  @override
+  String get newSetFabCollapseTooltip => 'Schließen';
 }

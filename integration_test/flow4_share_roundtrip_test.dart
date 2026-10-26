@@ -1,9 +1,12 @@
-// Flow 4 — Share round-trip (issue #016, builds on #002/#008).
+// Flow 4 — Share round-trip (issue #016, builds on #002/#008; entry points
+// reworked by #074).
 //
 // Drives the real app's export/import wiring (`share_actions.dart`) through
-// `SetDetailScreen`'s overflow menu. Native `share_plus` / `file_picker`
-// calls are stubbed at the platform-interface level (`SharePlatform`/
-// `FilePickerPlatform`) — no real share sheet or file dialog ever opens.
+// the Library screen: Share via a set card's three-dot menu, Import via the
+// `newSetFab` speed-dial's "Import" mini-FAB. Native `share_plus` /
+// `file_picker` calls are stubbed at the platform-interface level
+// (`SharePlatform`/`FilePickerPlatform`) — no real share sheet or file
+// dialog ever opens.
 
 import 'dart:convert';
 import 'dart:typed_data';
@@ -112,24 +115,24 @@ void main() {
       await skipOnboardingAndOpenLibrary(tester);
 
       // Create a set with one item to export.
-      await tester.tap(find.byKey(const Key('newSetFab')));
-      await settle(tester);
+      await openNewSetEditor(tester);
       await tester.enterText(find.byKey(const Key('titleField')), 'Animals');
       await tester.enterText(find.byKey(const Key('creatorField')), 'Mama');
       await tester.tap(find.byKey(const Key('saveSetButton')));
       await settle(tester);
-      await tester.tap(editSetButton('Animals'));
-      await settle(tester);
+      await openSetDetail(tester, 'Animals');
       await tester.tap(find.byKey(const Key('addItemFab')));
       await settle(tester);
       await tester.enterText(find.byKey(const Key('itemPromptField')), 'Hund');
       await tester.enterText(find.byKey(const Key('itemAnswerField')), 'dog');
       await tester.tap(find.byKey(const Key('saveItemButton')));
       await settle(tester);
+      await tester.pageBack();
+      await settle(tester);
 
-      // Share (export): the fake platform captures what would have gone to
-      // the real share sheet.
-      await tester.tap(find.byKey(const Key('setOverflowMenu')));
+      // Share (export) from the card's three-dot menu: the fake platform
+      // captures what would have gone to the real share sheet.
+      await tester.tap(setMenuButton('Animals'));
       await settle(tester);
       await tester.tap(find.text(l10n.shareSet));
       await settle(tester);
@@ -144,26 +147,24 @@ void main() {
       expect(exportedItems.single['prompt'], 'Hund');
       expect(exportedItems.single['answer'], 'dog');
 
-      // Import it back: picker returns the exported JSON bytes as a file.
+      // Import it back via the newSetFab speed-dial: picker returns the
+      // exported JSON bytes as a file.
       fakeFilePicker.onPickFiles = () => [
         _FakePlatformFile(
           'Animals.foxstreak.json',
           utf8.encode(jsonEncode(exportedJson)),
         ),
       ];
-      await tester.tap(find.byKey(const Key('setOverflowMenu')));
+      await tester.tap(find.byKey(const Key('newSetFab')));
       await settle(tester);
-      await tester.tap(find.text(l10n.importSet));
+      await tester.tap(find.byKey(const Key('importSetFab')));
       await settle(tester);
 
-      await tester.pageBack();
-      await settle(tester);
       expect(
         listTileWithText('Animals'),
         findsNWidgets(2),
       ); // original + import
-      await tester.tap(editSetButton('Animals').last);
-      await settle(tester);
+      await openSetDetail(tester, 'Animals', index: 1);
       expect(listTileWithText('Hund'), findsOneWidget);
     },
   );
@@ -179,22 +180,19 @@ void main() {
       await pumpFoxStreakApp(tester, db: db, clock: clock);
       await skipOnboardingAndOpenLibrary(tester);
 
-      await tester.tap(find.byKey(const Key('newSetFab')));
-      await settle(tester);
+      await openNewSetEditor(tester);
       await tester.enterText(find.byKey(const Key('titleField')), 'Scratch');
       await tester.enterText(find.byKey(const Key('creatorField')), 'Mama');
       await tester.tap(find.byKey(const Key('saveSetButton')));
-      await settle(tester);
-      await tester.tap(editSetButton('Scratch'));
       await settle(tester);
 
       // Bad JSON: not even a map.
       fakeFilePicker.onPickFiles = () => [
         _FakePlatformFile('bad.foxstreak.json', utf8.encode('"just a string"')),
       ];
-      await tester.tap(find.byKey(const Key('setOverflowMenu')));
+      await tester.tap(find.byKey(const Key('newSetFab')));
       await settle(tester);
-      await tester.tap(find.text(l10n.importSet));
+      await tester.tap(find.byKey(const Key('importSetFab')));
       await settle(tester);
       expect(find.byType(SnackBar), findsOneWidget);
       // Advance past the snackbar's auto-dismiss duration before the next
@@ -202,14 +200,16 @@ void main() {
       await tester.pump(const Duration(seconds: 5));
       await settle(tester);
 
-      // Cancelled picker: no snackbar, no crash, same screen.
+      // Cancelled picker: no snackbar, no crash, same screen; the
+      // speed-dial collapses either way.
       fakeFilePicker.onPickFiles = () => [];
-      await tester.tap(find.byKey(const Key('setOverflowMenu')));
+      await tester.tap(find.byKey(const Key('newSetFab')));
       await settle(tester);
-      await tester.tap(find.text(l10n.importSet));
+      await tester.tap(find.byKey(const Key('importSetFab')));
       await settle(tester);
       expect(find.byType(SnackBar), findsNothing);
-      expect(find.byKey(const Key('setOverflowMenu')), findsOneWidget);
+      expect(find.byKey(const Key('importSetFab')), findsNothing);
+      expect(listTileWithText('Scratch'), findsOneWidget);
     },
   );
 }

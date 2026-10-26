@@ -29,8 +29,7 @@ void main() {
       final l10n = AppLocalizationsEn();
 
       // --- Create: empty title is blocked ---
-      await tester.tap(find.byKey(const Key('newSetFab')));
-      await settle(tester);
+      await openNewSetEditor(tester);
       await tester.tap(find.byKey(const Key('saveSetButton')));
       await settle(tester);
       expect(find.byKey(const Key('titleField')), findsOneWidget);
@@ -44,8 +43,7 @@ void main() {
       expect(listTileWithText('Birthdays'), findsOneWidget);
 
       // --- Open the new set, add one item of each type ---
-      await tester.tap(editSetButton('Birthdays'));
-      await settle(tester);
+      await openSetDetail(tester, 'Birthdays');
 
       // Choice (default type): prompt + answer.
       await tester.tap(find.byKey(const Key('addItemFab')));
@@ -148,12 +146,7 @@ void main() {
       await tester.pageBack();
       await settle(tester);
 
-      Finder setMenuFor(String title) => find.descendant(
-        of: listTileWithText(title),
-        matching: find.byType(PopupMenuButton<String>),
-      );
-
-      await tester.tap(setMenuFor('Birthdays'));
+      await tester.tap(setMenuButton('Birthdays'));
       await settle(tester);
       await tester.tap(find.text(l10n.rename));
       await settle(tester);
@@ -166,14 +159,14 @@ void main() {
       expect(listTileWithText('Family Birthdays'), findsOneWidget);
       expect(listTileWithText('Birthdays'), findsNothing);
 
-      await tester.tap(setMenuFor('Family Birthdays'));
+      await tester.tap(setMenuButton('Family Birthdays'));
       await settle(tester);
       await tester.tap(find.text(l10n.duplicate));
       await settle(tester);
       expect(listTileWithText('Family Birthdays (copy)'), findsOneWidget);
 
       // Delete the duplicate: cancel is a no-op, confirm removes it.
-      await tester.tap(setMenuFor('Family Birthdays (copy)'));
+      await tester.tap(setMenuButton('Family Birthdays (copy)'));
       await settle(tester);
       await tester.tap(find.text(l10n.delete));
       await settle(tester);
@@ -181,7 +174,7 @@ void main() {
       await settle(tester);
       expect(listTileWithText('Family Birthdays (copy)'), findsOneWidget);
 
-      await tester.tap(setMenuFor('Family Birthdays (copy)'));
+      await tester.tap(setMenuButton('Family Birthdays (copy)'));
       await settle(tester);
       await tester.tap(find.text(l10n.delete));
       await settle(tester);
