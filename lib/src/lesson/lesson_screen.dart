@@ -215,12 +215,20 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
             preferredSize: const Size.fromHeight(8),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: FoxSpacing.lg),
-              child: FoxProgressBar(
-                key: const Key('lessonProgressBar'),
-                value: state.progress,
-                animated: true,
-                semanticsLabel: l10n.lessonProgressLabel,
-                semanticsValue: '${(state.progress * 100).round()}%',
+              // Keyed on state.attempt (issue #072): a new attempt forces a
+              // fresh FoxProgressBar/TweenAnimationBuilder subtree instead of
+              // tweening the 1.0 -> 0.0 drop that "Practice again" causes.
+              // The inner Key('lessonProgressBar') stays stable for widget
+              // lookups (home_screen_test.dart, lesson_shell_test.dart).
+              child: KeyedSubtree(
+                key: ValueKey(state.attempt),
+                child: FoxProgressBar(
+                  key: const Key('lessonProgressBar'),
+                  value: state.progress,
+                  animated: true,
+                  semanticsLabel: l10n.lessonProgressLabel,
+                  semanticsValue: '${(state.progress * 100).round()}%',
+                ),
               ),
             ),
           ),

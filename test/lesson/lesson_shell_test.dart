@@ -667,6 +667,63 @@ void main() {
       expect(find.byKey(const Key('checkButton')), findsOneWidget);
     });
 
+    testWidgets('practice-again resets lessonProgressBar to 0.0 instantly, no '
+        'backward tween (issue #072)', (WidgetTester tester) async {
+      final items = await setupTestItems(
+        db,
+        1,
+        5,
+        choicesJson: distractorsJson,
+      );
+
+      await pumpLessonShell(
+        tester,
+        LessonScreen(
+          setId: 1,
+          items: items,
+          cardBuilder:
+              ({
+                Key? key,
+                required Item item,
+                required void Function(ExerciseDraft) onStateChanged,
+                required AppLocalizations l10n,
+                bool autoAnswer = false,
+              }) {
+                return PlaceholderExerciseCard(
+                  key: key,
+                  item: item,
+                  onStateChanged: onStateChanged,
+                  l10n: l10n,
+                  autoAnswer: autoAnswer,
+                );
+              },
+        ),
+        database: db,
+        clock: fakeClock,
+      );
+      await tester.pump();
+
+      // Complete the lesson, driving lessonProgressBar to full.
+      for (int i = 0; i < 5; i++) {
+        await openLessonMenu(tester);
+        await tester.tap(find.byKey(const Key('skipItemMenuItem')));
+        await tester.pump();
+      }
+      expect(find.byKey(const Key('lessonResultScreen')), findsOneWidget);
+
+      // Tap Practice again, then pump for far less than the #066 300ms
+      // tween duration — long enough for a backward-draining bar to
+      // still be visibly short of empty, too short for it to have
+      // resolved on its own.
+      await tester.tap(find.byKey(const Key('practiceAgainButton')));
+      await tester.pump(const Duration(milliseconds: 50));
+
+      final double value = tester
+          .widget<LinearProgressIndicator>(find.byType(LinearProgressIndicator))
+          .value!;
+      expect(value, closeTo(0.0, 1e-9));
+    });
+
     testWidgets('result-score-math', (WidgetTester tester) async {
       final items = await setupTestItems(
         db,

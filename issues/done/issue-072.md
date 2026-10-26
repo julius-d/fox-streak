@@ -1,6 +1,6 @@
 # Issue 072: Lesson progress bar drains backward on "Practice again"
 
-Status: open | Priority: P3 | Type: fix | Refined-at: 2026-10-26
+Status: done | Priority: P3 | Type: fix | Refined-at: 2026-10-26 | Completed-at: 2026-10-26
 
 ## Goal
 
@@ -93,3 +93,41 @@ dart format --output=none --set-exit-if-changed .
 dart fix --dry-run
 flutter test
 ```
+
+## Summary
+
+- `LessonState` gained `attempt` (`int`, default `0`), bumped in
+  `LessonController.start()` (so also on `restart()`). `lesson_screen.dart`
+  wraps `FoxProgressBar` in a `KeyedSubtree(key: ValueKey(state.attempt))`
+  — the inner `Key('lessonProgressBar')` stays stable so existing finders
+  (`lesson_shell_test.dart`, `home_screen_test.dart`) keep working, while
+  the outer key forces a full remount on every attempt, giving the bar a
+  fresh `TweenAnimationBuilder` that starts at its new value instead of
+  tweening from the old one.
+- New regression coverage: a widget test in `test/lesson/
+  lesson_shell_test.dart` and a real-app integration test
+  (`integration_test/issue072_progress_bar_remount_test.dart`), both
+  pumping only 50ms after "Practice again" and asserting the bar already
+  reads `0.0`. Verified both fail (mid-tween value ~0.81) with the fix
+  reverted.
+- No UI change, so no new screenshots.
+
+## Code review
+
+- The underlying backward-tween defect lives in `FoxProgressBar`'s own
+  `TweenAnimationBuilder`, not just at this call site; a future second
+  `animated: true` caller doing a similar reset would reproduce the bug.
+  Not fixed — this is the issue's own rejected alternative (a general
+  "never animate decreases" rule inside `FoxProgressBar`), already
+  weighed and declined above as bigger than the one current trigger path
+  warrants.
+- Adding `attempt` to `LessonState`'s `==`/`hashCode` widens its equality
+  surface for a field read in exactly one place.
+  Not fixed — this is exactly what the Decisions/Acceptance Criteria
+  above specify; a narrower identity source (e.g. the `queue` list's own
+  identity) wasn't the chosen design.
+- `attempt` bumps on every `start()`, not only `restart()`, so the bar's
+  `KeyedSubtree` also remounts once on initial lesson entry.
+  Not fixed — intended per the Decisions section ("covers both the very
+  first start and every restart()"); harmless since progress is `0.0`
+  both before and after that remount.

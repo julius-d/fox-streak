@@ -60,6 +60,10 @@ import 'exercise_card.dart';
 ///   submitGrade/skip/next call hasn't resolved yet — otherwise e.g. a
 ///   Skip tap landing while CHECK's write is still in flight would be
 ///   silently dropped by the guard with no visible affordance.
+/// [attempt] is bumped on every [LessonController.start] call (so also on
+///   every `restart()`, since `restart()` calls `start()`). `lesson_screen`
+///   keys `lessonProgressBar` on this so a new attempt forces a remount
+///   instead of tweening the `1.0 -> 0.0` drop on "Practice again" (#072).
 class LessonState {
   final List<Item> sourceItems;
   final List<Item> queue;
@@ -79,6 +83,7 @@ class LessonState {
   final LootboxReward? lootboxReward;
   final String? equippedPetId;
   final bool busy;
+  final int attempt;
 
   const LessonState({
     this.sourceItems = const [],
@@ -96,6 +101,7 @@ class LessonState {
     this.lootboxReward,
     this.equippedPetId,
     this.busy = false,
+    this.attempt = 0,
   });
 
   LessonState copyWith({
@@ -114,6 +120,7 @@ class LessonState {
     LootboxReward? lootboxReward,
     String? equippedPetId,
     bool? busy,
+    int? attempt,
     bool clearDraft = false,
     bool clearLastCorrect = false,
   }) {
@@ -136,6 +143,7 @@ class LessonState {
       lootboxReward: lootboxReward ?? this.lootboxReward,
       equippedPetId: equippedPetId ?? this.equippedPetId,
       busy: busy ?? this.busy,
+      attempt: attempt ?? this.attempt,
     );
   }
 
@@ -178,7 +186,8 @@ class LessonState {
           other.streakCountAfterLesson == streakCountAfterLesson &&
           other.lootboxReward == lootboxReward &&
           other.equippedPetId == equippedPetId &&
-          other.busy == busy);
+          other.busy == busy &&
+          other.attempt == attempt);
 
   @override
   int get hashCode => Object.hash(
@@ -197,6 +206,7 @@ class LessonState {
     lootboxReward,
     equippedPetId,
     busy,
+    attempt,
   );
 }
 
@@ -283,6 +293,10 @@ class LessonController extends Notifier<LessonState> {
   /// #033) neither blocks the first action on this new one nor, once it
   /// resumes, overwrites the state set here — see [_generation] and
   /// [_guarded].
+  ///
+  /// Also bumps `state.attempt` so `lesson_screen` can key
+  /// `lessonProgressBar` on it, forcing a remount instead of tweening the
+  /// progress bar backward on "Practice again" (issue #072).
   void start(List<Item> items, {Random? random}) {
     _generation++;
     _actionInFlight = false;
@@ -298,6 +312,7 @@ class LessonController extends Notifier<LessonState> {
       phase: queue.isEmpty ? LessonPhase.done : LessonPhase.answering,
       currentDraft: null,
       lastCorrect: null,
+      attempt: state.attempt + 1,
     );
   }
 
