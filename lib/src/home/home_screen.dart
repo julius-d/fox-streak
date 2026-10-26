@@ -187,26 +187,44 @@ class _HomeDashboard extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              InkWell(
-                key: const Key('homeGreeting'),
-                borderRadius: const BorderRadius.all(
-                  Radius.circular(FoxRadius.md),
-                ),
-                onTap: () => _editName(context, ref),
-                child: Container(
-                  constraints: const BoxConstraints(
-                    minHeight: FoxButtonMetrics.minSize,
-                  ),
-                  alignment: Alignment.centerLeft,
-                  child: Semantics(
-                    button: true,
-                    label: l10n.homeEditNameTooltip,
-                    child: Text(
-                      greetingText(l10n, now, profile.displayName),
-                      style: Theme.of(context).textTheme.headlineSmall,
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: InkWell(
+                      key: const Key('homeGreeting'),
+                      borderRadius: const BorderRadius.all(
+                        Radius.circular(FoxRadius.md),
+                      ),
+                      onTap: () => _editName(context, ref),
+                      child: Container(
+                        constraints: const BoxConstraints(
+                          minHeight: FoxButtonMetrics.minSize,
+                        ),
+                        alignment: Alignment.centerLeft,
+                        child: Semantics(
+                          button: true,
+                          label: l10n.homeEditNameTooltip,
+                          child: Text(
+                            greetingText(l10n, now, profile.displayName),
+                            style: Theme.of(context).textTheme.headlineSmall,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                  if (profile.coinsTotal > 0) ...[
+                    const SizedBox(width: FoxSpacing.sm),
+                    CoinBadge(
+                      key: const Key('coinBadge'),
+                      coinsCountLabel: l10n.homeCoinsCountLabel(
+                        profile.coinsTotal,
+                      ),
+                      semanticsLabel: l10n.coinsSemanticLabel(
+                        profile.coinsTotal,
+                      ),
+                    ),
+                  ],
+                ],
               ),
               const SizedBox(height: FoxSpacing.lg),
               Center(

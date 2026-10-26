@@ -1,6 +1,6 @@
 # Issue 080: Show coin balance on Home
 
-Status: open | Refined-at: 2026-10-26
+Status: done | Refined-at: 2026-10-26 | Completed-at: 2026-10-26
 
 ## Goal
 
@@ -69,29 +69,29 @@ coins, so a brand-new player with a zero balance never sees it.
 
 ## Acceptance criteria
 
-- [ ] A new `CoinBadge` widget (`lib/src/widgets/coin_badge.dart`, added to
+- [x] A new `CoinBadge` widget (`lib/src/widgets/coin_badge.dart`, added to
   the `widgets.dart` barrel) renders an icon + number in a pill, shaped
   like `StreakBadge`, tinted with the new `FoxSemanticColors.coin`/`onCoin`
   token.
-- [ ] `FoxSemanticColors` gains `coin`/`onCoin` fields with AA-checked
+- [x] `FoxSemanticColors` gains `coin`/`onCoin` fields with AA-checked
   light + dark values, wired through its `copyWith`/`lerp`/`light`/`dark`
   definitions alongside the existing tokens.
-- [ ] Home's greeting row (`home_screen.dart`) places `CoinBadge` at its
+- [x] Home's greeting row (`home_screen.dart`) places `CoinBadge` at its
   right edge, passing `profile.coinsTotal`; the badge is not rendered at
   all when `profile.coinsTotal == 0`.
-- [ ] The badge has no tap target — no `InkWell`/`onTap`, no
+- [x] The badge has no tap target — no `InkWell`/`onTap`, no
   `Semantics(button: true)`.
-- [ ] New l10n strings (DE + EN): a plain-number display string for the
+- [x] New l10n strings (DE + EN): a plain-number display string for the
   pill (e.g. `homeCoinsCountLabel`: `"{amount}"`); `coinsSemanticLabel` is
   reused for the `Semantics.label` (its arb description comment updated to
   note the Home-badge use alongside the lootbox-reveal use).
-- [ ] A widget test confirms the badge is absent when `coinsTotal` is `0`
+- [x] A widget test confirms the badge is absent when `coinsTotal` is `0`
   and present (correct number + a11y label) when `coinsTotal > 0`, on
   Home.
-- [ ] A golden test (or an added case in the existing `kit_golden_test.dart`
+- [x] A golden test (or an added case in the existing `kit_golden_test.dart`
   pattern) covers `CoinBadge` under both `FoxStreakTheme.light()` and
   `.dark()`.
-- [ ] `flutter analyze`, `dart format --output=none --set-exit-if-changed .`,
+- [x] `flutter analyze`, `dart format --output=none --set-exit-if-changed .`,
   `dart fix --dry-run`, and `flutter test` are all clean per AGENTS.md's
   Verify section.
 
@@ -143,3 +143,26 @@ dart format --output=none --set-exit-if-changed .
 dart fix --dry-run
 flutter test
 ```
+
+## Summary
+
+Added `CoinBadge` (`lib/src/widgets/coin_badge.dart`), a display-only pill
+mirroring `StreakBadge`'s shape, exported from `widgets.dart`. Added
+`coin`/`onCoin` to `FoxSemanticColors` (light `#8A5A00`, dark `#E8B84B`,
+both AA-checked ≥5.9:1). Wired into Home's greeting row via a `Row` +
+`Expanded` wrapper around the existing greeting `InkWell`, right-aligned,
+built only when `profile.coinsTotal > 0`. New l10n: `homeCoinsCountLabel`
+(EN+DE); `coinsSemanticLabel`'s arb description comment broadened for the
+new use. Coverage: a `kit_test.dart` unit test, two `home_screen_test.dart`
+widget tests (absent at 0 / present + a11y label above 0), a
+`kit_golden_test.dart` light+dark golden pair, and an
+`integration_test/home_coin_badge_test.dart` end-to-end test through the
+real `FoxStreakApp` + `StatsRepository.addCoins`.
+
+## Code review
+
+- `onCoin` has zero consumers — `CoinBadge` only uses `coin` (tinted
+  background + content color), never a solid fill needing `onCoin`.
+  Not fixed: matches the pre-existing, already-inconsistent pattern of
+  `onFlame`/`onMath`/`onGeography`, all likewise unconsumed; not a
+  regression this issue introduced.

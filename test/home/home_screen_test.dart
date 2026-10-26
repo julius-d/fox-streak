@@ -444,6 +444,40 @@ void main() {
   });
 
   testWidgets(
+    'coin badge is absent on Home when coinsTotal is 0 (issue #080)',
+    (tester) async {
+      final clock = FakeClock(kTestToday);
+      await pumpOnboardedHome(tester, clock);
+
+      expect(find.byKey(const Key('coinBadge')), findsNothing);
+      await unmount(tester);
+    },
+  );
+
+  testWidgets(
+    'coin badge shows the coin count + a11y label on Home once coinsTotal '
+    'is positive (issue #080)',
+    (tester) async {
+      final clock = FakeClock(kTestToday);
+      await pumpOnboardedHome(
+        tester,
+        clock,
+        seed: (stats, sets) => stats.addCoins(42),
+      );
+
+      final badge = find.byKey(const Key('coinBadge'));
+      expect(badge, findsOneWidget);
+      expect(find.text('42'), findsOneWidget);
+      final l10n = AppLocalizations.of(tester.element(badge))!;
+      expect(
+        tester.widget<CoinBadge>(badge).semanticsLabel,
+        l10n.coinsSemanticLabel(42),
+      );
+      await unmount(tester);
+    },
+  );
+
+  testWidgets(
     'goal ring shows 0 / dailyGoalXp, not a stale prior-day full value, '
     'when lastActiveDay is before today (issue #036)',
     (tester) async {

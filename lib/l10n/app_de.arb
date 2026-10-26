@@ -699,12 +699,19 @@
   },
   "lootboxCoinsRevealedTitle": "Du hast {amount} Münzen gewonnen!",
   "@coinsSemanticLabel": {
-    "description": "A11y label for the coin-reveal animation on the opened lootbox screen (issue #065)",
+    "description": "A11y label for the coin-reveal animation on the opened lootbox screen (issue #065); also reused as the Semantics.label for Home's CoinBadge (issue #080)",
     "placeholders": {
       "amount": {"type": "int"}
     }
   },
   "coinsSemanticLabel": "{amount} Münzen",
+  "@homeCoinsCountLabel": {
+    "description": "Coin-count label shown inside CoinBadge on Home, next to the coin icon (issue #080)",
+    "placeholders": {
+      "amount": {"type": "int"}
+    }
+  },
+  "homeCoinsCountLabel": "{amount}",
   "@editItems": {
     "description": "Label for the \"Edit items\" entry in a set card's three-dot menu, opening SetDetailScreen — distinct from editSet, which is SetEditorScreen's title (issue #074)",
     "placeholders": {}

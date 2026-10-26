@@ -219,6 +219,20 @@ void main() {
     }
   });
 
+  group('coin badge', () {
+    for (final (String themeName, ThemeData theme) in themes) {
+      testWidgets('coin badge ($themeName)', (WidgetTester tester) async {
+        await _expectGolden(
+          tester,
+          'coin_badge_$themeName',
+          const CoinBadge(coinsCountLabel: '42', semanticsLabel: '42 coins'),
+          theme: theme,
+          surfaceSize: const Size(160, 80),
+        );
+      });
+    }
+  });
+
   group('pet', () {
     for (final (String themeName, ThemeData theme) in themes) {
       testWidgets('pet ($themeName)', (WidgetTester tester) async {

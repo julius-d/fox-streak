@@ -13,10 +13,10 @@
 // Contrast: every semantic pair below was checked against WCAG AA (4.5:1
 // for text). Measured ratios (content on surface / on-color on container):
 // light — success 5.87, error 6.54, info 6.39, flame 5.00, goldInk 6.45,
-// gold pair 10.57; dark (on #141218) — success 10.92/8.77, error 10.95/7.72,
-// info 8.90/6.33, flame 7.93/7.56, goldInk 11.41. Kit-level palette contrast
-// is owned here; per-screen dark-mode / large-font verification is owned
-// by #012.
+// gold pair 10.57, coin 5.93; dark (on #141218) — success 10.92/8.77, error
+// 10.95/7.72, info 8.90/6.33, flame 7.93/7.56, goldInk 11.41, coin 10.08.
+// Kit-level palette contrast is owned here; per-screen dark-mode /
+// large-font verification is owned by #012.
 
 import 'package:flutter/material.dart';
 
@@ -69,6 +69,9 @@ abstract final class FoxButtonMetrics {
 /// - [gold]: vivid fill for XP progress/badges (never body text);
 ///   [onGold] is the text color on gold fills.
 /// - [goldInk]: text/icon-safe gold for XP numbers on surfaces.
+/// - [coin]: content color for the coin balance badge (#080) — a distinct
+///   currency color from [gold], which is reserved for XP; [onCoin] is the
+///   text color on coin fills.
 @immutable
 class FoxSemanticColors extends ThemeExtension<FoxSemanticColors> {
   final Color success;
@@ -82,6 +85,8 @@ class FoxSemanticColors extends ThemeExtension<FoxSemanticColors> {
   final Color gold;
   final Color onGold;
   final Color goldInk;
+  final Color coin;
+  final Color onCoin;
   // #045: category tints for the choice/freeText set icon (math/geography);
   // vocab keeps `info`, general falls back to the surface ink (no new
   // token needed for a catch-all).
@@ -102,6 +107,8 @@ class FoxSemanticColors extends ThemeExtension<FoxSemanticColors> {
     required this.gold,
     required this.onGold,
     required this.goldInk,
+    required this.coin,
+    required this.onCoin,
     required this.math,
     required this.onMath,
     required this.geography,
@@ -122,6 +129,8 @@ class FoxSemanticColors extends ThemeExtension<FoxSemanticColors> {
     gold: Color(0xFFFFC107),
     onGold: Color(0xFF231A00),
     goldInk: Color(0xFF7A5900),
+    coin: Color(0xFF8A5A00),
+    onCoin: Color(0xFFFFFFFF),
     math: Color(0xFF6750A4),
     onMath: Color(0xFFFFFFFF),
     geography: Color(0xFF00696C),
@@ -142,6 +151,8 @@ class FoxSemanticColors extends ThemeExtension<FoxSemanticColors> {
     gold: Color(0xFFFFC107),
     onGold: Color(0xFF231A00),
     goldInk: Color(0xFFFFC107),
+    coin: Color(0xFFE8B84B),
+    onCoin: Color(0xFF2E2000),
     math: Color(0xFFD0BCFF),
     onMath: Color(0xFF381E72),
     geography: Color(0xFF4DD9DC),
@@ -161,6 +172,8 @@ class FoxSemanticColors extends ThemeExtension<FoxSemanticColors> {
     Color? gold,
     Color? onGold,
     Color? goldInk,
+    Color? coin,
+    Color? onCoin,
     Color? math,
     Color? onMath,
     Color? geography,
@@ -178,6 +191,8 @@ class FoxSemanticColors extends ThemeExtension<FoxSemanticColors> {
       gold: gold ?? this.gold,
       onGold: onGold ?? this.onGold,
       goldInk: goldInk ?? this.goldInk,
+      coin: coin ?? this.coin,
+      onCoin: onCoin ?? this.onCoin,
       math: math ?? this.math,
       onMath: onMath ?? this.onMath,
       geography: geography ?? this.geography,
@@ -201,6 +216,8 @@ class FoxSemanticColors extends ThemeExtension<FoxSemanticColors> {
       gold: lerpColor(gold, other.gold),
       onGold: lerpColor(onGold, other.onGold),
       goldInk: lerpColor(goldInk, other.goldInk),
+      coin: lerpColor(coin, other.coin),
+      onCoin: lerpColor(onCoin, other.onCoin),
       math: lerpColor(math, other.math),
       onMath: lerpColor(onMath, other.onMath),
       geography: lerpColor(geography, other.geography),

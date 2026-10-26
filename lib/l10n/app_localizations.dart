@@ -1182,11 +1182,17 @@ abstract class AppLocalizations {
   /// **'You won {amount} coins!'**
   String lootboxCoinsRevealedTitle(int amount);
 
-  /// A11y label for the coin-reveal animation on the opened lootbox screen (issue #065)
+  /// A11y label for the coin-reveal animation on the opened lootbox screen (issue #065); also reused as the Semantics.label for Home's CoinBadge (issue #080)
   ///
   /// In en, this message translates to:
   /// **'{amount} coins'**
   String coinsSemanticLabel(int amount);
+
+  /// Coin-count label shown inside CoinBadge on Home, next to the coin icon (issue #080)
+  ///
+  /// In en, this message translates to:
+  /// **'{amount}'**
+  String homeCoinsCountLabel(int amount);
 
   /// Label for the "Edit items" entry in a set card's three-dot menu, opening SetDetailScreen — distinct from editSet, which is SetEditorScreen's title (issue #074)
   ///

@@ -575,6 +575,26 @@ void main() {
     expect(find.byIcon(Icons.check_circle), findsNothing);
   });
 
+  testWidgets('coin badge shows the coin icon, count, and a11y label, with '
+      'no tap target (issue #080)', (WidgetTester tester) async {
+    await pumpKit(
+      tester,
+      const CoinBadge(coinsCountLabel: '42', semanticsLabel: '42 coins'),
+    );
+
+    expect(find.text('42'), findsOneWidget);
+    expect(find.byIcon(Icons.monetization_on), findsOneWidget);
+    expect(find.byType(InkWell), findsNothing);
+
+    final Semantics semantics = tester.widget<Semantics>(
+      find
+          .ancestor(of: find.text('42'), matching: find.byType(Semantics))
+          .first,
+    );
+    expect(semantics.properties.label, '42 coins');
+    expect(semantics.properties.button, isNot(true));
+  });
+
   testWidgets('confirm dialog resolves true on confirm', (
     WidgetTester tester,
   ) async {

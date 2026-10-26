@@ -657,6 +657,11 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String homeCoinsCountLabel(int amount) {
+    return '$amount';
+  }
+
+  @override
   String get editItems => 'Elemente bearbeiten';
 
   @override
