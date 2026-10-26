@@ -13,6 +13,8 @@
 // for what's shown *after* the box finishes opening — the opening phase
 // and its Lottie are the same for both outcomes. Pops itself on Continue,
 // so callers just `await Navigator.push(...)` it like `FoxConfirmDialog`.
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
@@ -34,8 +36,8 @@ const String kLootboxCoinRevealAsset =
     'assets/noto-emoji/other/emoji_u1fa99_lottie.json';
 
 /// The three states a lootbox moves through, in order, never backwards:
-/// frozen on frame 0 and tappable; tapped and playing once (no longer
-/// tappable, not announced as interactive); and the final reveal.
+/// frozen on the closed frame and tappable; tapped and playing once (no
+/// longer tappable, not announced as interactive); and the final reveal.
 enum _LootboxPhase { closed, opening, revealed }
 
 /// Tap-to-open lootbox reveal for a single already-won [reward].
@@ -50,7 +52,7 @@ class LootboxScreen extends StatefulWidget {
 }
 
 class _LootboxScreenState extends State<LootboxScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   _LootboxPhase _phase = _LootboxPhase.closed;
   late final AnimationController _animationController;
 
@@ -63,16 +65,78 @@ class _LootboxScreenState extends State<LootboxScreen>
   bool _compositionLoaded = false;
   bool _openRequested = false;
 
+  // `kLootboxOpenAnimationAsset` has no closed frame at either end of its
+  // 0.0-1.0 range: frame 0 (`0.0`) is already open (sparse treasure, no
+  // shine), it swings fully shut by ~frame 10, holds shut through ~frame
+  // 54, then cracks open with a sparkle burst through its last frame
+  // (`1.0`) — confirmed by sampling the composition in 1% steps (issue
+  // #073). `0.2` (~frame 27) sits safely inside that closed hold, so the
+  // controller starts there and `_open()` plays `.forward()` to `1.0`
+  // (the held-shut-to-sparkle-burst-open segment), skipping the pointless
+  // open-then-close wind-up nobody should ever see. One side effect:
+  // starting at a non-bound value means `_animationController.status` is
+  // `forward` while idle/closed, not `dismissed` as it would be at `0.0`
+  // — fine today since nothing reads it before a tap, but worth knowing
+  // before adding code that assumes an idle controller reports `dismissed`.
+  static const double _closedValue = 0.2;
+
+  // Idle tap-hint while closed (issue #073): a separate controller/ticker
+  // from [_animationController] so stopping it the instant [_open] fires
+  // never touches the open-Lottie's own state. Plays one scale-up-and-back
+  // "breath" then pauses before repeating — the same bounded
+  // play-then-pause shape as `FoxPet`'s own loop (#071) — rather than a
+  // true non-stop `repeat()`, so the box sits idle/unanimated most of the
+  // time. A perpetually-ticking transform otherwise races both a real
+  // tap's hit-test and `settle()`-style bounded-frame polling, since
+  // neither ever lands on a frame where nothing is scheduled.
+  static const Duration _pulseBreathDuration = Duration(milliseconds: 700);
+  static const Duration _pulsePauseDuration = Duration(milliseconds: 1600);
+
+  late final AnimationController _pulseController = AnimationController(
+    vsync: this,
+    duration: _pulseBreathDuration,
+  )..addStatusListener(_handlePulseStatus);
+  late final Animation<double> _pulseScale = Tween<double>(
+    begin: 1.0,
+    end: 1.05,
+  ).animate(CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut));
+  Timer? _pulsePauseTimer;
+
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(vsync: this);
+    _animationController = AnimationController(
+      vsync: this,
+      value: _closedValue,
+    );
     _animationController.addStatusListener(_handleAnimationStatus);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_phase != _LootboxPhase.closed) {
+      // `_open()` already froze the pulse mid-breath (deliberately, so
+      // the opening Lottie takes over with no visible snap) — this is
+      // just a defensive no-op for that case, not a reset.
+      _stopPulse();
+      return;
+    }
+    if (MediaQuery.disableAnimationsOf(context)) {
+      // Unlike the freeze above, a reduce-motion toggle while still
+      // *closed* must land on the static, unscaled frame — otherwise a
+      // live toggle mid-breath would leave the box permanently scaled.
+      _resetPulse();
+    } else {
+      _startPulseIfIdle();
+    }
   }
 
   @override
   void dispose() {
     _animationController.dispose();
+    _pulsePauseTimer?.cancel();
+    _pulseController.dispose();
     super.dispose();
   }
 
@@ -80,6 +144,43 @@ class _LootboxScreenState extends State<LootboxScreen>
     if (status == AnimationStatus.completed) {
       setState(() => _phase = _LootboxPhase.revealed);
     }
+  }
+
+  void _handlePulseStatus(AnimationStatus status) {
+    if (status == AnimationStatus.completed) {
+      _pulseController.reverse();
+    } else if (status == AnimationStatus.dismissed) {
+      _pulsePauseTimer = Timer(_pulsePauseDuration, () {
+        _pulsePauseTimer = null;
+        if (mounted && _phase == _LootboxPhase.closed) {
+          _pulseController.forward();
+        }
+      });
+    }
+  }
+
+  void _startPulseIfIdle() {
+    if (_pulseController.isAnimating || _pulsePauseTimer != null) {
+      return;
+    }
+    _pulseController.forward();
+  }
+
+  void _stopPulse() {
+    _pulsePauseTimer?.cancel();
+    _pulsePauseTimer = null;
+    if (_pulseController.isAnimating) {
+      _pulseController.stop();
+    }
+  }
+
+  /// Like [_stopPulse], but also snaps back to the static, unscaled frame
+  /// — for reduce-motion turning on while still closed, where leaving
+  /// whatever mid-breath scale value it stopped at would render a
+  /// permanently-pulsed-looking box instead of a plain static one.
+  void _resetPulse() {
+    _stopPulse();
+    _pulseController.value = 0.0;
   }
 
   void _handleCompositionLoaded(LottieComposition composition) {
@@ -94,6 +195,7 @@ class _LootboxScreenState extends State<LootboxScreen>
     if (_phase != _LootboxPhase.closed) {
       return;
     }
+    _stopPulse();
     setState(() => _phase = _LootboxPhase.opening);
     if (_compositionLoaded) {
       _animationController.forward();
@@ -140,12 +242,18 @@ class _LootboxScreenState extends State<LootboxScreen>
                 if (revealed)
                   FoxCelebration(child: _revealedContent(l10n))
                 else
-                  _LootboxAnimation(
-                    controller: _animationController,
-                    interactive: _phase == _LootboxPhase.closed,
-                    label: l10n.lootboxTapPrompt,
-                    onTap: _open,
-                    onLoaded: _handleCompositionLoaded,
+                  AnimatedBuilder(
+                    key: const Key('lootboxPulse'),
+                    animation: _pulseController,
+                    builder: (context, child) =>
+                        Transform.scale(scale: _pulseScale.value, child: child),
+                    child: _LootboxAnimation(
+                      controller: _animationController,
+                      interactive: _phase == _LootboxPhase.closed,
+                      label: l10n.lootboxTapPrompt,
+                      onTap: _open,
+                      onLoaded: _handleCompositionLoaded,
+                    ),
                   ),
                 const SizedBox(height: FoxSpacing.xxl),
                 if (revealed)

@@ -9,6 +9,7 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lottie/lottie.dart';
 import 'package:fox_streak_app/l10n/app_localizations.dart';
 import 'package:fox_streak_app/l10n/app_localizations_en.dart';
 import 'package:fox_streak_app/src/data/database.dart';
@@ -27,6 +28,23 @@ Widget _disableAnimations(BuildContext context, Widget? child) => MediaQuery(
   data: MediaQuery.of(context).copyWith(disableAnimations: true),
   child: child!,
 );
+
+/// The open-Lottie's own controller, driven by `_LootboxScreenState`
+/// (issue #073: starts at `0.2` — the asset's genuinely-closed held
+/// frame, since neither `0.0` nor `1.0` is closed — then `.forward()`s
+/// to `1.0`/open).
+AnimationController _lootboxOpenController(WidgetTester tester) =>
+    tester.widget<LottieBuilder>(find.byType(LottieBuilder)).controller!
+        as AnimationController;
+
+/// The tap-hint pulse's controller (issue #073), reached via the
+/// `AnimatedBuilder` wrapping the closed/opening box — a separate
+/// `AnimationController` from [_lootboxOpenController].
+AnimationController _lootboxPulseController(WidgetTester tester) =>
+    tester
+            .widget<AnimatedBuilder>(find.byKey(const Key('lootboxPulse')))
+            .animation
+        as AnimationController;
 
 /// Pumps frames until none are scheduled (or [cap] is hit, which fails).
 Future<void> settle(WidgetTester tester, {int cap = 50}) async {
@@ -179,6 +197,148 @@ void main() {
       expect(find.text('You won 40 coins!'), findsOneWidget);
       expect(find.byKey(const Key('lootboxContinueButton')), findsOneWidget);
     });
+
+    testWidgets(
+      'renders fully closed (open-Lottie at value 0.2, its genuinely-closed '
+      'held frame — neither 0.0 nor 1.0 is closed) on the very first '
+      'build, before the composition has even finished loading — '
+      'regression test for the box opening immediately (issue #073)',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            builder: _disableAnimations,
+            home: LootboxScreen(reward: _petReward, l10n: AppLocalizationsEn()),
+          ),
+        );
+
+        // No further `pump()` beyond `pumpWidget`'s own first frame: this is
+        // the "still loading" case from the acceptance criteria.
+        expect(_lootboxOpenController(tester).value, 0.2);
+
+        await tester.pump();
+        expect(_lootboxOpenController(tester).value, 0.2);
+      },
+    );
+
+    testWidgets(
+      'tapping plays the open-Lottie forward from 0.2 to 1.0 and reaches '
+      'revealed once it completes (issue #073)',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            builder: _disableAnimations,
+            home: LootboxScreen(reward: _petReward, l10n: AppLocalizationsEn()),
+          ),
+        );
+        await tester.pump();
+        final AnimationController openController = _lootboxOpenController(
+          tester,
+        );
+        expect(openController.value, 0.2);
+
+        await tester.tap(find.byKey(const Key('lootboxOpenButton')));
+        await tester.pumpAndSettle();
+
+        expect(openController.value, 1.0);
+        expect(openController.status, AnimationStatus.completed);
+        expect(find.byKey(Key('foxPet-${_reward.id}')), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'pulses with a continuous scale loop while closed, unless reduce '
+      'motion is on (issue #073)',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: LootboxScreen(reward: _petReward, l10n: AppLocalizationsEn()),
+          ),
+        );
+        await tester.pump();
+
+        final AnimationController pulseController = _lootboxPulseController(
+          tester,
+        );
+        expect(pulseController.isAnimating, isTrue);
+
+        final double before = pulseController.value;
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(pulseController.value, isNot(before));
+
+        // Tapping stops the pulse instantly, with no further ticks, so its
+        // last value freezes rather than snapping back to `1.0`.
+        await tester.tap(find.byKey(const Key('lootboxOpenButton')));
+        await tester.pump();
+        expect(pulseController.isAnimating, isFalse);
+
+        // Unmount before the test ends so `dispose()` stops both tickers —
+        // the pulse would otherwise still be a live `Ticker` at teardown.
+        await tester.pumpWidget(const SizedBox());
+      },
+    );
+
+    testWidgets('stays static-closed with no pulse when reduce motion is on, '
+        'mirroring FoxProgressBar (issue #066) (issue #073)', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          builder: _disableAnimations,
+          home: LootboxScreen(reward: _petReward, l10n: AppLocalizationsEn()),
+        ),
+      );
+      await tester.pump();
+
+      final AnimationController pulseController = _lootboxPulseController(
+        tester,
+      );
+      expect(pulseController.isAnimating, isFalse);
+      expect(pulseController.value, 0.0);
+
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(pulseController.isAnimating, isFalse);
+    });
+
+    testWidgets(
+      'reduce motion turning on mid-breath snaps back to the static frame '
+      'instead of freezing permanently scaled (issue #073)',
+      (tester) async {
+        bool reduceMotion = false;
+        await tester.pumpWidget(
+          MaterialApp(
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context)
+                  .copyWith(disableAnimations: reduceMotion),
+              child: child!,
+            ),
+            home: LootboxScreen(reward: _petReward, l10n: AppLocalizationsEn()),
+          ),
+        );
+        await tester.pump();
+
+        final AnimationController pulseController = _lootboxPulseController(
+          tester,
+        );
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(pulseController.value, isNot(0.0));
+
+        // Flips reduce motion on mid-breath, without unmounting — the
+        // live-toggle case `_resetPulse` exists for.
+        reduceMotion = true;
+        await tester.pumpWidget(
+          MaterialApp(
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context)
+                  .copyWith(disableAnimations: reduceMotion),
+              child: child!,
+            ),
+            home: LootboxScreen(reward: _petReward, l10n: AppLocalizationsEn()),
+          ),
+        );
+        await tester.pump();
+
+        expect(pulseController.isAnimating, isFalse);
+        expect(pulseController.value, 0.0);
+      },
+    );
   });
 
   group('PetCollectionScreen', () {

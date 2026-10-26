@@ -1,6 +1,6 @@
 # Issue 073: Loot box opens immediately instead of starting closed; add a tap-hint pulse
 
-Status: open | Priority: P2 | Type: fix | Refined-at: 2026-10-26
+Status: done | Priority: P2 | Type: fix | Refined-at: 2026-10-26 | Completed-at: 2026-10-26
 
 ## Goal
 
@@ -45,30 +45,32 @@ pulse so the box visibly invites a tap.
 
 ## Acceptance Criteria
 
-- [ ] On every fresh push of `LootboxScreen`, the box renders fully closed
+- [x] On every fresh push of `LootboxScreen`, the box renders fully closed
       (the asset's last frame, no motion) immediately — true both when the
-      Lottie composition loads fast and when it's still loading.
-- [ ] Tapping plays the existing opening Lottie in reverse (`1.0 → 0.0`),
-      ending on the open/first frame, then transitions to the revealed
-      phase — visually identical motion to today's intended design, just
-      correctly triggered and in the right direction.
-- [ ] While closed and tappable, the box runs a continuous subtle pulse
+      Lottie composition loads fast and when it's still loading. *(Not
+      the last frame — see Summary: the real closed frame is mid-range.)*
+- [x] Tapping plays the opening Lottie, ending on the open frame, then
+      transitions to the revealed phase. *(Plays forward `0.2 → 1.0`, not
+      reverse `1.0 → 0.0` as originally assumed — see Summary.)*
+- [x] While closed and tappable, the box runs a continuous subtle pulse
       (scale) loop, unless `MediaQuery.disableAnimationsOf(context)` is
       true, in which case it stays static-closed with no pulse.
-- [ ] Tapping stops the pulse and starts the opening animation with no
+- [x] Tapping stops the pulse and starts the opening animation with no
       visible jump/snap, regardless of which point in the pulse cycle the
       tap lands on.
-- [ ] Tapping again while opening (already non-interactive) remains a
+- [x] Tapping again while opening (already non-interactive) remains a
       no-op, unchanged from today.
-- [ ] The revealed phase (`FoxCelebration` + reward content) is unaffected.
-- [ ] New/updated tests in `test/mascot/mascot_screens_test.dart` (or a new
-      `lootbox_screen_test.dart`) cover: the box is static-closed (value
-      `1.0`) on initial build (regression test for this bug), the pulse
-      runs while closed, the pulse is skipped when `disableAnimations` is
-      true (mirroring `test/widgets/kit_test.dart`'s existing
-      `FoxProgressBar` reduce-motion test), and tapping reverses the
-      controller to `0.0` and reaches `revealed`.
-- [ ] `flutter analyze`, `dart format --output=none --set-exit-if-changed .`,
+- [x] The revealed phase (`FoxCelebration` + reward content) is unaffected.
+- [x] New/updated tests in `test/pet/pet_screens_test.dart` (the file was
+      renamed off "mascot" by #068, before this issue was refined) cover:
+      the box is static-closed on initial build (regression test for this
+      bug), the pulse runs while closed, the pulse is skipped when
+      `disableAnimations` is true (mirroring `test/widgets/kit_test.dart`'s
+      existing `FoxProgressBar` reduce-motion test), and tapping plays the
+      controller forward and reaches `revealed`. A new
+      `integration_test/issue073_lootbox_closed_pulse_test.dart` drives
+      the real app end-to-end to the same effect.
+- [x] `flutter analyze`, `dart format --output=none --set-exit-if-changed .`,
       `dart fix --dry-run`, and `flutter test` are all clean.
 
 ## Tasks
@@ -105,3 +107,47 @@ dart format --output=none --set-exit-if-changed .
 dart fix --dry-run
 flutter test
 ```
+
+## Summary
+
+This issue's stated root cause was wrong: `kLootboxOpenAnimationAsset` has
+no closed frame at either `0.0` or `1.0` — both show the box already
+open. Sampling the composition in 1% steps found the real closed frame
+sits mid-range (~frame 27 of 136, value `0.2`); the asset opens briefly
+at `0.0`, swings shut by ~frame 10, holds shut through ~frame 54, then
+cracks open with a sparkle burst through frame 136. Fix:
+`_animationController` starts at `0.2` and `_open()` plays `.forward()`
+to `1.0` — direction/status (`.completed`) unchanged from before this
+issue, only the starting value changed. The tap-hint pulse plays a
+bounded breath-then-pause loop rather than a true non-stop `repeat()`,
+since a perpetually-ticking `Transform.scale` on a real tap target races
+both synthetic taps and `settle()`-style bounded-frame polling in
+integration tests (confirmed against
+`issue067_repeated_lootbox_test.dart`/`issue069_pet_rarity_test.dart`).
+
+## Code review
+
+1. `_stopPulse()` only stopped the pulse controller, never reset its
+   value — a live reduce-motion toggle mid-breath left the box
+   permanently scaled.
+   Fixed: added `_resetPulse()` (stop + snap `value` to `0.0`), used from
+   `didChangeDependencies` only when still closed and reduce-motion turns
+   on; `_open()` still uses the plain freeze-in-place `_stopPulse()`.
+2. `_LootboxPhase`'s doc comment still said "frozen on frame 0," stale
+   after the fix moved the closed value to `0.2`.
+   Fixed: reworded to "frozen on the closed frame" (no hardcoded value to
+   go stale again).
+3. Starting `_animationController` at `0.2` means its idle status reports
+   `forward`, not `dismissed` as at `0.0` — a latent footgun for future
+   code assuming an idle controller is `dismissed`.
+   Not fixed as code (nothing reads the status while idle today); added a
+   comment at the `_closedValue` declaration flagging it instead.
+4. `_pulsePauseTimer` was never nulled when its own callback fired
+   naturally, relying on `isAnimating` to short-circuit the double-start
+   guard — fragile if that ordering ever changes.
+   Fixed: the timer callback now nulls `_pulsePauseTimer` before calling
+   `.forward()`.
+5. The new pulse's "bounded play, pause, repeat" shape duplicates
+   `fox_pet.dart`'s `_FoxPetState` (#071) with no shared abstraction.
+   Not fixed here (cross-file refactor touching the stable `FoxPet`
+   widget, beyond a small/easy fix); filed as #079.
