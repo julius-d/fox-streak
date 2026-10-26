@@ -1104,35 +1104,35 @@ abstract class AppLocalizations {
   /// **'Get started'**
   String get onboardingGetStarted;
 
-  /// Generic a11y/visible label for an equipped or revealed mascot, decoded from its filename into the literal emoji — no per-animal arb keys (issue #059)
+  /// Generic a11y/visible label for an equipped or revealed pet, decoded from its filename into the literal emoji — no per-animal arb keys (issue #059)
   ///
   /// In en, this message translates to:
-  /// **'Mascot {emoji}'**
-  String mascotSemanticLabel(String emoji);
+  /// **'Pet {emoji}'**
+  String petSemanticLabel(String emoji);
 
-  /// A11y label for the currently-equipped mascot tile in the collection grid (issue #059)
+  /// A11y label for the currently-equipped pet tile in the collection grid (issue #059)
   ///
   /// In en, this message translates to:
-  /// **'Mascot {emoji}, equipped'**
-  String mascotEquippedSemanticLabel(String emoji);
+  /// **'Pet {emoji}, equipped'**
+  String petEquippedSemanticLabel(String emoji);
 
-  /// A11y label for a not-yet-owned mascot tile in the collection grid (issue #059)
+  /// A11y label for a not-yet-owned pet tile in the collection grid (issue #059)
   ///
   /// In en, this message translates to:
-  /// **'Locked mascot'**
-  String get mascotLockedSemanticLabel;
+  /// **'Locked pet'**
+  String get petLockedSemanticLabel;
 
-  /// A11y label for Home's tap-to-collect mascot button (issue #059)
+  /// A11y label for Home's tap-to-collect pet button (issue #059)
   ///
   /// In en, this message translates to:
-  /// **'Open your mascot collection'**
-  String get homeMascotSemanticLabel;
+  /// **'Open your pet collection'**
+  String get homePetSemanticLabel;
 
-  /// App bar title of the mascot collection/equip screen (issue #059)
+  /// App bar title of the pet collection/equip screen (issue #059)
   ///
   /// In en, this message translates to:
-  /// **'Your mascots'**
-  String get mascotCollectionTitle;
+  /// **'Your pets'**
+  String get petCollectionTitle;
 
   /// Heading on the unopened lootbox screen (issue #059)
   ///
@@ -1143,13 +1143,13 @@ abstract class AppLocalizations {
   /// Tap-to-open prompt on the unopened lootbox screen (issue #059)
   ///
   /// In en, this message translates to:
-  /// **'Tap to reveal your new mascot!'**
+  /// **'Tap to reveal your new pet!'**
   String get lootboxTapPrompt;
 
-  /// Heading shown once the lootbox has been opened with a mascot reward (issue #059)
+  /// Heading shown once the lootbox has been opened with a pet reward (issue #059)
   ///
   /// In en, this message translates to:
-  /// **'You got a new mascot!'**
+  /// **'You got a new pet!'**
   String get lootboxRevealedTitle;
 
   /// Heading shown once the lootbox has been opened with a coins reward (issue #065)

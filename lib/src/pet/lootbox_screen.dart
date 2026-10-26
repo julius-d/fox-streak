@@ -4,11 +4,11 @@
 //
 // Shown after the lesson result screen, on the 2nd lesson completion of the
 // local day and then again every 3rd completion after that (5, 8, 11, ...,
-// uncapped) — see `MascotService.recordLessonCompletion`/
+// uncapped) — see `PetService.recordLessonCompletion`/
 // `LessonController._completeLesson`/`LessonScreen`. Each trigger pushes its
 // own instance of this screen in turn. The reward itself was already picked
-// + persisted (as an owned mascot or added coins) by
-// `MascotService.recordLessonCompletion`; this screen is
+// + persisted (as an owned pet or added coins) by
+// `PetService.recordLessonCompletion`; this screen is
 // purely the tap-to-open reveal moment, switching on [LootboxReward] only
 // for what's shown *after* the box finishes opening — the opening phase
 // and its Lottie are the same for both outcomes. Pops itself on Continue,
@@ -22,13 +22,13 @@ import '../widgets/widgets.dart';
 import 'lootbox_reward.dart';
 
 /// The lootbox-opening Lottie: a one-off effect animation, not a
-/// collectible, so it lives in `other/` rather than `MascotCatalog`'s
-/// scanned `mascot/` directory (#062).
+/// collectible, so it lives in `other/` rather than `PetCatalog`'s
+/// scanned `pet/` directory (#062).
 const String kLootboxOpenAnimationAsset =
     'assets/noto-emoji/other/emoji_u1fa8e_lottie.json';
 
 /// The coin-reveal Lottie for a [CoinsReward] outcome (issue #065) — same
-/// `other/`-not-`mascot/` placement and rationale as
+/// `other/`-not-`pet/` placement and rationale as
 /// [kLootboxOpenAnimationAsset]: a one-off effect, not a collectible.
 const String kLootboxCoinRevealAsset =
     'assets/noto-emoji/other/emoji_u1fa99_lottie.json';
@@ -103,15 +103,15 @@ class _LootboxScreenState extends State<LootboxScreen>
   }
 
   String _revealedTitle(AppLocalizations l10n) => switch (widget.reward) {
-    MascotReward() => l10n.lootboxRevealedTitle,
+    PetReward() => l10n.lootboxRevealedTitle,
     CoinsReward(amount: final amount) => l10n.lootboxCoinsRevealedTitle(amount),
   };
 
   Widget _revealedContent(AppLocalizations l10n) => switch (widget.reward) {
-    MascotReward(entry: final entry) => FoxMascot(
-      mascot: entry,
+    PetReward(entry: final entry) => FoxPet(
+      pet: entry,
       size: 160,
-      semanticLabel: l10n.mascotSemanticLabel(entry.emoji),
+      semanticLabel: l10n.petSemanticLabel(entry.emoji),
     ),
     CoinsReward(amount: final amount) => _CoinReveal(
       semanticLabel: l10n.coinsSemanticLabel(amount),
@@ -223,11 +223,11 @@ class _LootboxAnimation extends StatelessWidget {
 }
 
 /// The #065 coin-reveal visual: [kLootboxCoinRevealAsset] plus an a11y
-/// label, mirroring `FoxMascot`'s Lottie-plus-semantic-label shape for the
-/// mascot case. Not tappable, so — unlike [_LootboxAnimation] — there's no
+/// label, mirroring `FoxPet`'s Lottie-plus-semantic-label shape for the
+/// pet case. Not tappable, so — unlike [_LootboxAnimation] — there's no
 /// interaction/gating to model; kept as a one-off here rather than
-/// promoted to the kit, same reasoning as `_MascotTile` in
-/// `mascot_collection_screen.dart`.
+/// promoted to the kit, same reasoning as `_PetTile` in
+/// `pet_collection_screen.dart`.
 class _CoinReveal extends StatelessWidget {
   final String semanticLabel;
 

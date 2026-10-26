@@ -13,8 +13,8 @@ import '../data/clock.dart';
 import '../data/database.dart';
 import '../data/providers.dart';
 import '../data/stats_repository.dart';
-import '../mascot/lootbox_reward.dart';
-import '../stats/mascot_service.dart';
+import '../pet/lootbox_reward.dart';
+import '../stats/pet_service.dart';
 import '../stats/streak_service.dart';
 import '../stats/xp_service.dart';
 import 'exercise_card.dart';
@@ -42,15 +42,15 @@ import 'exercise_card.dart';
 ///   the level-up celebration without a second database query.
 /// [streakCountAfterLesson] is the `streak_count` returned by #011's streak
 ///   write, handed to the result screen the same way for `StreakBadge`.
-/// [lootboxReward] is what #059's `MascotService` returned for this lesson
+/// [lootboxReward] is what #059's `PetService` returned for this lesson
 ///   completion (the lootbox trigger, which fires on the day's 2nd
 ///   completion and then repeats every 3rd one after that — issue #067) —
-///   a mascot, a coin amount (issue #065's 50/50 coin flip), or null if no
+///   a pet, a coin amount (issue #065's 50/50 coin flip), or null if no
 ///   lootbox should be shown — handed to `LessonScreen` so it can insert
 ///   the lootbox reveal before continuing to the caller's destination.
-/// [equippedMascotId] is the profile's `equippedMascotId` at completion
+/// [equippedPetId] is the profile's `equippedPetId` at completion
 ///   time, snapshotted the same one-shot way as `xpTotalAfterLesson` —
-///   the result screen resolves it against `mascotCatalogProvider` (no
+///   the result screen resolves it against `petCatalogProvider` (no
 ///   drift involved) instead of watching the live `profileProvider`
 ///   stream, which it would otherwise have to hold open for a screen
 ///   that, like the XP/streak fields above, is a one-shot snapshot, not
@@ -77,7 +77,7 @@ class LessonState {
   final int? xpTotalAfterLesson;
   final int? streakCountAfterLesson;
   final LootboxReward? lootboxReward;
-  final String? equippedMascotId;
+  final String? equippedPetId;
   final bool busy;
 
   const LessonState({
@@ -94,7 +94,7 @@ class LessonState {
     this.xpTotalAfterLesson,
     this.streakCountAfterLesson,
     this.lootboxReward,
-    this.equippedMascotId,
+    this.equippedPetId,
     this.busy = false,
   });
 
@@ -112,7 +112,7 @@ class LessonState {
     int? xpTotalAfterLesson,
     int? streakCountAfterLesson,
     LootboxReward? lootboxReward,
-    String? equippedMascotId,
+    String? equippedPetId,
     bool? busy,
     bool clearDraft = false,
     bool clearLastCorrect = false,
@@ -134,7 +134,7 @@ class LessonState {
       streakCountAfterLesson:
           streakCountAfterLesson ?? this.streakCountAfterLesson,
       lootboxReward: lootboxReward ?? this.lootboxReward,
-      equippedMascotId: equippedMascotId ?? this.equippedMascotId,
+      equippedPetId: equippedPetId ?? this.equippedPetId,
       busy: busy ?? this.busy,
     );
   }
@@ -177,7 +177,7 @@ class LessonState {
           other.xpTotalAfterLesson == xpTotalAfterLesson &&
           other.streakCountAfterLesson == streakCountAfterLesson &&
           other.lootboxReward == lootboxReward &&
-          other.equippedMascotId == equippedMascotId &&
+          other.equippedPetId == equippedPetId &&
           other.busy == busy);
 
   @override
@@ -195,7 +195,7 @@ class LessonState {
     streakCountAfterLesson,
     xpTotalAfterLesson,
     lootboxReward,
-    equippedMascotId,
+    equippedPetId,
     busy,
   );
 }
@@ -210,7 +210,7 @@ class LessonController extends Notifier<LessonState> {
   late final Clock _clock;
   late final XpService _xpService;
   late final StreakService _streakService;
-  late final MascotService _mascotService;
+  late final PetService _petService;
   Random? _random;
 
   // Guards submitGrade/skip/next against a double-tap (or two
@@ -268,7 +268,7 @@ class LessonController extends Notifier<LessonState> {
     _clock = ref.read(systemClockProvider);
     _xpService = ref.read(xpServiceProvider);
     _streakService = ref.read(streakServiceProvider);
-    _mascotService = ref.read(mascotServiceProvider);
+    _petService = ref.read(petServiceProvider);
     return const LessonState();
   }
 
@@ -419,7 +419,7 @@ class LessonController extends Notifier<LessonState> {
   }
 
   /// Transitions to `phase: done` and applies this lesson's XP (issue #010),
-  /// streak (issue #011), and mascot-lootbox (issue #059) writes as one
+  /// streak (issue #011), and pet-lootbox (issue #059) writes as one
   /// atomic step.
   ///
   /// Deliberately does *not* flip `phase` to `done` until all three writes
@@ -440,7 +440,7 @@ class LessonController extends Notifier<LessonState> {
       // overlapping, so this path is mainly reached via rebuild/rotation
       // replaying the same state (see class doc) — kept as defense-in-depth
       // regardless. Just make sure this call also lands on `done` without
-      // re-applying XP/streak/mascot.
+      // re-applying XP/streak/pet.
       state = state.copyWith(
         outcomes: outcomes,
         phase: LessonPhase.done,
@@ -463,12 +463,12 @@ class LessonController extends Notifier<LessonState> {
         ? null
         : (await _streakService.recordActivity()).streakCount;
     // One-shot read (not a `watch()` stream) for the result screen's
-    // mascot celebration — see [LessonState.equippedMascotId]. Returned
+    // pet celebration — see [LessonState.equippedPetId]. Returned
     // alongside lootboxReward from the same `getProfile()` call rather
     // than re-querying the row a second time here.
-    final mascotUpdate = result == null
+    final petUpdate = result == null
         ? null
-        : await _mascotService.recordLessonCompletion();
+        : await _petService.recordLessonCompletion();
     if (generation != _generation) return;
     state = state.copyWith(
       outcomes: outcomes,
@@ -477,8 +477,8 @@ class LessonController extends Notifier<LessonState> {
       xpTotalBeforeLesson: xpApplication?.xpTotalBefore,
       xpTotalAfterLesson: xpApplication?.xpTotal,
       streakCountAfterLesson: streakCount,
-      lootboxReward: mascotUpdate?.reward,
-      equippedMascotId: mascotUpdate?.equippedMascotId,
+      lootboxReward: petUpdate?.reward,
+      equippedPetId: petUpdate?.equippedPetId,
     );
   }
 

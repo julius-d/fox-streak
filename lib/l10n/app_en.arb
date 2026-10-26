@@ -658,35 +658,35 @@
     "placeholders": {}
   },
   "onboardingGetStarted": "Get started",
-  "@mascotSemanticLabel": {
-    "description": "Generic a11y/visible label for an equipped or revealed mascot, decoded from its filename into the literal emoji — no per-animal arb keys (issue #059)",
+  "@petSemanticLabel": {
+    "description": "Generic a11y/visible label for an equipped or revealed pet, decoded from its filename into the literal emoji — no per-animal arb keys (issue #059)",
     "placeholders": {
       "emoji": {"type": "String"}
     }
   },
-  "mascotSemanticLabel": "Mascot {emoji}",
-  "@mascotEquippedSemanticLabel": {
-    "description": "A11y label for the currently-equipped mascot tile in the collection grid (issue #059)",
+  "petSemanticLabel": "Pet {emoji}",
+  "@petEquippedSemanticLabel": {
+    "description": "A11y label for the currently-equipped pet tile in the collection grid (issue #059)",
     "placeholders": {
       "emoji": {"type": "String"}
     }
   },
-  "mascotEquippedSemanticLabel": "Mascot {emoji}, equipped",
-  "@mascotLockedSemanticLabel": {
-    "description": "A11y label for a not-yet-owned mascot tile in the collection grid (issue #059)",
+  "petEquippedSemanticLabel": "Pet {emoji}, equipped",
+  "@petLockedSemanticLabel": {
+    "description": "A11y label for a not-yet-owned pet tile in the collection grid (issue #059)",
     "placeholders": {}
   },
-  "mascotLockedSemanticLabel": "Locked mascot",
-  "@homeMascotSemanticLabel": {
-    "description": "A11y label for Home's tap-to-collect mascot button (issue #059)",
+  "petLockedSemanticLabel": "Locked pet",
+  "@homePetSemanticLabel": {
+    "description": "A11y label for Home's tap-to-collect pet button (issue #059)",
     "placeholders": {}
   },
-  "homeMascotSemanticLabel": "Open your mascot collection",
-  "@mascotCollectionTitle": {
-    "description": "App bar title of the mascot collection/equip screen (issue #059)",
+  "homePetSemanticLabel": "Open your pet collection",
+  "@petCollectionTitle": {
+    "description": "App bar title of the pet collection/equip screen (issue #059)",
     "placeholders": {}
   },
-  "mascotCollectionTitle": "Your mascots",
+  "petCollectionTitle": "Your pets",
   "@lootboxHeading": {
     "description": "Heading on the unopened lootbox screen (issue #059)",
     "placeholders": {}
@@ -696,12 +696,12 @@
     "description": "Tap-to-open prompt on the unopened lootbox screen (issue #059)",
     "placeholders": {}
   },
-  "lootboxTapPrompt": "Tap to reveal your new mascot!",
+  "lootboxTapPrompt": "Tap to reveal your new pet!",
   "@lootboxRevealedTitle": {
-    "description": "Heading shown once the lootbox has been opened with a mascot reward (issue #059)",
+    "description": "Heading shown once the lootbox has been opened with a pet reward (issue #059)",
     "placeholders": {}
   },
-  "lootboxRevealedTitle": "You got a new mascot!",
+  "lootboxRevealedTitle": "You got a new pet!",
   "@lootboxCoinsRevealedTitle": {
     "description": "Heading shown once the lootbox has been opened with a coins reward (issue #065)",
     "placeholders": {

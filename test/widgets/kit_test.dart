@@ -2,13 +2,13 @@
 //
 // Covers the kit contract: 48dp floors, wrapping (never clipped) labels,
 // token-driven banners, clamped progress with semantics, confirm-dialog
-// results, empty-state slots, mascot states, celebration wrapper, and the
+// results, empty-state slots, pet states, celebration wrapper, and the
 // haptics toggle default. Every pump runs under [FoxStreakTheme] so token
 // resolution matches production wiring.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fox_streak_app/src/mascot/mascot_catalog.dart';
+import 'package:fox_streak_app/src/pet/pet_catalog.dart';
 import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
 import 'package:fox_streak_app/src/widgets/widgets.dart';
 
@@ -627,7 +627,7 @@ void main() {
       tester,
       FoxEmptyState(
         title: 'No sets yet',
-        mascot: MascotCatalog.defaultEntry,
+        pet: PetCatalog.defaultEntry,
         message: 'Create one.',
         ctaLabel: 'Try demo set',
         onCta: () => cta = true,
@@ -646,7 +646,7 @@ void main() {
       tester,
       FoxEmptyState(
         title: 'No sets yet',
-        mascot: MascotCatalog.defaultEntry,
+        pet: PetCatalog.defaultEntry,
         isLoading: true,
         loadingLabel: 'Loading…',
         loadingKey: const Key('kitEmptyLoading'),
@@ -656,18 +656,15 @@ void main() {
     expect(find.byType(FoxPrimaryButton), findsNothing);
   });
 
-  testWidgets('mascot renders with a stable key + semantic label', (
+  testWidgets('pet renders with a stable key + semantic label', (
     WidgetTester tester,
   ) async {
     await pumpKit(
       tester,
-      FoxMascot(
-        mascot: MascotCatalog.defaultEntry,
-        semanticLabel: 'Sleepy fox',
-      ),
+      FoxPet(pet: PetCatalog.defaultEntry, semanticLabel: 'Sleepy fox'),
     );
     expect(
-      find.byKey(Key('foxMascot-${MascotCatalog.defaultEntry.id}')),
+      find.byKey(Key('foxPet-${PetCatalog.defaultEntry.id}')),
       findsOneWidget,
     );
     expect(find.bySemanticsLabel('Sleepy fox'), findsOneWidget);

@@ -3,7 +3,7 @@
 //
 // Drives the real `LessonScreen` with the real `MultipleChoiceCard` (no
 // test card builder) through a lesson that lands on a streak milestone,
-// proving the on-fire mascot, streak headline, and `StreakBadge` genuinely
+// proving the on-fire pet, streak headline, and `StreakBadge` genuinely
 // render with the right numbers — and that the underlying `streak_count`/
 // `last_active_day` columns were actually written exactly once.
 
@@ -26,7 +26,7 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('completing a lesson the day after a 2-day streak hits the 3-day '
-      'milestone: on-fire mascot, streak headline, and StreakBadge render, '
+      'milestone: on-fire pet, streak headline, and StreakBadge render, '
       'and streak_count/last_active_day are written exactly once', (
     tester,
   ) async {
@@ -107,10 +107,10 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    // Result screen: milestone hit -> on-fire mascot, streak headline,
+    // Result screen: milestone hit -> on-fire pet, streak headline,
     // and the StreakBadge both showing "3".
     expect(find.byKey(const Key('lessonResultScreen')), findsOneWidget);
-    expect(find.byKey(const Key('foxMascot-onFire')), findsOneWidget);
+    expect(find.byKey(const Key('foxPet-onFire')), findsOneWidget);
     expect(find.text('3-day streak!'), findsOneWidget);
     expect(find.byKey(const Key('streakBadge')), findsOneWidget);
     expect(find.byKey(const Key('streakCountLabel')), findsOneWidget);

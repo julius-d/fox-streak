@@ -1,10 +1,10 @@
 // Lesson result screen (issue #005, XP/level wiring from #010, streak
 // wiring from #011).
 //
-// Shows score % + correct/total, FoxMascot celebration of the equipped
-// mascot (#059 retired the old on-fire/lit/empty state painter — outcome
+// Shows score % + correct/total, FoxPet celebration of the equipped
+// pet (#059 retired the old on-fire/lit/empty state painter — outcome
 // feedback now relies entirely on the XP count-up/score%/confetti+chime/
-// StreakBadge below, not the mascot), XP-earned count-up + perfect-score
+// StreakBadge below, not the pet), XP-earned count-up + perfect-score
 // bonus callout + level-progress bar (#010), streak headline + StreakBadge
 // (#011), Practice again + Back to library buttons. Level-up callout +
 // animated bar fill + confetti + chime added by #053.
@@ -16,8 +16,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/app_localizations.dart';
-import '../mascot/mascot_catalog.dart';
-import '../mascot/mascot_providers.dart';
+import '../pet/pet_catalog.dart';
+import '../pet/pet_providers.dart';
 import '../stats/xp_service.dart';
 import '../theme/fox_streak_theme.dart';
 import '../widgets/widgets.dart';
@@ -62,17 +62,17 @@ class LessonResultScreen extends ConsumerWidget {
       lessonControllerProvider.select((s) => s.streakCountAfterLesson),
     );
     // Resolved against the asset-backed catalog (not drift) — see
-    // [LessonState.equippedMascotId] for why this avoids `equippedMascotProvider`
+    // [LessonState.equippedPetId] for why this avoids `equippedPetProvider`
     // (which would watch the live, drift-backed `profileProvider` stream).
-    final equippedMascotId = ref.watch(
-      lessonControllerProvider.select((s) => s.equippedMascotId),
+    final equippedPetId = ref.watch(
+      lessonControllerProvider.select((s) => s.equippedPetId),
     );
-    final catalog = ref.watch(mascotCatalogProvider).asData?.value;
-    final mascot = catalog == null
-        ? MascotCatalog.defaultEntry
+    final catalog = ref.watch(petCatalogProvider).asData?.value;
+    final pet = catalog == null
+        ? PetCatalog.defaultEntry
         : catalog.firstWhere(
-            (entry) => entry.id == equippedMascotId,
-            orElse: () => MascotCatalog.defaultEntry,
+            (entry) => entry.id == equippedPetId,
+            orElse: () => PetCatalog.defaultEntry,
           );
     // Multi-level jumps in a single lesson still show one callout for the
     // final level reached (issue #053's decision), since this only compares
@@ -93,10 +93,10 @@ class LessonResultScreen extends ConsumerWidget {
                 children: [
                   // Celebration wrapper for the micro-moment
                   FoxCelebration(
-                    child: FoxMascot(
-                      mascot: mascot,
+                    child: FoxPet(
+                      pet: pet,
                       size: 120,
-                      semanticLabel: l10n.mascotSemanticLabel(mascot.emoji),
+                      semanticLabel: l10n.petSemanticLabel(pet.emoji),
                     ),
                   ),
                   const SizedBox(height: FoxSpacing.xl),

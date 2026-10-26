@@ -1,28 +1,27 @@
 // Lootbox reward result type + the coin-amount weighted draw (issue #065).
 //
-// `MascotService.recordLessonCompletion`'s 50/50 coin flip either wins a
-// catalog mascot (#064's full-pool draw, unchanged) or a coin amount here —
+// `PetService.recordLessonCompletion`'s 50/50 coin flip either wins a
+// catalog pet (#064's full-pool draw, unchanged) or a coin amount here —
 // never both in the same trigger.
 
 import 'dart:math';
 
-import 'mascot_catalog.dart';
+import 'pet_catalog.dart';
 
-/// What a triggered #059 lootbox awarded: a mascot (#064's full-pool draw)
+/// What a triggered #059 lootbox awarded: a pet (#064's full-pool draw)
 /// or a coin amount (#065) — never both in the same trigger.
 sealed class LootboxReward {
   const LootboxReward();
 }
 
-/// A won (or re-won, see #064) catalog mascot.
-class MascotReward extends LootboxReward {
-  final MascotEntry entry;
+/// A won (or re-won, see #064) catalog pet.
+class PetReward extends LootboxReward {
+  final PetEntry entry;
 
-  const MascotReward(this.entry);
+  const PetReward(this.entry);
 
   @override
-  bool operator ==(Object other) =>
-      other is MascotReward && other.entry == entry;
+  bool operator ==(Object other) => other is PetReward && other.entry == entry;
 
   @override
   int get hashCode => entry.hashCode;

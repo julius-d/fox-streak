@@ -1,62 +1,62 @@
-// Mascot catalog (issue #059): discovers collectible mascots at *runtime*
+// Pet catalog (issue #059): discovers collectible pets at *runtime*
 // from `AssetManifest`, never a hardcoded Dart list — dropping one more
-// `..._lottie.json` file into `assets/noto-emoji/mascot/` is the entire
-// change needed to add a mascot later. One-off, non-collectible effect
+// `..._lottie.json` file into `assets/noto-emoji/pet/` is the entire
+// change needed to add a pet later. One-off, non-collectible effect
 // animations (e.g. the lootbox-opening Lottie, issue #062) live in the
 // sibling `assets/noto-emoji/other/` instead, which this catalog never
 // scans.
 //
 // Stable ID = filename stem (e.g. `emoji_u1f98a_lottie` for
 // `emoji_u1f98a_lottie.json`), used as the primary/foreign key everywhere
-// (owned-mascots table, equipped-mascot column) instead of an array index,
+// (owned-pets table, equipped-pet column) instead of an array index,
 // so the catalog surviving new files being added later never shifts IDs
 // already persisted in the database.
 //
-// No per-mascot l10n names: Noto Emoji filenames encode the Unicode
-// codepoint(s) in hex (e.g. `u1f98a` -> 🦊); [decodeMascotEmoji] decodes
+// No per-pet l10n names: Noto Emoji filenames encode the Unicode
+// codepoint(s) in hex (e.g. `u1f98a` -> 🦊); [decodePetEmoji] decodes
 // that back into the literal emoji character, used as both the visible
-// label and the a11y/semantic label via the generic `mascotSemanticLabel`
+// label and the a11y/semantic label via the generic `petSemanticLabel`
 // arb template.
 import 'package:flutter/services.dart';
 
-/// Directory holding every collectible mascot's Lottie animation. Sibling to
+/// Directory holding every collectible pet's Lottie animation. Sibling to
 /// `assets/noto-emoji/other/` (non-collectible effect animations) and
 /// `assets/noto-emoji/attribution.md`, neither of which this scans.
-const String kMascotAssetDir = 'assets/noto-emoji/mascot/';
+const String kPetAssetDir = 'assets/noto-emoji/pet/';
 
 const String _kLottieSuffix = '_lottie.json';
 
-/// Every profile starts owning and equipped with exactly this mascot (🦊),
+/// Every profile starts owning and equipped with exactly this pet (🦊),
 /// matching the existing fox branding.
-const String kDefaultMascotId = 'emoji_u1f98a_lottie';
+const String kDefaultPetId = 'emoji_u1f98a_lottie';
 
 /// One catalog entry: a stable [id] (filename stem), its [assetPath] for
 /// [Lottie.asset], and its decoded [emoji] label.
-class MascotEntry {
+class PetEntry {
   final String id;
   final String assetPath;
   final String emoji;
 
-  const MascotEntry({
+  const PetEntry({
     required this.id,
     required this.assetPath,
     required this.emoji,
   });
 
   @override
-  bool operator ==(Object other) => other is MascotEntry && other.id == id;
+  bool operator ==(Object other) => other is PetEntry && other.id == id;
 
   @override
   int get hashCode => id.hashCode;
 
   @override
-  String toString() => 'MascotEntry($id, $emoji)';
+  String toString() => 'PetEntry($id, $emoji)';
 }
 
-/// Decodes a mascot [id]'s embedded hex Unicode codepoint(s) back into the
+/// Decodes a pet [id]'s embedded hex Unicode codepoint(s) back into the
 /// literal emoji character, per Noto Emoji's `emoji_u<hex>[_<hex>...]`
 /// filename convention (e.g. `emoji_u1f426_200d_1f525_lottie` -> 🐦‍🔥).
-String decodeMascotEmoji(String id) {
+String decodePetEmoji(String id) {
   const String prefix = 'emoji_u';
   const String suffix = '_lottie';
   final String core = id.substring(prefix.length, id.length - suffix.length);
@@ -66,67 +66,63 @@ String decodeMascotEmoji(String id) {
       .join();
 }
 
-/// Builds a [MascotEntry] for a known mascot [id] without going through the
-/// asset manifest — used for [MascotCatalog.defaultEntry] and anywhere a
+/// Builds a [PetEntry] for a known pet [id] without going through the
+/// asset manifest — used for [PetCatalog.defaultEntry] and anywhere a
 /// fallback is needed before the real catalog has loaded.
-MascotEntry mascotEntryForId(String id) => MascotEntry(
+PetEntry petEntryForId(String id) => PetEntry(
   id: id,
-  assetPath: '$kMascotAssetDir$id.json',
-  emoji: decodeMascotEmoji(id),
+  assetPath: '$kPetAssetDir$id.json',
+  emoji: decodePetEmoji(id),
 );
 
-/// Discovers the collectible-mascot catalog at runtime.
-abstract final class MascotCatalog {
+/// Discovers the collectible-pet catalog at runtime.
+abstract final class PetCatalog {
   /// The default fox entry, available without loading the asset manifest.
-  static final MascotEntry defaultEntry = mascotEntryForId(kDefaultMascotId);
+  static final PetEntry defaultEntry = petEntryForId(kDefaultPetId);
 
-  /// Loads every `assets/noto-emoji/mascot/*_lottie.json` asset from
-  /// [bundle] (defaults to [rootBundle]) and returns one [MascotEntry] per
-  /// file, sorted by [MascotEntry.id] for a stable iteration order.
-  static Future<List<MascotEntry>> load({AssetBundle? bundle}) async {
+  /// Loads every `assets/noto-emoji/pet/*_lottie.json` asset from
+  /// [bundle] (defaults to [rootBundle]) and returns one [PetEntry] per
+  /// file, sorted by [PetEntry.id] for a stable iteration order.
+  static Future<List<PetEntry>> load({AssetBundle? bundle}) async {
     final AssetManifest manifest = await AssetManifest.loadFromAssetBundle(
       bundle ?? rootBundle,
     );
-    final List<MascotEntry> entries = manifest
+    final List<PetEntry> entries = manifest
         .listAssets()
         .where(
           (String key) =>
-              key.startsWith(kMascotAssetDir) && key.endsWith(_kLottieSuffix),
+              key.startsWith(kPetAssetDir) && key.endsWith(_kLottieSuffix),
         )
         .map((String key) {
-          final String fileName = key.substring(kMascotAssetDir.length);
+          final String fileName = key.substring(kPetAssetDir.length);
           final String id = fileName.substring(
             0,
             fileName.length - '.json'.length,
           );
-          return MascotEntry(
-            id: id,
-            assetPath: key,
-            emoji: decodeMascotEmoji(id),
-          );
+          return PetEntry(id: id, assetPath: key, emoji: decodePetEmoji(id));
         })
         .toList();
-    entries.sort((MascotEntry a, MascotEntry b) => a.id.compareTo(b.id));
+    entries.sort((PetEntry a, PetEntry b) => a.id.compareTo(b.id));
     return entries;
   }
 }
 
 /// A fixed, year-independent `(month, day)` date range during which a
-/// seasonal mascot is winnable from the lootbox, checked against the local
+/// seasonal pet is winnable from the lootbox, checked against the local
 /// calendar date's month/day only (the year is ignored, so the window
 /// recurs automatically every year). Both ends are inclusive.
 ///
 /// Intentionally non-wrapping (see #063's "Out of scope") — a window
 /// spanning Dec 31 -> Jan 1 needs different comparison logic this doesn't
-/// implement; every window in [kMascotSeasonWindows] today fits within a
+/// implement; every window in [kPetSeasonWindows] today fits within a
 /// single calendar month-pair.
-class MascotSeasonWindow {
+class PetSeasonWindow {
   final int startMonth;
   final int startDay;
   final int endMonth;
   final int endDay;
 
-  const MascotSeasonWindow({
+  const PetSeasonWindow({
     required this.startMonth,
     required this.startDay,
     required this.endMonth,
@@ -147,20 +143,20 @@ class MascotSeasonWindow {
   }
 }
 
-/// Seasonal-eligibility table, keyed by mascot ID (#063). A mascot ID with
+/// Seasonal-eligibility table, keyed by pet ID (#063). A pet ID with
 /// no entry here is winnable from the lootbox year-round — today's
-/// behavior for every pre-#063 mascot, plus the pig/chick this issue also
-/// adds as ordinary (non-seasonal) mascots.
-const Map<String, MascotSeasonWindow> kMascotSeasonWindows = {
+/// behavior for every pre-#063 pet, plus the pig/chick this issue also
+/// adds as ordinary (non-seasonal) pets.
+const Map<String, PetSeasonWindow> kPetSeasonWindows = {
   // Snowman: Christmas season, Dec 6-26.
-  'emoji_u2603_lottie': MascotSeasonWindow(
+  'emoji_u2603_lottie': PetSeasonWindow(
     startMonth: 12,
     startDay: 6,
     endMonth: 12,
     endDay: 26,
   ),
   // Spider: an 8-day Halloween window, Oct 25 - Nov 1.
-  'emoji_u1f577_lottie': MascotSeasonWindow(
+  'emoji_u1f577_lottie': PetSeasonWindow(
     startMonth: 10,
     startDay: 25,
     endMonth: 11,
@@ -168,10 +164,10 @@ const Map<String, MascotSeasonWindow> kMascotSeasonWindows = {
   ),
 };
 
-/// Whether mascot [id] is currently winnable from the lootbox at [now] —
-/// always true for a non-seasonal mascot, and true for a seasonal one only
-/// inside its [MascotSeasonWindow] (see [kMascotSeasonWindows]).
-bool isMascotInSeason(String id, DateTime now) {
-  final MascotSeasonWindow? window = kMascotSeasonWindows[id];
+/// Whether pet [id] is currently winnable from the lootbox at [now] —
+/// always true for a non-seasonal pet, and true for a seasonal one only
+/// inside its [PetSeasonWindow] (see [kPetSeasonWindows]).
+bool isPetInSeason(String id, DateTime now) {
+  final PetSeasonWindow? window = kPetSeasonWindows[id];
   return window == null || window.includes(now);
 }

@@ -10,7 +10,7 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 
-import '../mascot/mascot_catalog.dart' show kDefaultMascotId;
+import '../pet/pet_catalog.dart' show kDefaultPetId;
 
 part 'database.g.dart';
 
@@ -74,14 +74,14 @@ class Attempts extends Table {
 /// - `dailyGoalXp` — editable (see #012), written by [StatsRepository].
 /// - `displayName` / `hasOnboarded` — written exclusively by #012's
 ///   [StatsRepository.setDisplayName]/[StatsRepository.setOnboarded].
-/// - `equippedMascotId` / `lessonsCompletedToday` / `lessonsCompletedDay` —
-///   written exclusively by #059 `MascotService`, via
-///   [StatsRepository.setEquippedMascot]/
-///   [StatsRepository.setMascotLessonCounter]. `lessonsCompletedToday`
+/// - `equippedPetId` / `lessonsCompletedToday` / `lessonsCompletedDay` —
+///   written exclusively by #059 `PetService`, via
+///   [StatsRepository.setEquippedPet]/
+///   [StatsRepository.setPetLessonCounter]. `lessonsCompletedToday`
 ///   resets on a new local day (vs. `lessonsCompletedDay`), mirroring
 ///   `todayXp`'s own day-scoped reset — it cannot reuse `lastActiveDay`
 ///   (StreakService-owned-write, see above).
-/// - `coinsTotal` — written exclusively by #065 `MascotService`'s
+/// - `coinsTotal` — written exclusively by #065 `PetService`'s
 ///   coin-reward branch, via [StatsRepository.addCoins]. Lifetime-only
 ///   (no day-scoped twin, unlike `todayXp`/`lessonsCompletedToday`); no
 ///   spending mechanic yet (a future "streak on ice" issue).
@@ -98,9 +98,9 @@ class ProfileStats extends Table {
   TextColumn get displayName => text().nullable()();
   // v5 (#012): true once first-run onboarding has completed/been skipped.
   BoolColumn get hasOnboarded => boolean().withDefault(const Constant(false))();
-  // v8 (#059): the currently-equipped mascot's catalog ID.
-  TextColumn get equippedMascotId =>
-      text().withDefault(const Constant(kDefaultMascotId))();
+  // v8 (#059): the currently-equipped pet's catalog ID.
+  TextColumn get equippedPetId =>
+      text().withDefault(const Constant(kDefaultPetId))();
   // v8 (#059): lesson-completion counter for the current
   // `lessonsCompletedDay`, driving the repeating lootbox trigger
   // (2, 5, 8, 11, ... — issue #067).
@@ -117,25 +117,25 @@ class ProfileStats extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-/// Mascots the profile has won at least once (issue #059). One row per
+/// Pets the profile has won at least once (issue #059). One row per
 /// distinct catalog ID ever drawn — never an array index, so the catalog
 /// surviving new files being added later never invalidates existing rows.
 ///
-/// v9 (#064): the lootbox draw no longer excludes already-won mascots, so a
+/// v9 (#064): the lootbox draw no longer excludes already-won pets, so a
 /// catalog entry can be drawn repeatedly; [count] tracks how many times,
 /// while [firstAcquiredAt] (renamed from `acquiredAt`) keeps the original
 /// first-win timestamp unchanged on repeat wins.
 ///
-/// Sole writer: `MascotService`, via `MascotRepository.addOwnedMascot`.
-class OwnedMascots extends Table {
-  TextColumn get mascotId => text()();
+/// Sole writer: `PetService`, via `PetRepository.addOwnedPet`.
+class OwnedPets extends Table {
+  TextColumn get petId => text()();
   // Epoch millis; set once on first win, never overwritten.
   IntColumn get firstAcquiredAt => integer()();
-  // v9 (#064): number of times this mascot has been drawn.
+  // v9 (#064): number of times this pet has been drawn.
   IntColumn get count => integer().withDefault(const Constant(1))();
 
   @override
-  Set<Column> get primaryKey => {mascotId};
+  Set<Column> get primaryKey => {petId};
 }
 
 /// Single-row app preferences (id fixed to 0), separate from [ProfileStats]
@@ -154,14 +154,7 @@ class AppSettings extends Table {
 }
 
 @DriftDatabase(
-  tables: [
-    QuestionSets,
-    Items,
-    Attempts,
-    ProfileStats,
-    AppSettings,
-    OwnedMascots,
-  ],
+  tables: [QuestionSets, Items, Attempts, ProfileStats, AppSettings, OwnedPets],
 )
 class AppDatabase extends _$AppDatabase {
   /// Production constructor backed by `drift_flutter`.
@@ -171,7 +164,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -220,15 +213,17 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(appSettings);
       }
       // v8 (#059): adds the owned-mascots table + profileStats's
-      // mascot-collection columns. `addColumn` applies each column's Dart
-      // default (the fox for `equippedMascotId`, 0/NULL for the
-      // no-activity-yet lesson counter) to existing rows too.
-      //
-      // `ownedMascots` is created in its original (`acquired_at`, no
-      // `count`) shape via raw DDL, not `m.createTable(ownedMascots)` —
-      // that would build the table from the *current* Dart definition
-      // (post-#064's `firstAcquiredAt`/`count`), which the v9 step below
-      // would then fail to rename/add onto.
+      // mascot-collection columns, under their *original* (pre-#068) names
+      // — `owned_mascots`/`mascot_id`/`equipped_mascot_id`. Both the table
+      // and the `equippedMascotId` column are created via raw DDL with
+      // those literal names, not `m.createTable(ownedPets)`/
+      // `m.addColumn(profileStats, profileStats.equippedPetId)`: those
+      // helpers resolve physical names from the *current* (post-#068,
+      // already-renamed) Dart definitions, which would silently skip the
+      // physical rename v11 below depends on for any device upgrading
+      // through this step today. `lessonsCompletedToday`/
+      // `lessonsCompletedDay` were never renamed, so `addColumn` is safe
+      // for those two as-is.
       if (from < 8) {
         await customStatement('''
           CREATE TABLE owned_mascots (
@@ -237,7 +232,14 @@ class AppDatabase extends _$AppDatabase {
             PRIMARY KEY (mascot_id)
           )
         ''');
-        await m.addColumn(profileStats, profileStats.equippedMascotId);
+        // Literal default (not interpolated from `kDefaultPetId`): SQLite's
+        // `ALTER TABLE ADD COLUMN DEFAULT` clause must be a constant, not a
+        // bound parameter, and this historical step's hardcoded value must
+        // stay exactly 'emoji_u1f98a_lottie' regardless of any future
+        // change to the live `kDefaultPetId` constant.
+        await customStatement('''
+          ALTER TABLE profile_stats ADD COLUMN equipped_mascot_id TEXT NOT NULL DEFAULT 'emoji_u1f98a_lottie'
+        ''');
         await m.addColumn(profileStats, profileStats.lessonsCompletedToday);
         await m.addColumn(profileStats, profileStats.lessonsCompletedDay);
       }
@@ -245,19 +247,37 @@ class AppDatabase extends _$AppDatabase {
       // mascots, so a catalog entry can be won more than once;
       // `acquiredAt` is renamed to `firstAcquiredAt` (same semantics, new
       // name) and `count` is added, defaulting existing rows to 1 (every
-      // existing row represents exactly one win today).
+      // existing row represents exactly one win today). Raw SQL against
+      // the still-`owned_mascots`-named table for the same reason as v8
+      // above — `m.renameColumn`/`m.addColumn` would resolve `ownedPets`
+      // to its post-#068 physical name instead.
       if (from < 9) {
-        await m.renameColumn(
-          ownedMascots,
-          'acquired_at',
-          ownedMascots.firstAcquiredAt,
+        await customStatement(
+          'ALTER TABLE owned_mascots RENAME COLUMN acquired_at TO first_acquired_at',
         );
-        await m.addColumn(ownedMascots, ownedMascots.count);
+        await customStatement(
+          'ALTER TABLE owned_mascots ADD COLUMN count INTEGER NOT NULL DEFAULT 1',
+        );
       }
       // v10 (#065): adds the lifetime `coinsTotal` balance, defaulting
-      // existing rows to 0.
+      // existing rows to 0. `profileStats`/`coinsTotal` were never
+      // renamed, so the ordinary Drift helper is safe here.
       if (from < 10) {
         await m.addColumn(profileStats, profileStats.coinsTotal);
+      }
+      // v11 (#068): renames the "mascot" vocabulary to "pet" at the
+      // physical-schema level — `owned_mascots` -> `owned_pets`,
+      // `mascot_id` -> `pet_id`, `profileStats.equipped_mascot_id` ->
+      // `equipped_pet_id` — preserving every existing owned-pet row and
+      // the equipped choice unchanged; only the table/column names differ.
+      if (from < 11) {
+        await customStatement('ALTER TABLE owned_mascots RENAME TO owned_pets');
+        await customStatement(
+          'ALTER TABLE owned_pets RENAME COLUMN mascot_id TO pet_id',
+        );
+        await customStatement(
+          'ALTER TABLE profile_stats RENAME COLUMN equipped_mascot_id TO equipped_pet_id',
+        );
       }
     },
     beforeOpen: (details) async {
@@ -272,10 +292,13 @@ class AppDatabase extends _$AppDatabase {
   // `items.direction` with `promptLang`/`answerLang`; v5 (#012) added
   // `profileStats.displayName`/`hasOnboarded`; v6 (#045) added
   // `questionSets.category`; v7 (#055) added the `appSettings` table; v8
-  // (#059) added the `ownedMascots` table + `profileStats.equippedMascotId`/
-  // `lessonsCompletedToday`/`lessonsCompletedDay`; v9 (#064) renamed
-  // `ownedMascots.acquiredAt` to `firstAcquiredAt` and added
-  // `ownedMascots.count`; v10 (#065) added `profileStats.coinsTotal`.
+  // (#059) added the `owned_mascots` table + `profileStats.
+  // equipped_mascot_id`/`lessonsCompletedToday`/`lessonsCompletedDay`; v9
+  // (#064) renamed `owned_mascots.acquiredAt` to `firstAcquiredAt` and
+  // added `owned_mascots.count`; v10 (#065) added
+  // `profileStats.coinsTotal`; v11 (#068) renamed `owned_mascots`/
+  // `mascot_id`/`equipped_mascot_id` to `owned_pets`/`pet_id`/
+  // `equipped_pet_id`.
 }
 
 DatabaseConnection _openConnection() => driftDatabase(name: 'fox_streak');

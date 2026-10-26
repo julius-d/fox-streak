@@ -5,7 +5,7 @@
 // streak's same-day-replay-never-double-counts vs. new-day-increments
 // behavior across several lessons, including `today_xp` reset-vs-accumulate.
 // (`xp_level_result_test.dart`/`streak_result_test.dart` already cover the
-// perfect-bonus and milestone-mascot cases individually — not duplicated
+// perfect-bonus and milestone-pet cases individually — not duplicated
 // here.)
 
 import 'package:drift/drift.dart';
@@ -16,7 +16,7 @@ import 'package:integration_test/integration_test.dart';
 
 import 'package:fox_streak_app/src/data/database.dart';
 import 'package:fox_streak_app/src/data/stats_repository.dart';
-import 'package:fox_streak_app/src/mascot/mascot_catalog.dart';
+import 'package:fox_streak_app/src/pet/pet_catalog.dart';
 
 import 'helpers.dart';
 
@@ -92,7 +92,7 @@ void main() {
         clock: clock,
         setId: setId,
         items: lesson1Items,
-        mascotCatalogLoader: () async => const <MascotEntry>[],
+        petCatalogLoader: () async => const <PetEntry>[],
       );
       for (var i = 0; i < lesson1Items.length; i++) {
         // Items are shuffled by the controller; identify which one is
@@ -166,7 +166,7 @@ void main() {
         clock: clock,
         setId: setId,
         items: lesson2Items,
-        mascotCatalogLoader: () async => const <MascotEntry>[],
+        petCatalogLoader: () async => const <PetEntry>[],
       );
       for (var i = 0; i < lesson2Items.length; i++) {
         if (find
@@ -222,7 +222,7 @@ void main() {
         clock: clock,
         setId: setId,
         items: lesson3Items,
-        mascotCatalogLoader: () async => const <MascotEntry>[],
+        petCatalogLoader: () async => const <PetEntry>[],
       );
       await tester.tap(find.text('bird'));
       await tester.pump();

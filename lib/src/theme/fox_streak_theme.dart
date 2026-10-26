@@ -6,7 +6,7 @@
 //
 // Brand: Material 3, orange seed, system font for MVP (no bundled font
 // asset; a rounded display font is a post-MVP follow-up). Duolingo north
-// star: chunky rounded shapes, bright friendly colors, mascot-forward
+// star: chunky rounded shapes, bright friendly colors, pet-forward
 // moments, celebratory feedback. M3 governs standard components; the chunky
 // 3D press-feel lives only in the custom kit buttons.
 //

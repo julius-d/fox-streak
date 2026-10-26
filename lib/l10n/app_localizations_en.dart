@@ -583,32 +583,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingGetStarted => 'Get started';
 
   @override
-  String mascotSemanticLabel(String emoji) {
-    return 'Mascot $emoji';
+  String petSemanticLabel(String emoji) {
+    return 'Pet $emoji';
   }
 
   @override
-  String mascotEquippedSemanticLabel(String emoji) {
-    return 'Mascot $emoji, equipped';
+  String petEquippedSemanticLabel(String emoji) {
+    return 'Pet $emoji, equipped';
   }
 
   @override
-  String get mascotLockedSemanticLabel => 'Locked mascot';
+  String get petLockedSemanticLabel => 'Locked pet';
 
   @override
-  String get homeMascotSemanticLabel => 'Open your mascot collection';
+  String get homePetSemanticLabel => 'Open your pet collection';
 
   @override
-  String get mascotCollectionTitle => 'Your mascots';
+  String get petCollectionTitle => 'Your pets';
 
   @override
   String get lootboxHeading => 'Daily lootbox!';
 
   @override
-  String get lootboxTapPrompt => 'Tap to reveal your new mascot!';
+  String get lootboxTapPrompt => 'Tap to reveal your new pet!';
 
   @override
-  String get lootboxRevealedTitle => 'You got a new mascot!';
+  String get lootboxRevealedTitle => 'You got a new pet!';
 
   @override
   String lootboxCoinsRevealedTitle(int amount) {

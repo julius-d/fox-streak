@@ -1,6 +1,6 @@
 # Issue 068: Rename "Mascot" to "Pet" everywhere
 
-Status: open | Priority: P2 | Type: tech-debt | Refined-at: 2026-10-26
+Status: done | Priority: P2 | Type: tech-debt | Refined-at: 2026-10-26 | Completed-at: 2026-10-26
 
 ## Goal
 
@@ -175,3 +175,39 @@ dart format --output=none --set-exit-if-changed .
 dart fix --dry-run
 flutter test
 ```
+
+## Summary
+
+- Renamed the module (`lib/src/mascot/` -> `lib/src/pet/`), its files/
+  classes/providers/l10n keys, the asset dir (`assets/noto-emoji/mascot/`
+  -> `.../pet/`), `test/mascot/` -> `test/pet/`, and golden baseline PNGs
+  (`fox_mascot_*.png` -> `fox_pet_*.png`) per the mapping table. Reworded
+  every DE/EN arb value; regenerated l10n + Drift codegen.
+- Added schema v11 (`AppDatabase`): `RENAME TABLE owned_mascots TO
+  owned_pets`, `RENAME COLUMN mascot_id TO pet_id`, `RENAME COLUMN
+  equipped_mascot_id TO equipped_pet_id` — preserves existing rows/equipped
+  choice. New migration test (v10 -> v11) seeds a pre-rename DB and asserts
+  the owned row/equipped value survive unchanged.
+- **Deliberate deviation from the "no mascot occurrences" acceptance
+  criterion**: `lib/src/data/database.dart`'s historical v8/v9 migration
+  steps and `test/data/migration_test.dart`'s legacy-schema fixtures still
+  use the literal old physical names (`owned_mascots`/`mascot_id`/
+  `equipped_mascot_id`) — reverting those to "pet" would make a device
+  upgrading from schema v7/v8/v9 straight to v11 create tables/columns
+  already named "pet", so the new v11 `RENAME` step would find nothing to
+  rename and fail. Preserving real user data (the issue's own "DB
+  migration, not a reset" decision) takes priority over the literal grep
+  criterion here; `grep -ri mascot` on `lib/`/`test/` finds exactly these
+  two files, both for this reason.
+- `issue059_mascot_lootbox_test.dart` keeps its filename (historical
+  pointer, per the issue's own decision) with all contents renamed.
+- Filed #075/#076/#077 for three pre-existing integration-test failures on
+  macOS found while verifying (confirmed failing identically on unmodified
+  `main` — unrelated to this rename).
+
+## Code review
+
+- AGENTS.md's `FoxPet` bullet kept the stale `empty | lit | on-fire placeholder` parenthetical from the mechanical rename.
+  Fixed — reworded to describe what `FoxPet` actually renders (the equipped collectible pet's Lottie).
+- `database.dart`'s v8 step interpolated `kDefaultPetId` into raw DDL instead of a literal, latent risk if that constant's value ever changed.
+  Fixed — replaced with the hardcoded literal value plus a comment pinning it to that historical step.

@@ -2,7 +2,7 @@
 
 import 'package:drift/drift.dart';
 
-import '../mascot/mascot_catalog.dart' show kDefaultMascotId;
+import '../pet/pet_catalog.dart' show kDefaultPetId;
 import 'clock.dart';
 import 'database.dart';
 
@@ -23,10 +23,10 @@ const int kDefaultDailyGoalXp = 100;
 ///   exists) and MUST NOT touch `streakCount`/`lastActiveDay` — or `xpTotal`.
 /// - This repository owns `dailyGoalXp`, `displayName` and `hasOnboarded`
 ///   (see #012).
-/// - `equippedMascotId`/`lessonsCompletedToday`/`lessonsCompletedDay` are
-///   written exclusively by #059 `MascotService`, via
-///   [setEquippedMascot]/[setMascotLessonCounter].
-/// - `coinsTotal` is written exclusively by #065 `MascotService`'s
+/// - `equippedPetId`/`lessonsCompletedToday`/`lessonsCompletedDay` are
+///   written exclusively by #059 `PetService`, via
+///   [setEquippedPet]/[setPetLessonCounter].
+/// - `coinsTotal` is written exclusively by #065 `PetService`'s
 ///   coin-reward branch, via [addCoins].
 class StatsRepository {
   final AppDatabase _db;
@@ -54,7 +54,7 @@ class StatsRepository {
             todayXp: Value(0),
             displayName: Value(null),
             hasOnboarded: Value(false),
-            equippedMascotId: Value(kDefaultMascotId),
+            equippedPetId: Value(kDefaultPetId),
             lessonsCompletedToday: Value(0),
             lessonsCompletedDay: Value(null),
             coinsTotal: Value(0),
@@ -69,7 +69,7 @@ class StatsRepository {
       todayXp: 0,
       displayName: null,
       hasOnboarded: false,
-      equippedMascotId: kDefaultMascotId,
+      equippedPetId: kDefaultPetId,
       lessonsCompletedToday: 0,
       lessonsCompletedDay: null,
       coinsTotal: 0,
@@ -91,7 +91,7 @@ class StatsRepository {
             todayXp: 0,
             displayName: null,
             hasOnboarded: false,
-            equippedMascotId: kDefaultMascotId,
+            equippedPetId: kDefaultPetId,
             lessonsCompletedToday: 0,
             lessonsCompletedDay: null,
             coinsTotal: 0,
@@ -175,18 +175,18 @@ class StatsRepository {
         .write(const ProfileStatsCompanion(hasOnboarded: Value(true)));
   }
 
-  /// Sets the equipped mascot shown on Home/lesson result/onboarding/
-  /// `FoxEmptyState` (issue #059). Sole caller: #059 `MascotService.equip`.
-  Future<void> setEquippedMascot(String mascotId) async {
+  /// Sets the equipped pet shown on Home/lesson result/onboarding/
+  /// `FoxEmptyState` (issue #059). Sole caller: #059 `PetService.equip`.
+  Future<void> setEquippedPet(String petId) async {
     await getProfile();
     await (_db.update(_db.profileStats)..where((t) => t.id.equals(kProfileId)))
-        .write(ProfileStatsCompanion(equippedMascotId: Value(mascotId)));
+        .write(ProfileStatsCompanion(equippedPetId: Value(petId)));
   }
 
   /// Overwrites the day-scoped lesson-completion counter driving #059's
   /// repeating lootbox trigger (2, 5, 8, 11, ... — issue #067). Sole
-  /// caller: #059 `MascotService.recordLessonCompletion`.
-  Future<void> setMascotLessonCounter({
+  /// caller: #059 `PetService.recordLessonCompletion`.
+  Future<void> setPetLessonCounter({
     required int count,
     required String day,
   }) async {
@@ -202,7 +202,7 @@ class StatsRepository {
   }
 
   /// Adds [amount] coins to the lifetime `coinsTotal` balance (issue #065).
-  /// Sole caller: #065 `MascotService.recordLessonCompletion`'s coin-reward
+  /// Sole caller: #065 `PetService.recordLessonCompletion`'s coin-reward
   /// branch.
   Future<void> addCoins(int amount) async {
     final profile = await getProfile();

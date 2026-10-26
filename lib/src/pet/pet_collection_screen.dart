@@ -1,49 +1,47 @@
-// Mascot collection/equip screen (issue #059).
+// Pet collection/equip screen (issue #059).
 //
-// Reached by tapping the mascot on Home. Shows the *entire* catalog as a
-// grid: owned mascots are tappable to equip; not-yet-owned ones render
+// Reached by tapping the pet on Home. Shows the *entire* catalog as a
+// grid: owned pets are tappable to equip; not-yet-owned ones render
 // locked/greyed (visible but inert) so the user can see there's more to
 // collect.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/app_localizations.dart';
-import '../stats/mascot_service.dart';
+import '../stats/pet_service.dart';
 import '../stats/stats_providers.dart';
 import '../theme/fox_streak_theme.dart';
 import '../widgets/widgets.dart';
-import 'mascot_catalog.dart';
-import 'mascot_providers.dart';
+import 'pet_catalog.dart';
+import 'pet_providers.dart';
 
-class MascotCollectionScreen extends ConsumerWidget {
-  const MascotCollectionScreen({super.key});
+class PetCollectionScreen extends ConsumerWidget {
+  const PetCollectionScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
-    final AsyncValue<List<MascotEntry>> catalogAsync = ref.watch(
-      mascotCatalogProvider,
+    final AsyncValue<List<PetEntry>> catalogAsync = ref.watch(
+      petCatalogProvider,
     );
-    final AsyncValue<List<String>> ownedAsync = ref.watch(
-      ownedMascotIdsProvider,
-    );
+    final AsyncValue<List<String>> ownedAsync = ref.watch(ownedPetIdsProvider);
     final String equippedId =
-        ref.watch(profileProvider).asData?.value.equippedMascotId ??
-        MascotCatalog.defaultEntry.id;
+        ref.watch(profileProvider).asData?.value.equippedPetId ??
+        PetCatalog.defaultEntry.id;
 
     return Scaffold(
-      key: const Key('mascotCollectionScreen'),
-      appBar: AppBar(title: Text(l10n.mascotCollectionTitle)),
+      key: const Key('petCollectionScreen'),
+      appBar: AppBar(title: Text(l10n.petCollectionTitle)),
       body: catalogAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (Object e, StackTrace _) => Center(child: Text(e.toString())),
-        data: (List<MascotEntry> catalog) => ownedAsync.when(
+        data: (List<PetEntry> catalog) => ownedAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (Object e, StackTrace _) => Center(child: Text(e.toString())),
           data: (List<String> ownedIds) {
             final Set<String> owned = ownedIds.toSet();
             return GridView.builder(
-              key: const Key('mascotCollectionGrid'),
+              key: const Key('petCollectionGrid'),
               padding: const EdgeInsets.all(FoxSpacing.lg),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
@@ -52,8 +50,8 @@ class MascotCollectionScreen extends ConsumerWidget {
               ),
               itemCount: catalog.length,
               itemBuilder: (BuildContext context, int index) {
-                final MascotEntry entry = catalog[index];
-                return _MascotTile(
+                final PetEntry entry = catalog[index];
+                return _PetTile(
                   entry: entry,
                   isOwned: owned.contains(entry.id),
                   isEquipped: entry.id == equippedId,
@@ -68,19 +66,19 @@ class MascotCollectionScreen extends ConsumerWidget {
   }
 }
 
-/// One grid cell: an owned mascot (tappable to equip, highlighted if
+/// One grid cell: an owned pet (tappable to equip, highlighted if
 /// currently equipped) or a locked placeholder for a not-yet-owned one.
 ///
 /// Design reason for not reusing a kit button here: the kit's buttons are
 /// all label-driven (text + optional icon), not a square image tile with a
 /// lock overlay or an equipped-highlight border — this stays a one-off.
-class _MascotTile extends ConsumerWidget {
-  final MascotEntry entry;
+class _PetTile extends ConsumerWidget {
+  final PetEntry entry;
   final bool isOwned;
   final bool isEquipped;
   final AppLocalizations l10n;
 
-  const _MascotTile({
+  const _PetTile({
     required this.entry,
     required this.isOwned,
     required this.isEquipped,
@@ -93,8 +91,8 @@ class _MascotTile extends ConsumerWidget {
 
     if (!isOwned) {
       return Semantics(
-        key: Key('mascotTile-${entry.id}'),
-        label: l10n.mascotLockedSemanticLabel,
+        key: Key('petTile-${entry.id}'),
+        label: l10n.petLockedSemanticLabel,
         child: DecoratedBox(
           decoration: BoxDecoration(
             color: scheme.surfaceContainerHighest,
@@ -108,9 +106,9 @@ class _MascotTile extends ConsumerWidget {
     }
 
     return InkWell(
-      key: Key('mascotTile-${entry.id}'),
+      key: Key('petTile-${entry.id}'),
       borderRadius: const BorderRadius.all(Radius.circular(FoxRadius.md)),
-      onTap: () => ref.read(mascotServiceProvider).equip(entry.id),
+      onTap: () => ref.read(petServiceProvider).equip(entry.id),
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: isEquipped ? scheme.primaryContainer : null,
@@ -122,9 +120,9 @@ class _MascotTile extends ConsumerWidget {
         child: Semantics(
           button: true,
           label: isEquipped
-              ? l10n.mascotEquippedSemanticLabel(entry.emoji)
-              : l10n.mascotSemanticLabel(entry.emoji),
-          child: FoxMascot(mascot: entry, size: 72),
+              ? l10n.petEquippedSemanticLabel(entry.emoji)
+              : l10n.petSemanticLabel(entry.emoji),
+          child: FoxPet(pet: entry, size: 72),
         ),
       ),
     );

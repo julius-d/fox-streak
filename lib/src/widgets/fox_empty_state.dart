@@ -1,19 +1,19 @@
 // Empty-state-CTA pattern (issue #015).
 //
-// Generalizes what #003 built in `LibraryScreen._buildEmpty`: mascot +
+// Generalizes what #003 built in `LibraryScreen._buildEmpty`: pet +
 // title + message + CTA (+ loading / error slots). Feature screens reuse
 // this instead of hand-rolling centered columns. All copy flows in via
 // params from the existing `lib/l10n` arb pattern (DE + EN) — no hardcoded
 // user-visible strings live in the kit.
 import 'package:flutter/material.dart';
 
-import '../mascot/mascot_catalog.dart';
+import '../pet/pet_catalog.dart';
 import '../theme/fox_streak_theme.dart';
 import 'feedback_banner.dart';
 import 'fox_buttons.dart';
-import 'fox_mascot.dart';
+import 'fox_pet.dart';
 
-/// Friendly empty state with mascot header and CTA.
+/// Friendly empty state with pet header and CTA.
 ///
 /// [ctaLabel]/[onCta] are optional so pure info states (e.g. "no items
 /// yet" with an add FAB nearby) can reuse the same layout. [isLoading]
@@ -29,8 +29,8 @@ class FoxEmptyState extends StatelessWidget {
   final bool isLoading;
   final String? loadingLabel;
   final String? errorMessage;
-  final MascotEntry mascot;
-  final String? mascotSemanticLabel;
+  final PetEntry pet;
+  final String? petSemanticLabel;
   final Key? titleKey;
   final Key? ctaKey;
   final Key? errorKey;
@@ -39,14 +39,14 @@ class FoxEmptyState extends StatelessWidget {
   const FoxEmptyState({
     super.key,
     required this.title,
-    required this.mascot,
+    required this.pet,
     this.message,
     this.ctaLabel,
     this.onCta,
     this.isLoading = false,
     this.loadingLabel,
     this.errorMessage,
-    this.mascotSemanticLabel,
+    this.petSemanticLabel,
     this.titleKey,
     this.ctaKey,
     this.errorKey,
@@ -62,7 +62,7 @@ class FoxEmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            FoxMascot(mascot: mascot, semanticLabel: mascotSemanticLabel),
+            FoxPet(pet: pet, semanticLabel: petSemanticLabel),
             const SizedBox(height: FoxSpacing.lg),
             Text(
               title,

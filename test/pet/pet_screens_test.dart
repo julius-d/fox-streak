@@ -1,9 +1,9 @@
-// Widget tests for the lootbox reveal + mascot collection screens
+// Widget tests for the lootbox reveal + pet collection screens
 // (issue #059).
 //
-// NOTE on pumping: do NOT use `pumpAndSettle()` for `MascotCollectionScreen`
+// NOTE on pumping: do NOT use `pumpAndSettle()` for `PetCollectionScreen`
 // — same drift `watch()` fake-async caveat as `library_screen_test.dart`'s
-// own `settle()` (it watches `profileProvider`/`ownedMascotIdsProvider`).
+// own `settle()` (it watches `profileProvider`/`ownedPetIdsProvider`).
 
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -12,13 +12,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fox_streak_app/l10n/app_localizations.dart';
 import 'package:fox_streak_app/l10n/app_localizations_en.dart';
 import 'package:fox_streak_app/src/data/database.dart';
-import 'package:fox_streak_app/src/data/mascot_repository.dart';
+import 'package:fox_streak_app/src/data/pet_repository.dart';
 import 'package:fox_streak_app/src/data/providers.dart';
 import 'package:fox_streak_app/src/data/stats_repository.dart';
-import 'package:fox_streak_app/src/mascot/lootbox_reward.dart';
-import 'package:fox_streak_app/src/mascot/lootbox_screen.dart';
-import 'package:fox_streak_app/src/mascot/mascot_catalog.dart';
-import 'package:fox_streak_app/src/mascot/mascot_collection_screen.dart';
+import 'package:fox_streak_app/src/pet/lootbox_reward.dart';
+import 'package:fox_streak_app/src/pet/lootbox_screen.dart';
+import 'package:fox_streak_app/src/pet/pet_catalog.dart';
+import 'package:fox_streak_app/src/pet/pet_collection_screen.dart';
 
 /// Pumps frames until none are scheduled (or [cap] is hit, which fails).
 Future<void> settle(WidgetTester tester, {int cap = 50}) async {
@@ -37,12 +37,12 @@ Future<void> unmount(WidgetTester tester) async {
   await tester.pump(const Duration(milliseconds: 100));
 }
 
-const _reward = MascotEntry(
+const _reward = PetEntry(
   id: 'emoji_u1f980_lottie',
-  assetPath: 'assets/noto-emoji/mascot/emoji_u1f980_lottie.json',
+  assetPath: 'assets/noto-emoji/pet/emoji_u1f980_lottie.json',
   emoji: '🦀',
 );
-const _mascotReward = MascotReward(_reward);
+const _petReward = PetReward(_reward);
 const _coinsReward = CoinsReward(40);
 
 Future<AppDatabase> pumpCollectionScreen(
@@ -57,7 +57,7 @@ Future<AppDatabase> pumpCollectionScreen(
       child: const MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: MascotCollectionScreen(),
+        home: PetCollectionScreen(),
       ),
     ),
   );
@@ -74,10 +74,7 @@ void main() {
       (tester) async {
         await tester.pumpWidget(
           MaterialApp(
-            home: LootboxScreen(
-              reward: _mascotReward,
-              l10n: AppLocalizationsEn(),
-            ),
+            home: LootboxScreen(reward: _petReward, l10n: AppLocalizationsEn()),
           ),
         );
         await tester.pump();
@@ -85,7 +82,7 @@ void main() {
         expect(find.byKey(const Key('lootboxOpenButton')), findsOneWidget);
         expect(find.byKey(const Key('lootboxAnimation')), findsOneWidget);
         expect(find.byKey(const Key('lootboxContinueButton')), findsNothing);
-        expect(find.byKey(Key('foxMascot-${_reward.id}')), findsNothing);
+        expect(find.byKey(Key('foxPet-${_reward.id}')), findsNothing);
 
         await tester.tap(find.byKey(const Key('lootboxOpenButton')));
         await tester.pump();
@@ -94,7 +91,7 @@ void main() {
         expect(find.byKey(const Key('lootboxOpenButton')), findsNothing);
         expect(find.byKey(const Key('lootboxAnimation')), findsOneWidget);
         expect(find.byKey(const Key('lootboxContinueButton')), findsNothing);
-        expect(find.byKey(Key('foxMascot-${_reward.id}')), findsNothing);
+        expect(find.byKey(Key('foxPet-${_reward.id}')), findsNothing);
 
         // A re-tap at the same spot mid-animation is a no-op (there is no
         // tap target there anymore).
@@ -105,7 +102,7 @@ void main() {
         // Revealed, once the animation completes.
         await tester.pumpAndSettle();
         expect(find.byKey(const Key('lootboxAnimation')), findsNothing);
-        expect(find.byKey(Key('foxMascot-${_reward.id}')), findsOneWidget);
+        expect(find.byKey(Key('foxPet-${_reward.id}')), findsOneWidget);
         expect(find.byKey(const Key('lootboxContinueButton')), findsOneWidget);
       },
     );
@@ -120,7 +117,7 @@ void main() {
                   onPressed: () => Navigator.of(context).push<void>(
                     MaterialPageRoute<void>(
                       builder: (_) => LootboxScreen(
-                        reward: _mascotReward,
+                        reward: _petReward,
                         l10n: AppLocalizationsEn(),
                       ),
                     ),
@@ -144,7 +141,7 @@ void main() {
       expect(find.text('open'), findsOneWidget);
     });
 
-    testWidgets('a coins reward reveals the coin Lottie + amount, not a mascot '
+    testWidgets('a coins reward reveals the coin Lottie + amount, not a pet '
         '(issue #065)', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -158,48 +155,45 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('lootboxCoinReveal')), findsOneWidget);
-      expect(find.byKey(Key('foxMascot-${_reward.id}')), findsNothing);
+      expect(find.byKey(Key('foxPet-${_reward.id}')), findsNothing);
       expect(find.text('You won 40 coins!'), findsOneWidget);
       expect(find.byKey(const Key('lootboxContinueButton')), findsOneWidget);
     });
   });
 
-  group('MascotCollectionScreen', () {
-    testWidgets('owned mascot is tappable; not-yet-owned ones render '
+  group('PetCollectionScreen', () {
+    testWidgets('owned pet is tappable; not-yet-owned ones render '
         'locked', (tester) async {
       await pumpCollectionScreen(tester);
 
-      expect(find.byKey(const Key('mascotCollectionGrid')), findsOneWidget);
+      expect(find.byKey(const Key('petCollectionGrid')), findsOneWidget);
       // Default fox is seeded as owned+equipped.
-      expect(
-        find.byKey(const Key('mascotTile-$kDefaultMascotId')),
-        findsOneWidget,
-      );
+      expect(find.byKey(const Key('petTile-$kDefaultPetId')), findsOneWidget);
       // At least one other catalog entry is still locked.
       expect(find.byIcon(Icons.lock_outline), findsWidgets);
 
       await unmount(tester);
     });
 
-    testWidgets('tapping an owned, not-yet-equipped mascot equips it', (
+    testWidgets('tapping an owned, not-yet-equipped pet equips it', (
       tester,
     ) async {
       final db = AppDatabase.forTesting(NativeDatabase.memory());
       final statsRepo = StatsRepository(db);
-      final mascotRepo = MascotRepository(db);
-      await mascotRepo.addOwnedMascot(_reward.id);
+      final petRepo = PetRepository(db);
+      await petRepo.addOwnedPet(_reward.id);
 
       await pumpCollectionScreen(tester, database: db);
 
       // The catalog has grown past #059's original 7 entries (#063), so the
       // tile isn't guaranteed to already be within the scrollable grid's
       // viewport.
-      await tester.ensureVisible(find.byKey(Key('mascotTile-${_reward.id}')));
+      await tester.ensureVisible(find.byKey(Key('petTile-${_reward.id}')));
       await settle(tester);
-      await tester.tap(find.byKey(Key('mascotTile-${_reward.id}')));
+      await tester.tap(find.byKey(Key('petTile-${_reward.id}')));
       await settle(tester);
 
-      expect((await statsRepo.getProfile()).equippedMascotId, _reward.id);
+      expect((await statsRepo.getProfile()).equippedPetId, _reward.id);
 
       await unmount(tester);
     });
@@ -209,14 +203,14 @@ void main() {
     ) async {
       final db = await pumpCollectionScreen(tester);
       final statsRepo = StatsRepository(db);
-      final before = (await statsRepo.getProfile()).equippedMascotId;
+      final before = (await statsRepo.getProfile()).equippedPetId;
 
       // Any locked tile has no onTap target at all, so tapping its lock
       // icon is a no-op rather than throwing a hit-test warning.
       await tester.tap(find.byIcon(Icons.lock_outline).first);
       await settle(tester);
 
-      expect((await statsRepo.getProfile()).equippedMascotId, before);
+      expect((await statsRepo.getProfile()).equippedPetId, before);
 
       await unmount(tester);
     });

@@ -27,7 +27,7 @@ Download the latest ZIP from the [Releases page](https://github.com/julius-d/fox
 
 ---
 
-Collectible mascot animations are Google's Noto Emoji animated assets (CC BY
+Collectible pet animations are Google's Noto Emoji animated assets (CC BY
 4.0) — see `assets/noto-emoji/attribution.md` for details.
 
 Want to contribute? See [CONTRIBUTING.md](CONTRIBUTING.md) for dev setup, commands, and CI details.

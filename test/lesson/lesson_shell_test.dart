@@ -27,8 +27,8 @@ import 'package:fox_streak_app/src/data/providers.dart';
 import 'package:fox_streak_app/src/data/stats_repository.dart';
 import 'package:fox_streak_app/src/lesson/lesson_screen.dart';
 import 'package:fox_streak_app/src/lesson/exercise_card.dart';
-import 'package:fox_streak_app/src/mascot/mascot_catalog.dart';
-import 'package:fox_streak_app/src/stats/mascot_service.dart';
+import 'package:fox_streak_app/src/pet/pet_catalog.dart';
+import 'package:fox_streak_app/src/stats/pet_service.dart';
 import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
 import 'package:fox_streak_app/src/widgets/widgets.dart';
 import 'package:fox_streak_app/test/data/test_helpers.dart';
@@ -53,8 +53,8 @@ Future<void> pumpLessonShell(
       overrides: [
         appDatabaseProvider.overrideWithValue(db),
         systemClockProvider.overrideWithValue(clk),
-        mascotCatalogLoaderProvider.overrideWithValue(
-          () async => const <MascotEntry>[],
+        petCatalogLoaderProvider.overrideWithValue(
+          () async => const <PetEntry>[],
         ),
         foxSoundPlayerProvider.overrideWithValue(_FakeSoundPlayer()),
       ],
@@ -843,8 +843,8 @@ void main() {
             overrides: [
               appDatabaseProvider.overrideWithValue(db),
               systemClockProvider.overrideWithValue(fakeClock),
-              mascotCatalogLoaderProvider.overrideWithValue(
-                () async => const <MascotEntry>[],
+              petCatalogLoaderProvider.overrideWithValue(
+                () async => const <PetEntry>[],
               ),
             ],
             child: MaterialApp(
@@ -1074,8 +1074,8 @@ void main() {
             overrides: [
               appDatabaseProvider.overrideWithValue(db),
               systemClockProvider.overrideWithValue(fakeClock),
-              mascotCatalogLoaderProvider.overrideWithValue(
-                () async => const <MascotEntry>[],
+              petCatalogLoaderProvider.overrideWithValue(
+                () async => const <PetEntry>[],
               ),
               foxHapticsEnabledProvider.overrideWith(_DisabledHaptics.new),
               foxSoundPlayerProvider.overrideWithValue(_FakeSoundPlayer()),
@@ -1151,8 +1151,8 @@ void main() {
           overrides: [
             appDatabaseProvider.overrideWithValue(db),
             systemClockProvider.overrideWithValue(fakeClock),
-            mascotCatalogLoaderProvider.overrideWithValue(
-              () async => const <MascotEntry>[],
+            petCatalogLoaderProvider.overrideWithValue(
+              () async => const <PetEntry>[],
             ),
             foxSoundPlayerProvider.overrideWithValue(fakeSoundPlayer),
           ],
@@ -1212,8 +1212,8 @@ void main() {
           overrides: [
             appDatabaseProvider.overrideWithValue(db),
             systemClockProvider.overrideWithValue(fakeClock),
-            mascotCatalogLoaderProvider.overrideWithValue(
-              () async => const <MascotEntry>[],
+            petCatalogLoaderProvider.overrideWithValue(
+              () async => const <PetEntry>[],
             ),
             foxSoundPlayerProvider.overrideWithValue(fakeSoundPlayer),
           ],
@@ -1290,8 +1290,8 @@ void main() {
             overrides: [
               appDatabaseProvider.overrideWithValue(db),
               systemClockProvider.overrideWithValue(fakeClock),
-              mascotCatalogLoaderProvider.overrideWithValue(
-                () async => const <MascotEntry>[],
+              petCatalogLoaderProvider.overrideWithValue(
+                () async => const <PetEntry>[],
               ),
               foxSoundPlayerProvider.overrideWithValue(fakeSoundPlayer),
               foxSoundEnabledProvider.overrideWith(_DisabledSound.new),

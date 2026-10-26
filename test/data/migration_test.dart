@@ -1,7 +1,7 @@
 // Schema v1 -> v2 (issue #026), v2 -> v3 (issue #010), v3 -> v4 (issue
 // #022), v4 -> v5 (issue #012), v5 -> v6 (issue #045), v6 -> v7 (issue
-// #055), v7 -> v8 (issue #059), v8 -> v9 (issue #064), and v9 -> v10 (issue
-// #065) migration tests.
+// #055), v7 -> v8 (issue #059), v8 -> v9 (issue #064), v9 -> v10 (issue
+// #065), and v10 -> v11 (issue #068) migration tests.
 //
 // Simulates pre-migration databases on disk, then reopens them with the
 // real (current schemaVersion) `AppDatabase` and asserts `onUpgrade` applied
@@ -18,8 +18,7 @@ import 'package:drift/drift.dart'
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fox_streak_app/src/data/database.dart';
-import 'package:fox_streak_app/src/mascot/mascot_catalog.dart'
-    show kDefaultMascotId;
+import 'package:fox_streak_app/src/pet/pet_catalog.dart' show kDefaultPetId;
 
 /// Creates the pre-#022 `items` shape (`direction` TEXT instead of
 /// `promptLang`/`answerLang`) — the current Dart `Items` definition no
@@ -204,12 +203,12 @@ Future<void> _createQuestionSetsWithoutCategory(Migrator m) async {
 }
 
 /// Creates the pre-#059 `profile_stats` shape (`display_name`/
-/// `has_onboarded` present, but no `equipped_mascot_id`/
+/// `has_onboarded` present, but no `equipped_pet_id`/
 /// `lessons_completed_today`/`lessons_completed_day`) — the current Dart
 /// `ProfileStats` definition already has those, so `m.createTable(db.
 /// profileStats)` can't be used for any pre-v8 fixture, even ones (v5, v6,
 /// v7) that predate #059 by several migrations and aren't under test here.
-Future<void> _createProfileStatsPreMascotColumns(Migrator m) async {
+Future<void> _createProfileStatsPrePetColumns(Migrator m) async {
   await m.database.customStatement('''
     CREATE TABLE profile_stats (
       id INTEGER NOT NULL,
@@ -228,8 +227,8 @@ Future<void> _createProfileStatsPreMascotColumns(Migrator m) async {
 /// A schemaVersion-5 view of [AppDatabase], used only to seed a pre-#045
 /// file at the exact version #045's migration upgrades from: `items` is
 /// already in its current (post-#012) shape, but `question_sets` still
-/// lacks `category` and `profile_stats` still lacks #059's mascot columns
-/// (see [_createProfileStatsPreMascotColumns]).
+/// lacks `category` and `profile_stats` still lacks #059's pet columns
+/// (see [_createProfileStatsPrePetColumns]).
 class _LegacyV5Database extends AppDatabase {
   _LegacyV5Database(QueryExecutor executor) : super.forTesting(executor); // ignore: use_super_parameters — must forward to the named forTesting() ctor, not the default unnamed one
 
@@ -240,7 +239,7 @@ class _LegacyV5Database extends AppDatabase {
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
       await _createQuestionSetsWithoutCategory(m);
-      await _createProfileStatsPreMascotColumns(m);
+      await _createProfileStatsPrePetColumns(m);
       final db = m.database as AppDatabase;
       await m.createTable(db.items);
       await m.createTable(db.attempts);
@@ -251,8 +250,8 @@ class _LegacyV5Database extends AppDatabase {
 /// A schemaVersion-6 view of [AppDatabase], used only to seed a pre-#055
 /// file at the exact version #055's migration upgrades from: every table
 /// is already in its current shape except `app_settings` (doesn't exist
-/// yet) and `profile_stats` (still lacks #059's mascot columns, see
-/// [_createProfileStatsPreMascotColumns]).
+/// yet) and `profile_stats` (still lacks #059's pet columns, see
+/// [_createProfileStatsPrePetColumns]).
 class _LegacyV6Database extends AppDatabase {
   _LegacyV6Database(QueryExecutor executor) : super.forTesting(executor); // ignore: use_super_parameters — must forward to the named forTesting() ctor, not the default unnamed one
 
@@ -262,7 +261,7 @@ class _LegacyV6Database extends AppDatabase {
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
-      await _createProfileStatsPreMascotColumns(m);
+      await _createProfileStatsPrePetColumns(m);
       final db = m.database as AppDatabase;
       await m.createTable(db.questionSets);
       await m.createTable(db.items);
@@ -274,8 +273,8 @@ class _LegacyV6Database extends AppDatabase {
 /// A schemaVersion-7 view of [AppDatabase], used only to seed a pre-#059
 /// file at the exact version #059's migration upgrades from: every table
 /// is already in its current shape except `profile_stats` (still lacks
-/// #059's mascot columns, see [_createProfileStatsPreMascotColumns]) and
-/// `owned_mascots`, which doesn't exist yet.
+/// #059's pet columns, see [_createProfileStatsPrePetColumns]) and
+/// `owned_pets`, which doesn't exist yet.
 class _LegacyV7Database extends AppDatabase {
   _LegacyV7Database(QueryExecutor executor) : super.forTesting(executor); // ignore: use_super_parameters — must forward to the named forTesting() ctor, not the default unnamed one
 
@@ -285,7 +284,7 @@ class _LegacyV7Database extends AppDatabase {
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
-      await _createProfileStatsPreMascotColumns(m);
+      await _createProfileStatsPrePetColumns(m);
       final db = m.database as AppDatabase;
       await m.createTable(db.questionSets);
       await m.createTable(db.items);
@@ -295,10 +294,11 @@ class _LegacyV7Database extends AppDatabase {
   );
 }
 
-/// Creates the pre-#064 `owned_mascots` shape (`acquired_at`, no `count`) —
-/// the current Dart `OwnedMascots` definition already has
-/// `first_acquired_at` + `count`, so `m.createTable(db.ownedMascots)` can't
-/// be used for this pre-v9 fixture.
+/// Creates the pre-#064 `owned_mascots` shape (`acquired_at`, no `count`)
+/// under its pre-#068 physical name — the current Dart `OwnedPets`
+/// definition already has `first_acquired_at` + `count` under the
+/// post-#068 `owned_pets`/`pet_id` names, so `m.createTable(db.ownedPets)`
+/// can't be used for this pre-v9 (and pre-v11 rename) fixture.
 Future<void> _createOwnedMascotsPreCount(Migrator m) async {
   await m.database.customStatement('''
     CREATE TABLE owned_mascots (
@@ -309,10 +309,11 @@ Future<void> _createOwnedMascotsPreCount(Migrator m) async {
   ''');
 }
 
-/// Creates the pre-#065 `profile_stats` shape (has #059's mascot columns
-/// but not yet `coins_total`) — the current Dart `ProfileStats` definition
-/// already has `coinsTotal`, so `m.createTable(db.profileStats)` can't be
-/// used for any pre-v10 fixture.
+/// Creates the pre-#065 `profile_stats` shape (has #059's mascot columns,
+/// under their pre-#068 physical names, but not yet `coins_total`) — the
+/// current Dart `ProfileStats` definition already has `coinsTotal` and the
+/// post-#068 `equippedPetId`, so `m.createTable(db.profileStats)` can't be
+/// used for any pre-v10 (and pre-v11 rename) fixture.
 Future<void> _createProfileStatsPreCoinsTotal(Migrator m) async {
   await m.database.customStatement('''
     CREATE TABLE profile_stats (
@@ -360,7 +361,8 @@ class _LegacyV8Database extends AppDatabase {
 
 /// A schemaVersion-9 view of [AppDatabase], used only to seed a pre-#065
 /// file at the exact version #065's migration upgrades from: `owned_mascots`
-/// is already in its current (post-#064) shape, but `profile_stats` still
+/// is already in its post-#064 (`mascot_id`/`first_acquired_at`/`count`)
+/// shape, under its pre-#068 physical name, but `profile_stats` still
 /// lacks `coins_total` (see [_createProfileStatsPreCoinsTotal]).
 class _LegacyV9Database extends AppDatabase {
   _LegacyV9Database(QueryExecutor executor) : super.forTesting(executor); // ignore: use_super_parameters — must forward to the named forTesting() ctor, not the default unnamed one
@@ -377,7 +379,61 @@ class _LegacyV9Database extends AppDatabase {
       await m.createTable(db.attempts);
       await _createProfileStatsPreCoinsTotal(m);
       await m.createTable(db.appSettings);
-      await m.createTable(db.ownedMascots);
+      await m.database.customStatement('''
+        CREATE TABLE owned_mascots (
+          mascot_id TEXT NOT NULL,
+          first_acquired_at INTEGER NOT NULL,
+          count INTEGER NOT NULL DEFAULT 1,
+          PRIMARY KEY (mascot_id)
+        )
+      ''');
+    },
+  );
+}
+
+/// A schemaVersion-10 view of [AppDatabase], used only to seed a pre-#068
+/// file at the exact version #068's rename migrates from: every table is
+/// in its current (post-#065) shape, but still under the pre-#068
+/// `owned_mascots`/`mascot_id`/`equipped_mascot_id` physical names.
+class _LegacyV10Database extends AppDatabase {
+  _LegacyV10Database(QueryExecutor executor) : super.forTesting(executor); // ignore: use_super_parameters — must forward to the named forTesting() ctor, not the default unnamed one
+
+  @override
+  int get schemaVersion => 10;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) async {
+      final db = m.database as AppDatabase;
+      await m.createTable(db.questionSets);
+      await m.createTable(db.items);
+      await m.createTable(db.attempts);
+      await m.database.customStatement('''
+        CREATE TABLE profile_stats (
+          id INTEGER NOT NULL,
+          xp_total INTEGER NOT NULL DEFAULT 0,
+          streak_count INTEGER NOT NULL DEFAULT 0,
+          last_active_day TEXT NULL,
+          daily_goal_xp INTEGER NOT NULL DEFAULT 30,
+          today_xp INTEGER NOT NULL DEFAULT 0,
+          display_name TEXT NULL,
+          has_onboarded INTEGER NOT NULL DEFAULT 0,
+          equipped_mascot_id TEXT NOT NULL DEFAULT 'emoji_u1f98a_lottie',
+          lessons_completed_today INTEGER NOT NULL DEFAULT 0,
+          lessons_completed_day TEXT NULL,
+          coins_total INTEGER NOT NULL DEFAULT 0,
+          PRIMARY KEY (id)
+        )
+      ''');
+      await m.createTable(db.appSettings);
+      await m.database.customStatement('''
+        CREATE TABLE owned_mascots (
+          mascot_id TEXT NOT NULL,
+          first_acquired_at INTEGER NOT NULL,
+          count INTEGER NOT NULL DEFAULT 1,
+          PRIMARY KEY (mascot_id)
+        )
+      ''');
     },
   );
 }
@@ -673,8 +729,8 @@ void main() {
     expect(await (upgradedDb.select(upgradedDb.appSettings)).get(), isEmpty);
   });
 
-  test('onUpgrade (v7 -> v8) creates owned_mascots + adds profileStats '
-      'mascot columns, defaulting equippedMascotId to the fox and '
+  test('onUpgrade (v7 -> v8) creates owned_pets + adds profileStats '
+      'pet columns, defaulting equippedPetId to the fox and '
       'preserving existing xpTotal/streakCount/todayXp', () async {
     final dir = Directory.systemTemp.createTempSync('foxstreak_migration_v8');
     final file = File('${dir.path}/test.sqlite');
@@ -682,8 +738,8 @@ void main() {
       if (dir.existsSync()) dir.deleteSync(recursive: true);
     });
 
-    // 1. Seed a v7 database directly on disk (profile_stats has no mascot
-    // columns yet, owned_mascots doesn't exist) with a pre-existing row.
+    // 1. Seed a v7 database directly on disk (profile_stats has no pet
+    // columns yet, owned_pets doesn't exist) with a pre-existing row.
     final legacyDb = _LegacyV7Database(NativeDatabase(file));
     await legacyDb
         .into(legacyDb.profileStats)
@@ -710,7 +766,7 @@ void main() {
     final profile = await (upgradedDb.select(
       upgradedDb.profileStats,
     )..where((t) => t.id.equals(0))).getSingle();
-    expect(profile.equippedMascotId, kDefaultMascotId);
+    expect(profile.equippedPetId, kDefaultPetId);
     expect(profile.lessonsCompletedToday, 0);
     expect(profile.lessonsCompletedDay, isNull);
     expect(profile.xpTotal, 42);
@@ -719,17 +775,17 @@ void main() {
     expect(profile.lastActiveDay, '2026-10-10');
 
     // Reopening at the current (v9) schemaVersion also runs #064's v8->v9
-    // step, so `owned_mascots` already has `first_acquired_at`/`count`
+    // step, so `owned_pets` already has `first_acquired_at`/`count`
     // rather than the v8-only `acquired_at` — see the v8->v9 test below for
     // that migration step's own coverage.
     final columns = await upgradedDb
-        .customSelect("PRAGMA table_info('owned_mascots')")
+        .customSelect("PRAGMA table_info('owned_pets')")
         .get();
     expect(
       columns.map((row) => row.read<String>('name')),
-      containsAll(<String>['mascot_id', 'first_acquired_at', 'count']),
+      containsAll(<String>['pet_id', 'first_acquired_at', 'count']),
     );
-    expect(await (upgradedDb.select(upgradedDb.ownedMascots)).get(), isEmpty);
+    expect(await (upgradedDb.select(upgradedDb.ownedPets)).get(), isEmpty);
   });
 
   test('onUpgrade (v8 -> v9) renames acquiredAt to firstAcquiredAt and adds '
@@ -741,14 +797,12 @@ void main() {
     });
 
     // 1. Seed a v8 database directly on disk (owned_mascots has
-    // acquired_at but no count yet) with a pre-existing owned-mascot row.
+    // acquired_at but no count yet, under its pre-#068 physical name)
+    // with a pre-existing owned-pet row.
     final legacyDb = _LegacyV8Database(NativeDatabase(file));
     await legacyDb.customInsert(
       'INSERT INTO owned_mascots (mascot_id, acquired_at) VALUES (?, ?)',
-      variables: [
-        Variable.withString(kDefaultMascotId),
-        Variable.withInt(1000),
-      ],
+      variables: [Variable.withString(kDefaultPetId), Variable.withInt(1000)],
     );
     await legacyDb.close();
 
@@ -759,18 +813,18 @@ void main() {
     addTearDown(upgradedDb.close);
 
     final row = await (upgradedDb.select(
-      upgradedDb.ownedMascots,
-    )..where((t) => t.mascotId.equals(kDefaultMascotId))).getSingle();
+      upgradedDb.ownedPets,
+    )..where((t) => t.petId.equals(kDefaultPetId))).getSingle();
     expect(row.firstAcquiredAt, 1000);
     expect(row.count, 1);
 
     final columns = await upgradedDb
-        .customSelect("PRAGMA table_info('owned_mascots')")
+        .customSelect("PRAGMA table_info('owned_pets')")
         .get();
     final columnNames = columns.map((row) => row.read<String>('name'));
     expect(
       columnNames,
-      containsAll(<String>['mascot_id', 'first_acquired_at', 'count']),
+      containsAll(<String>['pet_id', 'first_acquired_at', 'count']),
     );
     expect(columnNames, isNot(contains('acquired_at')));
   });
@@ -813,6 +867,81 @@ void main() {
     expect(profile.streakCount, 3);
     expect(profile.todayXp, 12);
     expect(profile.lastActiveDay, '2026-10-10');
+  });
+
+  test('onUpgrade (v10 -> v11) renames owned_mascots/mascot_id/ '
+      'equipped_mascot_id to owned_pets/pet_id/equipped_pet_id, preserving '
+      'existing owned rows and the equipped value unchanged', () async {
+    final dir = Directory.systemTemp.createTempSync('foxstreak_migration_v11');
+    final file = File('${dir.path}/test.sqlite');
+    addTearDown(() {
+      if (dir.existsSync()) dir.deleteSync(recursive: true);
+    });
+
+    // 1. Seed a v10 database directly on disk (still under the pre-#068
+    // owned_mascots/mascot_id/equipped_mascot_id physical names) with a
+    // pre-existing owned-pet row and a non-default equipped choice.
+    final legacyDb = _LegacyV10Database(NativeDatabase(file));
+    await legacyDb.customInsert(
+      'INSERT INTO owned_mascots (mascot_id, first_acquired_at, count) '
+      'VALUES (?, ?, ?)',
+      variables: [
+        Variable.withString('emoji_u1f407_lottie'),
+        Variable.withInt(2000),
+        Variable.withInt(3),
+      ],
+    );
+    await legacyDb.customInsert(
+      'INSERT INTO profile_stats (id, equipped_mascot_id) VALUES (?, ?)',
+      variables: [
+        Variable.withInt(0),
+        Variable.withString('emoji_u1f407_lottie'),
+      ],
+    );
+    await legacyDb.close();
+
+    // 2. Reopen the SAME file with the real (current schemaVersion)
+    // database; drift sees user_version=10 < schemaVersion=11 and runs
+    // onUpgrade's `RENAME TABLE`/`RENAME COLUMN` steps.
+    final upgradedDb = AppDatabase.forTesting(NativeDatabase(file));
+    addTearDown(upgradedDb.close);
+
+    // The owned-pet row survives the rename with its data untouched.
+    final ownedRow = await (upgradedDb.select(
+      upgradedDb.ownedPets,
+    )..where((t) => t.petId.equals('emoji_u1f407_lottie'))).getSingle();
+    expect(ownedRow.firstAcquiredAt, 2000);
+    expect(ownedRow.count, 3);
+
+    // The equipped choice survives the rename unchanged.
+    final profile = await (upgradedDb.select(
+      upgradedDb.profileStats,
+    )..where((t) => t.id.equals(0))).getSingle();
+    expect(profile.equippedPetId, 'emoji_u1f407_lottie');
+
+    // Only the table/column names differ — no leftover old names.
+    final ownedPetsColumns = await upgradedDb
+        .customSelect("PRAGMA table_info('owned_pets')")
+        .get();
+    expect(
+      ownedPetsColumns.map((row) => row.read<String>('name')),
+      containsAll(<String>['pet_id', 'first_acquired_at', 'count']),
+    );
+    final profileColumns = await upgradedDb
+        .customSelect("PRAGMA table_info('profile_stats')")
+        .get();
+    final profileColumnNames = profileColumns.map(
+      (row) => row.read<String>('name'),
+    );
+    expect(profileColumnNames, contains('equipped_pet_id'));
+    expect(profileColumnNames, isNot(contains('equipped_mascot_id')));
+    final tableNames = await upgradedDb
+        .customSelect("SELECT name FROM sqlite_master WHERE type = 'table'")
+        .get();
+    expect(
+      tableNames.map((row) => row.read<String>('name')),
+      isNot(contains('owned_mascots')),
+    );
   });
 }
 

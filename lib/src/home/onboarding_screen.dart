@@ -5,12 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/app_localizations.dart';
-import '../mascot/mascot_catalog.dart';
-import '../mascot/mascot_providers.dart';
+import '../pet/pet_catalog.dart';
+import '../pet/pet_providers.dart';
 import '../theme/fox_streak_theme.dart';
 import '../widgets/widgets.dart';
 
-/// Copy for one onboarding slide. All slides show the same equipped mascot
+/// Copy for one onboarding slide. All slides show the same equipped pet
 /// (#059 retired the old per-slide empty/lit/on-fire states).
 class _OnboardingSlideData {
   final String title;
@@ -67,7 +67,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
-    final mascot = ref.watch(equippedMascotProvider);
+    final pet = ref.watch(equippedPetProvider);
     final List<_OnboardingSlideData> slides = <_OnboardingSlideData>[
       _OnboardingSlideData(
         title: l10n.onboardingSlide1Title,
@@ -108,7 +108,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   for (final _OnboardingSlideData slide in slides)
                     _OnboardingSlide(
                       data: slide,
-                      mascot: mascot,
+                      pet: pet,
                       nameField: slide == slides.last
                           ? TextField(
                               key: const Key('onboardingNameField'),
@@ -142,12 +142,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
 class _OnboardingSlide extends StatelessWidget {
   final _OnboardingSlideData data;
-  final MascotEntry mascot;
+  final PetEntry pet;
   final Widget? nameField;
 
   const _OnboardingSlide({
     required this.data,
-    required this.mascot,
+    required this.pet,
     this.nameField,
   });
 
@@ -159,7 +159,7 @@ class _OnboardingSlide extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            FoxMascot(mascot: mascot, size: 120),
+            FoxPet(pet: pet, size: 120),
             const SizedBox(height: FoxSpacing.xl),
             Text(
               data.title,

@@ -1444,17 +1444,17 @@ class $ProfileStatsTable extends ProfileStats
     ),
     defaultValue: const Constant(false),
   );
-  static const VerificationMeta _equippedMascotIdMeta = const VerificationMeta(
-    'equippedMascotId',
+  static const VerificationMeta _equippedPetIdMeta = const VerificationMeta(
+    'equippedPetId',
   );
   @override
-  late final GeneratedColumn<String> equippedMascotId = GeneratedColumn<String>(
-    'equipped_mascot_id',
+  late final GeneratedColumn<String> equippedPetId = GeneratedColumn<String>(
+    'equipped_pet_id',
     aliasedName,
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultValue: const Constant(kDefaultMascotId),
+    defaultValue: const Constant(kDefaultPetId),
   );
   static const VerificationMeta _lessonsCompletedTodayMeta =
       const VerificationMeta('lessonsCompletedToday');
@@ -1500,7 +1500,7 @@ class $ProfileStatsTable extends ProfileStats
     todayXp,
     displayName,
     hasOnboarded,
-    equippedMascotId,
+    equippedPetId,
     lessonsCompletedToday,
     lessonsCompletedDay,
     coinsTotal,
@@ -1577,12 +1577,12 @@ class $ProfileStatsTable extends ProfileStats
         ),
       );
     }
-    if (data.containsKey('equipped_mascot_id')) {
+    if (data.containsKey('equipped_pet_id')) {
       context.handle(
-        _equippedMascotIdMeta,
-        equippedMascotId.isAcceptableOrUnknown(
-          data['equipped_mascot_id']!,
-          _equippedMascotIdMeta,
+        _equippedPetIdMeta,
+        equippedPetId.isAcceptableOrUnknown(
+          data['equipped_pet_id']!,
+          _equippedPetIdMeta,
         ),
       );
     }
@@ -1651,9 +1651,9 @@ class $ProfileStatsTable extends ProfileStats
         DriftSqlType.bool,
         data['${effectivePrefix}has_onboarded'],
       )!,
-      equippedMascotId: attachedDatabase.typeMapping.read(
+      equippedPetId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}equipped_mascot_id'],
+        data['${effectivePrefix}equipped_pet_id'],
       )!,
       lessonsCompletedToday: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
@@ -1685,7 +1685,7 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
   final int todayXp;
   final String? displayName;
   final bool hasOnboarded;
-  final String equippedMascotId;
+  final String equippedPetId;
   final int lessonsCompletedToday;
   final String? lessonsCompletedDay;
   final int coinsTotal;
@@ -1698,7 +1698,7 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
     required this.todayXp,
     this.displayName,
     required this.hasOnboarded,
-    required this.equippedMascotId,
+    required this.equippedPetId,
     required this.lessonsCompletedToday,
     this.lessonsCompletedDay,
     required this.coinsTotal,
@@ -1718,7 +1718,7 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
       map['display_name'] = Variable<String>(displayName);
     }
     map['has_onboarded'] = Variable<bool>(hasOnboarded);
-    map['equipped_mascot_id'] = Variable<String>(equippedMascotId);
+    map['equipped_pet_id'] = Variable<String>(equippedPetId);
     map['lessons_completed_today'] = Variable<int>(lessonsCompletedToday);
     if (!nullToAbsent || lessonsCompletedDay != null) {
       map['lessons_completed_day'] = Variable<String>(lessonsCompletedDay);
@@ -1741,7 +1741,7 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
           ? const Value.absent()
           : Value(displayName),
       hasOnboarded: Value(hasOnboarded),
-      equippedMascotId: Value(equippedMascotId),
+      equippedPetId: Value(equippedPetId),
       lessonsCompletedToday: Value(lessonsCompletedToday),
       lessonsCompletedDay: lessonsCompletedDay == null && nullToAbsent
           ? const Value.absent()
@@ -1764,7 +1764,7 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
       todayXp: serializer.fromJson<int>(json['todayXp']),
       displayName: serializer.fromJson<String?>(json['displayName']),
       hasOnboarded: serializer.fromJson<bool>(json['hasOnboarded']),
-      equippedMascotId: serializer.fromJson<String>(json['equippedMascotId']),
+      equippedPetId: serializer.fromJson<String>(json['equippedPetId']),
       lessonsCompletedToday: serializer.fromJson<int>(
         json['lessonsCompletedToday'],
       ),
@@ -1786,7 +1786,7 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
       'todayXp': serializer.toJson<int>(todayXp),
       'displayName': serializer.toJson<String?>(displayName),
       'hasOnboarded': serializer.toJson<bool>(hasOnboarded),
-      'equippedMascotId': serializer.toJson<String>(equippedMascotId),
+      'equippedPetId': serializer.toJson<String>(equippedPetId),
       'lessonsCompletedToday': serializer.toJson<int>(lessonsCompletedToday),
       'lessonsCompletedDay': serializer.toJson<String?>(lessonsCompletedDay),
       'coinsTotal': serializer.toJson<int>(coinsTotal),
@@ -1802,7 +1802,7 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
     int? todayXp,
     Value<String?> displayName = const Value.absent(),
     bool? hasOnboarded,
-    String? equippedMascotId,
+    String? equippedPetId,
     int? lessonsCompletedToday,
     Value<String?> lessonsCompletedDay = const Value.absent(),
     int? coinsTotal,
@@ -1817,7 +1817,7 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
     todayXp: todayXp ?? this.todayXp,
     displayName: displayName.present ? displayName.value : this.displayName,
     hasOnboarded: hasOnboarded ?? this.hasOnboarded,
-    equippedMascotId: equippedMascotId ?? this.equippedMascotId,
+    equippedPetId: equippedPetId ?? this.equippedPetId,
     lessonsCompletedToday: lessonsCompletedToday ?? this.lessonsCompletedToday,
     lessonsCompletedDay: lessonsCompletedDay.present
         ? lessonsCompletedDay.value
@@ -1844,9 +1844,9 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
       hasOnboarded: data.hasOnboarded.present
           ? data.hasOnboarded.value
           : this.hasOnboarded,
-      equippedMascotId: data.equippedMascotId.present
-          ? data.equippedMascotId.value
-          : this.equippedMascotId,
+      equippedPetId: data.equippedPetId.present
+          ? data.equippedPetId.value
+          : this.equippedPetId,
       lessonsCompletedToday: data.lessonsCompletedToday.present
           ? data.lessonsCompletedToday.value
           : this.lessonsCompletedToday,
@@ -1870,7 +1870,7 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
           ..write('todayXp: $todayXp, ')
           ..write('displayName: $displayName, ')
           ..write('hasOnboarded: $hasOnboarded, ')
-          ..write('equippedMascotId: $equippedMascotId, ')
+          ..write('equippedPetId: $equippedPetId, ')
           ..write('lessonsCompletedToday: $lessonsCompletedToday, ')
           ..write('lessonsCompletedDay: $lessonsCompletedDay, ')
           ..write('coinsTotal: $coinsTotal')
@@ -1888,7 +1888,7 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
     todayXp,
     displayName,
     hasOnboarded,
-    equippedMascotId,
+    equippedPetId,
     lessonsCompletedToday,
     lessonsCompletedDay,
     coinsTotal,
@@ -1905,7 +1905,7 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
           other.todayXp == this.todayXp &&
           other.displayName == this.displayName &&
           other.hasOnboarded == this.hasOnboarded &&
-          other.equippedMascotId == this.equippedMascotId &&
+          other.equippedPetId == this.equippedPetId &&
           other.lessonsCompletedToday == this.lessonsCompletedToday &&
           other.lessonsCompletedDay == this.lessonsCompletedDay &&
           other.coinsTotal == this.coinsTotal);
@@ -1920,7 +1920,7 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStat> {
   final Value<int> todayXp;
   final Value<String?> displayName;
   final Value<bool> hasOnboarded;
-  final Value<String> equippedMascotId;
+  final Value<String> equippedPetId;
   final Value<int> lessonsCompletedToday;
   final Value<String?> lessonsCompletedDay;
   final Value<int> coinsTotal;
@@ -1933,7 +1933,7 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStat> {
     this.todayXp = const Value.absent(),
     this.displayName = const Value.absent(),
     this.hasOnboarded = const Value.absent(),
-    this.equippedMascotId = const Value.absent(),
+    this.equippedPetId = const Value.absent(),
     this.lessonsCompletedToday = const Value.absent(),
     this.lessonsCompletedDay = const Value.absent(),
     this.coinsTotal = const Value.absent(),
@@ -1947,7 +1947,7 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStat> {
     this.todayXp = const Value.absent(),
     this.displayName = const Value.absent(),
     this.hasOnboarded = const Value.absent(),
-    this.equippedMascotId = const Value.absent(),
+    this.equippedPetId = const Value.absent(),
     this.lessonsCompletedToday = const Value.absent(),
     this.lessonsCompletedDay = const Value.absent(),
     this.coinsTotal = const Value.absent(),
@@ -1961,7 +1961,7 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStat> {
     Expression<int>? todayXp,
     Expression<String>? displayName,
     Expression<bool>? hasOnboarded,
-    Expression<String>? equippedMascotId,
+    Expression<String>? equippedPetId,
     Expression<int>? lessonsCompletedToday,
     Expression<String>? lessonsCompletedDay,
     Expression<int>? coinsTotal,
@@ -1975,7 +1975,7 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStat> {
       if (todayXp != null) 'today_xp': todayXp,
       if (displayName != null) 'display_name': displayName,
       if (hasOnboarded != null) 'has_onboarded': hasOnboarded,
-      if (equippedMascotId != null) 'equipped_mascot_id': equippedMascotId,
+      if (equippedPetId != null) 'equipped_pet_id': equippedPetId,
       if (lessonsCompletedToday != null)
         'lessons_completed_today': lessonsCompletedToday,
       if (lessonsCompletedDay != null)
@@ -1993,7 +1993,7 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStat> {
     Value<int>? todayXp,
     Value<String?>? displayName,
     Value<bool>? hasOnboarded,
-    Value<String>? equippedMascotId,
+    Value<String>? equippedPetId,
     Value<int>? lessonsCompletedToday,
     Value<String?>? lessonsCompletedDay,
     Value<int>? coinsTotal,
@@ -2007,7 +2007,7 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStat> {
       todayXp: todayXp ?? this.todayXp,
       displayName: displayName ?? this.displayName,
       hasOnboarded: hasOnboarded ?? this.hasOnboarded,
-      equippedMascotId: equippedMascotId ?? this.equippedMascotId,
+      equippedPetId: equippedPetId ?? this.equippedPetId,
       lessonsCompletedToday:
           lessonsCompletedToday ?? this.lessonsCompletedToday,
       lessonsCompletedDay: lessonsCompletedDay ?? this.lessonsCompletedDay,
@@ -2042,8 +2042,8 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStat> {
     if (hasOnboarded.present) {
       map['has_onboarded'] = Variable<bool>(hasOnboarded.value);
     }
-    if (equippedMascotId.present) {
-      map['equipped_mascot_id'] = Variable<String>(equippedMascotId.value);
+    if (equippedPetId.present) {
+      map['equipped_pet_id'] = Variable<String>(equippedPetId.value);
     }
     if (lessonsCompletedToday.present) {
       map['lessons_completed_today'] = Variable<int>(
@@ -2072,7 +2072,7 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStat> {
           ..write('todayXp: $todayXp, ')
           ..write('displayName: $displayName, ')
           ..write('hasOnboarded: $hasOnboarded, ')
-          ..write('equippedMascotId: $equippedMascotId, ')
+          ..write('equippedPetId: $equippedPetId, ')
           ..write('lessonsCompletedToday: $lessonsCompletedToday, ')
           ..write('lessonsCompletedDay: $lessonsCompletedDay, ')
           ..write('coinsTotal: $coinsTotal')
@@ -2341,18 +2341,16 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
   }
 }
 
-class $OwnedMascotsTable extends OwnedMascots
-    with TableInfo<$OwnedMascotsTable, OwnedMascot> {
+class $OwnedPetsTable extends OwnedPets
+    with TableInfo<$OwnedPetsTable, OwnedPet> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
-  $OwnedMascotsTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _mascotIdMeta = const VerificationMeta(
-    'mascotId',
-  );
+  $OwnedPetsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _petIdMeta = const VerificationMeta('petId');
   @override
-  late final GeneratedColumn<String> mascotId = GeneratedColumn<String>(
-    'mascot_id',
+  late final GeneratedColumn<String> petId = GeneratedColumn<String>(
+    'pet_id',
     aliasedName,
     false,
     type: DriftSqlType.string,
@@ -2380,26 +2378,26 @@ class $OwnedMascotsTable extends OwnedMascots
     defaultValue: const Constant(1),
   );
   @override
-  List<GeneratedColumn> get $columns => [mascotId, firstAcquiredAt, count];
+  List<GeneratedColumn> get $columns => [petId, firstAcquiredAt, count];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
-  static const String $name = 'owned_mascots';
+  static const String $name = 'owned_pets';
   @override
   VerificationContext validateIntegrity(
-    Insertable<OwnedMascot> instance, {
+    Insertable<OwnedPet> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
-    if (data.containsKey('mascot_id')) {
+    if (data.containsKey('pet_id')) {
       context.handle(
-        _mascotIdMeta,
-        mascotId.isAcceptableOrUnknown(data['mascot_id']!, _mascotIdMeta),
+        _petIdMeta,
+        petId.isAcceptableOrUnknown(data['pet_id']!, _petIdMeta),
       );
     } else if (isInserting) {
-      context.missing(_mascotIdMeta);
+      context.missing(_petIdMeta);
     }
     if (data.containsKey('first_acquired_at')) {
       context.handle(
@@ -2422,14 +2420,14 @@ class $OwnedMascotsTable extends OwnedMascots
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {mascotId};
+  Set<GeneratedColumn> get $primaryKey => {petId};
   @override
-  OwnedMascot map(Map<String, dynamic> data, {String? tablePrefix}) {
+  OwnedPet map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return OwnedMascot(
-      mascotId: attachedDatabase.typeMapping.read(
+    return OwnedPet(
+      petId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}mascot_id'],
+        data['${effectivePrefix}pet_id'],
       )!,
       firstAcquiredAt: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
@@ -2443,44 +2441,44 @@ class $OwnedMascotsTable extends OwnedMascots
   }
 
   @override
-  $OwnedMascotsTable createAlias(String alias) {
-    return $OwnedMascotsTable(attachedDatabase, alias);
+  $OwnedPetsTable createAlias(String alias) {
+    return $OwnedPetsTable(attachedDatabase, alias);
   }
 }
 
-class OwnedMascot extends DataClass implements Insertable<OwnedMascot> {
-  final String mascotId;
+class OwnedPet extends DataClass implements Insertable<OwnedPet> {
+  final String petId;
   final int firstAcquiredAt;
   final int count;
-  const OwnedMascot({
-    required this.mascotId,
+  const OwnedPet({
+    required this.petId,
     required this.firstAcquiredAt,
     required this.count,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['mascot_id'] = Variable<String>(mascotId);
+    map['pet_id'] = Variable<String>(petId);
     map['first_acquired_at'] = Variable<int>(firstAcquiredAt);
     map['count'] = Variable<int>(count);
     return map;
   }
 
-  OwnedMascotsCompanion toCompanion(bool nullToAbsent) {
-    return OwnedMascotsCompanion(
-      mascotId: Value(mascotId),
+  OwnedPetsCompanion toCompanion(bool nullToAbsent) {
+    return OwnedPetsCompanion(
+      petId: Value(petId),
       firstAcquiredAt: Value(firstAcquiredAt),
       count: Value(count),
     );
   }
 
-  factory OwnedMascot.fromJson(
+  factory OwnedPet.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return OwnedMascot(
-      mascotId: serializer.fromJson<String>(json['mascotId']),
+    return OwnedPet(
+      petId: serializer.fromJson<String>(json['petId']),
       firstAcquiredAt: serializer.fromJson<int>(json['firstAcquiredAt']),
       count: serializer.fromJson<int>(json['count']),
     );
@@ -2489,21 +2487,21 @@ class OwnedMascot extends DataClass implements Insertable<OwnedMascot> {
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'mascotId': serializer.toJson<String>(mascotId),
+      'petId': serializer.toJson<String>(petId),
       'firstAcquiredAt': serializer.toJson<int>(firstAcquiredAt),
       'count': serializer.toJson<int>(count),
     };
   }
 
-  OwnedMascot copyWith({String? mascotId, int? firstAcquiredAt, int? count}) =>
-      OwnedMascot(
-        mascotId: mascotId ?? this.mascotId,
+  OwnedPet copyWith({String? petId, int? firstAcquiredAt, int? count}) =>
+      OwnedPet(
+        petId: petId ?? this.petId,
         firstAcquiredAt: firstAcquiredAt ?? this.firstAcquiredAt,
         count: count ?? this.count,
       );
-  OwnedMascot copyWithCompanion(OwnedMascotsCompanion data) {
-    return OwnedMascot(
-      mascotId: data.mascotId.present ? data.mascotId.value : this.mascotId,
+  OwnedPet copyWithCompanion(OwnedPetsCompanion data) {
+    return OwnedPet(
+      petId: data.petId.present ? data.petId.value : this.petId,
       firstAcquiredAt: data.firstAcquiredAt.present
           ? data.firstAcquiredAt.value
           : this.firstAcquiredAt,
@@ -2513,8 +2511,8 @@ class OwnedMascot extends DataClass implements Insertable<OwnedMascot> {
 
   @override
   String toString() {
-    return (StringBuffer('OwnedMascot(')
-          ..write('mascotId: $mascotId, ')
+    return (StringBuffer('OwnedPet(')
+          ..write('petId: $petId, ')
           ..write('firstAcquiredAt: $firstAcquiredAt, ')
           ..write('count: $count')
           ..write(')'))
@@ -2522,56 +2520,56 @@ class OwnedMascot extends DataClass implements Insertable<OwnedMascot> {
   }
 
   @override
-  int get hashCode => Object.hash(mascotId, firstAcquiredAt, count);
+  int get hashCode => Object.hash(petId, firstAcquiredAt, count);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is OwnedMascot &&
-          other.mascotId == this.mascotId &&
+      (other is OwnedPet &&
+          other.petId == this.petId &&
           other.firstAcquiredAt == this.firstAcquiredAt &&
           other.count == this.count);
 }
 
-class OwnedMascotsCompanion extends UpdateCompanion<OwnedMascot> {
-  final Value<String> mascotId;
+class OwnedPetsCompanion extends UpdateCompanion<OwnedPet> {
+  final Value<String> petId;
   final Value<int> firstAcquiredAt;
   final Value<int> count;
   final Value<int> rowid;
-  const OwnedMascotsCompanion({
-    this.mascotId = const Value.absent(),
+  const OwnedPetsCompanion({
+    this.petId = const Value.absent(),
     this.firstAcquiredAt = const Value.absent(),
     this.count = const Value.absent(),
     this.rowid = const Value.absent(),
   });
-  OwnedMascotsCompanion.insert({
-    required String mascotId,
+  OwnedPetsCompanion.insert({
+    required String petId,
     required int firstAcquiredAt,
     this.count = const Value.absent(),
     this.rowid = const Value.absent(),
-  }) : mascotId = Value(mascotId),
+  }) : petId = Value(petId),
        firstAcquiredAt = Value(firstAcquiredAt);
-  static Insertable<OwnedMascot> custom({
-    Expression<String>? mascotId,
+  static Insertable<OwnedPet> custom({
+    Expression<String>? petId,
     Expression<int>? firstAcquiredAt,
     Expression<int>? count,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
-      if (mascotId != null) 'mascot_id': mascotId,
+      if (petId != null) 'pet_id': petId,
       if (firstAcquiredAt != null) 'first_acquired_at': firstAcquiredAt,
       if (count != null) 'count': count,
       if (rowid != null) 'rowid': rowid,
     });
   }
 
-  OwnedMascotsCompanion copyWith({
-    Value<String>? mascotId,
+  OwnedPetsCompanion copyWith({
+    Value<String>? petId,
     Value<int>? firstAcquiredAt,
     Value<int>? count,
     Value<int>? rowid,
   }) {
-    return OwnedMascotsCompanion(
-      mascotId: mascotId ?? this.mascotId,
+    return OwnedPetsCompanion(
+      petId: petId ?? this.petId,
       firstAcquiredAt: firstAcquiredAt ?? this.firstAcquiredAt,
       count: count ?? this.count,
       rowid: rowid ?? this.rowid,
@@ -2581,8 +2579,8 @@ class OwnedMascotsCompanion extends UpdateCompanion<OwnedMascot> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    if (mascotId.present) {
-      map['mascot_id'] = Variable<String>(mascotId.value);
+    if (petId.present) {
+      map['pet_id'] = Variable<String>(petId.value);
     }
     if (firstAcquiredAt.present) {
       map['first_acquired_at'] = Variable<int>(firstAcquiredAt.value);
@@ -2598,8 +2596,8 @@ class OwnedMascotsCompanion extends UpdateCompanion<OwnedMascot> {
 
   @override
   String toString() {
-    return (StringBuffer('OwnedMascotsCompanion(')
-          ..write('mascotId: $mascotId, ')
+    return (StringBuffer('OwnedPetsCompanion(')
+          ..write('petId: $petId, ')
           ..write('firstAcquiredAt: $firstAcquiredAt, ')
           ..write('count: $count, ')
           ..write('rowid: $rowid')
@@ -2616,7 +2614,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $AttemptsTable attempts = $AttemptsTable(this);
   late final $ProfileStatsTable profileStats = $ProfileStatsTable(this);
   late final $AppSettingsTable appSettings = $AppSettingsTable(this);
-  late final $OwnedMascotsTable ownedMascots = $OwnedMascotsTable(this);
+  late final $OwnedPetsTable ownedPets = $OwnedPetsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2627,7 +2625,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     attempts,
     profileStats,
     appSettings,
-    ownedMascots,
+    ownedPets,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -3762,7 +3760,7 @@ typedef $$ProfileStatsTableCreateCompanionBuilder =
       Value<int> todayXp,
       Value<String?> displayName,
       Value<bool> hasOnboarded,
-      Value<String> equippedMascotId,
+      Value<String> equippedPetId,
       Value<int> lessonsCompletedToday,
       Value<String?> lessonsCompletedDay,
       Value<int> coinsTotal,
@@ -3777,7 +3775,7 @@ typedef $$ProfileStatsTableUpdateCompanionBuilder =
       Value<int> todayXp,
       Value<String?> displayName,
       Value<bool> hasOnboarded,
-      Value<String> equippedMascotId,
+      Value<String> equippedPetId,
       Value<int> lessonsCompletedToday,
       Value<String?> lessonsCompletedDay,
       Value<int> coinsTotal,
@@ -3832,8 +3830,8 @@ class $$ProfileStatsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get equippedMascotId => $composableBuilder(
-    column: $table.equippedMascotId,
+  ColumnFilters<String> get equippedPetId => $composableBuilder(
+    column: $table.equippedPetId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3902,8 +3900,8 @@ class $$ProfileStatsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get equippedMascotId => $composableBuilder(
-    column: $table.equippedMascotId,
+  ColumnOrderings<String> get equippedPetId => $composableBuilder(
+    column: $table.equippedPetId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -3966,8 +3964,8 @@ class $$ProfileStatsTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get equippedMascotId => $composableBuilder(
-    column: $table.equippedMascotId,
+  GeneratedColumn<String> get equippedPetId => $composableBuilder(
+    column: $table.equippedPetId,
     builder: (column) => column,
   );
 
@@ -4026,7 +4024,7 @@ class $$ProfileStatsTableTableManager
                 Value<int> todayXp = const Value.absent(),
                 Value<String?> displayName = const Value.absent(),
                 Value<bool> hasOnboarded = const Value.absent(),
-                Value<String> equippedMascotId = const Value.absent(),
+                Value<String> equippedPetId = const Value.absent(),
                 Value<int> lessonsCompletedToday = const Value.absent(),
                 Value<String?> lessonsCompletedDay = const Value.absent(),
                 Value<int> coinsTotal = const Value.absent(),
@@ -4039,7 +4037,7 @@ class $$ProfileStatsTableTableManager
                 todayXp: todayXp,
                 displayName: displayName,
                 hasOnboarded: hasOnboarded,
-                equippedMascotId: equippedMascotId,
+                equippedPetId: equippedPetId,
                 lessonsCompletedToday: lessonsCompletedToday,
                 lessonsCompletedDay: lessonsCompletedDay,
                 coinsTotal: coinsTotal,
@@ -4054,7 +4052,7 @@ class $$ProfileStatsTableTableManager
                 Value<int> todayXp = const Value.absent(),
                 Value<String?> displayName = const Value.absent(),
                 Value<bool> hasOnboarded = const Value.absent(),
-                Value<String> equippedMascotId = const Value.absent(),
+                Value<String> equippedPetId = const Value.absent(),
                 Value<int> lessonsCompletedToday = const Value.absent(),
                 Value<String?> lessonsCompletedDay = const Value.absent(),
                 Value<int> coinsTotal = const Value.absent(),
@@ -4067,7 +4065,7 @@ class $$ProfileStatsTableTableManager
                 todayXp: todayXp,
                 displayName: displayName,
                 hasOnboarded: hasOnboarded,
-                equippedMascotId: equippedMascotId,
+                equippedPetId: equippedPetId,
                 lessonsCompletedToday: lessonsCompletedToday,
                 lessonsCompletedDay: lessonsCompletedDay,
                 coinsTotal: coinsTotal,
@@ -4275,32 +4273,30 @@ typedef $$AppSettingsTableProcessedTableManager =
       AppSetting,
       PrefetchHooks Function()
     >;
-typedef $$OwnedMascotsTableCreateCompanionBuilder =
-    OwnedMascotsCompanion Function({
-      required String mascotId,
-      required int firstAcquiredAt,
-      Value<int> count,
-      Value<int> rowid,
-    });
-typedef $$OwnedMascotsTableUpdateCompanionBuilder =
-    OwnedMascotsCompanion Function({
-      Value<String> mascotId,
-      Value<int> firstAcquiredAt,
-      Value<int> count,
-      Value<int> rowid,
-    });
+typedef $$OwnedPetsTableCreateCompanionBuilder = OwnedPetsCompanion Function({
+  required String petId,
+  required int firstAcquiredAt,
+  Value<int> count,
+  Value<int> rowid,
+});
+typedef $$OwnedPetsTableUpdateCompanionBuilder = OwnedPetsCompanion Function({
+  Value<String> petId,
+  Value<int> firstAcquiredAt,
+  Value<int> count,
+  Value<int> rowid,
+});
 
-class $$OwnedMascotsTableFilterComposer
-    extends Composer<_$AppDatabase, $OwnedMascotsTable> {
-  $$OwnedMascotsTableFilterComposer({
+class $$OwnedPetsTableFilterComposer
+    extends Composer<_$AppDatabase, $OwnedPetsTable> {
+  $$OwnedPetsTableFilterComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<String> get mascotId => $composableBuilder(
-    column: $table.mascotId,
+  ColumnFilters<String> get petId => $composableBuilder(
+    column: $table.petId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4315,17 +4311,17 @@ class $$OwnedMascotsTableFilterComposer
   );
 }
 
-class $$OwnedMascotsTableOrderingComposer
-    extends Composer<_$AppDatabase, $OwnedMascotsTable> {
-  $$OwnedMascotsTableOrderingComposer({
+class $$OwnedPetsTableOrderingComposer
+    extends Composer<_$AppDatabase, $OwnedPetsTable> {
+  $$OwnedPetsTableOrderingComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<String> get mascotId => $composableBuilder(
-    column: $table.mascotId,
+  ColumnOrderings<String> get petId => $composableBuilder(
+    column: $table.petId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -4340,17 +4336,17 @@ class $$OwnedMascotsTableOrderingComposer
   );
 }
 
-class $$OwnedMascotsTableAnnotationComposer
-    extends Composer<_$AppDatabase, $OwnedMascotsTable> {
-  $$OwnedMascotsTableAnnotationComposer({
+class $$OwnedPetsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $OwnedPetsTable> {
+  $$OwnedPetsTableAnnotationComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<String> get mascotId =>
-      $composableBuilder(column: $table.mascotId, builder: (column) => column);
+  GeneratedColumn<String> get petId =>
+      $composableBuilder(column: $table.petId, builder: (column) => column);
 
   GeneratedColumn<int> get firstAcquiredAt => $composableBuilder(
     column: $table.firstAcquiredAt,
@@ -4361,55 +4357,52 @@ class $$OwnedMascotsTableAnnotationComposer
       $composableBuilder(column: $table.count, builder: (column) => column);
 }
 
-class $$OwnedMascotsTableTableManager
+class $$OwnedPetsTableTableManager
     extends
         RootTableManager<
           _$AppDatabase,
-          $OwnedMascotsTable,
-          OwnedMascot,
-          $$OwnedMascotsTableFilterComposer,
-          $$OwnedMascotsTableOrderingComposer,
-          $$OwnedMascotsTableAnnotationComposer,
-          $$OwnedMascotsTableCreateCompanionBuilder,
-          $$OwnedMascotsTableUpdateCompanionBuilder,
-          (
-            OwnedMascot,
-            BaseReferences<_$AppDatabase, $OwnedMascotsTable, OwnedMascot>,
-          ),
-          OwnedMascot,
+          $OwnedPetsTable,
+          OwnedPet,
+          $$OwnedPetsTableFilterComposer,
+          $$OwnedPetsTableOrderingComposer,
+          $$OwnedPetsTableAnnotationComposer,
+          $$OwnedPetsTableCreateCompanionBuilder,
+          $$OwnedPetsTableUpdateCompanionBuilder,
+          (OwnedPet, BaseReferences<_$AppDatabase, $OwnedPetsTable, OwnedPet>),
+          OwnedPet,
           PrefetchHooks Function()
         > {
-  $$OwnedMascotsTableTableManager(_$AppDatabase db, $OwnedMascotsTable table)
+  $$OwnedPetsTableTableManager(_$AppDatabase db, $OwnedPetsTable table)
     : super(
         TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
-              $$OwnedMascotsTableFilterComposer($db: db, $table: table),
+              $$OwnedPetsTableFilterComposer($db: db, $table: table),
           createOrderingComposer: () =>
-              $$OwnedMascotsTableOrderingComposer($db: db, $table: table),
+              $$OwnedPetsTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
-              $$OwnedMascotsTableAnnotationComposer($db: db, $table: table),
+              $$OwnedPetsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<String> mascotId = const Value.absent(),
+                Value<String> petId = const Value.absent(),
                 Value<int> firstAcquiredAt = const Value.absent(),
                 Value<int> count = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
-              }) => OwnedMascotsCompanion(
-                mascotId: mascotId,
+              }) => OwnedPetsCompanion(
+                petId: petId,
                 firstAcquiredAt: firstAcquiredAt,
                 count: count,
                 rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                required String mascotId,
+                required String petId,
                 required int firstAcquiredAt,
                 Value<int> count = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
-              }) => OwnedMascotsCompanion.insert(
-                mascotId: mascotId,
+              }) => OwnedPetsCompanion.insert(
+                petId: petId,
                 firstAcquiredAt: firstAcquiredAt,
                 count: count,
                 rowid: rowid,
@@ -4417,12 +4410,12 @@ class $$OwnedMascotsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable<$OwnedMascotsTable, OwnedMascot>(table),
-                  BaseReferences<
-                    _$AppDatabase,
-                    $OwnedMascotsTable,
-                    OwnedMascot
-                  >(db, table, e),
+                  e.readTable<$OwnedPetsTable, OwnedPet>(table),
+                  BaseReferences<_$AppDatabase, $OwnedPetsTable, OwnedPet>(
+                    db,
+                    table,
+                    e,
+                  ),
                 ),
               )
               .toList(),
@@ -4431,21 +4424,18 @@ class $$OwnedMascotsTableTableManager
       );
 }
 
-typedef $$OwnedMascotsTableProcessedTableManager =
+typedef $$OwnedPetsTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
-      $OwnedMascotsTable,
-      OwnedMascot,
-      $$OwnedMascotsTableFilterComposer,
-      $$OwnedMascotsTableOrderingComposer,
-      $$OwnedMascotsTableAnnotationComposer,
-      $$OwnedMascotsTableCreateCompanionBuilder,
-      $$OwnedMascotsTableUpdateCompanionBuilder,
-      (
-        OwnedMascot,
-        BaseReferences<_$AppDatabase, $OwnedMascotsTable, OwnedMascot>,
-      ),
-      OwnedMascot,
+      $OwnedPetsTable,
+      OwnedPet,
+      $$OwnedPetsTableFilterComposer,
+      $$OwnedPetsTableOrderingComposer,
+      $$OwnedPetsTableAnnotationComposer,
+      $$OwnedPetsTableCreateCompanionBuilder,
+      $$OwnedPetsTableUpdateCompanionBuilder,
+      (OwnedPet, BaseReferences<_$AppDatabase, $OwnedPetsTable, OwnedPet>),
+      OwnedPet,
       PrefetchHooks Function()
     >;
 
@@ -4462,6 +4452,6 @@ class $AppDatabaseManager {
       $$ProfileStatsTableTableManager(_db, _db.profileStats);
   $$AppSettingsTableTableManager get appSettings =>
       $$AppSettingsTableTableManager(_db, _db.appSettings);
-  $$OwnedMascotsTableTableManager get ownedMascots =>
-      $$OwnedMascotsTableTableManager(_db, _db.ownedMascots);
+  $$OwnedPetsTableTableManager get ownedPets =>
+      $$OwnedPetsTableTableManager(_db, _db.ownedPets);
 }

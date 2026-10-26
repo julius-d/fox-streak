@@ -12,7 +12,7 @@ import '../data/providers.dart';
 import '../data/stats_repository.dart';
 
 /// Streak values (today's `streak_count`) that count as a milestone, i.e.
-/// the `on-fire` mascot moment. Fixed v1 set, no shop/freeze.
+/// the `on-fire` pet moment. Fixed v1 set, no shop/freeze.
 const Set<int> kStreakMilestones = {3, 7, 14, 30, 50, 100};
 
 /// Sole writer of `streak_count`/`last_active_day`

@@ -44,8 +44,8 @@ import 'package:fox_streak_app/src/data/clock.dart';
 import 'package:fox_streak_app/src/data/database.dart';
 import 'package:fox_streak_app/src/data/providers.dart';
 import 'package:fox_streak_app/src/lesson/lesson_screen.dart';
-import 'package:fox_streak_app/src/mascot/mascot_catalog.dart';
-import 'package:fox_streak_app/src/stats/mascot_service.dart';
+import 'package:fox_streak_app/src/pet/pet_catalog.dart';
+import 'package:fox_streak_app/src/stats/pet_service.dart';
 import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
 
 export 'package:fox_streak_app/test/data/test_helpers.dart' show FakeClock;
@@ -82,33 +82,32 @@ Future<void> settle(WidgetTester tester, {int cap = 150}) async {
 /// Every flow spec uses this (not a bare screen pump) so the harness proves
 /// the real app wiring — navigation, providers, l10n — not just one widget.
 ///
-/// [mascotCatalogLoader], if given, overrides #059's
-/// `mascotCatalogLoaderProvider` — for a flow that completes several
-/// same-day lessons and doesn't care about mascots, so the lootbox
+/// [petCatalogLoader], if given, overrides #059's
+/// `petCatalogLoaderProvider` — for a flow that completes several
+/// same-day lessons and doesn't care about pets, so the lootbox
 /// trigger never touches the real asset bundle (a disconnected `Future`
 /// the widget-test pump loop has no scheduled frame to wait on, which can
 /// leave a dangling platform-channel timer at teardown).
 ///
-/// [mascotRandom], if given, overrides #065's `mascotRandomProvider` — for
-/// a flow that asserts on which lootbox outcome was won (mascot vs. coins,
-/// or a specific mascot/pool index), so it isn't left to a genuinely
+/// [petRandom], if given, overrides #065's `petRandomProvider` — for
+/// a flow that asserts on which lootbox outcome was won (pet vs. coins,
+/// or a specific pet/pool index), so it isn't left to a genuinely
 /// random (and thus flaky-to-assert-on) real `Random()`.
 Future<void> pumpFoxStreakApp(
   WidgetTester tester, {
   required AppDatabase db,
   required Clock clock,
-  Future<List<MascotEntry>> Function()? mascotCatalogLoader,
-  Random Function()? mascotRandom,
+  Future<List<PetEntry>> Function()? petCatalogLoader,
+  Random Function()? petRandom,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         appDatabaseProvider.overrideWithValue(db),
         systemClockProvider.overrideWithValue(clock),
-        if (mascotCatalogLoader != null)
-          mascotCatalogLoaderProvider.overrideWithValue(mascotCatalogLoader),
-        if (mascotRandom != null)
-          mascotRandomProvider.overrideWithValue(mascotRandom),
+        if (petCatalogLoader != null)
+          petCatalogLoaderProvider.overrideWithValue(petCatalogLoader),
+        if (petRandom != null) petRandomProvider.overrideWithValue(petRandom),
       ],
       child: const FoxStreakApp(),
     ),
@@ -161,8 +160,8 @@ Finder playSetButton(String title) => find.descendant(
 /// would keep showing the previous lesson's already-`done` state. Keying on
 /// the item ids forces a real remount each time.
 ///
-/// [mascotCatalogLoader] — see `pumpFoxStreakApp`'s doc for why a flow
-/// that completes several same-day lessons without caring about mascots
+/// [petCatalogLoader] — see `pumpFoxStreakApp`'s doc for why a flow
+/// that completes several same-day lessons without caring about pets
 /// should pass one here.
 Future<void> pumpLessonScreen(
   WidgetTester tester, {
@@ -170,15 +169,15 @@ Future<void> pumpLessonScreen(
   required Clock clock,
   required int setId,
   required List<Item> items,
-  Future<List<MascotEntry>> Function()? mascotCatalogLoader,
+  Future<List<PetEntry>> Function()? petCatalogLoader,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         appDatabaseProvider.overrideWithValue(db),
         systemClockProvider.overrideWithValue(clock),
-        if (mascotCatalogLoader != null)
-          mascotCatalogLoaderProvider.overrideWithValue(mascotCatalogLoader),
+        if (petCatalogLoader != null)
+          petCatalogLoaderProvider.overrideWithValue(petCatalogLoader),
       ],
       child: MaterialApp(
         theme: FoxStreakTheme.light(),

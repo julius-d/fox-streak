@@ -5,7 +5,7 @@
 // Middle: ExerciseCard slot (dispatched by item.type).
 // Feedback: FoxFeedbackBanner (success/error with correct answer).
 // Bottom: FoxCheckButton (CHECK→CONTINUE, same key, tinted by correctState).
-// Result: LessonResultScreen (score, mascot, celebrate, Practice again / Back).
+// Result: LessonResultScreen (score, pet, celebrate, Practice again / Back).
 //
 // All strings via AppLocalizations (DE + EN). Follows #015 kit reuse only.
 
@@ -15,7 +15,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../l10n/app_localizations.dart';
 import '../data/database.dart';
 import '../library/library_providers.dart';
-import '../mascot/lootbox_screen.dart';
+import '../pet/lootbox_screen.dart';
 import '../theme/fox_streak_theme.dart';
 import '../widgets/widgets.dart';
 import '../exercises/date_exercise.dart';

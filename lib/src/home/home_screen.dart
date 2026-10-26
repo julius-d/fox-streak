@@ -1,8 +1,8 @@
 // Home dashboard (issue #012).
 //
 // New `main.dart` landing screen: greeting (generic by default, or
-// `display_name` when set, tap-to-rename) + tap-to-collect equipped mascot
-// (#059, opens `MascotCollectionScreen`) + #011 StreakBadge + #010
+// `display_name` when set, tap-to-rename) + tap-to-collect equipped pet
+// (#059, opens `PetCollectionScreen`) + #011 StreakBadge + #010
 // level-progress widget + FoxGoalRing (daily goal fill) + Continue button
 // (derived from the latest `attempts` row's set; a "Browse sets" CTA when
 // no attempts exist) + Browse sets -> unchanged LibraryScreen. Gates
@@ -22,8 +22,8 @@ import '../data/database.dart';
 import '../data/providers.dart';
 import '../library/library_screen.dart';
 import '../lesson/lesson_screen.dart';
-import '../mascot/mascot_collection_screen.dart';
-import '../mascot/mascot_providers.dart';
+import '../pet/pet_collection_screen.dart';
+import '../pet/pet_providers.dart';
 import '../settings/settings_providers.dart';
 import '../settings/settings_screen.dart';
 import '../stats/stats_providers.dart';
@@ -215,19 +215,19 @@ class _HomeDashboard extends ConsumerWidget {
               const SizedBox(height: FoxSpacing.lg),
               Center(
                 child: InkWell(
-                  key: const Key('homeMascotButton'),
+                  key: const Key('homePetButton'),
                   borderRadius: const BorderRadius.all(
                     Radius.circular(FoxRadius.lg),
                   ),
                   onTap: () => Navigator.of(context).push<void>(
                     MaterialPageRoute<void>(
-                      builder: (_) => const MascotCollectionScreen(),
+                      builder: (_) => const PetCollectionScreen(),
                     ),
                   ),
                   child: Semantics(
                     button: true,
-                    label: l10n.homeMascotSemanticLabel,
-                    child: FoxMascot(mascot: ref.watch(equippedMascotProvider)),
+                    label: l10n.homePetSemanticLabel,
+                    child: FoxPet(pet: ref.watch(equippedPetProvider)),
                   ),
                 ),
               ),
