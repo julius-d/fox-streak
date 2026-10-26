@@ -26,6 +26,26 @@ Future<void> pumpKit(WidgetTester tester, Widget child) async {
   await tester.pump();
 }
 
+/// Pumps [child] the same as [pumpKit], but with reduce motion on, so a
+/// `FoxPet` inside [child] plays once and holds rather than looping
+/// (issue #071) — needed wherever a pet-bearing widget is pumped.
+Future<void> pumpKitReducedMotion(WidgetTester tester, Widget child) async {
+  await tester.pumpWidget(
+    ProviderScope(
+      child: MaterialApp(
+        theme: FoxStreakTheme.light(),
+        darkTheme: FoxStreakTheme.dark(),
+        builder: (BuildContext context, Widget? child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(disableAnimations: true),
+          child: child!,
+        ),
+        home: Scaffold(body: child),
+      ),
+    ),
+  );
+  await tester.pump();
+}
+
 void main() {
   test('haptics toggle defaults on', () {
     final ProviderContainer container = ProviderContainer();
@@ -623,7 +643,7 @@ void main() {
     WidgetTester tester,
   ) async {
     bool cta = false;
-    await pumpKit(
+    await pumpKitReducedMotion(
       tester,
       FoxEmptyState(
         title: 'No sets yet',
@@ -642,7 +662,7 @@ void main() {
     expect(cta, isTrue);
     expect(find.text('Boom'), findsOneWidget);
 
-    await pumpKit(
+    await pumpKitReducedMotion(
       tester,
       FoxEmptyState(
         title: 'No sets yet',
@@ -659,7 +679,7 @@ void main() {
   testWidgets('pet renders with a stable key + semantic label', (
     WidgetTester tester,
   ) async {
-    await pumpKit(
+    await pumpKitReducedMotion(
       tester,
       FoxPet(pet: PetCatalog.defaultEntry, semanticLabel: 'Sleepy fox'),
     );

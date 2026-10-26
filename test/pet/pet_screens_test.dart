@@ -21,6 +21,13 @@ import 'package:fox_streak_app/src/pet/pet_catalog.dart';
 import 'package:fox_streak_app/src/pet/pet_collection_screen.dart';
 import 'package:fox_streak_app/src/stats/pet_service.dart';
 
+/// Turns off a `FoxPet`'s loop-with-pause (issue #071) so it plays once
+/// and holds, instead of looping for as long as these screens stay mounted.
+Widget _disableAnimations(BuildContext context, Widget? child) => MediaQuery(
+  data: MediaQuery.of(context).copyWith(disableAnimations: true),
+  child: child!,
+);
+
 /// Pumps frames until none are scheduled (or [cap] is hit, which fails).
 Future<void> settle(WidgetTester tester, {int cap = 50}) async {
   for (var i = 0; i < cap; i++) {
@@ -64,6 +71,7 @@ Future<AppDatabase> pumpCollectionScreen(
           petCatalogLoaderProvider.overrideWithValue(catalog),
       ],
       child: const MaterialApp(
+        builder: _disableAnimations,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: PetCollectionScreen(),
@@ -83,6 +91,7 @@ void main() {
       (tester) async {
         await tester.pumpWidget(
           MaterialApp(
+            builder: _disableAnimations,
             home: LootboxScreen(reward: _petReward, l10n: AppLocalizationsEn()),
           ),
         );
@@ -119,6 +128,7 @@ void main() {
     testWidgets('continue pops the screen', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          builder: _disableAnimations,
           home: Builder(
             builder: (context) => Scaffold(
               body: Center(
@@ -154,6 +164,7 @@ void main() {
         '(issue #065)', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          builder: _disableAnimations,
           home: LootboxScreen(reward: _coinsReward, l10n: AppLocalizationsEn()),
         ),
       );

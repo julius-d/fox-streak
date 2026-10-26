@@ -1,6 +1,6 @@
 # Issue 071: Pet animation loops with a random pause instead of playing once
 
-Status: open | Priority: P3 | Type: feature | Refined-at: 2026-10-26
+Status: done | Priority: P3 | Type: feature | Refined-at: 2026-10-26 | Completed-at: 2026-10-26
 
 ## Goal
 
@@ -131,3 +131,35 @@ dart format --output=none --set-exit-if-changed .
 dart fix --dry-run
 flutter test
 ```
+
+## Summary
+
+`FoxPet` (`lib/src/widgets/fox_pet.dart`) became a `StatefulWidget` driving
+its own `AnimationController` + `Timer` loop: play once, then (unless
+`MediaQuery.disableAnimationsOf`) wait a random `drawFoxPetPause(Random)`
+draw in [3s, 8s] and replay, forever. `didUpdateWidget` cancels any pending
+pause timer when `pet.id` changes, since every call site passes no `Key`
+and can reuse the same State (e.g. re-equipping on `PetCollectionScreen`
+while Home stays mounted underneath). No call-site changes needed — the
+loop is entirely internal to `FoxPet`.
+
+Tests: `test/widgets/fox_pet_test.dart` (new) covers the pause bounds, the
+loop/reduce-motion behavior, dispose cancelling its timer, and the pet-swap
+stale-timer regression. `integration_test/issue071_pet_loop_test.dart`
+(new) proves the loop through real Home/app wiring. Existing
+`pumpAndSettle()`-based tests touching a pet (`kit_golden_test.dart`,
+`kit_test.dart`, `pet_screens_test.dart`) now force reduce motion on first.
+No visual change, so no new screenshots.
+
+## Code review
+
+- Stale `_pauseTimer` leaked across a pet swap (no `Key` at call sites, so
+  re-equipping reuses the same State) could fire a stray restart later.
+  Fixed: added `didUpdateWidget` cancelling the pending timer on `pet.id`
+  change, plus a regression test proving it (fails without the fix).
+- The original "dispose cancels the pending timer" test pumped well past
+  the pause after disposal, which let the leaked timer fire harmlessly
+  before the framework's own pending-timer check ever ran — passing even
+  without the `dispose()` cancellation it claimed to cover.
+  Fixed: removed that post-dispose pump so the framework's end-of-test
+  invariant check is the one actually exercised.

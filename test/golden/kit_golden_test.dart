@@ -40,6 +40,7 @@ Future<void> _expectGolden(
   Widget child, {
   required ThemeData theme,
   Size surfaceSize = const Size(320, 160),
+  bool disableAnimations = false,
 }) async {
   await tester.binding.setSurfaceSize(surfaceSize);
   tester.view.devicePixelRatio = 1.0;
@@ -51,6 +52,12 @@ Future<void> _expectGolden(
   await tester.pumpWidget(
     MaterialApp(
       theme: theme,
+      builder: !disableAnimations
+          ? null
+          : (BuildContext context, Widget? child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(disableAnimations: true),
+              child: child!,
+            ),
       home: Scaffold(
         body: Center(
           child: RepaintBoundary(key: boundaryKey, child: child),
@@ -206,6 +213,7 @@ void main() {
           ),
           theme: theme,
           surfaceSize: const Size(360, 420),
+          disableAnimations: true,
         );
       });
     }
@@ -220,6 +228,7 @@ void main() {
           FoxPet(pet: PetCatalog.defaultEntry),
           theme: theme,
           surfaceSize: const Size(140, 140),
+          disableAnimations: true,
         );
       });
     }
