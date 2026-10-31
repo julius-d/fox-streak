@@ -32,6 +32,7 @@ With 2 lines per finding. First line describing the finding. Second line telling
 Then commit the changes into the worktree branch.
 Then rebase the worktree branch onto a fresh main.
 Then ask we if this shall be fast-forward merged (without merge commit) into main.
+If the only changes in main are about issue files, there is no need to run tests.
 
 Note on technical debt: If you find a problem that is not part of the issue, but should be fixed, create a new, short issue for it. so that it can be fixed later. 
 Do not fix it in this issue, unless it is a small and easy fix that does not require much time and effort.
