@@ -446,26 +446,26 @@ class AppLocalizationsDe extends AppLocalizations {
   String get homeGreetingFunny1 => 'Bereit, heute aufzusteigen?';
 
   @override
-  String get homeGreetingFunny2 => 'Dein Fuchsgehirn wärmt sich auf!';
+  String get homeGreetingFunny2 => 'Moin';
 
   @override
   String get homeGreetingFunny3 => 'Lass uns den Tag nutzen!';
 
   @override
-  String get homeGreetingFunny4 => 'Wissens-Snacks kommen sofort!';
+  String get homeGreetingFunny4 => 'Hi';
 
   @override
   String get homeGreetingFunny5 => 'Zeit, den Fuchs mit Fakten zu füttern!';
 
   @override
-  String get homeGreetingFunny6 => 'Gehirn-Gains warten auf dich!';
+  String get homeGreetingFunny6 => 'Lass uns loslegen';
 
   @override
   String get homeGreetingFunny7 =>
       'Heute ist ein toller Tag, um etwas Neues zu lernen!';
 
   @override
-  String get homeGreetingFunny8 => 'Fuchs-Modus: aktiviert!';
+  String get homeGreetingFunny8 => 'Wie geht es Dir?';
 
   @override
   String get homeEditNameTooltip => 'Namen bearbeiten';

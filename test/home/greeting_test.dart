@@ -89,6 +89,29 @@ void main() {
         'Your foxy brain is warming up!',
       );
     });
+
+    test('funny copy is also translated (DE spot checks: slots 2/4/6/8, '
+        'reworded by issue #086)', () {
+      // Each date is a day whose deterministic per-day pick lands on the
+      // pool index backing that funny slot (indices are 0-based; slot N
+      // is pool index N-1).
+      expect(
+        greetingText(de, DateTime(2026, 1, 11, 9), null),
+        'Moin',
+      ); // homeGreetingFunny2, pool index 1
+      expect(
+        greetingText(de, DateTime(2026, 2, 19, 9), null),
+        'Hi',
+      ); // homeGreetingFunny4, pool index 3
+      expect(
+        greetingText(de, DateTime(2026, 1, 24, 9), null),
+        'Lass uns loslegen',
+      ); // homeGreetingFunny6, pool index 5
+      expect(
+        greetingText(de, DateTime(2026, 5, 28, 9), null),
+        'Wie geht es Dir?',
+      ); // homeGreetingFunny8, pool index 7
+    });
   });
 
   group('plain time-of-day fallback (unchanged by #061)', () {

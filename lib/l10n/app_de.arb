@@ -410,7 +410,7 @@
     "description": "Playful rotation greeting on Home (issue #061)",
     "placeholders": {}
   },
-  "homeGreetingFunny2": "Dein Fuchsgehirn wärmt sich auf!",
+  "homeGreetingFunny2": "Moin",
   "@homeGreetingFunny3": {
     "description": "Playful rotation greeting on Home (issue #061)",
     "placeholders": {}
@@ -420,7 +420,7 @@
     "description": "Playful rotation greeting on Home (issue #061)",
     "placeholders": {}
   },
-  "homeGreetingFunny4": "Wissens-Snacks kommen sofort!",
+  "homeGreetingFunny4": "Hi",
   "@homeGreetingFunny5": {
     "description": "Playful rotation greeting on Home (issue #061)",
     "placeholders": {}
@@ -430,7 +430,7 @@
     "description": "Playful rotation greeting on Home (issue #061)",
     "placeholders": {}
   },
-  "homeGreetingFunny6": "Gehirn-Gains warten auf dich!",
+  "homeGreetingFunny6": "Lass uns loslegen",
   "@homeGreetingFunny7": {
     "description": "Playful rotation greeting on Home (issue #061)",
     "placeholders": {}
@@ -440,7 +440,7 @@
     "description": "Playful rotation greeting on Home (issue #061)",
     "placeholders": {}
   },
-  "homeGreetingFunny8": "Fuchs-Modus: aktiviert!",
+  "homeGreetingFunny8": "Wie geht es Dir?",
   "@homeEditNameTooltip": {
     "description": "Tooltip/accessibility label on Home's tappable greeting, opening the rename dialog (issue #012)",
     "placeholders": {}
