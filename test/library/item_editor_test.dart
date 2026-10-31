@@ -128,6 +128,15 @@ Future<void> switchType(WidgetTester tester, String label) async {
   await settle(tester);
 }
 
+/// Picks [label] ("None"/"Emoji"/"Base64 image"/"Image URL") from the #014
+/// image-type dropdown.
+Future<void> selectImageType(WidgetTester tester, String label) async {
+  await tester.tap(find.byKey(const Key('itemImageTypeField')));
+  await settle(tester);
+  await tester.tap(find.text(label).last);
+  await settle(tester);
+}
+
 String? focusedDateLabel(WidgetTester tester) =>
     tester.binding.focusManager.primaryFocus?.debugLabel;
 
@@ -785,5 +794,161 @@ void main() {
     expect(await env.repo.getItemsForSet(env.setId), isEmpty);
     expect(find.byKey(const Key('itemPromptField')), findsOneWidget);
     await unmount(tester);
+  });
+
+  group('image (#014)', () {
+    testWidgets('defaults to "none": content field hidden, saves null/null', (
+      tester,
+    ) async {
+      final clock = FakeClock(kTestToday);
+      final env = await pumpEditor(tester, clock);
+
+      expect(find.byKey(const Key('itemImageContentField')), findsNothing);
+      await tester.enterText(find.byKey(const Key('itemPromptField')), 'Hund');
+      await tester.enterText(find.byKey(const Key('itemAnswerField')), 'dog');
+      await tapSaveItem(tester);
+
+      final items = await env.repo.getItemsForSet(env.setId);
+      expect(items.single.imageType, isNull);
+      expect(items.single.imageContent, isNull);
+      await unmount(tester);
+    });
+
+    testWidgets('emoji: picking the type reveals the content field; saves '
+        'both', (tester) async {
+      final clock = FakeClock(kTestToday);
+      final env = await pumpEditor(tester, clock);
+
+      await tester.enterText(find.byKey(const Key('itemPromptField')), 'Hund');
+      await tester.enterText(find.byKey(const Key('itemAnswerField')), 'dog');
+      await selectImageType(tester, 'Emoji');
+      expect(find.byKey(const Key('itemImageContentField')), findsOneWidget);
+      await tester.enterText(
+        find.byKey(const Key('itemImageContentField')),
+        '🐶',
+      );
+      await tapSaveItem(tester);
+
+      final items = await env.repo.getItemsForSet(env.setId);
+      expect(items.single.imageType, 'emoji');
+      expect(items.single.imageContent, '🐶');
+      await unmount(tester);
+    });
+
+    testWidgets('base64: invalid content is blocked with an inline error', (
+      tester,
+    ) async {
+      final clock = FakeClock(kTestToday);
+      final env = await pumpEditor(tester, clock);
+
+      await tester.enterText(find.byKey(const Key('itemPromptField')), 'Hund');
+      await tester.enterText(find.byKey(const Key('itemAnswerField')), 'dog');
+      await selectImageType(tester, 'Base64 image');
+      await tester.enterText(
+        find.byKey(const Key('itemImageContentField')),
+        'not-base64!!',
+      );
+      await tapSaveItem(tester);
+
+      expect(find.text('Enter valid base64 image data'), findsOneWidget);
+      expect(await env.repo.getItemsForSet(env.setId), isEmpty);
+      await unmount(tester);
+    });
+
+    testWidgets('base64: a multi-line paste (as the `base64` CLI wraps '
+        'output) saves, whitespace stripped', (tester) async {
+      final clock = FakeClock(kTestToday);
+      final env = await pumpEditor(tester, clock);
+
+      await tester.enterText(find.byKey(const Key('itemPromptField')), 'Hund');
+      await tester.enterText(find.byKey(const Key('itemAnswerField')), 'dog');
+      await selectImageType(tester, 'Base64 image');
+      await tester.enterText(
+        find.byKey(const Key('itemImageContentField')),
+        'AB\nCD',
+      );
+      await tapSaveItem(tester);
+
+      final items = await env.repo.getItemsForSet(env.setId);
+      expect(items.single.imageType, 'base64');
+      expect(items.single.imageContent, 'ABCD');
+      await unmount(tester);
+    });
+
+    testWidgets('url: invalid content is blocked with an inline error', (
+      tester,
+    ) async {
+      final clock = FakeClock(kTestToday);
+      final env = await pumpEditor(tester, clock);
+
+      await tester.enterText(find.byKey(const Key('itemPromptField')), 'Hund');
+      await tester.enterText(find.byKey(const Key('itemAnswerField')), 'dog');
+      await selectImageType(tester, 'Image URL');
+      await tester.enterText(
+        find.byKey(const Key('itemImageContentField')),
+        'not a url',
+      );
+      await tapSaveItem(tester);
+
+      expect(find.text('Enter a valid http(s) link'), findsOneWidget);
+      expect(await env.repo.getItemsForSet(env.setId), isEmpty);
+      await unmount(tester);
+    });
+
+    testWidgets('edit-prefill shows the stored type/content; clearing back '
+        'to "none" saves null/null', (tester) async {
+      final clock = FakeClock(kTestToday);
+      final db = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(() async => db.close());
+      final repo = SetsRepository(db, clock);
+      final setId = await repo.createSet(title: 'Test', createdBy: 'Mama');
+      final itemId = await repo.addItem(
+        setId: setId,
+        type: 'choice',
+        prompt: 'Hund',
+        answer: 'dog',
+        imageType: 'emoji',
+        imageContent: '🐶',
+      );
+      final existing = await repo.getItemById(itemId);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appDatabaseProvider.overrideWithValue(db),
+            systemClockProvider.overrideWithValue(clock),
+            setsRepositoryProvider.overrideWithValue(repo),
+          ],
+          child: MaterialApp(
+            theme: FoxStreakTheme.light(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: _EditorHarness(setId: setId, existing: existing),
+          ),
+        ),
+      );
+      await settle(tester);
+      await tester.tap(find.byKey(const Key('openEditorButton')));
+      await settle(tester);
+
+      expect(
+        tester
+            .widget<TextFormField>(
+              find.byKey(const Key('itemImageContentField')),
+            )
+            .controller!
+            .text,
+        '🐶',
+      );
+
+      await selectImageType(tester, 'None');
+      expect(find.byKey(const Key('itemImageContentField')), findsNothing);
+      await tapSaveItem(tester);
+
+      final updated = await repo.getItemById(itemId);
+      expect(updated?.imageType, isNull);
+      expect(updated?.imageContent, isNull);
+      await unmount(tester);
+    });
   });
 }

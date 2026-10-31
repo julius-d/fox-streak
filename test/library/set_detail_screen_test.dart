@@ -310,6 +310,11 @@ void main() {
 
       await tester.enterText(find.byKey(const Key('itemPromptField')), 'Hund');
       await tester.enterText(find.byKey(const Key('itemAnswerField')), 'dog');
+      // The #014 image-type field adds height to the form, pushing Save
+      // out of the viewport on this test surface — scroll it into view
+      // first (mirrors `item_editor_test.dart`'s own `tapSaveItem` helper).
+      await tester.ensureVisible(find.byKey(const Key('saveItemButton')));
+      await settle(tester);
       await tester.tap(find.byKey(const Key('saveItemButton')));
       await settle(tester);
 
@@ -375,6 +380,10 @@ void main() {
     await settle(tester);
 
     await tester.enterText(find.byKey(const Key('itemPromptField')), 'Katze');
+    // The #014 image-type field adds height to the form, pushing Save out
+    // of the viewport on this test surface — scroll it into view first.
+    await tester.ensureVisible(find.byKey(const Key('saveItemButton')));
+    await settle(tester);
     await tester.tap(find.byKey(const Key('saveItemButton')));
     await settle(tester);
 

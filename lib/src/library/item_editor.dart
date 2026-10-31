@@ -26,6 +26,11 @@
 //   EN month-day-year). `today` comes from `systemClockProvider`.
 // - `hint` is never touched (left `Value.absent` / `''` default) so existing
 //   hints are preserved.
+// - Image (#014): optional "none"/emoji/base64/url picker shared by all 4
+//   types, shown right under the prompt field — the image attaches to the
+//   prompt, not to any type-specific field below it. "None" clears stored
+//   content; any other type requires valid type-specific content
+//   (`validation.dart`'s `isValidImageContent`) before save.
 
 import 'dart:convert';
 
@@ -73,6 +78,9 @@ class _ItemEditorScreenState extends ConsumerState<ItemEditorScreen> {
   late bool _languagePairEnabled;
   String? _promptLang;
   String? _answerLang;
+  late final TextEditingController _imageContent;
+  // null = "none" (#014): no image on this item.
+  String? _imageType;
   bool _saving = false;
   String? _saveError;
   String? _dateError;
@@ -122,6 +130,8 @@ class _ItemEditorScreenState extends ConsumerState<ItemEditorScreen> {
     _promptLang = existing?.promptLang;
     _answerLang = existing?.answerLang;
     _languagePairEnabled = _promptLang != null && _answerLang != null;
+    _imageType = existing?.imageType;
+    _imageContent = TextEditingController(text: existing?.imageContent ?? '');
     _dayFocus = FocusNode(debugLabel: 'itemDay');
     _monthFocus = FocusNode(debugLabel: 'itemMonth');
     _yearFocus = FocusNode(debugLabel: 'itemYear');
@@ -135,6 +145,7 @@ class _ItemEditorScreenState extends ConsumerState<ItemEditorScreen> {
     _day.dispose();
     _month.dispose();
     _year.dispose();
+    _imageContent.dispose();
     for (final c in _choices) {
       c.dispose();
     }
@@ -157,6 +168,30 @@ class _ItemEditorScreenState extends ConsumerState<ItemEditorScreen> {
     final l10n = AppLocalizations.of(context)!;
     if (v == null || v.trim().isEmpty) return l10n.errorRequired;
     if (!isValidPhoneAnswer(v)) return l10n.errorInvalidPhone;
+    return null;
+  }
+
+  /// Validates the image content field, shown only when [_imageType] is
+  /// non-null; the dropdown itself needs no validator ("none" is always
+  /// valid).
+  String? _validateImageContent(String? v) {
+    final l10n = AppLocalizations.of(context)!;
+    final raw = v ?? '';
+    // `normalizeImageContent` strips embedded newlines for base64 (a
+    // multi-line paste is expected, not malformed), so "empty" must check
+    // the normalized form — plain `.trim()` would still see whitespace-only
+    // multi-line input as non-empty and misreport "invalid" instead of
+    // "required".
+    if (normalizeImageContent(_imageType!, raw).isEmpty) {
+      return l10n.errorRequired;
+    }
+    if (!isValidImageContent(_imageType!, raw)) {
+      return switch (_imageType) {
+        'base64' => l10n.errorInvalidImageBase64,
+        'url' => l10n.errorInvalidImageUrl,
+        _ => l10n.errorInvalidImageEmoji,
+      };
+    }
     return null;
   }
 
@@ -322,6 +357,13 @@ class _ItemEditorScreenState extends ConsumerState<ItemEditorScreen> {
       'choice' || 'freeText' when _languagePairEnabled => _answerLang,
       _ => null,
     };
+    // #014: "none" (null) clears the image; any other type always pairs
+    // with the typed content (the content field's own validator, run above
+    // via `_formKey.currentState!.validate()`, already blocked an empty or
+    // invalid value) — `SetsRepository` normalizes it (e.g. stripping a
+    // multi-line base64 paste's embedded newlines) before storing.
+    final imageTypeForSave = _imageType;
+    final imageContentForSave = _imageType == null ? null : _imageContent.text;
     setState(() {
       _saving = true;
       _saveError = null;
@@ -343,6 +385,8 @@ class _ItemEditorScreenState extends ConsumerState<ItemEditorScreen> {
           promptLang: promptLangForSave,
           answerLang: answerLangForSave,
           choices: choicesForSave,
+          imageType: imageTypeForSave,
+          imageContent: imageContentForSave,
         );
       } else {
         await repo.updateItem(
@@ -353,6 +397,8 @@ class _ItemEditorScreenState extends ConsumerState<ItemEditorScreen> {
           languagePairUpdate: () =>
               (promptLang: promptLangForSave, answerLang: answerLangForSave),
           choicesUpdate: () => choicesForSave,
+          imageUpdate: () =>
+              (imageType: imageTypeForSave, imageContent: imageContentForSave),
         );
       }
       if (!mounted) return;
@@ -439,6 +485,57 @@ class _ItemEditorScreenState extends ConsumerState<ItemEditorScreen> {
                   ?.copyWith(color: Theme.of(context).colorScheme.error),
             ),
           ],
+        ],
+      ],
+    );
+  }
+
+  /// Optional prompt-side image (#014): type selector ("none"/emoji/base64/
+  /// url) + a content field appropriate to the picked type. Shared across
+  /// all 4 item types — the image attaches to the prompt, not to any
+  /// type-specific field below it.
+  Widget _imageField(AppLocalizations l10n) {
+    final contentLabel = switch (_imageType) {
+      'base64' => l10n.itemImageBase64ContentLabel,
+      'url' => l10n.itemImageUrlContentLabel,
+      _ => l10n.itemImageEmojiContentLabel,
+    };
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        DropdownButtonFormField<String?>(
+          key: const Key('itemImageTypeField'),
+          initialValue: _imageType,
+          decoration: InputDecoration(labelText: l10n.itemImageTypeFieldLabel),
+          items: [
+            DropdownMenuItem(value: null, child: Text(l10n.itemImageTypeNone)),
+            DropdownMenuItem(
+              value: 'emoji',
+              child: Text(l10n.itemImageTypeEmoji),
+            ),
+            DropdownMenuItem(
+              value: 'base64',
+              child: Text(l10n.itemImageTypeBase64),
+            ),
+            DropdownMenuItem(value: 'url', child: Text(l10n.itemImageTypeUrl)),
+          ],
+          onChanged: (v) => setState(() {
+            _imageType = v;
+            // Clearing back to "none" (#014) drops any stale content so a
+            // later re-pick of the same type doesn't resurrect it.
+            if (v == null) _imageContent.clear();
+          }),
+        ),
+        if (_imageType != null) ...[
+          const SizedBox(height: FoxSpacing.md),
+          TextFormField(
+            key: const Key('itemImageContentField'),
+            controller: _imageContent,
+            maxLines: _imageType == 'base64' ? 3 : 1,
+            decoration: InputDecoration(labelText: contentLabel),
+            validator: _validateImageContent,
+          ),
         ],
       ],
     );
@@ -689,6 +786,8 @@ class _ItemEditorScreenState extends ConsumerState<ItemEditorScreen> {
                 decoration: InputDecoration(labelText: l10n.itemPromptLabel),
                 validator: _validateRequired,
               ),
+              const SizedBox(height: FoxSpacing.md),
+              _imageField(l10n),
               const SizedBox(height: FoxSpacing.md),
               switch (_type) {
                 'phone' => _phoneField(l10n),

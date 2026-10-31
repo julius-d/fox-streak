@@ -304,6 +304,107 @@ void main() {
       expect((await repo.getItemById(itemId))?.answerLang, isNull);
     });
 
+    test('addItem accepts an optional image, validates both-or-neither '
+        '(#014)', () async {
+      final setId = await repo.createSet(title: 'S', createdBy: 'teacher');
+      final withImage = await repo.addItem(
+        setId: setId,
+        type: 'choice',
+        prompt: 'Hund',
+        answer: 'dog',
+        imageType: 'emoji',
+        imageContent: '🐶',
+      );
+      expect((await repo.getItemById(withImage))?.imageType, 'emoji');
+      expect((await repo.getItemById(withImage))?.imageContent, '🐶');
+
+      final withoutImage = await repo.addItem(
+        setId: setId,
+        type: 'choice',
+        prompt: 'Katze',
+        answer: 'cat',
+      );
+      expect((await repo.getItemById(withoutImage))?.imageType, isNull);
+      expect((await repo.getItemById(withoutImage))?.imageContent, isNull);
+
+      expect(
+        () => repo.addItem(
+          setId: setId,
+          type: 'choice',
+          prompt: 'p',
+          answer: 'a',
+          imageType: 'emoji',
+        ),
+        throwsArgumentError,
+      );
+      expect(
+        () => repo.addItem(
+          setId: setId,
+          type: 'choice',
+          prompt: 'p',
+          answer: 'a',
+          imageType: 'url',
+          imageContent: 'not a url',
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test('updateItem: imageUpdate sets/clears the image, leaves it untouched '
+        'when omitted (#014)', () async {
+      final setId = await repo.createSet(title: 'S', createdBy: 'teacher');
+      final itemId = await repo.addItem(
+        setId: setId,
+        type: 'choice',
+        prompt: 'Hund',
+        answer: 'dog',
+      );
+
+      await repo.updateItem(
+        id: itemId,
+        imageUpdate: () => (imageType: 'base64', imageContent: 'AAAA'),
+      );
+      expect((await repo.getItemById(itemId))?.imageType, 'base64');
+      expect((await repo.getItemById(itemId))?.imageContent, 'AAAA');
+
+      // Omitting imageUpdate entirely leaves the stored image untouched.
+      await repo.updateItem(id: itemId, prompt: 'Hund 2');
+      expect((await repo.getItemById(itemId))?.imageType, 'base64');
+      expect((await repo.getItemById(itemId))?.prompt, 'Hund 2');
+
+      // imageUpdate returning null clears back to "no image".
+      await repo.updateItem(id: itemId, imageUpdate: () => null);
+      expect((await repo.getItemById(itemId))?.imageType, isNull);
+      expect((await repo.getItemById(itemId))?.imageContent, isNull);
+    });
+
+    test('addItem normalizes image content before storing: a multi-line '
+        'base64 paste is stripped, a url is trimmed (#014)', () async {
+      final setId = await repo.createSet(title: 'S', createdBy: 'teacher');
+      final withBase64 = await repo.addItem(
+        setId: setId,
+        type: 'choice',
+        prompt: 'p',
+        answer: 'a',
+        imageType: 'base64',
+        imageContent: 'AB\nCD',
+      );
+      expect((await repo.getItemById(withBase64))?.imageContent, 'ABCD');
+
+      final withUrl = await repo.addItem(
+        setId: setId,
+        type: 'choice',
+        prompt: 'p2',
+        answer: 'a2',
+        imageType: 'url',
+        imageContent: '  https://example.com/fox.png  ',
+      );
+      expect(
+        (await repo.getItemById(withUrl))?.imageContent,
+        'https://example.com/fox.png',
+      );
+    });
+
     test('reorder persists new positions; rejects mismatched ids', () async {
       final setId = await repo.createSet(title: 'S', createdBy: 'teacher');
       final ids = <int>[];

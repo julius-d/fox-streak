@@ -180,6 +180,7 @@ class _DialPadExerciseState extends ConsumerState<DialPadExercise> {
     final FoxSemanticColors tokens = foxSemantics(context);
     final ColorScheme scheme = Theme.of(context).colorScheme;
     final TextTheme text = Theme.of(context).textTheme;
+    final image = buildItemImage(widget.item);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(vertical: FoxSpacing.md),
@@ -190,6 +191,7 @@ class _DialPadExerciseState extends ConsumerState<DialPadExercise> {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
+              image,
               // Contact label (prompt)
               Text(
                 widget.item.prompt,

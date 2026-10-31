@@ -5,6 +5,8 @@
 // All functions are pure and clock-independent except [isValidDateAnswer],
 // which takes an explicit `today` for testability.
 
+import 'dart:convert';
+
 import 'clock.dart';
 
 /// Allowed `items.type` values.
@@ -171,6 +173,82 @@ String? validateChoices(String type, List<dynamic>? choices) {
     if (c is! String || c.trim().isEmpty) {
       return 'choices must be non-empty strings';
     }
+  }
+  return null;
+}
+
+/// Allowed `items.imageType` values (#014). Closed enum — a reserved
+/// `lottie` value is deliberately *not* included; #032 adds its own value +
+/// migration if/when animated images land.
+const Set<String> kImageTypes = {'emoji', 'base64', 'url'};
+
+/// True when [type] is one of [kImageTypes].
+bool isValidImageType(String type) => kImageTypes.contains(type);
+
+/// Normalizes [content] for storage/validation, given its image [type].
+///
+/// `base64` strips **all** whitespace, not just leading/trailing: the
+/// common `base64 <file>` CLI command (GNU coreutils) wraps output at ~76
+/// characters, and copy-pasted base64 data is routinely multi-line, so the
+/// item editor's content field accepts that as input, not malformed data.
+/// `emoji`/`url` have no internal-whitespace meaning, so a plain trim is
+/// enough. Unknown types pass through trimmed.
+String normalizeImageContent(String type, String content) {
+  if (type == 'base64') return content.replaceAll(RegExp(r'\s'), '');
+  return content.trim();
+}
+
+/// True when [content] is valid for the given image [type].
+///
+/// `emoji`: any non-empty (after trim) string — no strict single-grapheme
+/// requirement, short symbol combos are fine. `base64`: decodable by
+/// [base64Decode] once [normalizeImageContent] strips embedded whitespace.
+/// `url`: a parseable [Uri] with an http/https scheme. Unknown [type]s are
+/// always invalid.
+bool isValidImageContent(String type, String content) {
+  switch (type) {
+    case 'emoji':
+      return content.trim().isNotEmpty;
+    case 'base64':
+      final normalized = normalizeImageContent('base64', content);
+      // `base64Decode('')` decodes to an empty byte list without throwing —
+      // reject it explicitly so "empty" isn't accepted as valid image data.
+      if (normalized.isEmpty) return false;
+      try {
+        base64Decode(normalized);
+        return true;
+      } on FormatException {
+        return false;
+      }
+    case 'url':
+      final uri = Uri.tryParse(normalizeImageContent('url', content));
+      return uri != null &&
+          (uri.scheme == 'http' || uri.scheme == 'https') &&
+          uri.host.isNotEmpty;
+    default:
+      return false;
+  }
+}
+
+/// Validates an item's [imageType]/[imageContent] pair; returns an error
+/// message or `null` if ok.
+///
+/// Both-or-neither: either both are `null`/empty (no image) or both are
+/// set to a valid, type-specific pairing.
+String? validateImagePair(String? imageType, String? imageContent) {
+  final hasType = imageType != null && imageType.isNotEmpty;
+  final hasContent = imageContent != null && imageContent.isNotEmpty;
+  if (!hasType && !hasContent) return null;
+  if (hasType != hasContent) {
+    return 'imageType and imageContent must be set together';
+  }
+  final type = imageType!;
+  final content = imageContent!;
+  if (!isValidImageType(type)) {
+    return 'unknown imageType "$type" (expected ${kImageTypes.join("|")})';
+  }
+  if (!isValidImageContent(type, content)) {
+    return 'invalid imageContent for imageType "$type"';
   }
   return null;
 }

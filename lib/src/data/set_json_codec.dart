@@ -1,6 +1,7 @@
 // JSON share format v1 for question sets (issue #002; item `type` enum
 // split from `vocab` into `choice`/`freeText` by #026; set-level `category`
-// added by #045 — share format stays v1, only the known-field set changed).
+// added by #045; item `imageType`/`imageContent` added by #014 — share
+// format stays v1, only the known-field set changed).
 //
 // File extension `.foxstreak.json`, e.g.:
 // ```json
@@ -9,13 +10,16 @@
 //   "items": [
 //     { "type": "choice", "prompt": "Hund", "answer": "dog",
 //       "promptLang": "de", "answerLang": "en", "choices": ["cat","mouse"],
-//       "hint": "" },
+//       "hint": "", "imageType": "emoji", "imageContent": "🐶" },
 //     { "type": "phone", "prompt": "Mama", "answer": "01711234567" },
 //     { "type": "date", "prompt": "Mamas Geburtstag",
 //       "answer": "1985-05-14" } ] }
 // ```
 // `category` is optional on import (absent -> `kDefaultSetCategory`, same
 // rule as the DB migration default) but always written on export.
+// `imageType`/`imageContent` are optional and both-or-neither (#014);
+// missing on import decodes as `null`/`null` (backward compatible with
+// pre-#014 exports/seeds).
 //
 // The codec is pure Dart (no Drift) so UI share/picker code in #003 and the
 // repository import/export paths share validation. Import never overwrites:
@@ -43,6 +47,9 @@ class ShareItem {
   final String? answerLang;
   final List<String>? choices;
   final String hint;
+  // #014: optional prompt-side image, both-or-neither with [imageContent].
+  final String? imageType;
+  final String? imageContent;
 
   const ShareItem({
     required this.type,
@@ -52,6 +59,8 @@ class ShareItem {
     this.answerLang,
     this.choices,
     this.hint = '',
+    this.imageType,
+    this.imageContent,
   });
 
   Map<String, dynamic> toJson() {
@@ -64,6 +73,8 @@ class ShareItem {
     if (answerLang != null) map['answerLang'] = answerLang;
     if (choices != null) map['choices'] = choices;
     if (hint.isNotEmpty) map['hint'] = hint;
+    if (imageType != null) map['imageType'] = imageType;
+    if (imageContent != null) map['imageContent'] = imageContent;
     return map;
   }
 }
@@ -261,6 +272,26 @@ ShareItem _decodeItem(int index, Map<dynamic, dynamic> raw, {DateTime? today}) {
     throw SetImportException('$prefix: hint must be a string');
   }
 
+  // #014: missing imageType/imageContent decode as null/null (backward
+  // compatible with pre-#014 exports/seeds).
+  final imageType = m['imageType'];
+  if (imageType != null && imageType is! String) {
+    throw SetImportException('$prefix: imageType must be a string');
+  }
+  final imageContent = m['imageContent'];
+  if (imageContent != null && imageContent is! String) {
+    throw SetImportException('$prefix: imageContent must be a string');
+  }
+  // Normalize before validating (see `normalizeImageContent`'s doc): a
+  // multi-line base64 value is expected input, not malformed data.
+  final cleanImageContent = (imageType != null && imageContent != null)
+      ? normalizeImageContent(imageType as String, imageContent as String)
+      : imageContent as String?;
+  final imageError = validateImagePair(imageType as String?, cleanImageContent);
+  if (imageError != null) {
+    throw SetImportException('$prefix: $imageError');
+  }
+
   // Type-specific answer validation.
   if (type == 'phone' && !isValidPhoneAnswer(answer)) {
     throw SetImportException(
@@ -283,6 +314,8 @@ ShareItem _decodeItem(int index, Map<dynamic, dynamic> raw, {DateTime? today}) {
     answerLang: answerLang,
     choices: choices,
     hint: (hint as String?) ?? '',
+    imageType: imageType,
+    imageContent: cleanImageContent,
   );
 }
 
@@ -327,6 +360,10 @@ void validateShareSet(ShareSet set, {DateTime? today}) {
     }
     if (item.type == 'date' && !isValidDateAnswer(item.answer, today: today)) {
       throw SetImportException('$prefix: invalid date answer');
+    }
+    final imageError = validateImagePair(item.imageType, item.imageContent);
+    if (imageError != null) {
+      throw SetImportException('$prefix: $imageError');
     }
   }
 }

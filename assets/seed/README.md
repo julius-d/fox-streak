@@ -9,7 +9,8 @@ Fictional first-launch content for issue #002. Real learning content ships in #0
   "createdBy": "Mama", "items": [
     { "type": "choice", "prompt": "Hund", "answer": "dog",
       "promptLang": "de", "answerLang": "en",
-      "choices": ["cat","mouse","bird"], "hint": "" },
+      "choices": ["cat","mouse","bird"], "hint": "",
+      "imageType": "emoji", "imageContent": "🐶" },
     { "type": "phone", "prompt": "Mama", "answer": "01711234567" },
     { "type": "date", "prompt": "Mamas Geburtstag",
       "answer": "1985-05-14" } ] }
@@ -32,6 +33,13 @@ Rules (enforced by `lib/src/data/set_json_codec.dart`):
   (normalisation strips spaces, `-`, `/`, `(`, `)`, `.`, `+`; German numbers
   keep their leading `0`, e.g. `01711234567`).
 - `date`: `answer` strict ISO `YYYY-MM-DD` in `1900-01-01..today`.
+- `imageType`/`imageContent` are optional and both-or-neither (#014), on any
+  item type: `imageType` one of `emoji|base64|url`, `imageContent` the
+  literal emoji / base64 data / URL. **Bundled seed sets must only use
+  `emoji` or `base64` — never `url`**: the app is local-only (#013 requires
+  airplane-mode to work) and a `url` image needs network to load, so it
+  isn't guaranteed to work offline. `url` is fine for user-added items,
+  with that tradeoff documented in the item editor.
 - Import always creates a **new** set with fresh ids, never overwrites.
 - Unknown fields at the set level are ignored; unknown item fields throw
   `SetImportException`.
@@ -45,3 +53,7 @@ database has no sets. Corrupt seeds are skipped, never crash launch.
 all 16 German Bundesländer capitals, no `promptLang`/`answerLang`, no
 explicit `choices` — distractors come entirely from the same-set fallback
 (each item's 3 wrong options are drawn from the other 15 states' capitals).
+
+`demo_animals.foxstreak.json`'s "Hund"/"dog" item (#014) carries
+`"imageType": "emoji"` / `"imageContent": "🐶"` as the end-to-end example of
+the prompt-side image field.

@@ -104,6 +104,103 @@ void main() {
     });
   });
 
+  group('image fields (#014)', () {
+    test('missing imageType/imageContent decode as null/null (backward '
+        'compatible with pre-#014 exports/seeds)', () {
+      final set = decodeSetFromJson(validSetJson(), today: kTestToday);
+      expect(set.items[0].imageType, isNull);
+      expect(set.items[0].imageContent, isNull);
+    });
+
+    test('a valid emoji pair decodes', () {
+      final json = validSetJson();
+      (json['items'] as List)[0] = {
+        ...(json['items'] as List)[0] as Map,
+        'imageType': 'emoji',
+        'imageContent': '🐶',
+      };
+      final set = decodeSetFromJson(json, today: kTestToday);
+      expect(set.items[0].imageType, 'emoji');
+      expect(set.items[0].imageContent, '🐶');
+    });
+
+    test('a valid base64 pair decodes', () {
+      final json = validSetJson();
+      final base64Content = base64Encode([1, 2, 3]);
+      (json['items'] as List)[0] = {
+        ...(json['items'] as List)[0] as Map,
+        'imageType': 'base64',
+        'imageContent': base64Content,
+      };
+      final set = decodeSetFromJson(json, today: kTestToday);
+      expect(set.items[0].imageType, 'base64');
+      expect(set.items[0].imageContent, base64Content);
+    });
+
+    test('a multi-line base64 pair decodes with whitespace stripped '
+        '(#base64 CLI output wraps at ~76 chars)', () {
+      final json = validSetJson();
+      (json['items'] as List)[0] = {
+        ...(json['items'] as List)[0] as Map,
+        'imageType': 'base64',
+        'imageContent': 'AB\nCD',
+      };
+      final set = decodeSetFromJson(json, today: kTestToday);
+      expect(set.items[0].imageContent, 'ABCD');
+    });
+
+    test('a valid url pair decodes (user-added items only; seeds never use '
+        'url, see assets/seed/README.md)', () {
+      final json = validSetJson();
+      (json['items'] as List)[0] = {
+        ...(json['items'] as List)[0] as Map,
+        'imageType': 'url',
+        'imageContent': 'https://example.com/fox.png',
+      };
+      final set = decodeSetFromJson(json, today: kTestToday);
+      expect(set.items[0].imageType, 'url');
+      expect(set.items[0].imageContent, 'https://example.com/fox.png');
+    });
+
+    test('imageType without imageContent (or vice versa) is rejected', () {
+      final json = validSetJson();
+      (json['items'] as List)[0] = {
+        ...(json['items'] as List)[0] as Map,
+        'imageType': 'emoji',
+      };
+      expect(
+        () => decodeSetFromJson(json, today: kTestToday),
+        throwsA(isA<SetImportException>()),
+      );
+    });
+
+    test('an unknown imageType is rejected', () {
+      final json = validSetJson();
+      (json['items'] as List)[0] = {
+        ...(json['items'] as List)[0] as Map,
+        'imageType': 'lottie',
+        'imageContent': 'anything',
+      };
+      expect(
+        () => decodeSetFromJson(json, today: kTestToday),
+        throwsA(isA<SetImportException>()),
+      );
+    });
+
+    test('invalid type-specific content is rejected', () {
+      final json = validSetJson();
+      (json['items'] as List)[0] = {
+        ...(json['items'] as List)[0] as Map,
+        'imageType': 'url',
+        'imageContent': 'not a url',
+      };
+      expect(
+        () => decodeSetFromJson(json, today: kTestToday),
+        throwsA(isA<SetImportException>()),
+      );
+    });
+  });
+
   group('decodeSetFromJson — rejection cases', () {
     Future<void> expectRejects(
       Map<dynamic, dynamic> json, [
@@ -383,6 +480,33 @@ void main() {
         jsonDecode(original.encode()) as Map<String, dynamic>,
         today: kTestToday,
       );
+      expect(viaString.toJson(), original.toJson());
+    });
+
+    test('decode(encode(x)) round-trips imageType/imageContent (#014)', () {
+      const original = ShareSet(
+        title: 'Round',
+        description: '',
+        createdBy: 'teacher',
+        items: [
+          ShareItem(
+            type: 'choice',
+            prompt: 'Hund',
+            answer: 'dog',
+            imageType: 'emoji',
+            imageContent: '🐶',
+          ),
+          ShareItem(type: 'phone', prompt: 'M', answer: '01711234567'),
+        ],
+      );
+      final viaString = decodeSetFromJson(
+        jsonDecode(original.encode()) as Map<String, dynamic>,
+        today: kTestToday,
+      );
+      expect(viaString.items[0].imageType, 'emoji');
+      expect(viaString.items[0].imageContent, '🐶');
+      expect(viaString.items[1].imageType, isNull);
+      expect(viaString.items[1].imageContent, isNull);
       expect(viaString.toJson(), original.toJson());
     });
   });

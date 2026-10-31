@@ -1,6 +1,6 @@
 # Issue 014: Question images (emoji / base64 / url)
 
-Status: open | Priority: P2 | Type: feature | Refined-at: 2026-10-13
+Status: done | Priority: P2 | Type: feature | Refined-at: 2026-10-13 | Completed-at: 2026-10-31
 
 ## Goal
 Items can carry an optional image alongside their prompt — an emoji, an
@@ -35,38 +35,38 @@ issue) without another schema migration to the type enum.
   the image's screen-reader label.
 
 ## Acceptance criteria
-- [ ] `items` gains nullable `imageType` (`'emoji' | 'base64' | 'url'`) and
+- [x] `items` gains nullable `imageType` (`'emoji' | 'base64' | 'url'`) and
   `imageContent` columns via an additive migration (exact next
   `schemaVersion` TBD at implementation time — see Dependencies); existing
   rows get `null`/`null` (no image, unchanged text-only rendering).
-- [ ] Both fields optional, present on all 3 item types, prompt-side only.
-- [ ] `set_json_codec.dart` import/export round-trips `imageType` /
+- [x] Both fields optional, present on all 3 item types, prompt-side only.
+- [x] `set_json_codec.dart` import/export round-trips `imageType` /
   `imageContent`; missing fields in older exported JSON decode as
   `null`/`null` (backward compatible with existing seed/export files).
-- [ ] `validation.dart`: both-or-neither pairing enforced; `url` validated
+- [x] `validation.dart`: both-or-neither pairing enforced; `url` validated
   as a parseable `Uri` with an http/https scheme; `base64` validated as
   decodable; `emoji` accepts any non-empty string (no strict single-
   grapheme requirement — short symbol combos are fine).
-- [ ] Item editor (#004's `item_editor.dart`): image section — type
+- [x] Item editor (#004's `item_editor.dart`): image section — type
   selector (`emoji` / `base64` / `url` / "none") + a content field
   appropriate to the type; inline error on invalid content; can be cleared
   back to "none"; follows #015 kit (no ad-hoc styling).
-- [ ] Exercise cards (#005 lesson shell host, #006–#009 exercise widgets):
+- [x] Exercise cards (#005 lesson shell host, #006–#009 exercise widgets):
   when an item has an image, render it above/alongside the prompt via a new
   shared `FoxItemImage` widget — `emoji` as large inline text, `base64` via
   `Image.memory`, `url` via `Image.network` with loading + graceful
   broken-image/error placeholder (never crashes or hangs the lesson).
-- [ ] Library list / set detail (#003): small image thumbnail/indicator
+- [x] Library list / set detail (#003): small image thumbnail/indicator
   next to items that have one; existing text-only rows unaffected.
-- [ ] Seed content (`assets/seed/`): bundled demo sets use `emoji`/`base64`
+- [x] Seed content (`assets/seed/`): bundled demo sets use `emoji`/`base64`
   only (never `url`); at least one demo item exercises the new field
   end-to-end; `assets/seed/README.md` documents the offline-safety
   convention.
-- [ ] A11y: image carries the item's `prompt` text as its semantic label;
+- [x] A11y: image carries the item's `prompt` text as its semantic label;
   large-font/dark-mode smoke check per #015's floor.
-- [ ] Follows #015: kit tokens/spacing for the new image area, no ad-hoc
+- [x] Follows #015: kit tokens/spacing for the new image area, no ad-hoc
   styling; all new strings via `lib/l10n` arb params (DE + EN).
-- [ ] Unit + widget tests green (see Tasks).
+- [x] Unit + widget tests green (see Tasks).
 
 ## Tasks
 1. Schema: add `items.imageType` + `items.imageContent` (nullable text) via
@@ -121,3 +121,30 @@ flutter analyze
 dart format --output=none --set-exit-if-changed .
 flutter test
 ```
+
+## Code review
+- Base64 content field allows a 3-line paste, but validation rejected any
+  embedded newline (the common `base64 <file>` CLI wraps at ~76 chars).
+  Fixed: added `normalizeImageContent` (strips all whitespace for base64,
+  trims for emoji/url), wired into validation, storage, and decode.
+- Asymmetric trimming: validation checked a trimmed copy of `imageContent`
+  but the untrimmed raw value was what got stored/rendered (e.g. a url with
+  stray leading/trailing whitespace).
+  Fixed: `normalizeImageContent` is now applied before storing in
+  `SetsRepository`/`set_json_codec.dart`, not just before validating.
+- `FoxItemImage`'s emoji path had no length guard, so an unexpectedly long
+  pasted string (validation only requires non-empty) could overflow the
+  fixed-size box.
+  Fixed: emoji text now clips to one line with an ellipsis.
+- The `if (image != null) [image, spacer]` null-check + spacer pattern was
+  duplicated verbatim across all 4 exercise widgets.
+  Fixed: `buildItemImage` now returns a non-null widget (empty
+  `SizedBox.shrink()` when none) with its spacer baked in, so call sites
+  are a single line.
+
+## Summary
+Items can carry an optional prompt-side image (`emoji`/`base64`/`url`,
+schema v13). New shared `FoxItemImage` widget renders it in exercise cards,
+the item editor, and set-detail thumbnails, with a graceful
+loading/broken-image placeholder for `url`. Seed content gained one emoji
+example; `url` is reserved for user-added items only (offline-safety).

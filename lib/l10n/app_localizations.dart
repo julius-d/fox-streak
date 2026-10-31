@@ -464,6 +464,72 @@ abstract class AppLocalizations {
   /// **'Optional'**
   String get itemDistractorHint;
 
+  /// Label for the item editor's optional image type dropdown (issue #014)
+  ///
+  /// In en, this message translates to:
+  /// **'Image'**
+  String get itemImageTypeFieldLabel;
+
+  /// Dropdown option clearing the item's image (issue #014)
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get itemImageTypeNone;
+
+  /// Dropdown option for an emoji item image (issue #014)
+  ///
+  /// In en, this message translates to:
+  /// **'Emoji'**
+  String get itemImageTypeEmoji;
+
+  /// Dropdown option for an embedded base64 item image (issue #014)
+  ///
+  /// In en, this message translates to:
+  /// **'Base64 image'**
+  String get itemImageTypeBase64;
+
+  /// Dropdown option for a remote URL item image (issue #014)
+  ///
+  /// In en, this message translates to:
+  /// **'Image URL'**
+  String get itemImageTypeUrl;
+
+  /// Label for the content field when imageType is emoji (issue #014)
+  ///
+  /// In en, this message translates to:
+  /// **'Emoji'**
+  String get itemImageEmojiContentLabel;
+
+  /// Label for the content field when imageType is base64 (issue #014)
+  ///
+  /// In en, this message translates to:
+  /// **'Base64 image data'**
+  String get itemImageBase64ContentLabel;
+
+  /// Label for the content field when imageType is url (issue #014)
+  ///
+  /// In en, this message translates to:
+  /// **'Image URL'**
+  String get itemImageUrlContentLabel;
+
+  /// Inline error when the emoji image content field is empty (issue #014)
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an emoji or symbol'**
+  String get errorInvalidImageEmoji;
+
+  /// Inline error when the base64 image content field is not decodable (issue #014)
+  ///
+  /// In en, this message translates to:
+  /// **'Enter valid base64 image data'**
+  String get errorInvalidImageBase64;
+
+  /// Inline error when the URL image content field is not a valid http(s) link (issue #014)
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid http(s) link'**
+  String get errorInvalidImageUrl;
+
   /// No description provided for @itemDayLabel.
   ///
   /// In en, this message translates to:

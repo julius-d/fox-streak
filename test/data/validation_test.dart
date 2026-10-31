@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fox_streak_app/src/data/validation.dart';
 
@@ -174,6 +176,99 @@ void main() {
       expect(validateChoices('phone', null), isNull);
       expect(validateChoices('phone', ['a']), isNotNull);
       expect(validateChoices('date', ['a']), isNotNull);
+    });
+  });
+
+  group('kImageTypes (#014)', () {
+    test('is the closed emoji|base64|url enum (no reserved lottie value)', () {
+      expect(kImageTypes, {'emoji', 'base64', 'url'});
+      expect(kImageTypes.contains('lottie'), isFalse);
+    });
+  });
+
+  group('isValidImageType (#014)', () {
+    test('accepts emoji/base64/url, rejects everything else', () {
+      expect(isValidImageType('emoji'), isTrue);
+      expect(isValidImageType('base64'), isTrue);
+      expect(isValidImageType('url'), isTrue);
+      expect(isValidImageType('lottie'), isFalse);
+      expect(isValidImageType(''), isFalse);
+    });
+  });
+
+  group('isValidImageContent (#014)', () {
+    test('emoji accepts any non-empty (after trim) string', () {
+      expect(isValidImageContent('emoji', '🐶'), isTrue);
+      expect(isValidImageContent('emoji', 'a'), isTrue);
+      expect(isValidImageContent('emoji', '  '), isFalse);
+      expect(isValidImageContent('emoji', ''), isFalse);
+    });
+
+    test('base64 accepts decodable data, rejects malformed data', () {
+      expect(isValidImageContent('base64', base64Encode([1, 2, 3])), isTrue);
+      expect(isValidImageContent('base64', 'not-base64!!'), isFalse);
+      expect(isValidImageContent('base64', ''), isFalse);
+    });
+
+    test('base64 accepts a multi-line paste (e.g. the `base64` CLI wraps '
+        'output at ~76 chars) by stripping embedded whitespace', () {
+      final encoded = base64Encode(List.generate(60, (i) => i));
+      final wrapped = '${encoded.substring(0, 40)}\n${encoded.substring(40)}';
+      expect(isValidImageContent('base64', wrapped), isTrue);
+      // All-whitespace (nothing left after stripping) is still rejected.
+      expect(isValidImageContent('base64', '  \n  \n '), isFalse);
+    });
+
+    test('url accepts http/https with a host, rejects everything else', () {
+      expect(isValidImageContent('url', 'https://example.com/fox.png'), isTrue);
+      expect(isValidImageContent('url', 'http://example.com/fox.png'), isTrue);
+      expect(isValidImageContent('url', 'ftp://example.com/fox.png'), isFalse);
+      expect(isValidImageContent('url', 'not a url'), isFalse);
+      expect(isValidImageContent('url', 'https://'), isFalse);
+    });
+
+    test('unknown type is always invalid', () {
+      expect(isValidImageContent('lottie', 'anything'), isFalse);
+    });
+  });
+
+  group('normalizeImageContent (#014)', () {
+    test('base64 strips all whitespace, including embedded newlines', () {
+      expect(normalizeImageContent('base64', 'AB\nCD\n EF '), 'ABCDEF');
+    });
+
+    test('emoji/url trim only (no internal-whitespace meaning)', () {
+      expect(normalizeImageContent('emoji', '  🐶  '), '🐶');
+      expect(
+        normalizeImageContent('url', '  https://example.com/fox.png  '),
+        'https://example.com/fox.png',
+      );
+    });
+  });
+
+  group('validateImagePair (#014)', () {
+    test('both null/empty (no image) is valid', () {
+      expect(validateImagePair(null, null), isNull);
+    });
+
+    test('valid emoji/base64/url pairings are valid', () {
+      expect(validateImagePair('emoji', '🐶'), isNull);
+      expect(validateImagePair('base64', base64Encode([1, 2, 3])), isNull);
+      expect(validateImagePair('url', 'https://example.com/fox.png'), isNull);
+    });
+
+    test('only one of the pair set is rejected (both-or-neither)', () {
+      expect(validateImagePair('emoji', null), isNotNull);
+      expect(validateImagePair(null, '🐶'), isNotNull);
+    });
+
+    test('unknown imageType is rejected', () {
+      expect(validateImagePair('lottie', 'anything'), isNotNull);
+    });
+
+    test('type-specific invalid content is rejected', () {
+      expect(validateImagePair('base64', 'not-base64!!'), isNotNull);
+      expect(validateImagePair('url', 'not a url'), isNotNull);
     });
   });
 }

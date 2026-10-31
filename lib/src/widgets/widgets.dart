@@ -11,6 +11,7 @@ export 'fox_buttons.dart';
 export 'fox_confirm_dialog.dart';
 export 'fox_empty_state.dart';
 export 'fox_goal_ring.dart';
+export 'fox_item_image.dart';
 export 'fox_level_progress_bar.dart';
 export 'fox_pet.dart';
 export 'fox_progress_bar.dart';

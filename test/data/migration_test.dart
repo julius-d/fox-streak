@@ -1,8 +1,8 @@
 // Schema v1 -> v2 (issue #026), v2 -> v3 (issue #010), v3 -> v4 (issue
 // #022), v4 -> v5 (issue #012), v5 -> v6 (issue #045), v6 -> v7 (issue
 // #055), v7 -> v8 (issue #059), v8 -> v9 (issue #064), v9 -> v10 (issue
-// #065), v10 -> v11 (issue #068), and v11 -> v12 (issue #084) migration
-// tests.
+// #065), v10 -> v11 (issue #068), v11 -> v12 (issue #084), and v12 -> v13
+// (issue #014) migration tests.
 //
 // Simulates pre-migration databases on disk, then reopens them with the
 // real (current schemaVersion) `AppDatabase` and asserts `onUpgrade` applied
@@ -166,9 +166,10 @@ class _LegacyV3Database extends AppDatabase {
 
 /// A schemaVersion-4 view of [AppDatabase], used only to seed a pre-#012
 /// file at the exact version #012's migration upgrades from: `items` is
-/// already in the post-#022 `promptLang`/`answerLang` shape (so
-/// `m.createTable(db.items)` can use the current Dart definition
-/// directly), but `profile_stats` still lacks `display_name`/
+/// already in the post-#022 `promptLang`/`answerLang` shape, built via
+/// [_createItemsTableWithoutImage] since the current Dart `Items`
+/// definition has #014's `image_type`/`image_content` columns this
+/// pre-v13 fixture must not; `profile_stats` still lacks `display_name`/
 /// `has_onboarded`.
 class _LegacyV4Database extends AppDatabase {
   _LegacyV4Database(QueryExecutor executor) : super.forTesting(executor); // ignore: use_super_parameters — must forward to the named forTesting() ctor, not the default unnamed one
@@ -180,8 +181,7 @@ class _LegacyV4Database extends AppDatabase {
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
       await _createProfileStatsWithTodayXpOnly(m);
-      final db = m.database as AppDatabase;
-      await m.createTable(db.items);
+      await _createItemsTableWithoutImage(m);
     },
   );
 }
@@ -226,10 +226,11 @@ Future<void> _createProfileStatsPrePetColumns(Migrator m) async {
 }
 
 /// A schemaVersion-5 view of [AppDatabase], used only to seed a pre-#045
-/// file at the exact version #045's migration upgrades from: `items` is
-/// already in its current (post-#012) shape, but `question_sets` still
-/// lacks `category` and `profile_stats` still lacks #059's pet columns
-/// (see [_createProfileStatsPrePetColumns]).
+/// file at the exact version #045's migration upgrades from: `items` is in
+/// its post-#012 shape minus #014's image columns (see
+/// [_createItemsTableWithoutImage]); `question_sets` still lacks
+/// `category` and `profile_stats` still lacks #059's pet columns (see
+/// [_createProfileStatsPrePetColumns]).
 class _LegacyV5Database extends AppDatabase {
   _LegacyV5Database(QueryExecutor executor) : super.forTesting(executor); // ignore: use_super_parameters — must forward to the named forTesting() ctor, not the default unnamed one
 
@@ -242,7 +243,7 @@ class _LegacyV5Database extends AppDatabase {
       await _createQuestionSetsWithoutCategory(m);
       await _createProfileStatsPrePetColumns(m);
       final db = m.database as AppDatabase;
-      await m.createTable(db.items);
+      await _createItemsTableWithoutImage(m);
       await m.createTable(db.attempts);
     },
   );
@@ -250,9 +251,10 @@ class _LegacyV5Database extends AppDatabase {
 
 /// A schemaVersion-6 view of [AppDatabase], used only to seed a pre-#055
 /// file at the exact version #055's migration upgrades from: every table
-/// is already in its current shape except `app_settings` (doesn't exist
-/// yet) and `profile_stats` (still lacks #059's pet columns, see
-/// [_createProfileStatsPrePetColumns]).
+/// is already in its current shape except `items` (still lacks #014's
+/// image columns, see [_createItemsTableWithoutImage]), `app_settings`
+/// (doesn't exist yet), and `profile_stats` (still lacks #059's pet
+/// columns, see [_createProfileStatsPrePetColumns]).
 class _LegacyV6Database extends AppDatabase {
   _LegacyV6Database(QueryExecutor executor) : super.forTesting(executor); // ignore: use_super_parameters — must forward to the named forTesting() ctor, not the default unnamed one
 
@@ -265,7 +267,7 @@ class _LegacyV6Database extends AppDatabase {
       await _createProfileStatsPrePetColumns(m);
       final db = m.database as AppDatabase;
       await m.createTable(db.questionSets);
-      await m.createTable(db.items);
+      await _createItemsTableWithoutImage(m);
       await m.createTable(db.attempts);
     },
   );
@@ -273,9 +275,10 @@ class _LegacyV6Database extends AppDatabase {
 
 /// A schemaVersion-7 view of [AppDatabase], used only to seed a pre-#059
 /// file at the exact version #059's migration upgrades from: every table
-/// is already in its current shape except `profile_stats` (still lacks
-/// #059's pet columns, see [_createProfileStatsPrePetColumns]) and
-/// `owned_pets`, which doesn't exist yet.
+/// is already in its current shape except `items` (still lacks #014's
+/// image columns, see [_createItemsTableWithoutImage]), `profile_stats`
+/// (still lacks #059's pet columns, see [_createProfileStatsPrePetColumns]),
+/// and `owned_pets`, which doesn't exist yet.
 class _LegacyV7Database extends AppDatabase {
   _LegacyV7Database(QueryExecutor executor) : super.forTesting(executor); // ignore: use_super_parameters — must forward to the named forTesting() ctor, not the default unnamed one
 
@@ -288,7 +291,7 @@ class _LegacyV7Database extends AppDatabase {
       await _createProfileStatsPrePetColumns(m);
       final db = m.database as AppDatabase;
       await m.createTable(db.questionSets);
-      await m.createTable(db.items);
+      await _createItemsTableWithoutImage(m);
       await m.createTable(db.attempts);
       await m.createTable(db.appSettings);
     },
@@ -336,10 +339,11 @@ Future<void> _createProfileStatsPreCoinsTotal(Migrator m) async {
 
 /// A schemaVersion-8 view of [AppDatabase], used only to seed a pre-#064
 /// file at the exact version #064's migration upgrades from: every table
-/// is already in its current shape except `owned_mascots` (still has
-/// `acquired_at`, no `count`, see [_createOwnedMascotsPreCount]) and
-/// `profile_stats` (still lacks #065's `coins_total`, see
-/// [_createProfileStatsPreCoinsTotal]).
+/// is already in its current shape except `items` (still lacks #014's
+/// image columns, see [_createItemsTableWithoutImage]), `owned_mascots`
+/// (still has `acquired_at`, no `count`, see
+/// [_createOwnedMascotsPreCount]), and `profile_stats` (still lacks
+/// #065's `coins_total`, see [_createProfileStatsPreCoinsTotal]).
 class _LegacyV8Database extends AppDatabase {
   _LegacyV8Database(QueryExecutor executor) : super.forTesting(executor); // ignore: use_super_parameters — must forward to the named forTesting() ctor, not the default unnamed one
 
@@ -351,7 +355,7 @@ class _LegacyV8Database extends AppDatabase {
     onCreate: (m) async {
       final db = m.database as AppDatabase;
       await m.createTable(db.questionSets);
-      await m.createTable(db.items);
+      await _createItemsTableWithoutImage(m);
       await m.createTable(db.attempts);
       await _createProfileStatsPreCoinsTotal(m);
       await m.createTable(db.appSettings);
@@ -363,8 +367,9 @@ class _LegacyV8Database extends AppDatabase {
 /// A schemaVersion-9 view of [AppDatabase], used only to seed a pre-#065
 /// file at the exact version #065's migration upgrades from: `owned_mascots`
 /// is already in its post-#064 (`mascot_id`/`first_acquired_at`/`count`)
-/// shape, under its pre-#068 physical name, but `profile_stats` still
-/// lacks `coins_total` (see [_createProfileStatsPreCoinsTotal]).
+/// shape, under its pre-#068 physical name; `items` still lacks #014's
+/// image columns (see [_createItemsTableWithoutImage]); `profile_stats`
+/// still lacks `coins_total` (see [_createProfileStatsPreCoinsTotal]).
 class _LegacyV9Database extends AppDatabase {
   _LegacyV9Database(QueryExecutor executor) : super.forTesting(executor); // ignore: use_super_parameters — must forward to the named forTesting() ctor, not the default unnamed one
 
@@ -376,7 +381,7 @@ class _LegacyV9Database extends AppDatabase {
     onCreate: (m) async {
       final db = m.database as AppDatabase;
       await m.createTable(db.questionSets);
-      await m.createTable(db.items);
+      await _createItemsTableWithoutImage(m);
       await m.createTable(db.attempts);
       await _createProfileStatsPreCoinsTotal(m);
       await m.createTable(db.appSettings);
@@ -395,7 +400,8 @@ class _LegacyV9Database extends AppDatabase {
 /// A schemaVersion-10 view of [AppDatabase], used only to seed a pre-#068
 /// file at the exact version #068's rename migrates from: every table is
 /// in its current (post-#065) shape, but still under the pre-#068
-/// `owned_mascots`/`mascot_id`/`equipped_mascot_id` physical names.
+/// `owned_mascots`/`mascot_id`/`equipped_mascot_id` physical names; `items`
+/// still lacks #014's image columns (see [_createItemsTableWithoutImage]).
 class _LegacyV10Database extends AppDatabase {
   _LegacyV10Database(QueryExecutor executor) : super.forTesting(executor); // ignore: use_super_parameters — must forward to the named forTesting() ctor, not the default unnamed one
 
@@ -407,7 +413,7 @@ class _LegacyV10Database extends AppDatabase {
     onCreate: (m) async {
       final db = m.database as AppDatabase;
       await m.createTable(db.questionSets);
-      await m.createTable(db.items);
+      await _createItemsTableWithoutImage(m);
       await m.createTable(db.attempts);
       await m.database.customStatement('''
         CREATE TABLE profile_stats (
@@ -442,8 +448,9 @@ class _LegacyV10Database extends AppDatabase {
 /// A schemaVersion-11 view of [AppDatabase], used only to seed a pre-#084
 /// file at the exact version #084's migration upgrades from: every table is
 /// already in its current (post-#068) shape — including the `owned_pets`/
-/// `pet_id`/`equipped_pet_id` rename — except `daily_activity`, which
-/// doesn't exist yet.
+/// `pet_id`/`equipped_pet_id` rename — except `items` (still lacks #014's
+/// image columns, see [_createItemsTableWithoutImage]) and
+/// `daily_activity`, which doesn't exist yet.
 class _LegacyV11Database extends AppDatabase {
   _LegacyV11Database(QueryExecutor executor) : super.forTesting(executor); // ignore: use_super_parameters — must forward to the named forTesting() ctor, not the default unnamed one
 
@@ -455,11 +462,58 @@ class _LegacyV11Database extends AppDatabase {
     onCreate: (m) async {
       final db = m.database as AppDatabase;
       await m.createTable(db.questionSets);
-      await m.createTable(db.items);
+      await _createItemsTableWithoutImage(m);
       await m.createTable(db.attempts);
       await m.createTable(db.profileStats);
       await m.createTable(db.appSettings);
       await m.createTable(db.ownedPets);
+    },
+  );
+}
+
+/// Creates the pre-#014 `items` shape (no `image_type`/`image_content`
+/// columns) — the current Dart `Items` definition already has them, so
+/// `m.createTable(db.items)` can't be used for this pre-v13 fixture.
+Future<void> _createItemsTableWithoutImage(Migrator m) async {
+  final db = m.database as AppDatabase;
+  await db.customStatement('''
+    CREATE TABLE items (
+      id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+      set_id INTEGER NOT NULL REFERENCES question_sets (id) ON DELETE CASCADE,
+      type TEXT NOT NULL,
+      prompt TEXT NOT NULL,
+      answer TEXT NOT NULL,
+      prompt_lang TEXT NULL,
+      answer_lang TEXT NULL,
+      choices TEXT NULL,
+      hint TEXT NULL DEFAULT '',
+      position INTEGER NOT NULL
+    )
+  ''');
+}
+
+/// A schemaVersion-12 view of [AppDatabase], used only to seed a pre-#014
+/// file at the exact version #014's migration upgrades from: every table is
+/// already in its current (post-#084) shape except `items`, which still
+/// lacks `image_type`/`image_content` (see
+/// [_createItemsTableWithoutImage]).
+class _LegacyV12Database extends AppDatabase {
+  _LegacyV12Database(QueryExecutor executor) : super.forTesting(executor); // ignore: use_super_parameters — must forward to the named forTesting() ctor, not the default unnamed one
+
+  @override
+  int get schemaVersion => 12;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) async {
+      final db = m.database as AppDatabase;
+      await m.createTable(db.questionSets);
+      await _createItemsTableWithoutImage(m);
+      await m.createTable(db.attempts);
+      await m.createTable(db.profileStats);
+      await m.createTable(db.appSettings);
+      await m.createTable(db.ownedPets);
+      await m.createTable(db.dailyActivity);
     },
   );
 }
@@ -1014,6 +1068,61 @@ void main() {
     expect(profile.xpTotal, 42);
     expect(profile.streakCount, 3);
     expect(profile.lastActiveDay, '2026-10-10');
+  });
+
+  test('onUpgrade (v12 -> v13) adds imageType/imageContent (null), '
+      'preserving existing item fields', () async {
+    final dir = Directory.systemTemp.createTempSync('foxstreak_migration_v13');
+    final file = File('${dir.path}/test.sqlite');
+    addTearDown(() {
+      if (dir.existsSync()) dir.deleteSync(recursive: true);
+    });
+
+    // 1. Seed a v12 database directly on disk (items has no image_type/
+    // image_content columns yet) with a pre-existing item row.
+    final legacyDb = _LegacyV12Database(NativeDatabase(file));
+    final setId = await legacyDb
+        .into(legacyDb.questionSets)
+        .insert(
+          QuestionSetsCompanion.insert(
+            title: 'Legacy set',
+            createdBy: 'teacher',
+            createdAt: 1,
+            updatedAt: 2,
+          ),
+        );
+    final itemId = await legacyDb.customInsert(
+      'INSERT INTO items (set_id, type, prompt, answer, position) '
+      'VALUES (?, ?, ?, ?, ?)',
+      variables: [
+        Variable.withInt(setId),
+        Variable.withString('choice'),
+        Variable.withString('Hund'),
+        Variable.withString('dog'),
+        Variable.withInt(0),
+      ],
+    );
+    await legacyDb.close();
+
+    // 2. Reopen the SAME file with the real (current schemaVersion)
+    // database; drift sees user_version=12 < schemaVersion=13 and runs
+    // onUpgrade's two `addColumn`s.
+    final upgradedDb = AppDatabase.forTesting(NativeDatabase(file));
+    addTearDown(upgradedDb.close);
+
+    final item = await upgradedDb.getItemById(itemId);
+    expect(item?.imageType, isNull);
+    expect(item?.imageContent, isNull);
+    expect(item?.prompt, 'Hund');
+    expect(item?.answer, 'dog');
+
+    final columns = await upgradedDb
+        .customSelect("PRAGMA table_info('items')")
+        .get();
+    expect(
+      columns.map((row) => row.read<String>('name')),
+      containsAll(<String>['image_type', 'image_content']),
+    );
   });
 }
 

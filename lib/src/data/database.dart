@@ -50,6 +50,12 @@ class Items extends Table {
   TextColumn get choices => text().nullable()();
   TextColumn get hint => text().nullable().withDefault(const Constant(''))();
   IntColumn get position => integer()();
+  // v13 (#014): optional prompt-side image. `emoji|base64|url` — both-or-
+  // neither with `imageContent` (the literal emoji / base64 data / URL,
+  // interpreted per `imageType`); NULL/NULL on every pre-#014 row (no image,
+  // unchanged text-only rendering).
+  TextColumn get imageType => text().nullable()();
+  TextColumn get imageContent => text().nullable()();
 }
 
 /// One row per graded answer. No per-attempt XP column (see #010).
@@ -194,7 +200,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -317,6 +323,12 @@ class AppDatabase extends _$AppDatabase {
       if (from < 12) {
         await m.createTable(dailyActivity);
       }
+      // v13 (#014): adds the optional prompt-side image columns; existing
+      // rows get NULL/NULL (no image, unchanged text-only rendering).
+      if (from < 13) {
+        await m.addColumn(items, items.imageType);
+        await m.addColumn(items, items.imageContent);
+      }
     },
     beforeOpen: (details) async {
       // SQLite disables FK enforcement by default; without this,
@@ -336,7 +348,8 @@ class AppDatabase extends _$AppDatabase {
   // added `owned_mascots.count`; v10 (#065) added
   // `profileStats.coinsTotal`; v11 (#068) renamed `owned_mascots`/
   // `mascot_id`/`equipped_mascot_id` to `owned_pets`/`pet_id`/
-  // `equipped_pet_id`; v12 (#084) added the `daily_activity` table.
+  // `equipped_pet_id`; v12 (#084) added the `daily_activity` table; v13
+  // (#014) added `items.imageType`/`items.imageContent`.
 }
 
 DatabaseConnection _openConnection() => driftDatabase(name: 'fox_streak');

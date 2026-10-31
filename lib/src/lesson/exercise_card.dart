@@ -29,6 +29,7 @@
 import 'package:flutter/material.dart';
 import 'package:fox_streak_app/src/data/database.dart';
 import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
+import 'package:fox_streak_app/src/widgets/widgets.dart';
 
 /// Draft state reported by an exercise card while the user is answering.
 ///
@@ -73,6 +74,29 @@ double exerciseCardMinHeight(BuildContext context) {
       kToolbarHeight -
       FoxButtonMetrics.minSize -
       FoxSpacing.xxl * 2;
+}
+
+/// Builds [item]'s shared prompt-side image block (issue #014), already
+/// including its own trailing spacer — or an empty, zero-size
+/// [SizedBox.shrink] when [item] has none, so every exercise card
+/// (#006–#009) can place this unconditionally above its prompt text without
+/// each repeating its own null-check + spacer.
+Widget buildItemImage(Item item, {double size = 96}) {
+  final type = item.imageType;
+  final content = item.imageContent;
+  if (type == null || content == null) return const SizedBox.shrink();
+  return Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      FoxItemImage(
+        imageType: type,
+        imageContent: content,
+        semanticLabel: item.prompt,
+        size: size,
+      ),
+      const SizedBox(height: FoxSpacing.md),
+    ],
+  );
 }
 
 /// Widget signature that all exercise cards (#006–#009) must match.

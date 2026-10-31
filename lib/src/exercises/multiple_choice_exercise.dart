@@ -115,6 +115,7 @@ class _MultipleChoiceCardState extends State<MultipleChoiceCard> {
       widget.item.answerLang,
       l10n,
     );
+    final image = buildItemImage(widget.item);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(vertical: FoxSpacing.md),
@@ -125,6 +126,7 @@ class _MultipleChoiceCardState extends State<MultipleChoiceCard> {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
+              image,
               if (directionLabel != null) ...[
                 Text(
                   directionLabel,

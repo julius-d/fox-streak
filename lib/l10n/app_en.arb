@@ -114,6 +114,61 @@
   },
   "itemDistractorLabel": "Distractor {index}",
   "itemDistractorHint": "Optional",
+  "@itemImageTypeFieldLabel": {
+    "description": "Label for the item editor's optional image type dropdown (issue #014)",
+    "placeholders": {}
+  },
+  "itemImageTypeFieldLabel": "Image",
+  "@itemImageTypeNone": {
+    "description": "Dropdown option clearing the item's image (issue #014)",
+    "placeholders": {}
+  },
+  "itemImageTypeNone": "None",
+  "@itemImageTypeEmoji": {
+    "description": "Dropdown option for an emoji item image (issue #014)",
+    "placeholders": {}
+  },
+  "itemImageTypeEmoji": "Emoji",
+  "@itemImageTypeBase64": {
+    "description": "Dropdown option for an embedded base64 item image (issue #014)",
+    "placeholders": {}
+  },
+  "itemImageTypeBase64": "Base64 image",
+  "@itemImageTypeUrl": {
+    "description": "Dropdown option for a remote URL item image (issue #014)",
+    "placeholders": {}
+  },
+  "itemImageTypeUrl": "Image URL",
+  "@itemImageEmojiContentLabel": {
+    "description": "Label for the content field when imageType is emoji (issue #014)",
+    "placeholders": {}
+  },
+  "itemImageEmojiContentLabel": "Emoji",
+  "@itemImageBase64ContentLabel": {
+    "description": "Label for the content field when imageType is base64 (issue #014)",
+    "placeholders": {}
+  },
+  "itemImageBase64ContentLabel": "Base64 image data",
+  "@itemImageUrlContentLabel": {
+    "description": "Label for the content field when imageType is url (issue #014)",
+    "placeholders": {}
+  },
+  "itemImageUrlContentLabel": "Image URL",
+  "@errorInvalidImageEmoji": {
+    "description": "Inline error when the emoji image content field is empty (issue #014)",
+    "placeholders": {}
+  },
+  "errorInvalidImageEmoji": "Enter an emoji or symbol",
+  "@errorInvalidImageBase64": {
+    "description": "Inline error when the base64 image content field is not decodable (issue #014)",
+    "placeholders": {}
+  },
+  "errorInvalidImageBase64": "Enter valid base64 image data",
+  "@errorInvalidImageUrl": {
+    "description": "Inline error when the URL image content field is not a valid http(s) link (issue #014)",
+    "placeholders": {}
+  },
+  "errorInvalidImageUrl": "Enter a valid http(s) link",
   "itemDayLabel": "Day",
   "itemMonthLabel": "Month",
   "itemYearLabel": "Year",

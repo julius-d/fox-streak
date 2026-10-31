@@ -283,6 +283,7 @@ class _DateExerciseState extends ConsumerState<DateExercise> {
         ? [dayWidget, monthWidget, yearWidget]
         : [monthWidget, dayWidget, yearWidget];
     final separator = Text(_isGerman ? '.' : '/');
+    final image = buildItemImage(widget.item);
 
     // Anchored to the top of the content area (#092), not vertically
     // centered: stays in the same place whether the keyboard is open or
@@ -293,6 +294,7 @@ class _DateExerciseState extends ConsumerState<DateExercise> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          image,
           Text(
             widget.item.prompt,
             style: text.headlineSmall?.copyWith(

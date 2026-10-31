@@ -118,6 +118,7 @@ class _FreeTextExerciseState extends State<FreeTextExercise> {
       widget.item.answerLang,
       widget.l10n,
     );
+    final image = buildItemImage(widget.item);
 
     // Anchored to the top of the content area (#092), not vertically
     // centered: stays in the same place whether the keyboard is open or
@@ -128,6 +129,7 @@ class _FreeTextExerciseState extends State<FreeTextExercise> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          image,
           if (directionLabel != null) ...[
             Text(
               directionLabel,

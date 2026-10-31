@@ -1,8 +1,10 @@
 // Set detail: item list (issue #003).
 //
-// Shows items text-only (no images — #014). No field editing here; add/edit
-// goes through `ItemEditorScreen` (field widgets owned by #004; converted
-// from a dialog to a full screen by #047). Share/Import used to live in an
+// Items with a prompt-side image (#014) show a small `FoxItemImage`
+// thumbnail as their leading element instead of the type icon; text-only
+// items keep the type icon unchanged. No field editing here; add/edit goes
+// through `ItemEditorScreen` (field widgets owned by #004; converted from a
+// dialog to a full screen by #047). Share/Import used to live in an
 // `AppBar` overflow menu here — moved to the Library screen's card menu and
 // FAB speed-dial respectively, and the (now empty) overflow menu removed
 // entirely (issue #074).
@@ -146,13 +148,24 @@ class SetDetailScreen extends ConsumerWidget {
                 'phone' => groupPhoneForDisplay(normalizePhone(item.answer)),
                 _ => item.answer,
               };
+              final imageType = item.imageType;
+              final imageContent = item.imageContent;
+              final leading = (imageType != null && imageContent != null)
+                  ? FoxItemImage(
+                      key: Key('itemImageThumbnail-${item.id}'),
+                      imageType: imageType,
+                      imageContent: imageContent,
+                      semanticLabel: item.prompt,
+                      size: 40,
+                    )
+                  : Icon(
+                      key: Key('itemTypeIcon-${item.id}'),
+                      iconForItemType(item.type, category),
+                      color: colorForItemType(context, item.type, category),
+                    );
               return ListTile(
                 key: Key('itemTile-${item.id}'),
-                leading: Icon(
-                  key: Key('itemTypeIcon-${item.id}'),
-                  iconForItemType(item.type, category),
-                  color: colorForItemType(context, item.type, category),
-                ),
+                leading: leading,
                 title: Text(item.prompt),
                 subtitle: Text('$typeLabel · $displayAnswer'),
                 trailing: Row(

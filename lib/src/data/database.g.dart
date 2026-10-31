@@ -570,6 +570,28 @@ class $ItemsTable extends Items with TableInfo<$ItemsTable, Item> {
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _imageTypeMeta = const VerificationMeta(
+    'imageType',
+  );
+  @override
+  late final GeneratedColumn<String> imageType = GeneratedColumn<String>(
+    'image_type',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _imageContentMeta = const VerificationMeta(
+    'imageContent',
+  );
+  @override
+  late final GeneratedColumn<String> imageContent = GeneratedColumn<String>(
+    'image_content',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -582,6 +604,8 @@ class $ItemsTable extends Items with TableInfo<$ItemsTable, Item> {
     choices,
     hint,
     position,
+    imageType,
+    imageContent,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -662,6 +686,21 @@ class $ItemsTable extends Items with TableInfo<$ItemsTable, Item> {
     } else if (isInserting) {
       context.missing(_positionMeta);
     }
+    if (data.containsKey('image_type')) {
+      context.handle(
+        _imageTypeMeta,
+        imageType.isAcceptableOrUnknown(data['image_type']!, _imageTypeMeta),
+      );
+    }
+    if (data.containsKey('image_content')) {
+      context.handle(
+        _imageContentMeta,
+        imageContent.isAcceptableOrUnknown(
+          data['image_content']!,
+          _imageContentMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -711,6 +750,14 @@ class $ItemsTable extends Items with TableInfo<$ItemsTable, Item> {
         DriftSqlType.int,
         data['${effectivePrefix}position'],
       )!,
+      imageType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}image_type'],
+      ),
+      imageContent: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}image_content'],
+      ),
     );
   }
 
@@ -731,6 +778,8 @@ class Item extends DataClass implements Insertable<Item> {
   final String? choices;
   final String? hint;
   final int position;
+  final String? imageType;
+  final String? imageContent;
   const Item({
     required this.id,
     required this.setId,
@@ -742,6 +791,8 @@ class Item extends DataClass implements Insertable<Item> {
     this.choices,
     this.hint,
     required this.position,
+    this.imageType,
+    this.imageContent,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -764,6 +815,12 @@ class Item extends DataClass implements Insertable<Item> {
       map['hint'] = Variable<String>(hint);
     }
     map['position'] = Variable<int>(position);
+    if (!nullToAbsent || imageType != null) {
+      map['image_type'] = Variable<String>(imageType);
+    }
+    if (!nullToAbsent || imageContent != null) {
+      map['image_content'] = Variable<String>(imageContent);
+    }
     return map;
   }
 
@@ -785,6 +842,12 @@ class Item extends DataClass implements Insertable<Item> {
           : Value(choices),
       hint: hint == null && nullToAbsent ? const Value.absent() : Value(hint),
       position: Value(position),
+      imageType: imageType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(imageType),
+      imageContent: imageContent == null && nullToAbsent
+          ? const Value.absent()
+          : Value(imageContent),
     );
   }
 
@@ -804,6 +867,8 @@ class Item extends DataClass implements Insertable<Item> {
       choices: serializer.fromJson<String?>(json['choices']),
       hint: serializer.fromJson<String?>(json['hint']),
       position: serializer.fromJson<int>(json['position']),
+      imageType: serializer.fromJson<String?>(json['imageType']),
+      imageContent: serializer.fromJson<String?>(json['imageContent']),
     );
   }
   @override
@@ -820,6 +885,8 @@ class Item extends DataClass implements Insertable<Item> {
       'choices': serializer.toJson<String?>(choices),
       'hint': serializer.toJson<String?>(hint),
       'position': serializer.toJson<int>(position),
+      'imageType': serializer.toJson<String?>(imageType),
+      'imageContent': serializer.toJson<String?>(imageContent),
     };
   }
 
@@ -834,6 +901,8 @@ class Item extends DataClass implements Insertable<Item> {
     Value<String?> choices = const Value.absent(),
     Value<String?> hint = const Value.absent(),
     int? position,
+    Value<String?> imageType = const Value.absent(),
+    Value<String?> imageContent = const Value.absent(),
   }) => Item(
     id: id ?? this.id,
     setId: setId ?? this.setId,
@@ -845,6 +914,8 @@ class Item extends DataClass implements Insertable<Item> {
     choices: choices.present ? choices.value : this.choices,
     hint: hint.present ? hint.value : this.hint,
     position: position ?? this.position,
+    imageType: imageType.present ? imageType.value : this.imageType,
+    imageContent: imageContent.present ? imageContent.value : this.imageContent,
   );
   Item copyWithCompanion(ItemsCompanion data) {
     return Item(
@@ -862,6 +933,10 @@ class Item extends DataClass implements Insertable<Item> {
       choices: data.choices.present ? data.choices.value : this.choices,
       hint: data.hint.present ? data.hint.value : this.hint,
       position: data.position.present ? data.position.value : this.position,
+      imageType: data.imageType.present ? data.imageType.value : this.imageType,
+      imageContent: data.imageContent.present
+          ? data.imageContent.value
+          : this.imageContent,
     );
   }
 
@@ -877,7 +952,9 @@ class Item extends DataClass implements Insertable<Item> {
           ..write('answerLang: $answerLang, ')
           ..write('choices: $choices, ')
           ..write('hint: $hint, ')
-          ..write('position: $position')
+          ..write('position: $position, ')
+          ..write('imageType: $imageType, ')
+          ..write('imageContent: $imageContent')
           ..write(')'))
         .toString();
   }
@@ -894,6 +971,8 @@ class Item extends DataClass implements Insertable<Item> {
     choices,
     hint,
     position,
+    imageType,
+    imageContent,
   );
   @override
   bool operator ==(Object other) =>
@@ -908,7 +987,9 @@ class Item extends DataClass implements Insertable<Item> {
           other.answerLang == this.answerLang &&
           other.choices == this.choices &&
           other.hint == this.hint &&
-          other.position == this.position);
+          other.position == this.position &&
+          other.imageType == this.imageType &&
+          other.imageContent == this.imageContent);
 }
 
 class ItemsCompanion extends UpdateCompanion<Item> {
@@ -922,6 +1003,8 @@ class ItemsCompanion extends UpdateCompanion<Item> {
   final Value<String?> choices;
   final Value<String?> hint;
   final Value<int> position;
+  final Value<String?> imageType;
+  final Value<String?> imageContent;
   const ItemsCompanion({
     this.id = const Value.absent(),
     this.setId = const Value.absent(),
@@ -933,6 +1016,8 @@ class ItemsCompanion extends UpdateCompanion<Item> {
     this.choices = const Value.absent(),
     this.hint = const Value.absent(),
     this.position = const Value.absent(),
+    this.imageType = const Value.absent(),
+    this.imageContent = const Value.absent(),
   });
   ItemsCompanion.insert({
     this.id = const Value.absent(),
@@ -945,6 +1030,8 @@ class ItemsCompanion extends UpdateCompanion<Item> {
     this.choices = const Value.absent(),
     this.hint = const Value.absent(),
     required int position,
+    this.imageType = const Value.absent(),
+    this.imageContent = const Value.absent(),
   }) : setId = Value(setId),
        type = Value(type),
        prompt = Value(prompt),
@@ -961,6 +1048,8 @@ class ItemsCompanion extends UpdateCompanion<Item> {
     Expression<String>? choices,
     Expression<String>? hint,
     Expression<int>? position,
+    Expression<String>? imageType,
+    Expression<String>? imageContent,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -973,6 +1062,8 @@ class ItemsCompanion extends UpdateCompanion<Item> {
       if (choices != null) 'choices': choices,
       if (hint != null) 'hint': hint,
       if (position != null) 'position': position,
+      if (imageType != null) 'image_type': imageType,
+      if (imageContent != null) 'image_content': imageContent,
     });
   }
 
@@ -987,6 +1078,8 @@ class ItemsCompanion extends UpdateCompanion<Item> {
     Value<String?>? choices,
     Value<String?>? hint,
     Value<int>? position,
+    Value<String?>? imageType,
+    Value<String?>? imageContent,
   }) {
     return ItemsCompanion(
       id: id ?? this.id,
@@ -999,6 +1092,8 @@ class ItemsCompanion extends UpdateCompanion<Item> {
       choices: choices ?? this.choices,
       hint: hint ?? this.hint,
       position: position ?? this.position,
+      imageType: imageType ?? this.imageType,
+      imageContent: imageContent ?? this.imageContent,
     );
   }
 
@@ -1035,6 +1130,12 @@ class ItemsCompanion extends UpdateCompanion<Item> {
     if (position.present) {
       map['position'] = Variable<int>(position.value);
     }
+    if (imageType.present) {
+      map['image_type'] = Variable<String>(imageType.value);
+    }
+    if (imageContent.present) {
+      map['image_content'] = Variable<String>(imageContent.value);
+    }
     return map;
   }
 
@@ -1050,7 +1151,9 @@ class ItemsCompanion extends UpdateCompanion<Item> {
           ..write('answerLang: $answerLang, ')
           ..write('choices: $choices, ')
           ..write('hint: $hint, ')
-          ..write('position: $position')
+          ..write('position: $position, ')
+          ..write('imageType: $imageType, ')
+          ..write('imageContent: $imageContent')
           ..write(')'))
         .toString();
   }
@@ -3266,6 +3369,8 @@ typedef $$ItemsTableCreateCompanionBuilder = ItemsCompanion Function({
   Value<String?> choices,
   Value<String?> hint,
   required int position,
+  Value<String?> imageType,
+  Value<String?> imageContent,
 });
 typedef $$ItemsTableUpdateCompanionBuilder = ItemsCompanion Function({
   Value<int> id,
@@ -3278,6 +3383,8 @@ typedef $$ItemsTableUpdateCompanionBuilder = ItemsCompanion Function({
   Value<String?> choices,
   Value<String?> hint,
   Value<int> position,
+  Value<String?> imageType,
+  Value<String?> imageContent,
 });
 
 final class $$ItemsTableReferences
@@ -3371,6 +3478,16 @@ class $$ItemsTableFilterComposer extends Composer<_$AppDatabase, $ItemsTable> {
 
   ColumnFilters<int> get position => $composableBuilder(
     column: $table.position,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get imageType => $composableBuilder(
+    column: $table.imageType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get imageContent => $composableBuilder(
+    column: $table.imageContent,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3477,6 +3594,16 @@ class $$ItemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get imageType => $composableBuilder(
+    column: $table.imageType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get imageContent => $composableBuilder(
+    column: $table.imageContent,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$QuestionSetsTableOrderingComposer get setId {
     final $$QuestionSetsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -3540,6 +3667,14 @@ class $$ItemsTableAnnotationComposer
 
   GeneratedColumn<int> get position =>
       $composableBuilder(column: $table.position, builder: (column) => column);
+
+  GeneratedColumn<String> get imageType =>
+      $composableBuilder(column: $table.imageType, builder: (column) => column);
+
+  GeneratedColumn<String> get imageContent => $composableBuilder(
+    column: $table.imageContent,
+    builder: (column) => column,
+  );
 
   $$QuestionSetsTableAnnotationComposer get setId {
     final $$QuestionSetsTableAnnotationComposer composer = $composerBuilder(
@@ -3628,6 +3763,8 @@ class $$ItemsTableTableManager
                 Value<String?> choices = const Value.absent(),
                 Value<String?> hint = const Value.absent(),
                 Value<int> position = const Value.absent(),
+                Value<String?> imageType = const Value.absent(),
+                Value<String?> imageContent = const Value.absent(),
               }) => ItemsCompanion(
                 id: id,
                 setId: setId,
@@ -3639,6 +3776,8 @@ class $$ItemsTableTableManager
                 choices: choices,
                 hint: hint,
                 position: position,
+                imageType: imageType,
+                imageContent: imageContent,
               ),
           createCompanionCallback:
               ({
@@ -3652,6 +3791,8 @@ class $$ItemsTableTableManager
                 Value<String?> choices = const Value.absent(),
                 Value<String?> hint = const Value.absent(),
                 required int position,
+                Value<String?> imageType = const Value.absent(),
+                Value<String?> imageContent = const Value.absent(),
               }) => ItemsCompanion.insert(
                 id: id,
                 setId: setId,
@@ -3663,6 +3804,8 @@ class $$ItemsTableTableManager
                 choices: choices,
                 hint: hint,
                 position: position,
+                imageType: imageType,
+                imageContent: imageContent,
               ),
           withReferenceMapper: (p0) => p0
               .map(

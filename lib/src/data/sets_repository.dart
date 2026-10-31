@@ -120,6 +120,8 @@ class SetsRepository {
     String? answerLang,
     List<String>? choices,
     String? hint,
+    String? imageType,
+    String? imageContent,
   }) async {
     final set = await getSetById(setId);
     if (set == null) throw ArgumentError('unknown setId $setId');
@@ -130,6 +132,8 @@ class SetsRepository {
       promptLang: promptLang,
       answerLang: answerLang,
       choices: choices,
+      imageType: imageType,
+      imageContent: imageContent,
     );
     final siblings = await getItemsForSet(setId);
     final nextPos = siblings.isEmpty
@@ -147,6 +151,8 @@ class SetsRepository {
             answerLang: Value(clean.answerLang),
             choices: Value(clean.choicesJson),
             hint: Value(hint ?? ''),
+            imageType: Value(clean.imageType),
+            imageContent: Value(clean.imageContent),
             position: nextPos,
           ),
         );
@@ -162,6 +168,7 @@ class SetsRepository {
     ({String? promptLang, String? answerLang})? Function()? languagePairUpdate,
     List<String>? Function()? choicesUpdate,
     String? hint,
+    ({String? imageType, String? imageContent})? Function()? imageUpdate,
   }) async {
     final existing = await (_db.select(
       _db.items,
@@ -197,6 +204,14 @@ class SetsRepository {
       if (newType != 'choice') newChoices = null;
     }
 
+    String? newImageType = existing.imageType;
+    String? newImageContent = existing.imageContent;
+    if (imageUpdate != null) {
+      final pair = imageUpdate();
+      newImageType = pair?.imageType;
+      newImageContent = pair?.imageContent;
+    }
+
     final clean = _checkItemFields(
       type: newType,
       prompt: prompt ?? existing.prompt,
@@ -204,6 +219,8 @@ class SetsRepository {
       promptLang: newPromptLang,
       answerLang: newAnswerLang,
       choices: newChoices,
+      imageType: newImageType,
+      imageContent: newImageContent,
     );
     await (_db.update(_db.items)..where((t) => t.id.equals(id))).write(
       ItemsCompanion(
@@ -220,6 +237,12 @@ class SetsRepository {
             ? const Value.absent()
             : Value(clean.choicesJson),
         hint: hint == null ? const Value.absent() : Value(hint),
+        imageType: imageUpdate == null
+            ? const Value.absent()
+            : Value(clean.imageType),
+        imageContent: imageUpdate == null
+            ? const Value.absent()
+            : Value(clean.imageContent),
       ),
     );
     await _touchSet(existing.setId);
@@ -283,6 +306,8 @@ class SetsRepository {
                 answerLang: Value(item.answerLang),
                 choices: Value(item.choices),
                 hint: Value(item.hint ?? ''),
+                imageType: Value(item.imageType),
+                imageContent: Value(item.imageContent),
                 position: item.position,
               ),
             );
@@ -320,6 +345,8 @@ class SetsRepository {
                     (jsonDecode(item.choices!) as List).cast<String>(),
                   ),
             hint: item.hint ?? '',
+            imageType: item.imageType,
+            imageContent: item.imageContent,
           ),
       ],
       today: today,
@@ -364,6 +391,8 @@ class SetsRepository {
                   item.choices == null ? null : jsonEncode(item.choices),
                 ),
                 hint: Value(item.hint),
+                imageType: Value(item.imageType),
+                imageContent: Value(item.imageContent),
                 position: i,
               ),
             );
@@ -398,6 +427,8 @@ class SetsRepository {
     String? promptLang,
     String? answerLang,
     List<String>? choices,
+    String? imageType,
+    String? imageContent,
   }) {
     if (!kItemTypes.contains(type)) {
       throw ArgumentError('unknown type "$type"');
@@ -422,6 +453,15 @@ class SetsRepository {
         'date answer must be ISO YYYY-MM-DD in $kMinDateDay..today',
       );
     }
+    // Normalize before validating (mirrors `normalizePhone`'s stripping) so
+    // multi-line pasted base64 — expected input, not malformed data, since
+    // the editor's content field invites it — validates and stores
+    // identically; `validateImagePair` then checks the canonical form.
+    final cleanImageContent = (imageType != null && imageContent != null)
+        ? normalizeImageContent(imageType, imageContent)
+        : imageContent;
+    final imageError = validateImagePair(imageType, cleanImageContent);
+    if (imageError != null) throw ArgumentError(imageError);
     final cleanAnswer = type == 'phone'
         ? normalizePhone(answer.trim())
         : answer.trim();
@@ -431,6 +471,8 @@ class SetsRepository {
       promptLang: promptLang,
       answerLang: answerLang,
       choicesJson: choices == null ? null : jsonEncode(choices),
+      imageType: imageType,
+      imageContent: cleanImageContent,
     );
   }
 
@@ -451,11 +493,15 @@ class _CleanItem {
   final String? promptLang;
   final String? answerLang;
   final String? choicesJson;
+  final String? imageType;
+  final String? imageContent;
   _CleanItem({
     required this.prompt,
     required this.answer,
     required this.promptLang,
     required this.answerLang,
     required this.choicesJson,
+    required this.imageType,
+    required this.imageContent,
   });
 }

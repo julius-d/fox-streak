@@ -212,6 +212,39 @@ class AppLocalizationsDe extends AppLocalizations {
   String get itemDistractorHint => 'Optional';
 
   @override
+  String get itemImageTypeFieldLabel => 'Bild';
+
+  @override
+  String get itemImageTypeNone => 'Kein Bild';
+
+  @override
+  String get itemImageTypeEmoji => 'Emoji';
+
+  @override
+  String get itemImageTypeBase64 => 'Base64-Bild';
+
+  @override
+  String get itemImageTypeUrl => 'Bild-URL';
+
+  @override
+  String get itemImageEmojiContentLabel => 'Emoji';
+
+  @override
+  String get itemImageBase64ContentLabel => 'Base64-Bilddaten';
+
+  @override
+  String get itemImageUrlContentLabel => 'Bild-URL';
+
+  @override
+  String get errorInvalidImageEmoji => 'Gib ein Emoji oder Symbol ein';
+
+  @override
+  String get errorInvalidImageBase64 => 'Gib gültige Base64-Bilddaten ein';
+
+  @override
+  String get errorInvalidImageUrl => 'Gib einen gültigen http(s)-Link ein';
+
+  @override
   String get itemDayLabel => 'Tag';
 
   @override
