@@ -1,6 +1,6 @@
 # Issue 093: Question-set format docs for GitHub Pages
 
-Status: open | Priority: P3 | Type: docs | Refined-at: 2026-10-31
+Status: done | Priority: P3 | Type: docs | Refined-at: 2026-10-31 | Completed-at: 2026-10-31
 
 ## Context
 
@@ -68,18 +68,18 @@ valid question sets without reading the Dart source.
 
 ## Acceptance criteria
 
-- [ ] `docs/question-set-format.md` exists, explains all 4 item types,
+- [x] `docs/question-set-format.md` exists, explains all 4 item types,
   all `category` values, the `de`/`en` language codes, includes a worked
   example per item type plus one full multi-item set example, documents
   validation rules / common rejection reasons, and links to
   `docs/question-set.schema.json`.
-- [ ] `docs/question-set.schema.json` is a valid JSON Schema describing
+- [x] `docs/question-set.schema.json` is a valid JSON Schema describing
   the v1 share format exactly as implemented in `set_json_codec.dart` /
   `validation.dart` (required/optional fields, enums for `type` and
   `category`, `additionalProperties: false`), with embedded `examples`.
-- [ ] A test validates every `assets/seed/*.foxstreak.json` file against
+- [x] A test validates every `assets/seed/*.foxstreak.json` file against
   `docs/question-set.schema.json` and passes.
-- [ ] `flutter analyze` and `dart format` clean; `flutter test` green.
+- [x] `flutter analyze` and `dart format` clean; `flutter test` green.
 
 ## Out of scope
 
@@ -88,3 +88,32 @@ valid question sets without reading the Dart source.
   `set_json_codec.dart` / `validation.dart`.
 - In-app instructions for how to import a `.foxstreak.json` file into
   FoxStreak.
+
+## Summary
+
+Added `docs/question-set-format.md` and `docs/question-set.schema.json`
+(JSON Schema 2020-12, `additionalProperties: false` everywhere, `oneOf`
+per item type, a `languagePair` `$defs` entry enforcing the
+promptLang/answerLang pairing + `de`/`en` distinctness rule). Added dev
+dependency `json_schema` and `test/docs/question_set_schema_test.dart`,
+which validates every `assets/seed/*.foxstreak.json` file against the
+schema (drift guard). No production code changed.
+
+## Code review
+
+The automated code-review subagent failed on a network error (API
+unreachable) rather than completing, so this review was done directly.
+- `title`/`createdBy`/item `prompt`/`answer` (choice & freeText) only had
+  `minLength: 1`, so a whitespace-only value (e.g. `"   "`) would pass the
+  schema but be rejected by `set_json_codec.dart`'s trim-then-check logic.
+  Fixed: added `"pattern": "\\S"` to those fields (and to `choices` array
+  entries) so the schema now also rejects whitespace-only strings.
+- Everything else checked out: the `languagePair` `oneOf` (absent-both /
+  de→en / en→de) exactly mirrors `validateLanguagePair`'s pairing +
+  distinctness rule for the current 2-code language set; `phone`/`date`
+  item schemas correctly omit `promptLang`/`answerLang`/`choices` (caught
+  by `additionalProperties: false`); the "unknown fields are silently
+  ignored by the app" prose claim was re-verified against
+  `set_json_codec.dart` (no exhaustive-key check exists at either the set
+  or item level). Not fixed because no issue found — matches the real
+  implementation.
