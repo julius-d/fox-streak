@@ -1,6 +1,6 @@
 # Issue 089: Streak Details calendar — weekday/month labels + connected streak highlight
 
-Status: open | Priority: P3 | Type: polish | Refined-at: 2026-10-31
+Status: done | Priority: P3 | Type: polish | Refined-at: 2026-10-31 | Completed-at: 2026-10-31
 
 ## Goal
 
@@ -57,23 +57,23 @@ left to implementation" in #084 and are what this issue addresses.
 
 ## Acceptance criteria
 
-- [ ] Mon/Wed/Fri rows of the grid show a locale-aware narrow weekday letter
+- [x] Mon/Wed/Fri rows of the grid show a locale-aware narrow weekday letter
   to the left of the grid; Sun/Tue/Thu/Sat rows show no letter.
-- [ ] A 3-letter, locale-aware month abbreviation appears above the first
+- [x] A 3-letter, locale-aware month abbreviation appears above the first
   week-column of each month in the ~6-month window.
-- [ ] The current streak's run of consecutive days renders as one connected
+- [x] The current streak's run of consecutive days renders as one connected
   highlighted shape (flame color), including when the run spans across a
   week-column boundary.
-- [ ] The longest-in-window streak's run (only when `longestDiffersFromCurrent`
+- [x] The longest-in-window streak's run (only when `longestDiffersFromCurrent`
   is true) renders with the same connected treatment in the primary color.
-- [ ] A day belonging to both runs renders with the current-streak color only
+- [x] A day belonging to both runs renders with the current-streak color only
   (no double-highlighting) — unchanged precedence from #084.
-- [ ] Weekday/month header labels are excluded from the accessibility tree;
+- [x] Weekday/month header labels are excluded from the accessibility tree;
   existing per-cell semantics labels are unchanged.
-- [ ] Golden tests (#019) cover the new header labels and connected-streak
+- [x] Golden tests (#019) cover the new header labels and connected-streak
   rendering, for both `en`/`de` locales (weekday letters differ) and both
   light/dark themes.
-- [ ] `flutter analyze`, `dart format --output=none --set-exit-if-changed .`,
+- [x] `flutter analyze`, `dart format --output=none --set-exit-if-changed .`,
   `dart fix --dry-run`, and `flutter test` are all clean per AGENTS.md.
 
 ## Out of scope
@@ -97,3 +97,59 @@ dart format --output=none --set-exit-if-changed .
 dart fix --dry-run
 flutter test
 ```
+
+## Summary
+
+Added a fixed weekday-letter column (narrow Mon/Wed/Fri letters via
+`DateFormat.EEEEE`, locale-aware) and a month-abbreviation row that scrolls
+with the grid (`DateFormat.MMM`, one label per week-column whose topmost
+day starts a new month) to `ActivityCalendarView`. Replaced the old
+per-cell highlight border with one merged rounded-rect per contiguous
+same-kind run within a week-column, plus two short connector notches on
+the boundary cells (Saturday/Sunday) when a run crosses into the next
+column — current-streak flame color still takes precedence over
+longest-in-window primary color, unchanged from #084. Header labels are
+wrapped in `ExcludeSemantics`; per-cell semantics are unchanged. Coverage:
+16 widget tests (locale, semantics, merged shapes, connectors, boundary
+edge cases) in `activity_calendar_view_test.dart`, a new
+`integration_test/issue089_streak_calendar_header_and_connected_streak_test.dart`
+driving the real app, and 4 new golden tests (en/de × light/dark) in
+`test/golden/activity_calendar_golden_test.dart`. Screenshot in
+`issues/done/`.
+
+## Code review
+
+- New golden tests ship only macOS baselines; CI (`ubuntu-latest`) runs
+  plain `flutter test` with no linux baseline to compare against.
+  Not fixed here: generating the `linux/` baselines requires running the
+  repo's `update-goldens.yml` `workflow_dispatch` job on `ubuntu-latest`
+  (AGENTS.md's documented fallback — can't be done from this macOS
+  machine), which needs this branch pushed to the remote first; raising
+  with the user alongside the merge question rather than deciding alone.
+- A month label anchored by its left edge at the very last (rightmost)
+  week-column had no header space to bleed into and would get hard-clipped
+  by the `Stack`'s own bounds.
+  Fixed: the last column's label now anchors by its *right* edge instead,
+  growing leftward into always-available space; added a regression test.
+- `_kindOf`'s doc comment overstated that a day can *never* carry both
+  `isCurrentStreak` and `isLongestStreak` — `ActivityCalendarData.build`'s
+  `longestDiffers` only checks the two day-sets aren't exactly equal, not
+  disjoint, so a subset overlap is possible (pre-existing #084 precedence,
+  not a new bug).
+  Fixed: reworded the comment to describe the precedence without the
+  overstated "never" guarantee.
+- The weekday-letter lookup used `DateTime.add(Duration(days: ...))`,
+  inconsistent with this codebase's stated convention (`activity_calendar.
+  dart`'s header comment) of calendar-field arithmetic to avoid DST
+  off-by-ones elsewhere in date math.
+  Fixed: switched to the same `DateTime(y, m, d + n)` field-arithmetic
+  style, even though the fixed non-DST reference date made the `Duration`
+  version practically safe.
+- No test exercised a highlighted run ending on the Saturday of the very
+  last week-column (no following column to attempt a connector against).
+  Fixed: added a regression test confirming no dangling/erroring connector.
+- No test covered an empty `data.days` window, or a run starting at the
+  very first real row of the leftmost column.
+  Not fixed: both are already structurally safe by inspection (empty-list
+  loops are no-ops; `_kindOf(null)` short-circuits leading-null padding
+  the same as any other row) and low marginal value for the time cost.
