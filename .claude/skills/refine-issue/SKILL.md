@@ -13,6 +13,8 @@ And ask the user for feedback on the options.
 Suggest improvements to the issue, such as adding acceptance criteria or other details.
 Search in the web if helpful.
 
+When anything about the question format is changed or new question types are introduced, make sure to also add an acceptance criteria to update the corresponding documentation and schema in the `docs` folder.
+
 Also make sure the issue has the correct format at the beginning and end of the file, like this:
 ```
 # Issue 00N: Short title
