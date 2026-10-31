@@ -58,11 +58,14 @@ class ExerciseDraft {
   });
 }
 
-/// Minimum height for a card's scrollable content so short answers (a
-/// masked phone display, 3 date fields) still center vertically in the
-/// space left by the lesson shell's app bar + bottom button, instead of
-/// hugging the top. Shared by #008's dial pad and #009's date exercise
-/// (`IntrinsicHeight` + `ConstrainedBox(minHeight: ...)`).
+/// Minimum height for a card's scrollable content so a short answer (a
+/// masked phone display, the multiple-choice options) still centers
+/// vertically in the space left by the lesson shell's app bar + bottom
+/// button, instead of hugging the top. Shared by #008's dial pad and the
+/// multiple-choice card (`IntrinsicHeight` + `ConstrainedBox(minHeight:
+/// ...)`). The date and free-text cards (#009/#006) stopped using this for
+/// #092: their input anchors to the top instead of centering, so opening
+/// the keyboard doesn't push it further up.
 double exerciseCardMinHeight(BuildContext context) {
   return MediaQuery.of(context).size.height -
       MediaQuery.of(context).padding.top -

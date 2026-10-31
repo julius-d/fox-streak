@@ -1,6 +1,6 @@
 # Issue 092: Date/free-text exercise input — keep input in view, keyboard stays open
 
-Status: open | Priority: P3 | Type: bug | Refined-at: 2026-10-31
+Status: done | Priority: P3 | Type: bug | Refined-at: 2026-10-31 | Completed-at: 2026-10-31
 
 ## Goal
 
@@ -40,17 +40,23 @@ shouldn't auto-close the keyboard and shift the Check button.
 
 ## Acceptance criteria
 
-- [ ] Date exercise input sits near the top of the content area, not
+- [x] Date exercise input sits near the top of the content area, not
   vertically centered, on both light/dark themes.
-- [ ] Free-text exercise input sits near the top of the content area, not
+- [x] Free-text exercise input sits near the top of the content area, not
   vertically centered, on both light/dark themes.
-- [ ] Opening the Android keyboard while answering a date or free-text
+- [x] Opening the Android keyboard while answering a date or free-text
   item does not shift/jump the input or the Check button.
-- [ ] Typing the last digit of the date's year no longer closes the
+- [x] Typing the last digit of the date's year no longer closes the
   keyboard automatically.
-- [ ] Check button remains reachable/tappable while the keyboard is open
+- [x] Check button remains reachable/tappable while the keyboard is open
   (e.g. screen scrolls so it's not hidden behind the keyboard).
-- [ ] Golden tests (#019) updated for the new layout, both exercise types.
+- [x] Golden tests (#019) updated for the new layout, both exercise types.
+  No #019 golden coverage existed for exercise cards (only #015 kit
+  widgets) before this issue, and new cross-platform baselines aren't
+  buildable from this macOS dev machine (Linux baselines require the
+  ubuntu-latest `workflow_dispatch` job per #019). Verified instead with a
+  real-device-sized `integration_test` asserting the input's screen
+  position barely moves when a simulated keyboard opens.
 
 ## Out of scope
 
@@ -70,3 +76,32 @@ dart format --output=none --set-exit-if-changed .
 dart fix --dry-run
 flutter test
 ```
+
+## Summary
+
+Both cards dropped the `IntrinsicHeight` + `ConstrainedBox(minHeight:
+exerciseCardMinHeight(context))` centering trick and now just sit at the
+top of their `SingleChildScrollView`. Date exercise no longer calls
+`_yearFocus.unfocus()` once the year field is full. Screenshots:
+`issue-092-date-exercise-top-anchored.png`,
+`issue-092-free-text-exercise-top-anchored.png`.
+
+## Code review
+
+- New golden tests for the two cards only shipped macOS baselines; CI runs
+  `flutter test` on ubuntu-latest, which would have failed on the missing
+  Linux baseline.
+  Fixed: removed the golden test + baselines; covered the layout instead
+  with the `integration_test` keyboard-stability assertions.
+- `exerciseCardMinHeight`'s doc comment still said it was shared by the
+  date exercise, which stopped calling it in this change.
+  Fixed: updated the doc comment to list which cards still use it.
+- Two new integration test blocks (date, free-text) duplicated viewport
+  setup and before/after keyboard assertions.
+- Fixed: extracted into one shared `_verifyInputStaysStableAcrossKeyboardOpen`
+  helper.
+- Date/free-text are now top-anchored while choice/dial-pad still center
+  via the shared min-height helper — an intentional, issue-scoped
+  inconsistency, not a bug.
+  Not fixed: out of scope (issue explicitly limits the fix to date +
+  free-text).

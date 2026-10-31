@@ -119,70 +119,66 @@ class _FreeTextExerciseState extends State<FreeTextExercise> {
       widget.l10n,
     );
 
+    // Anchored to the top of the content area (#092), not vertically
+    // centered: stays in the same place whether the keyboard is open or
+    // closed, instead of jumping as the system keyboard pushes a centered
+    // layout further up.
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(vertical: FoxSpacing.md),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(minHeight: exerciseCardMinHeight(context)),
-        child: IntrinsicHeight(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (directionLabel != null) ...[
-                Text(
-                  directionLabel,
-                  style: text.labelLarge?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: FoxSpacing.sm),
-              ],
-              Text(
-                widget.item.prompt,
-                style: text.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: scheme.onSurface,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: FoxSpacing.xl),
-              TextField(
-                key: const Key('freeTextAnswerField'),
-                controller: _controller,
-                autocorrect: false,
-                enableSuggestions: false,
-                keyboardType: _isAllDigits(widget.item.answer)
-                    ? TextInputType.number
-                    : null,
-                textAlign: TextAlign.center,
-                style: text.titleLarge,
-                decoration: InputDecoration(
-                  hintText: widget.l10n.exerciseFreeTextPlaceholder,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(FoxRadius.md),
-                  ),
-                ),
-              ),
-              const SizedBox(height: FoxSpacing.lg),
-              FoxRevealHintButton(
-                key: const Key('freeTextRevealHintButton'),
-                tooltip: widget.l10n.exerciseFreeTextRevealHintAria,
-                onPressed: _hintUsed ? null : _onRevealHint,
-              ),
-              if (_hintUsed)
-                Padding(
-                  padding: const EdgeInsets.only(top: FoxSpacing.sm),
-                  child: Text(
-                    _firstLetterHint() ?? '',
-                    key: const Key('freeTextHintLabel'),
-                    style: text.bodyMedium?.copyWith(color: scheme.primary),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-            ],
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (directionLabel != null) ...[
+            Text(
+              directionLabel,
+              style: text.labelLarge?.copyWith(color: scheme.onSurfaceVariant),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: FoxSpacing.sm),
+          ],
+          Text(
+            widget.item.prompt,
+            style: text.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: scheme.onSurface,
+            ),
+            textAlign: TextAlign.center,
           ),
-        ),
+          const SizedBox(height: FoxSpacing.xl),
+          TextField(
+            key: const Key('freeTextAnswerField'),
+            controller: _controller,
+            autocorrect: false,
+            enableSuggestions: false,
+            keyboardType: _isAllDigits(widget.item.answer)
+                ? TextInputType.number
+                : null,
+            textAlign: TextAlign.center,
+            style: text.titleLarge,
+            decoration: InputDecoration(
+              hintText: widget.l10n.exerciseFreeTextPlaceholder,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(FoxRadius.md),
+              ),
+            ),
+          ),
+          const SizedBox(height: FoxSpacing.lg),
+          FoxRevealHintButton(
+            key: const Key('freeTextRevealHintButton'),
+            tooltip: widget.l10n.exerciseFreeTextRevealHintAria,
+            onPressed: _hintUsed ? null : _onRevealHint,
+          ),
+          if (_hintUsed)
+            Padding(
+              padding: const EdgeInsets.only(top: FoxSpacing.sm),
+              child: Text(
+                _firstLetterHint() ?? '',
+                key: const Key('freeTextHintLabel'),
+                style: text.bodyMedium?.copyWith(color: scheme.primary),
+                textAlign: TextAlign.center,
+              ),
+            ),
+        ],
       ),
     );
   }

@@ -142,12 +142,11 @@ class _DateExerciseState extends ConsumerState<DateExercise> {
   }
 
   void _onDateChanged(String current, String value, int maxLength) {
-    if (value.length >= maxLength) {
-      if (current == 'year') {
-        _yearFocus.unfocus();
-      } else {
-        _nextDateNode(current).requestFocus();
-      }
+    // Year is the last field (#092): stay focused with the keyboard open
+    // instead of auto-unfocusing, which used to shift the Check button
+    // right as the user finished typing.
+    if (value.length >= maxLength && current != 'year') {
+      _nextDateNode(current).requestFocus();
     }
     _reportDraft();
   }
@@ -285,81 +284,79 @@ class _DateExerciseState extends ConsumerState<DateExercise> {
         : [monthWidget, dayWidget, yearWidget];
     final separator = Text(_isGerman ? '.' : '/');
 
+    // Anchored to the top of the content area (#092), not vertically
+    // centered: stays in the same place whether the keyboard is open or
+    // closed, instead of jumping as the system keyboard pushes a centered
+    // layout further up.
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(vertical: FoxSpacing.md),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(minHeight: exerciseCardMinHeight(context)),
-        child: IntrinsicHeight(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                widget.item.prompt,
-                style: text.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: scheme.onSurface,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: FoxSpacing.xl),
-              Container(
-                key: const Key('dateExerciseCard'),
-                padding: const EdgeInsets.all(FoxSpacing.lg),
-                decoration: BoxDecoration(
-                  border: Border.all(color: scheme.outline),
-                  borderRadius: BorderRadius.circular(FoxRadius.lg),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            widget.item.prompt,
+            style: text.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: scheme.onSurface,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: FoxSpacing.xl),
+          Container(
+            key: const Key('dateExerciseCard'),
+            padding: const EdgeInsets.all(FoxSpacing.lg),
+            decoration: BoxDecoration(
+              border: Border.all(color: scheme.outline),
+              borderRadius: BorderRadius.circular(FoxRadius.lg),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        Icon(Icons.calendar_month, color: scheme.primary),
-                        const Spacer(),
-                        if (_revealingHint)
-                          Text(
-                            formatDateForDisplay(widget.item.answer, locale),
-                            style: text.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: tokens.success,
-                            ),
-                          )
-                        else
-                          FoxRevealHintButton(
-                            key: const Key('dateExerciseHintButton'),
-                            tooltip: l10n.exerciseDateRevealHintAria,
-                            onPressed: _onRevealHint,
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: FoxSpacing.md),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ordered[0],
-                        const SizedBox(width: FoxSpacing.xs),
-                        Padding(
-                          padding: const EdgeInsets.only(top: FoxSpacing.lg),
-                          child: separator,
+                    Icon(Icons.calendar_month, color: scheme.primary),
+                    const Spacer(),
+                    if (_revealingHint)
+                      Text(
+                        formatDateForDisplay(widget.item.answer, locale),
+                        style: text.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: tokens.success,
                         ),
-                        const SizedBox(width: FoxSpacing.xs),
-                        ordered[1],
-                        const SizedBox(width: FoxSpacing.xs),
-                        Padding(
-                          padding: const EdgeInsets.only(top: FoxSpacing.lg),
-                          child: separator,
-                        ),
-                        const SizedBox(width: FoxSpacing.xs),
-                        ordered[2],
-                      ],
-                    ),
+                      )
+                    else
+                      FoxRevealHintButton(
+                        key: const Key('dateExerciseHintButton'),
+                        tooltip: l10n.exerciseDateRevealHintAria,
+                        onPressed: _onRevealHint,
+                      ),
                   ],
                 ),
-              ),
-            ],
+                const SizedBox(height: FoxSpacing.md),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ordered[0],
+                    const SizedBox(width: FoxSpacing.xs),
+                    Padding(
+                      padding: const EdgeInsets.only(top: FoxSpacing.lg),
+                      child: separator,
+                    ),
+                    const SizedBox(width: FoxSpacing.xs),
+                    ordered[1],
+                    const SizedBox(width: FoxSpacing.xs),
+                    Padding(
+                      padding: const EdgeInsets.only(top: FoxSpacing.lg),
+                      child: separator,
+                    ),
+                    const SizedBox(width: FoxSpacing.xs),
+                    ordered[2],
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

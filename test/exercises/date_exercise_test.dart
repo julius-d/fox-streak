@@ -225,6 +225,23 @@ void main() {
     expect(focusedLabel(tester), 'dateExerciseMonth');
   });
 
+  testWidgets(
+    'typing the last digit of the year keeps focus (keyboard stays open, #092)',
+    (tester) async {
+      await pumpDateExercise(tester, item: _dateItem());
+
+      await tester.tap(find.byKey(const Key('dateExerciseYearField')));
+      await tester.pump();
+      await tester.enterText(
+        find.byKey(const Key('dateExerciseYearField')),
+        '1985',
+      );
+      await tester.pump();
+
+      expect(focusedLabel(tester), 'dateExerciseYear');
+    },
+  );
+
   testWidgets('hint reveal shows formatted date and sets hintUsed', (
     tester,
   ) async {
