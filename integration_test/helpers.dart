@@ -57,6 +57,7 @@ import 'package:fox_streak_app/src/lesson/lesson_screen.dart';
 import 'package:fox_streak_app/src/pet/pet_catalog.dart';
 import 'package:fox_streak_app/src/stats/pet_service.dart';
 import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
+import 'package:fox_streak_app/src/widgets/fox_sound.dart';
 import 'package:fox_streak_app/test/lesson/confetti_settle.dart';
 
 export 'package:fox_streak_app/test/data/test_helpers.dart' show FakeClock;
@@ -70,6 +71,21 @@ final _l10nEn = AppLocalizationsEn();
 /// Isolated in-memory DB for a single test — never the real on-device file.
 AppDatabase makeIntegrationTestDb() =>
     AppDatabase.forTesting(NativeDatabase.memory());
+
+/// Overrides [foxSoundEnabledProvider] to off (same pattern as
+/// `_DisabledSound` in `test/lesson/lesson_shell_test.dart`), so a device
+/// run never touches a real platform audio channel via the production
+/// `AudioPlayersSoundPlayer` (issue #090). `pumpFoxStreakApp`/
+/// `pumpLessonScreen` include it by default; every other spec that builds
+/// its own `ProviderScope` adds it to its own `overrides` list.
+class _DisabledSound extends FoxSoundEnabled {
+  @override
+  bool build() => false;
+}
+
+final integrationTestSilentSound = foxSoundEnabledProvider.overrideWith(
+  _DisabledSound.new,
+);
 
 /// Bounded settle for screens backed by a Drift `watch()` stream (Library,
 /// Set detail): raw `pumpAndSettle()` can spin for minutes on these (see
@@ -118,6 +134,7 @@ Future<void> pumpFoxStreakApp(
       overrides: [
         appDatabaseProvider.overrideWithValue(db),
         systemClockProvider.overrideWithValue(clock),
+        integrationTestSilentSound,
         if (petCatalogLoader != null)
           petCatalogLoaderProvider.overrideWithValue(petCatalogLoader),
         if (petRandom != null) petRandomProvider.overrideWithValue(petRandom),
@@ -213,6 +230,7 @@ Future<void> pumpLessonScreen(
       overrides: [
         appDatabaseProvider.overrideWithValue(db),
         systemClockProvider.overrideWithValue(clock),
+        integrationTestSilentSound,
         if (petCatalogLoader != null)
           petCatalogLoaderProvider.overrideWithValue(petCatalogLoader),
       ],

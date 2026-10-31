@@ -49,6 +49,7 @@ void main() {
           overrides: [
             appDatabaseProvider.overrideWithValue(db),
             systemClockProvider.overrideWithValue(clock),
+            integrationTestSilentSound,
           ],
           child: const FoxStreakApp(),
         ),
@@ -121,6 +122,7 @@ void main() {
           overrides: [
             appDatabaseProvider.overrideWithValue(db),
             systemClockProvider.overrideWithValue(clock),
+            integrationTestSilentSound,
           ],
           child: const FoxStreakApp(),
         ),

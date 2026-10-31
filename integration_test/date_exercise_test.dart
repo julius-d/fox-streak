@@ -19,6 +19,8 @@ import 'package:fox_streak_app/src/exercises/date_exercise.dart';
 import 'package:fox_streak_app/src/lesson/exercise_card.dart';
 import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
 
+import 'helpers.dart';
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -37,6 +39,7 @@ void main() {
       ExerciseDraft? draft;
       await tester.pumpWidget(
         ProviderScope(
+          overrides: [integrationTestSilentSound],
           child: MaterialApp(
             theme: FoxStreakTheme.light(),
             localizationsDelegates: AppLocalizations.localizationsDelegates,

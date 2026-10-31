@@ -20,7 +20,8 @@ import 'package:fox_streak_app/src/data/database.dart';
 import 'package:fox_streak_app/src/data/providers.dart';
 import 'package:fox_streak_app/src/lesson/lesson_screen.dart';
 import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
-import 'package:fox_streak_app/test/data/test_helpers.dart';
+
+import 'helpers.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -75,6 +76,7 @@ void main() {
           overrides: [
             appDatabaseProvider.overrideWithValue(db),
             systemClockProvider.overrideWithValue(clock),
+            integrationTestSilentSound,
           ],
           child: MaterialApp(
             theme: FoxStreakTheme.light(),

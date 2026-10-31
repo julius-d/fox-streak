@@ -89,6 +89,7 @@ Widget _singleItemLesson(AppDatabase db, Item item) {
     overrides: [
       appDatabaseProvider.overrideWithValue(db),
       systemClockProvider.overrideWithValue(_FixedClock()),
+      integrationTestSilentSound,
     ],
     child: MaterialApp(
       theme: FoxStreakTheme.light(),

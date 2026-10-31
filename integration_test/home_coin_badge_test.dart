@@ -17,6 +17,8 @@ import 'package:fox_streak_app/src/data/database.dart';
 import 'package:fox_streak_app/src/data/providers.dart';
 import 'package:fox_streak_app/src/data/stats_repository.dart';
 
+import 'helpers.dart';
+
 class _FixedClock extends Clock {
   @override
   DateTime now() => DateTime(2026, 10, 13, 9);
@@ -40,6 +42,7 @@ void main() {
           overrides: [
             appDatabaseProvider.overrideWithValue(db),
             systemClockProvider.overrideWithValue(clock),
+            integrationTestSilentSound,
           ],
           child: const FoxStreakApp(),
         ),

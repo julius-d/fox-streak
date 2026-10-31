@@ -1,6 +1,6 @@
 # Issue 090: Disable sound playback by default in integration tests
 
-Status: open | Priority: P3 | Type: chore | Refined-at: 2026-10-31
+Status: done | Priority: P3 | Type: chore | Refined-at: 2026-10-31 | Completed-at: 2026-10-31
 
 ## Goal
 
@@ -81,23 +81,23 @@ the host running the test — confirmed by the reporting developer on macOS.
 
 ## Acceptance criteria
 
-- [ ] `integration_test/helpers.dart` exports one shared
+- [x] `integration_test/helpers.dart` exports one shared
   `integrationTestSilentSound` override (`foxSoundEnabledProvider`
   defaulted to `false`), and `pumpFoxStreakApp()`/`pumpLessonScreen()`
   include it in their `ProviderScope.overrides` by default.
-- [ ] Every `integration_test/*.dart` spec that builds its own
+- [x] Every `integration_test/*.dart` spec that builds its own
   `ProviderScope` (see the list in Context) imports and includes
   `integrationTestSilentSound` in its `overrides` list, except
   `level_up_result_test.dart` (already silenced via its own fake player).
-- [ ] No `integration_test/*.dart` spec defines its own duplicate
+- [x] No `integration_test/*.dart` spec defines its own duplicate
   `_DisabledSound`-style class — `integrationTestSilentSound` is the only
   definition.
-- [ ] Running `flutter test integration_test/flow2_lesson_playthrough_test.dart
+- [x] Running `flutter test integration_test/flow2_lesson_playthrough_test.dart
   -d macos` (or any other affected spec) locally on macOS produces no
   audible sound. This is a manual check — CI does not run
   `integration_test/` today (only compiles it as part of `flutter test`),
   so there's no automated gate for "stays silent."
-- [ ] `flutter analyze`, `dart format --output=none --set-exit-if-changed .`,
+- [x] `flutter analyze`, `dart format --output=none --set-exit-if-changed .`,
   `dart fix --dry-run`, and `flutter test` are all clean per AGENTS.md.
 
 ## Out of scope
@@ -121,3 +121,18 @@ dart fix --dry-run
 flutter test
 flutter test integration_test/flow2_lesson_playthrough_test.dart -d macos
 ```
+
+## Summary
+
+Added `integrationTestSilentSound` (a `foxSoundEnabledProvider` override
+forcing it `false`) to `integration_test/helpers.dart`, wired into
+`pumpFoxStreakApp`/`pumpLessonScreen`. Every spec building its own
+`ProviderScope` (13 files, plus `flow2_lesson_playthrough_test.dart`'s
+second test which has a separate `ProviderScope`) now includes it too.
+`flutter test integration_test/flow2_lesson_playthrough_test.dart -d macos`
+passes with no audible sound.
+
+## Code review
+
+- Reviewer (medium effort) found no correctness, reuse, or efficiency issues.
+  No fix needed — the diff matched the issue's planned pattern exactly.

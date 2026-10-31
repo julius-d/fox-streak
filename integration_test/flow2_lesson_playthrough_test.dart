@@ -189,6 +189,7 @@ void main() {
           overrides: [
             appDatabaseProvider.overrideWithValue(db),
             systemClockProvider.overrideWithValue(clock),
+            integrationTestSilentSound,
           ],
           child: MaterialApp(
             theme: FoxStreakTheme.light(),

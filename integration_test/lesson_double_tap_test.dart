@@ -29,6 +29,8 @@ import 'package:fox_streak_app/src/lesson/lesson_screen.dart';
 import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
 import 'package:fox_streak_app/src/widgets/widgets.dart';
 
+import 'helpers.dart';
+
 class _FixedClock extends Clock {
   @override
   DateTime now() => DateTime(2026, 10, 12, 12);
@@ -94,6 +96,7 @@ void main() {
             statsRepositoryProvider.overrideWithValue(
               _SlowStatsRepository(db, _FixedClock()),
             ),
+            integrationTestSilentSound,
           ],
           child: MaterialApp(
             theme: FoxStreakTheme.light(),
