@@ -110,12 +110,26 @@ void main() {
         await tester.tap(find.byKey(const Key('checkButton'))); // CHECK
         await tester.pumpAndSettle();
         await tester.tap(find.byKey(const Key('checkButton'))); // CONTINUE
-        await tester.pumpAndSettle();
+        if (i == 1) {
+          // The final CONTINUE completes the lesson, mounting the
+          // confetti-bearing `StreakSavedScreen` (#083): its
+          // `ConfettiController` drives particle physics off real
+          // wall-clock time rather than this binding's fake clock, so
+          // `pumpAndSettle()` would spin until it times out. A bounded
+          // pump loop is enough to settle the screen's own (ordinary,
+          // finite) animations.
+          for (var j = 0; j < 15; j++) {
+            await tester.pump(const Duration(milliseconds: 100));
+          }
+        } else {
+          await tester.pumpAndSettle();
+        }
       }
 
       // This fresh profile's first-ever lesson also advances the streak,
       // so the streak-saved screen appears before XP up (no level-up here,
-      // so plain pumpAndSettle() is safe throughout).
+      // so plain pumpAndSettle() is safe once the streak screen's own
+      // confetti is dismissed).
       await tester.tap(find.byKey(const Key('streakSavedContinueButton')));
       await tester.pumpAndSettle();
 

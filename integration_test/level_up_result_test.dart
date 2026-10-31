@@ -10,7 +10,9 @@
 // stubbed via a fake `FoxSoundPlayer` override so this never touches a real
 // platform audio channel.
 //
-// Deliberately avoids `tester.pumpAndSettle()` once the XP-up screen is
+// Deliberately avoids `tester.pumpAndSettle()` once the XP-up screen (or,
+// since issue #083, the streak-saved screen that precedes it — each
+// test's fresh profile's first-ever lesson always advances the streak) is
 // showing: the `confetti` package's `ConfettiController` keeps scheduling
 // animation frames (it restarts its internal `AnimationController` on every
 // completed cycle until its particle system reports "finished", which
@@ -18,10 +20,7 @@
 // `pumpAndSettle()` would spin for a very long time waiting for a frame
 // count that never reaches zero. A bounded `pump()` loop is used instead,
 // long enough to settle the (ordinary, finite) count-up/celebration/bar
-// animations without waiting on confetti. The streak-saved screen that
-// precedes it (this is each test's fresh profile's first-ever lesson, so
-// it always advances the streak) has no such unbounded animation, so it's
-// safe to settle normally.
+// animations without waiting on confetti.
 
 import 'package:confetti/confetti.dart';
 import 'package:drift/drift.dart';
@@ -170,9 +169,13 @@ void main() {
 
       // The final CONTINUE completes the lesson. This fresh profile's
       // first-ever lesson also advances the streak, so the streak-saved
-      // screen appears first — no confetti there, safe to settle normally.
+      // screen appears first — now with its own confetti burst (#083),
+      // so this uses a bounded pump loop instead of pumpAndSettle() too
+      // (see file doc for why).
       await tester.tap(find.byKey(const Key('checkButton'))); // CONTINUE
-      await tester.pumpAndSettle();
+      for (var i = 0; i < 15; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
       await tester.tap(find.byKey(const Key('streakSavedContinueButton')));
 
       // XP up mounts next (confetti starts playing) — see file doc for why
@@ -244,12 +247,14 @@ void main() {
 
     await answerAllCorrectly(tester, itemsByAnswer);
 
-    // No level-up here, so there's no confetti to worry about: a plain
-    // pumpAndSettle() is safe throughout, same as the other result-screen
-    // specs. This fresh profile's first-ever lesson still advances the
-    // streak, so the streak-saved screen appears before XP up.
+    // No level-up here, so no XP-up confetti to worry about — but this
+    // fresh profile's first-ever lesson still advances the streak, so the
+    // streak-saved screen (with its own #083 confetti burst) appears
+    // before XP up: a bounded pump loop, not pumpAndSettle(), per file doc.
     await tester.tap(find.byKey(const Key('checkButton'))); // CONTINUE
-    await tester.pumpAndSettle();
+    for (var i = 0; i < 15; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
     await tester.tap(find.byKey(const Key('streakSavedContinueButton')));
     await tester.pumpAndSettle();
 

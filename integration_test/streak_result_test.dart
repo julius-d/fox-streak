@@ -109,7 +109,21 @@ void main() {
       await tester.tap(find.byKey(const Key('checkButton'))); // CHECK
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('checkButton'))); // CONTINUE
-      await tester.pumpAndSettle();
+      if (i == 1) {
+        // The final CONTINUE completes the lesson, mounting the
+        // confetti-bearing `StreakSavedScreen` (#083): its
+        // `ConfettiController` drives particle physics off real
+        // wall-clock time rather than this binding's fake clock, so
+        // `pumpAndSettle()` would spin until it times out (see
+        // `level_up_result_test.dart`'s file doc for the same issue with
+        // `XpUpScreen`'s own confetti). A bounded pump loop is enough to
+        // settle the screen's own (ordinary, finite) animations.
+        for (var j = 0; j < 15; j++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+      } else {
+        await tester.pumpAndSettle();
+      }
     }
 
     // This fresh profile's completion also advances the streak, so the

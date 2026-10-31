@@ -26,6 +26,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:fox_streak_app/src/data/database.dart';
 import 'package:fox_streak_app/src/data/stats_repository.dart';
 import 'package:fox_streak_app/src/pet/pet_catalog.dart';
+import 'package:fox_streak_app/src/widgets/widgets.dart';
 
 import 'helpers.dart';
 
@@ -296,6 +297,111 @@ void main() {
       await tester.tap(find.byKey(const Key('homeButton')));
       await settle(tester);
       expect(find.byKey(const Key('homeScreen')), findsOneWidget);
+    },
+  );
+
+  testWidgets('completing a lesson never flashes the summary screen or its pet '
+      'before the streak-saved screen covers it (issue #083 regression)', (
+    tester,
+  ) async {
+    final db = makeIntegrationTestDb();
+    addTearDown(db.close);
+    final clock = FakeClock(DateTime(2026, 10, 20, 9));
+    final statsRepo = StatsRepository(db, clock);
+    await statsRepo.setOnboarded();
+
+    final seed = await _insertTwoItemSet(db);
+    await pumpLessonScreen(
+      tester,
+      db: db,
+      clock: clock,
+      setId: seed.setId,
+      items: await db.select(db.items).get(),
+      petCatalogLoader: () async => const <PetEntry>[],
+    );
+
+    await _answerCurrentItem(tester);
+
+    // Answer the last item, then drive its own CONTINUE with a single,
+    // unsettled pump — exactly the frame where `state.isDone` first
+    // turns true, before the completion sequence's first push lands.
+    final showingDog = find.text('der Hund').evaluate().isNotEmpty;
+    await tester.tap(find.text(showingDog ? 'dog' : 'cat'));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('checkButton'))); // CHECK
+    await settle(tester);
+    await tester.tap(find.byKey(const Key('checkButton'))); // CONTINUE
+    await tester.pump();
+
+    // No flash of the summary screen (or its pet) before the
+    // streak-saved screen is pushed on top.
+    expect(find.byKey(const Key('lessonResultScreen')), findsNothing);
+    expect(find.byType(FoxPet), findsNothing);
+
+    // The streak-saved screen still arrives right after.
+    await settle(tester);
+    expect(find.byKey(const Key('streakSavedScreen')), findsOneWidget);
+  });
+
+  testWidgets(
+    "the day's 2nd lesson completion (loot-box-first) never flashes the "
+    'summary screen or its pet before the loot box covers it (issue #083 '
+    'regression)',
+    (tester) async {
+      final db = makeIntegrationTestDb();
+      addTearDown(db.close);
+      final clock = FakeClock(DateTime(2026, 10, 20, 9));
+      final statsRepo = StatsRepository(db, clock);
+      await statsRepo.setOnboarded();
+
+      final seed = await _insertTwoItemSet(db);
+      await statsRepo.recordAttempt(
+        itemId: seed.dogId,
+        ok: true,
+        now: DateTime(2026, 10, 19, 9),
+      );
+
+      await pumpFoxStreakApp(
+        tester,
+        db: db,
+        clock: clock,
+        petCatalogLoader: () async => _fixtureCatalog,
+      );
+
+      // 1st completion of the day: advances the streak, no loot box yet.
+      await tester.tap(find.byKey(const Key('homeContinueButton')));
+      await settle(tester);
+      await _answerCurrentItem(tester);
+      await _answerCurrentItem(tester);
+      await dismissCompletionScreens(tester);
+      await tester.tap(find.byKey(const Key('homeButton')));
+      await settle(tester);
+
+      // 2nd completion of the day: triggers the loot box automatically,
+      // no streak screen this time (already advanced today).
+      await tester.tap(find.byKey(const Key('homeContinueButton')));
+      await settle(tester);
+      await _answerCurrentItem(tester);
+
+      // Answer the last item, then drive its own CONTINUE with a single,
+      // unsettled pump — exactly the frame where `state.isDone` first
+      // turns true, before the completion sequence's first push lands.
+      final showingDog = find.text('der Hund').evaluate().isNotEmpty;
+      await tester.tap(find.text(showingDog ? 'dog' : 'cat'));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('checkButton'))); // CHECK
+      await settle(tester);
+      await tester.tap(find.byKey(const Key('checkButton'))); // CONTINUE
+      await tester.pump();
+
+      // No flash of the summary screen (or its pet) before the loot box
+      // is pushed on top.
+      expect(find.byKey(const Key('lessonResultScreen')), findsNothing);
+      expect(find.byType(FoxPet), findsNothing);
+
+      // The loot box still arrives right after.
+      await settle(tester);
+      expect(find.byKey(const Key('lootboxScreen')), findsOneWidget);
     },
   );
 }

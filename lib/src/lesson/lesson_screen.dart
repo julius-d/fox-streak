@@ -106,6 +106,13 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
   // set"/"Redo missed items" correctly re-triggers the sequence for the new
   // session's own completion instead of treating it as already shown.
   int? _sequenceStartedForAttempt;
+  // Which `state.attempt` it's safe to actually render the summary screen
+  // (with its `FoxPet`) for — set only once the completion sequence is
+  // about to cover it with its first pushed screen (issue #083). Until
+  // then, `build` renders a blank placeholder instead: without this gate,
+  // the single frame between `state.isDone` turning true and that first
+  // push actually landing would flash the summary/pet screen underneath.
+  int? _revealResultForAttempt;
 
   @override
   void initState() {
@@ -236,7 +243,9 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
         body: items.isEmpty
             ? Center(child: Text(l10n.libraryLoading))
             : result != null
-            ? _buildResultScreen(context, l10n, state, controller, result)
+            ? (_revealResultForAttempt == state.attempt
+                  ? _buildResultScreen(context, l10n, state, controller, result)
+                  : const SizedBox.shrink())
             : _buildLessonBody(context, ref, l10n, state, controller),
       ),
     );
@@ -464,6 +473,12 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
     final result = ref.read(lessonControllerProvider.notifier).buildResult();
     if (result == null) return;
     final l10n = AppLocalizations.of(context)!;
+
+    // From here on, the summary screen underneath is safe to actually
+    // build: the very next statement pushes the first completion-sequence
+    // screen on top of it, so both changes land in the same frame — no
+    // frame ever shows the bare summary/pet (issue #083).
+    setState(() => _revealResultForAttempt = attempt);
 
     final lootboxReward = state.lootboxReward;
     if (lootboxReward != null) {

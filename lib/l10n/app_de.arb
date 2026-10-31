@@ -285,7 +285,7 @@
       "streakCount": {"type": "int"}
     }
   },
-  "lessonStreakResultText": "{streakCount} Tage Serie!",
+  "lessonStreakResultText": "{streakCount}-Tage-Streak!",
   "@streakCountLabel": {
     "description": "Streak-count label shown inside StreakBadge, next to the flame icon (issue #011)",
     "placeholders": {
@@ -307,7 +307,7 @@
     "description": "Heading on the streak-saved completion screen, shown only when the lesson just completed advanced today's streak (issue #078)",
     "placeholders": {}
   },
-  "lessonStreakSavedHeading": "Serie gesichert!",
+  "lessonStreakSavedHeading": "Streak gesichert!",
   "@lessonHome": {
     "description": "Summary screen button label returning to Home, regardless of lesson entry point (issue #078)",
     "placeholders": {}
@@ -597,7 +597,7 @@
     "description": "First onboarding slide body (issue #012)",
     "placeholders": {}
   },
-  "onboardingSlide1Body": "Übe jeden Tag ein bisschen und lass deine Serie wachsen.",
+  "onboardingSlide1Body": "Übe jeden Tag ein bisschen und lass deinen Streak wachsen.",
   "@onboardingSlide2Title": {
     "description": "Second onboarding slide title (issue #012)",
     "placeholders": {}

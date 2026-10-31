@@ -32,6 +32,7 @@ import 'package:fox_streak_app/src/stats/pet_service.dart';
 import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
 import 'package:fox_streak_app/src/widgets/widgets.dart';
 import 'package:fox_streak_app/test/data/test_helpers.dart';
+import 'package:fox_streak_app/test/lesson/confetti_settle.dart';
 import 'package:fox_streak_app/test/lesson/helpers/placeholder_exercise_card.dart';
 
 /// Pumps a widget under the FoxStreak theme + Riverpod scope with test overrides.
@@ -110,15 +111,19 @@ Future<void> openLessonMenu(WidgetTester tester) async {
 /// (`lessonResultScreen`). None of these single-lesson-completion tests
 /// ever trigger the loot box — `PetService`'s trigger starts on the 2nd
 /// completion of the day (issue #059/#067).
+///
+/// Uses [confettiAwareSettle] (issue #083), not a plain `pumpAndSettle()`:
+/// `StreakSavedScreen`'s unconditional confetti burst would otherwise spin
+/// it until it times out — see that function's doc.
 Future<void> dismissCompletionScreens(WidgetTester tester) async {
-  await tester.pumpAndSettle();
+  await confettiAwareSettle(tester);
   final streakContinue = find.byKey(const Key('streakSavedContinueButton'));
   if (streakContinue.evaluate().isNotEmpty) {
     await tester.tap(streakContinue);
-    await tester.pumpAndSettle();
+    await confettiAwareSettle(tester);
   }
   await tester.tap(find.byKey(const Key('xpUpContinueButton')));
-  await tester.pumpAndSettle();
+  await confettiAwareSettle(tester);
 }
 
 /// Minimal localizations delegate for tests.
@@ -439,9 +444,10 @@ void main() {
       expect(find.byKey(const Key('lessonFeedbackBanner')), findsOneWidget);
       expect(find.textContaining(correctAnswer), findsWidgets);
 
-      // Tap CONTINUE -> result screen
+      // Tap CONTINUE -> result screen, behind the completion sequence.
       await tester.tap(find.byKey(const Key('checkButton')));
       await tester.pump();
+      await dismissCompletionScreens(tester);
 
       // Should show result screen, 0% score (one wrong outcome).
       expect(find.byKey(const Key('lessonResultScreen')), findsOneWidget);
@@ -673,11 +679,11 @@ void main() {
         await tester.pump();
       }
 
-      // Should be on result screen
+      // Tap through the completion sequence to reach the result screen.
+      await dismissCompletionScreens(tester);
       expect(find.byKey(const Key('lessonResultScreen')), findsOneWidget);
 
-      // Tap through the completion sequence, then Redo whole set.
-      await dismissCompletionScreens(tester);
+      // Then Redo whole set.
       await tester.tap(find.byKey(const Key('redoWholeSetButton')));
       await tester.pump();
 
@@ -727,13 +733,13 @@ void main() {
         await tester.tap(find.byKey(const Key('skipItemMenuItem')));
         await tester.pump();
       }
-      expect(find.byKey(const Key('lessonResultScreen')), findsOneWidget);
 
       // Tap through the completion sequence, then Redo whole set, then
       // pump for far less than the #066 300ms tween duration — long
       // enough for a backward-draining bar to still be visibly short of
       // empty, too short for it to have resolved on its own.
       await dismissCompletionScreens(tester);
+      expect(find.byKey(const Key('lessonResultScreen')), findsOneWidget);
       await tester.tap(find.byKey(const Key('redoWholeSetButton')));
       await tester.pump(const Duration(milliseconds: 50));
 
@@ -784,6 +790,7 @@ void main() {
         await tester.tap(find.byKey(const Key('skipItemMenuItem')));
         await tester.pump();
       }
+      await dismissCompletionScreens(tester);
 
       // Result screen should show 0%
       expect(find.byKey(const Key('lessonResultScreen')), findsOneWidget);
@@ -972,7 +979,7 @@ void main() {
         await tester.tap(find.byKey(const Key('checkButton')));
         await tester.pump();
         await tester.tap(find.byKey(const Key('checkButton')));
-        await tester.pumpAndSettle();
+        await confettiAwareSettle(tester);
 
         // The #078 completion sequence starts automatically (this is a
         // first-ever lesson, so it advanced the streak too) — the summary

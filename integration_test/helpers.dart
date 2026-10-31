@@ -57,6 +57,7 @@ import 'package:fox_streak_app/src/lesson/lesson_screen.dart';
 import 'package:fox_streak_app/src/pet/pet_catalog.dart';
 import 'package:fox_streak_app/src/stats/pet_service.dart';
 import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
+import 'package:fox_streak_app/test/lesson/confetti_settle.dart';
 
 export 'package:fox_streak_app/test/data/test_helpers.dart' show FakeClock;
 
@@ -79,19 +80,15 @@ AppDatabase makeIntegrationTestDb() =>
 /// fire *before* the delayed notification arrives, reporting settled one
 /// beat too early. Requiring 3 consecutive clean pumps (not just one)
 /// absorbs that gap without reintroducing an unbounded spin.
-Future<void> settle(WidgetTester tester, {int cap = 150}) async {
-  var cleanStreak = 0;
-  for (var i = 0; i < cap; i++) {
-    await tester.pump(const Duration(milliseconds: 100));
-    if (tester.binding.hasScheduledFrame) {
-      cleanStreak = 0;
-    } else {
-      cleanStreak++;
-      if (cleanStreak >= 3) return;
-    }
-  }
-  fail('UI did not settle after $cap frames');
-}
+///
+/// Delegates to [confettiAwareSettle] (issue #083) so a completion-sequence
+/// confetti burst (`StreakSavedScreen`'s unconditional one, or `XpUpScreen`'s
+/// level-up one, issue #053) can't make this spin until `cap` is exhausted
+/// — see that function's doc. `test/lesson/lesson_shell_test.dart` shares
+/// this same implementation (via its `lib/test/` mirror) rather than its
+/// own copy, so the two settle helpers can't drift again.
+Future<void> settle(WidgetTester tester, {int cap = 150}) =>
+    confettiAwareSettle(tester, cap: cap);
 
 /// Boots the real `FoxStreakApp` with [db]/[clock] overridden, then settles.
 ///

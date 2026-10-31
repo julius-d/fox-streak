@@ -143,7 +143,7 @@ void main() {
       await tester.tap(find.byKey(const Key('checkButton'))); // CHECK
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('checkButton'))); // CONTINUE
-      await tester.pumpAndSettle();
+      await settle(tester);
 
       // This fresh profile's first-ever lesson also advances the streak,
       // so the #078 completion sequence runs streak saved -> XP up before

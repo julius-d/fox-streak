@@ -366,7 +366,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String lessonStreakResultText(int streakCount) {
-    return '$streakCount Tage Serie!';
+    return '$streakCount-Tage-Streak!';
   }
 
   @override
@@ -381,7 +381,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get lessonBackToLibrary => 'Zurück zur Bibliothek';
 
   @override
-  String get lessonStreakSavedHeading => 'Serie gesichert!';
+  String get lessonStreakSavedHeading => 'Streak gesichert!';
 
   @override
   String get lessonHome => 'Startseite';
@@ -565,7 +565,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get onboardingSlide1Body =>
-      'Übe jeden Tag ein bisschen und lass deine Serie wachsen.';
+      'Übe jeden Tag ein bisschen und lass deinen Streak wachsen.';
 
   @override
   String get onboardingSlide2Title => 'XP sammeln, aufsteigen';

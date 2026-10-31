@@ -126,7 +126,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('lessonFeedbackBanner')), findsOneWidget);
     await tester.tap(find.byKey(const Key('checkButton')));
-    await tester.pumpAndSettle();
+    await settle(tester);
 
     // This fresh profile's first-ever lesson also advances the streak.
     await dismissCompletionScreens(tester);
@@ -159,7 +159,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('lessonFeedbackBanner')), findsOneWidget);
       await tester.tap(find.byKey(const Key('checkButton')));
-      await tester.pumpAndSettle();
+      await settle(tester);
 
       // This fresh profile's first-ever lesson also advances the streak.
       await dismissCompletionScreens(tester);

@@ -89,12 +89,15 @@ void main() {
       await tester.pumpAndSettle();
 
       // Skip both items via the overflow menu to reach the result screen
-      // with the bar at full, regardless of which item renders first.
+      // with the bar at full, regardless of which item renders first. The
+      // last skip completes the lesson and, this being a fresh profile's
+      // first-ever one, advances the streak — `settle()` (not a raw
+      // `pumpAndSettle()`) copes with the confetti that mounts with it.
       for (var i = 0; i < items.length; i++) {
         await tester.tap(find.byKey(const Key('lessonOverflowMenu')));
         await tester.pumpAndSettle();
         await tester.tap(find.byKey(const Key('skipItemMenuItem')));
-        await tester.pumpAndSettle();
+        await settle(tester);
       }
       // This fresh profile's first-ever lesson also advances the streak.
       await dismissCompletionScreens(tester);
