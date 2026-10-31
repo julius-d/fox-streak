@@ -153,8 +153,38 @@ class AppSettings extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+/// Per-day activity log driving the #084 Streak Details calendar. One row
+/// per local day that had *any* activity — a day is "active" simply because
+/// a row exists, there is no separate boolean.
+///
+/// `activitySource` is a plain TEXT column backed by the Dart
+/// `DailyActivitySource` enum (`stats_repository.dart`), enforced in Dart —
+/// matching the house convention used by `Items.type`/`kItemTypes` — not
+/// Drift's `textEnum()` converter.
+///
+/// Sole writer: `StatsRepository.recordDailyActivity`, called today only by
+/// #010 `XpService.applyLessonResult` (`source: lessonCompleted`); the
+/// `streakOnIce` value is reserved for a future streak-freeze feature.
+class DailyActivity extends Table {
+  // Local YYYY-MM-DD.
+  TextColumn get day => text()();
+  IntColumn get xpEarned => integer().withDefault(const Constant(0))();
+  TextColumn get activitySource => text()();
+
+  @override
+  Set<Column> get primaryKey => {day};
+}
+
 @DriftDatabase(
-  tables: [QuestionSets, Items, Attempts, ProfileStats, AppSettings, OwnedPets],
+  tables: [
+    QuestionSets,
+    Items,
+    Attempts,
+    ProfileStats,
+    AppSettings,
+    OwnedPets,
+    DailyActivity,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   /// Production constructor backed by `drift_flutter`.
@@ -164,7 +194,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -279,6 +309,14 @@ class AppDatabase extends _$AppDatabase {
           'ALTER TABLE profile_stats RENAME COLUMN equipped_mascot_id TO equipped_pet_id',
         );
       }
+      // v12 (#084): adds the daily_activity table backing the Streak
+      // Details calendar. Brand new table matching the current Dart
+      // definition exactly, so the ordinary `createTable` helper is safe
+      // (unlike v8's owned_mascots, which needed raw DDL for a since-
+      // renamed table).
+      if (from < 12) {
+        await m.createTable(dailyActivity);
+      }
     },
     beforeOpen: (details) async {
       // SQLite disables FK enforcement by default; without this,
@@ -298,7 +336,7 @@ class AppDatabase extends _$AppDatabase {
   // added `owned_mascots.count`; v10 (#065) added
   // `profileStats.coinsTotal`; v11 (#068) renamed `owned_mascots`/
   // `mascot_id`/`equipped_mascot_id` to `owned_pets`/`pet_id`/
-  // `equipped_pet_id`.
+  // `equipped_pet_id`; v12 (#084) added the `daily_activity` table.
 }
 
 DatabaseConnection _openConnection() => driftDatabase(name: 'fox_streak');

@@ -10,6 +10,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:fox_streak_app/src/data/clock.dart' show toLocalDayString;
 import 'package:fox_streak_app/src/data/database.dart';
 import 'package:fox_streak_app/src/data/providers.dart';
 import 'package:fox_streak_app/src/data/stats_repository.dart';
@@ -209,6 +210,44 @@ void main() {
     final state = container.read(lessonControllerProvider);
     expect(state.xpTotalBeforeLesson, 90);
     expect(state.xpTotalAfterLesson, 105);
+  });
+
+  test('records a daily_activity row exactly once per completed lesson, and '
+      'a repeated completion call (xpApplied guard) does not double-record '
+      'it (issue #084)', () async {
+    final items = await insertTestItems(db, 1, 1);
+    final controller = container.read(lessonControllerProvider.notifier);
+    controller.start([items.first]);
+    controller.updateDraft(
+      ExerciseDraft(
+        hasAnswer: true,
+        grade: () => true,
+        correctAnswerLabel: '05/14/1985',
+      ),
+    );
+
+    await controller.submitGrade();
+    await controller.next(); // -> done, applies XP + daily activity once
+
+    final today = toLocalDayString(kTestToday);
+    final firstRows = await statsRepo.getDailyActivityRange(
+      fromDay: today,
+      toDay: today,
+    );
+    expect(firstRows, hasLength(1));
+    expect(firstRows.single.xpEarned, 15); // 10 correct + 5 perfect bonus
+    expect(firstRows.single.activitySource, 'lessonCompleted');
+
+    // Replaying the completion-triggering call must not double-record.
+    await controller.next();
+    await controller.next();
+
+    final rowsAfterReplay = await statsRepo.getDailyActivityRange(
+      fromDay: today,
+      toDay: today,
+    );
+    expect(rowsAfterReplay, hasLength(1));
+    expect(rowsAfterReplay.single.xpEarned, 15);
   });
 
   test('restart() starts a fresh session that can apply XP again', () async {

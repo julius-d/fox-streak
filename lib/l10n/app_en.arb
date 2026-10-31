@@ -756,5 +756,64 @@
     "description": "Tooltip for the Library's main FAB when expanded into the New set/Import speed-dial, showing a close icon to collapse it without running either action (issue #074)",
     "placeholders": {}
   },
-  "newSetFabCollapseTooltip": "Close"
+  "newSetFabCollapseTooltip": "Close",
+  "@homeStreakDetailsSemanticLabel": {
+    "description": "A11y label for Home's tap-to-open streak details button (issue #084)",
+    "placeholders": {}
+  },
+  "homeStreakDetailsSemanticLabel": "Open your streak history",
+  "@streakDetailsTitle": {
+    "description": "App bar title of the Streak Details (activity calendar) screen (issue #084)",
+    "placeholders": {}
+  },
+  "streakDetailsTitle": "Streak history",
+  "@streakDetailsCurrentStreakHeadline": {
+    "description": "Headline on the Streak Details screen showing the exact current streak, from profile.streakCount (issue #084)",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "streakDetailsCurrentStreakHeadline": "{count, plural, =0{No current streak} =1{Current streak: 1 day} other{Current streak: {count} days}}",
+  "@streakDetailsLongestStreakHeadline": {
+    "description": "Headline on the Streak Details screen showing the longest run of active days within the visible ~6-month window — explicitly labeled as windowed, not a lifetime \"longest streak ever\" claim (issue #084)",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "streakDetailsLongestStreakHeadline": "{count, plural, =0{No activity in the last 6 months} =1{Longest in the last 6 months: 1 day} other{Longest in the last 6 months: {count} days}}",
+  "@streakDetailsLegendNone": {
+    "description": "Calendar color-bucket legend label: no daily_activity row for that day (issue #084)",
+    "placeholders": {}
+  },
+  "streakDetailsLegendNone": "No activity",
+  "@streakDetailsLegendLow": {
+    "description": "Calendar color-bucket legend label: lowest non-empty bucket, below 50% of the daily goal (or a future streak-on-ice day at 0 XP) (issue #084)",
+    "placeholders": {}
+  },
+  "streakDetailsLegendLow": "Low",
+  "@streakDetailsLegendMedium": {
+    "description": "Calendar color-bucket legend label: 50-99% of the daily goal (issue #084)",
+    "placeholders": {}
+  },
+  "streakDetailsLegendMedium": "Medium",
+  "@streakDetailsLegendHigh": {
+    "description": "Calendar color-bucket legend label: at or above 100% of the daily goal (issue #084)",
+    "placeholders": {}
+  },
+  "streakDetailsLegendHigh": "Goal reached",
+  "@streakCalendarCellActivityLabel": {
+    "description": "Screen-reader label for one activity-calendar cell that has a daily_activity row, naming the formatted day and the XP earned that day (issue #084)",
+    "placeholders": {
+      "day": {"type": "String"},
+      "xp": {"type": "int"}
+    }
+  },
+  "streakCalendarCellActivityLabel": "{day}: {xp} XP earned",
+  "@streakCalendarCellNoActivityLabel": {
+    "description": "Screen-reader label for one activity-calendar cell with no daily_activity row (issue #084)",
+    "placeholders": {
+      "day": {"type": "String"}
+    }
+  },
+  "streakCalendarCellNoActivityLabel": "{day}: no activity"
 }

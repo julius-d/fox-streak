@@ -12,6 +12,14 @@ const int kProfileId = 0;
 /// Default daily XP goal for fresh profiles.
 const int kDefaultDailyGoalXp = 100;
 
+/// `daily_activity.activitySource` values (issue #084).
+///
+/// Stored as plain TEXT (`.name`/`values.byName`), enforced in Dart —
+/// matching the house convention used by `Items.type`/`kItemTypes` — not
+/// Drift's `textEnum()` converter. [streakOnIce] is reserved for a future
+/// streak-freeze feature; nothing writes it yet.
+enum DailyActivitySource { lessonCompleted, streakOnIce }
+
 /// Repository for `profile_stats` + `attempts`.
 ///
 /// Ownership rules (see #010/#011):
@@ -28,6 +36,10 @@ const int kDefaultDailyGoalXp = 100;
 ///   [setEquippedPet]/[setPetLessonCounter].
 /// - `coinsTotal` is written exclusively by #065 `PetService`'s
 ///   coin-reward branch, via [addCoins].
+/// - `daily_activity` (issue #084) is not a single-feature sole-writer
+///   column like the rest of this class — [recordDailyActivity] is called
+///   today only by #010 `XpService.applyLessonResult`, but is deliberately
+///   reusable by a future streak-freeze feature too.
 class StatsRepository {
   final AppDatabase _db;
   final Clock _clock;
@@ -261,4 +273,74 @@ class StatsRepository {
     final row = await query.getSingle();
     return row.read(_db.attempts.id.count()) ?? 0;
   }
+
+  /// Upserts [day]'s `daily_activity` row (issue #084): a new day inserts
+  /// with [xpDelta] as the starting `xpEarned` and [source]; an existing
+  /// day only adds [xpDelta] to the stored `xpEarned` — its `activitySource`
+  /// is left untouched (first write for a day wins). Whether a later write
+  /// should ever override an earlier day's source (e.g. a lesson completed
+  /// on an already-frozen day, once streak-freeze exists) is an open
+  /// question for that future issue, not decided here.
+  ///
+  /// Sole caller today: #010 `XpService.applyLessonResult`, at the same
+  /// call site as `addXp`, reusing its `xpApplied` guard.
+  Future<void> recordDailyActivity({
+    required String day,
+    required int xpDelta,
+    required DailyActivitySource source,
+  }) async {
+    // Transacted (not plain select-then-write) so a concurrent write to the
+    // same day can't interleave between the read and the write — harmless
+    // with today's single caller, but load-bearing once a second writer
+    // (e.g. a future streak-freeze feature) exists.
+    await _db.transaction(() async {
+      final existing = await (_db.select(
+        _db.dailyActivity,
+      )..where((t) => t.day.equals(day))).getSingleOrNull();
+      if (existing == null) {
+        await _db
+            .into(_db.dailyActivity)
+            .insert(
+              DailyActivityCompanion.insert(
+                day: day,
+                xpEarned: Value(xpDelta),
+                activitySource: source.name,
+              ),
+            );
+        return;
+      }
+      await (_db.update(
+        _db.dailyActivity,
+      )..where((t) => t.day.equals(day))).write(
+        DailyActivityCompanion(xpEarned: Value(existing.xpEarned + xpDelta)),
+      );
+    });
+  }
+
+  /// The `daily_activity` rows for [fromDay]..[toDay] (inclusive, both
+  /// `YYYY-MM-DD`), ascending by day — the #084 Streak Details calendar's
+  /// data source. Day strings sort lexicographically the same as
+  /// chronologically, so plain string comparison is enough.
+  Future<List<DailyActivityData>> getDailyActivityRange({
+    required String fromDay,
+    required String toDay,
+  }) {
+    return (_db.select(_db.dailyActivity)
+          ..where(
+            (t) =>
+                t.day.isBiggerOrEqualValue(fromDay) &
+                t.day.isSmallerOrEqualValue(toDay),
+          )
+          ..orderBy([(t) => OrderingTerm.asc(t.day)]))
+        .get();
+  }
+
+  /// Runs [action] atomically against the underlying database.
+  ///
+  /// Lets a caller combine two otherwise-independent repository writes
+  /// (e.g. #084's `addXp` + `recordDailyActivity`) into one transaction, so
+  /// a crash between them can't permanently desync their columns — rather
+  /// than each caller reaching into a private `AppDatabase` to do so.
+  Future<T> transaction<T>(Future<T> Function() action) =>
+      _db.transaction(action);
 }

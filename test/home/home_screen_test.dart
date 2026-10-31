@@ -444,6 +444,29 @@ void main() {
   });
 
   testWidgets(
+    'tapping the streak badge opens StreakDetailsScreen (issue #084)',
+    (tester) async {
+      final clock = FakeClock(kTestToday);
+      await pumpOnboardedHome(
+        tester,
+        clock,
+        seed: (stats, sets) async {
+          await stats.setStreak(
+            streakCount: 2,
+            lastActiveDay: clock.todayDayString(),
+          );
+        },
+      );
+
+      await tester.tap(find.byKey(const Key('streakBadgeButton')));
+      await settle(tester);
+
+      expect(find.byKey(const Key('streakDetailsScreen')), findsOneWidget);
+      await unmount(tester);
+    },
+  );
+
+  testWidgets(
     'coin badge is absent on Home when coinsTotal is 0 (issue #080)',
     (tester) async {
       final clock = FakeClock(kTestToday);

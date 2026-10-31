@@ -171,6 +171,38 @@ void main() {
       expect(profile.todayXp, 25);
     });
 
+    test('records a daily_activity row for today with source lessonCompleted '
+        '(issue #084)', () async {
+      final result = resultOf([correctNoHint(), correctNoHint(itemId: 2)]);
+      await xpService.applyLessonResult(result);
+
+      final rows = await statsRepo.getDailyActivityRange(
+        fromDay: clock.todayDayString(),
+        toDay: clock.todayDayString(),
+      );
+      expect(rows, hasLength(1));
+      expect(rows.single.day, clock.todayDayString());
+      expect(rows.single.xpEarned, 25);
+      expect(rows.single.activitySource, 'lessonCompleted');
+    });
+
+    test('a second lesson the same day accumulates xpEarned on the same '
+        'daily_activity row rather than creating a new one', () async {
+      await xpService.applyLessonResult(
+        resultOf([correctNoHint(), wrong(itemId: 99)]),
+      );
+      await xpService.applyLessonResult(
+        resultOf([correctWithHint(itemId: 2), wrong(itemId: 99)]),
+      );
+
+      final rows = await statsRepo.getDailyActivityRange(
+        fromDay: clock.todayDayString(),
+        toDay: clock.todayDayString(),
+      );
+      expect(rows, hasLength(1));
+      expect(rows.single.xpEarned, 15); // 10 + 5
+    });
+
     test(
       'accumulates xpTotal across multiple applyLessonResult calls',
       () async {

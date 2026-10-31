@@ -1,6 +1,6 @@
 # Issue 084: Streak Details screen (GitHub-style activity calendar)
 
-Status: open | Priority: P3 | Type: feature | Refined-at: 2026-10-31
+Status: done | Priority: P3 | Type: feature | Refined-at: 2026-10-31 | Completed-at: 2026-10-31
 
 ## Context
 
@@ -80,34 +80,34 @@ highlighted.
 
 ## Acceptance criteria
 
-- [ ] Tapping Home's `StreakBadge` opens `StreakDetailsScreen`.
-- [ ] Schema migration adds `daily_activity` (`day` PK, `xpEarned`,
+- [x] Tapping Home's `StreakBadge` opens `StreakDetailsScreen`.
+- [x] Schema migration adds `daily_activity` (`day` PK, `xpEarned`,
   `activitySource`); existing DBs migrate cleanly with no data loss.
-- [ ] `StatsRepository.recordDailyActivity` upserts correctly: new day ->
+- [x] `StatsRepository.recordDailyActivity` upserts correctly: new day ->
   inserts; existing day -> adds `xpDelta` to `xpEarned`, sets
   `activitySource`.
-- [ ] `XpService.applyLessonResult` calls `recordDailyActivity` exactly once
+- [x] `XpService.applyLessonResult` calls `recordDailyActivity` exactly once
   per completed lesson (reusing the `xpApplied` guard — no double-apply on
   rebuild/rotation), same as its existing `addXp` call, with `source:
   DailyActivitySource.lessonCompleted`.
-- [ ] Calendar renders one cell per day for the last ~6 months, scrollable,
+- [x] Calendar renders one cell per day for the last ~6 months, scrollable,
   oldest-left/today-right, initial scroll position at today.
-- [ ] Cell color intensity reflects that day's `xpEarned` in 4 buckets
+- [x] Cell color intensity reflects that day's `xpEarned` in 4 buckets
   (no-activity, low, medium, high) via `FoxSemanticColors.flame`; a day with
   a `daily_activity` row and `xpEarned: 0` renders as the lowest non-empty
   bucket, not as "no activity".
-- [ ] Current streak (exact count from `profile.streakCount`) is visually
+- [x] Current streak (exact count from `profile.streakCount`) is visually
   highlighted as a connected run of days ending today/yesterday.
-- [ ] Longest streak within the visible ~6-month window is visually
+- [x] Longest streak within the visible ~6-month window is visually
   highlighted (if different from the current streak) and labeled as
   windowed, not lifetime.
-- [ ] Tests: `StatsRepository.recordDailyActivity` upsert behavior (new day,
+- [x] Tests: `StatsRepository.recordDailyActivity` upsert behavior (new day,
   repeat day, `activitySource` persistence); `XpService` wiring
   (exactly-once, guard reuse, correct `source` value); calendar widget
   rendering (bucket thresholds, current-streak highlight, longest-in-window
   highlight, empty/no-data days); Home tap navigation to
   `StreakDetailsScreen`.
-- [ ] `flutter analyze`, `dart format --output=none --set-exit-if-changed .`,
+- [x] `flutter analyze`, `dart format --output=none --set-exit-if-changed .`,
   `dart fix --dry-run`, and `flutter test` are all clean per AGENTS.md.
 
 ## Out of scope
@@ -137,3 +137,58 @@ dart format --output=none --set-exit-if-changed .
 dart fix --dry-run
 flutter test
 ```
+
+## Summary
+
+Added schema v12 (`DailyActivity` table) + `DailyActivitySource` enum and
+`StatsRepository.recordDailyActivity`/`getDailyActivityRange`
+(transactional upsert, "first write wins" for `activitySource`).
+`XpService.applyLessonResult` now writes `daily_activity` in the same
+transaction as `addXp`. New pure logic in `lib/src/stats/activity_calendar.dart`
+(window/bucket/streak-run math, independently unit-tested) backs
+`ActivityCalendarView` (GitHub-style scrollable grid) and
+`StreakDetailsScreen`, reached by tapping Home's `StreakBadge`
+(now an `InkWell` + `MergeSemantics`). New `activityCalendarProvider`.
+Coverage: data-layer + migration tests, `XpService`/`LessonController`
+wiring tests, pure-logic unit tests, two widget-test files, a Home
+navigation test, and `integration_test/issue084_streak_details_test.dart`
+driving the real app end-to-end. Screenshots in `issues/done/`.
+
+## Code review
+
+- `XpService.applyLessonResult` ran `addXp` and `recordDailyActivity` as
+  two separate un-transacted writes, with the `xpApplied` guard already
+  latched before either ran — a crash between them could permanently
+  desync `xpTotal` from `daily_activity`.
+  Fixed: both now run inside one `StatsRepository.transaction()` call.
+- `recordDailyActivity`'s select-then-insert/update wasn't itself
+  transactional — harmless today, but a latent race once a second writer
+  (e.g. a future streak-freeze feature) exists.
+  Fixed: wrapped its body in `_db.transaction()`.
+- Home's streak-badge tap target renders ~40dp tall, short of the 48dp a11y
+  floor (`FoxButtonMetrics.minSize`).
+  Not fixed here: resizing `StreakBadge` affects other (non-interactive)
+  screens and its golden tests; tracked as follow-up issue #088.
+- The `InkWell`+`Semantics(button)`+`Navigator.push` scaffolding is now
+  hand-copied three times in `home_screen.dart`.
+  Not fixed: two of the three call sites predate this issue; extracting a
+  shared helper is a repo-wide refactor out of scope here.
+- `activityCalendarProvider` sequentially awaited two independent reads
+  (the profile future, the `daily_activity` range query).
+  Fixed: both futures are now started before either is awaited.
+- The legend swatch hardcoded `12` instead of the `FoxSpacing.md` token.
+  Fixed: now uses `FoxSpacing.md`.
+- `ActivityCalendarData.build`'s `activeDaysInWindow` re-filters `byDay`
+  through the window days, which the reviewer flagged as possibly
+  redundant given the sole current caller's query bounds.
+  Not fixed: not dead code — it defends the function's general contract
+  (callers aren't required to pre-bound `entries` to the window) at
+  negligible cost.
+- `longestRunInWindow` rebuilds its candidate run via a spread-copy on
+  every active day (O(n²) over the ~183-day window).
+  Not fixed: trivial at this scale (a cold path run once per screen open);
+  not worth the added complexity.
+- The streak badge's outer `Semantics(button: true)` nested with
+  `StreakBadge`'s own internal `Semantics(label: ...)`, risking two
+  separate screen-reader announcements instead of one.
+  Fixed: wrapped both in `MergeSemantics`.

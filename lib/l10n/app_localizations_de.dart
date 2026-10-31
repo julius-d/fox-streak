@@ -666,4 +666,56 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get newSetFabCollapseTooltip => 'Schließen';
+
+  @override
+  String get homeStreakDetailsSemanticLabel => 'Deine Streak-Historie öffnen';
+
+  @override
+  String get streakDetailsTitle => 'Streak-Historie';
+
+  @override
+  String streakDetailsCurrentStreakHeadline(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Aktuelle Streak: $count Tage',
+      one: 'Aktuelle Streak: 1 Tag',
+      zero: 'Keine aktuelle Streak',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String streakDetailsLongestStreakHeadline(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Längste Streak der letzten 6 Monate: $count Tage',
+      one: 'Längste Streak der letzten 6 Monate: 1 Tag',
+      zero: 'Keine Aktivität in den letzten 6 Monaten',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get streakDetailsLegendNone => 'Keine Aktivität';
+
+  @override
+  String get streakDetailsLegendLow => 'Niedrig';
+
+  @override
+  String get streakDetailsLegendMedium => 'Mittel';
+
+  @override
+  String get streakDetailsLegendHigh => 'Ziel erreicht';
+
+  @override
+  String streakCalendarCellActivityLabel(String day, int xp) {
+    return '$day: $xp XP verdient';
+  }
+
+  @override
+  String streakCalendarCellNoActivityLabel(String day) {
+    return '$day: keine Aktivität';
+  }
 }

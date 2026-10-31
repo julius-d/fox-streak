@@ -318,4 +318,100 @@ void main() {
       expect(await repo.getAttemptsForItem(itemId, limit: 2), hasLength(2));
     });
   });
+
+  group('recordDailyActivity', () {
+    Future<DailyActivityData?> row(String day) => (db.select(
+      db.dailyActivity,
+    )..where((t) => t.day.equals(day))).getSingleOrNull();
+
+    test('a new day inserts with the given xpEarned/source', () async {
+      await repo.recordDailyActivity(
+        day: '2026-10-11',
+        xpDelta: 15,
+        source: DailyActivitySource.lessonCompleted,
+      );
+      final r = await row('2026-10-11');
+      expect(r?.xpEarned, 15);
+      expect(r?.activitySource, 'lessonCompleted');
+    });
+
+    test('a repeat day adds xpDelta to the existing xpEarned', () async {
+      await repo.recordDailyActivity(
+        day: '2026-10-11',
+        xpDelta: 10,
+        source: DailyActivitySource.lessonCompleted,
+      );
+      await repo.recordDailyActivity(
+        day: '2026-10-11',
+        xpDelta: 5,
+        source: DailyActivitySource.lessonCompleted,
+      );
+      final r = await row('2026-10-11');
+      expect(r?.xpEarned, 15);
+    });
+
+    test('activitySource persists from the first write — a later write for '
+        'the same day does not overwrite it (first write wins; see #084\'s '
+        'open question for a future streak-freeze conflict policy)', () async {
+      await repo.recordDailyActivity(
+        day: '2026-10-11',
+        xpDelta: 0,
+        source: DailyActivitySource.streakOnIce,
+      );
+      await repo.recordDailyActivity(
+        day: '2026-10-11',
+        xpDelta: 10,
+        source: DailyActivitySource.lessonCompleted,
+      );
+      final r = await row('2026-10-11');
+      expect(r?.activitySource, 'streakOnIce');
+      expect(r?.xpEarned, 10);
+    });
+
+    test('different days each get their own row', () async {
+      await repo.recordDailyActivity(
+        day: '2026-10-10',
+        xpDelta: 10,
+        source: DailyActivitySource.lessonCompleted,
+      );
+      await repo.recordDailyActivity(
+        day: '2026-10-11',
+        xpDelta: 20,
+        source: DailyActivitySource.lessonCompleted,
+      );
+      expect((await row('2026-10-10'))?.xpEarned, 10);
+      expect((await row('2026-10-11'))?.xpEarned, 20);
+    });
+  });
+
+  group('getDailyActivityRange', () {
+    test('returns rows within [fromDay, toDay], ascending, excluding '
+        'rows outside the range', () async {
+      for (final day in [
+        '2026-10-09',
+        '2026-10-10',
+        '2026-10-11',
+        '2026-10-12',
+      ]) {
+        await repo.recordDailyActivity(
+          day: day,
+          xpDelta: 10,
+          source: DailyActivitySource.lessonCompleted,
+        );
+      }
+      final rows = await repo.getDailyActivityRange(
+        fromDay: '2026-10-10',
+        toDay: '2026-10-11',
+      );
+      expect(rows.map((r) => r.day), ['2026-10-10', '2026-10-11']);
+    });
+
+    test('returns an empty list when nothing is recorded yet', () async {
+      final rows = await repo.getDailyActivityRange(
+        fromDay: '2026-10-01',
+        toDay: '2026-10-31',
+      );
+      expect(rows, isEmpty);
+    });
+  });
 }

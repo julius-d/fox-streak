@@ -1205,6 +1205,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Close'**
   String get newSetFabCollapseTooltip;
+
+  /// A11y label for Home's tap-to-open streak details button (issue #084)
+  ///
+  /// In en, this message translates to:
+  /// **'Open your streak history'**
+  String get homeStreakDetailsSemanticLabel;
+
+  /// App bar title of the Streak Details (activity calendar) screen (issue #084)
+  ///
+  /// In en, this message translates to:
+  /// **'Streak history'**
+  String get streakDetailsTitle;
+
+  /// Headline on the Streak Details screen showing the exact current streak, from profile.streakCount (issue #084)
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No current streak} =1{Current streak: 1 day} other{Current streak: {count} days}}'**
+  String streakDetailsCurrentStreakHeadline(int count);
+
+  /// Headline on the Streak Details screen showing the longest run of active days within the visible ~6-month window — explicitly labeled as windowed, not a lifetime "longest streak ever" claim (issue #084)
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No activity in the last 6 months} =1{Longest in the last 6 months: 1 day} other{Longest in the last 6 months: {count} days}}'**
+  String streakDetailsLongestStreakHeadline(int count);
+
+  /// Calendar color-bucket legend label: no daily_activity row for that day (issue #084)
+  ///
+  /// In en, this message translates to:
+  /// **'No activity'**
+  String get streakDetailsLegendNone;
+
+  /// Calendar color-bucket legend label: lowest non-empty bucket, below 50% of the daily goal (or a future streak-on-ice day at 0 XP) (issue #084)
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get streakDetailsLegendLow;
+
+  /// Calendar color-bucket legend label: 50-99% of the daily goal (issue #084)
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get streakDetailsLegendMedium;
+
+  /// Calendar color-bucket legend label: at or above 100% of the daily goal (issue #084)
+  ///
+  /// In en, this message translates to:
+  /// **'Goal reached'**
+  String get streakDetailsLegendHigh;
+
+  /// Screen-reader label for one activity-calendar cell that has a daily_activity row, naming the formatted day and the XP earned that day (issue #084)
+  ///
+  /// In en, this message translates to:
+  /// **'{day}: {xp} XP earned'**
+  String streakCalendarCellActivityLabel(String day, int xp);
+
+  /// Screen-reader label for one activity-calendar cell with no daily_activity row (issue #084)
+  ///
+  /// In en, this message translates to:
+  /// **'{day}: no activity'**
+  String streakCalendarCellNoActivityLabel(String day);
 }
 
 class _AppLocalizationsDelegate

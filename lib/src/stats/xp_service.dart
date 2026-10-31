@@ -67,9 +67,25 @@ class XpService {
   /// [StatsRepository.addXp] returns both the pre- and post-write lifetime
   /// total from the same query, so the caller can detect a level crossing
   /// (issue #053's level-up celebration) without a second one.
+  ///
+  /// Also records today's `daily_activity` row (issue #084, source:
+  /// [DailyActivitySource.lessonCompleted]) at this same call site, reusing
+  /// this method's single-call guarantee instead of adding a second guard.
+  /// Both writes run in one transaction so a crash between them can't
+  /// permanently desync `xpTotal` from `daily_activity` — `xpApplied`
+  /// latches before either runs and is never retried.
   Future<XpApplication> applyLessonResult(LessonResult result) async {
     final earned = xpEarned(result);
-    final written = await _statsRepo.addXp(earned, now: _clock.now());
+    final now = _clock.now();
+    final written = await _statsRepo.transaction(() async {
+      final written = await _statsRepo.addXp(earned, now: now);
+      await _statsRepo.recordDailyActivity(
+        day: toLocalDayString(now),
+        xpDelta: earned,
+        source: DailyActivitySource.lessonCompleted,
+      );
+      return written;
+    });
     return XpApplication(
       earned: earned,
       xpTotal: written.xpTotal,

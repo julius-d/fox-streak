@@ -27,6 +27,7 @@ import '../pet/pet_providers.dart';
 import '../settings/settings_providers.dart';
 import '../settings/settings_screen.dart';
 import '../stats/stats_providers.dart';
+import '../stats/streak_details_screen.dart';
 import '../stats/xp_service.dart';
 import '../theme/fox_streak_theme.dart';
 import '../widgets/widgets.dart';
@@ -246,16 +247,39 @@ class _HomeDashboard extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: FoxSpacing.lg),
-              StreakBadge(
-                key: const Key('streakBadge'),
-                streakCount: profile.streakCount,
-                todayDone: todayDone,
-                streakCountLabel: l10n.streakCountLabel(profile.streakCount),
-                todayDoneLabel: l10n.streakTodayDoneLabel,
-                semanticsLabel: todayDone
-                    ? '${l10n.streakCountLabel(profile.streakCount)} '
-                          '${l10n.streakTodayDoneLabel}'
-                    : l10n.streakCountLabel(profile.streakCount),
+              InkWell(
+                key: const Key('streakBadgeButton'),
+                borderRadius: const BorderRadius.all(
+                  Radius.circular(FoxRadius.pill),
+                ),
+                onTap: () => Navigator.of(context).push<void>(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const StreakDetailsScreen(),
+                  ),
+                ),
+                // StreakBadge already wraps itself in its own Semantics
+                // label; MergeSemantics folds that together with the
+                // button-role label below into one screen-reader stop
+                // instead of two.
+                child: MergeSemantics(
+                  child: Semantics(
+                    button: true,
+                    label: l10n.homeStreakDetailsSemanticLabel,
+                    child: StreakBadge(
+                      key: const Key('streakBadge'),
+                      streakCount: profile.streakCount,
+                      todayDone: todayDone,
+                      streakCountLabel: l10n.streakCountLabel(
+                        profile.streakCount,
+                      ),
+                      todayDoneLabel: l10n.streakTodayDoneLabel,
+                      semanticsLabel: todayDone
+                          ? '${l10n.streakCountLabel(profile.streakCount)} '
+                                '${l10n.streakTodayDoneLabel}'
+                          : l10n.streakCountLabel(profile.streakCount),
+                    ),
+                  ),
+                ),
               ),
               const SizedBox(height: FoxSpacing.xl),
               FoxLevelProgressBar(

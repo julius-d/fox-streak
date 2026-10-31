@@ -1,7 +1,8 @@
 // Schema v1 -> v2 (issue #026), v2 -> v3 (issue #010), v3 -> v4 (issue
 // #022), v4 -> v5 (issue #012), v5 -> v6 (issue #045), v6 -> v7 (issue
 // #055), v7 -> v8 (issue #059), v8 -> v9 (issue #064), v9 -> v10 (issue
-// #065), and v10 -> v11 (issue #068) migration tests.
+// #065), v10 -> v11 (issue #068), and v11 -> v12 (issue #084) migration
+// tests.
 //
 // Simulates pre-migration databases on disk, then reopens them with the
 // real (current schemaVersion) `AppDatabase` and asserts `onUpgrade` applied
@@ -434,6 +435,31 @@ class _LegacyV10Database extends AppDatabase {
           PRIMARY KEY (mascot_id)
         )
       ''');
+    },
+  );
+}
+
+/// A schemaVersion-11 view of [AppDatabase], used only to seed a pre-#084
+/// file at the exact version #084's migration upgrades from: every table is
+/// already in its current (post-#068) shape — including the `owned_pets`/
+/// `pet_id`/`equipped_pet_id` rename — except `daily_activity`, which
+/// doesn't exist yet.
+class _LegacyV11Database extends AppDatabase {
+  _LegacyV11Database(QueryExecutor executor) : super.forTesting(executor); // ignore: use_super_parameters — must forward to the named forTesting() ctor, not the default unnamed one
+
+  @override
+  int get schemaVersion => 11;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) async {
+      final db = m.database as AppDatabase;
+      await m.createTable(db.questionSets);
+      await m.createTable(db.items);
+      await m.createTable(db.attempts);
+      await m.createTable(db.profileStats);
+      await m.createTable(db.appSettings);
+      await m.createTable(db.ownedPets);
     },
   );
 }
@@ -942,6 +968,52 @@ void main() {
       tableNames.map((row) => row.read<String>('name')),
       isNot(contains('owned_mascots')),
     );
+  });
+
+  test('onUpgrade (v11 -> v12) creates the daily_activity table (empty, no '
+      'backfill), preserving existing tables untouched', () async {
+    final dir = Directory.systemTemp.createTempSync('foxstreak_migration_v12');
+    final file = File('${dir.path}/test.sqlite');
+    addTearDown(() {
+      if (dir.existsSync()) dir.deleteSync(recursive: true);
+    });
+
+    // 1. Seed a v11 database directly on disk (no daily_activity table yet)
+    // with a pre-existing profile row.
+    final legacyDb = _LegacyV11Database(NativeDatabase(file));
+    await legacyDb
+        .into(legacyDb.profileStats)
+        .insert(
+          const ProfileStatsCompanion(
+            id: Value(0),
+            xpTotal: Value(42),
+            streakCount: Value(3),
+            lastActiveDay: Value('2026-10-10'),
+          ),
+        );
+    await legacyDb.close();
+
+    // 2. Reopen the SAME file with the real (current schemaVersion)
+    // database; drift sees user_version=11 < schemaVersion=12 and runs
+    // onUpgrade's `createTable`.
+    final upgradedDb = AppDatabase.forTesting(NativeDatabase(file));
+    addTearDown(upgradedDb.close);
+
+    final columns = await upgradedDb
+        .customSelect("PRAGMA table_info('daily_activity')")
+        .get();
+    expect(
+      columns.map((row) => row.read<String>('name')),
+      containsAll(<String>['day', 'xp_earned', 'activity_source']),
+    );
+    expect(await (upgradedDb.select(upgradedDb.dailyActivity)).get(), isEmpty);
+
+    final profile = await (upgradedDb.select(
+      upgradedDb.profileStats,
+    )..where((t) => t.id.equals(0))).getSingle();
+    expect(profile.xpTotal, 42);
+    expect(profile.streakCount, 3);
+    expect(profile.lastActiveDay, '2026-10-10');
   });
 }
 

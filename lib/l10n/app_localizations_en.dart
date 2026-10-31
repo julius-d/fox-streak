@@ -664,4 +664,56 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get newSetFabCollapseTooltip => 'Close';
+
+  @override
+  String get homeStreakDetailsSemanticLabel => 'Open your streak history';
+
+  @override
+  String get streakDetailsTitle => 'Streak history';
+
+  @override
+  String streakDetailsCurrentStreakHeadline(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Current streak: $count days',
+      one: 'Current streak: 1 day',
+      zero: 'No current streak',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String streakDetailsLongestStreakHeadline(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Longest in the last 6 months: $count days',
+      one: 'Longest in the last 6 months: 1 day',
+      zero: 'No activity in the last 6 months',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get streakDetailsLegendNone => 'No activity';
+
+  @override
+  String get streakDetailsLegendLow => 'Low';
+
+  @override
+  String get streakDetailsLegendMedium => 'Medium';
+
+  @override
+  String get streakDetailsLegendHigh => 'Goal reached';
+
+  @override
+  String streakCalendarCellActivityLabel(String day, int xp) {
+    return '$day: $xp XP earned';
+  }
+
+  @override
+  String streakCalendarCellNoActivityLabel(String day) {
+    return '$day: no activity';
+  }
 }
