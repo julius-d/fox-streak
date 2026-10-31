@@ -8,6 +8,7 @@ We will refine the issue to make it more complete and consistent.
 Ask the user for any missing information or clarification needed to refine the issue.
 
 Suggest product / UI options how requirements could be implemented.
+And ask the user for feedback on the options.
 
 Suggest improvements to the issue, such as adding acceptance criteria or other details.
 Search in the web if helpful.
