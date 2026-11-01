@@ -58,15 +58,18 @@ subject boundary:
 Every item has a `type`, a `prompt` (the question text) and an `answer`
 (the expected response). What else is allowed depends on `type`:
 
-| Type | `choices` | `promptLang`/`answerLang` | `hint` | Typical use |
-|---|---|---|---|---|
-| `choice` | optional | optional (paired) | optional | Multiple-choice question |
-| `freeText` | **not allowed** | optional (paired) | optional | Type-the-answer question |
-| `phone` | **not allowed** | **not allowed** | optional | A phone number to memorize |
-| `date` | **not allowed** | **not allowed** | optional | A date to memorize |
+| Type | `choices` | `promptLang`/`answerLang` | `hint` | `imageType`/`imageContent` | Typical use |
+|---|---|---|---|---|---|
+| `choice` | optional | optional (paired) | optional | optional (paired) | Multiple-choice question |
+| `freeText` | **not allowed** | optional (paired) | optional | optional (paired) | Type-the-answer question |
+| `phone` | **not allowed** | **not allowed** | optional | optional (paired) | A phone number to memorize |
+| `date` | **not allowed** | **not allowed** | optional | optional (paired) | A date to memorize |
 
 `hint` is optional on every type; when present it's shown as a small nudge
 next to the question. Omit it or leave it `""` for no hint.
+
+`imageType`/`imageContent` are optional on every type — see
+[Images](#images-imagetypeimagecontent) below.
 
 ### `choice` — multiple choice
 
@@ -160,6 +163,30 @@ Setting only one of the two, or using an unsupported code (e.g. `"fr"`), is
 rejected. The schema enforces all of this exactly (it's expressed as three
 alternatives: both absent, or `de`→`en`, or `en`→`de`).
 
+### Images (`imageType`/`imageContent`)
+
+Any item type may optionally carry a prompt-side image, attached to the
+**prompt** only (never the answer or distractor choices):
+
+```json
+{ "imageType": "emoji", "imageContent": "🐶" }
+```
+
+- Both fields must be set **together** — one without the other is rejected.
+- `imageType` is one of:
+  - `emoji` — `imageContent` is the literal emoji/symbol string (any
+    non-empty string; not restricted to a single grapheme).
+  - `base64` — `imageContent` is base64-encoded image data. Whitespace
+    (including a multi-line paste, e.g. from the `base64` CLI, which wraps
+    at ~76 characters) is stripped before decoding, so it doesn't need to
+    be a single line.
+  - `url` — `imageContent` is an `http://` or `https://` URL. **The schema
+    can't fully enforce this** — it accepts any non-empty string; the app
+    checks the scheme and host at import time.
+- `url` needs network access to load and isn't guaranteed to work offline —
+  bundled seed sets (`assets/seed/`) only ever use `emoji`/`base64` for this
+  reason. `url` is fine for sets you create yourself.
+
 ## A complete multi-item example
 
 ```json
@@ -178,7 +205,9 @@ alternatives: both absent, or `de`→`en`, or `en`→`de`).
       "promptLang": "de",
       "answerLang": "en",
       "choices": ["cat", "mouse", "bird"],
-      "hint": ""
+      "hint": "",
+      "imageType": "emoji",
+      "imageContent": "🐶"
     },
     {
       "type": "freeText",
@@ -231,6 +260,11 @@ hand-writing or AI-generating a file:
   before `1900-01-01`, or is after today. **The schema can't fully enforce
   this** — it only checks the `YYYY-MM-DD` shape, not the day's validity or
   the dynamic "not in the future" bound.
+- Only one of `imageType`/`imageContent` is set (they must be set together),
+  `imageType` isn't `emoji`/`base64`/`url`, or `imageContent` doesn't fit
+  that type (e.g. `base64` content that isn't decodable, or a `url` that
+  isn't a valid `http`/`https` link). **The schema can't fully enforce
+  this** — it accepts any non-empty `imageContent` string.
 
 Unknown fields are currently ignored by the app (not rejected) at both the
 set level and the item level. The schema is stricter than the app on

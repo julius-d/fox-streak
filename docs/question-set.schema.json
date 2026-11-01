@@ -59,7 +59,9 @@
           "promptLang": "de",
           "answerLang": "en",
           "choices": ["cat", "mouse", "bird"],
-          "hint": ""
+          "hint": "",
+          "imageType": "emoji",
+          "imageContent": "🐶"
         },
         {
           "type": "freeText",
@@ -90,6 +92,24 @@
       "type": "string",
       "enum": ["de", "en"]
     },
+    "imageType": {
+      "type": "string",
+      "enum": ["emoji", "base64", "url"]
+    },
+    "image": {
+      "description": "Optional prompt-side image (issue #014): imageType/imageContent must be both absent, or both present. url is reserved for user-added items — bundled seed sets must use emoji/base64 only, see docs/question-set-format.md. base64 decodability and url scheme are not fully checkable by this schema.",
+      "oneOf": [
+        {
+          "not": {
+            "anyOf": [
+              { "required": ["imageType"] },
+              { "required": ["imageContent"] }
+            ]
+          }
+        },
+        { "required": ["imageType", "imageContent"] }
+      ]
+    },
     "languagePair": {
       "description": "promptLang/answerLang must be both absent, or both present with distinct codes from {de, en}.",
       "oneOf": [
@@ -118,7 +138,7 @@
       "type": "object",
       "additionalProperties": false,
       "required": ["type", "prompt", "answer"],
-      "allOf": [{ "$ref": "#/$defs/languagePair" }],
+      "allOf": [{ "$ref": "#/$defs/languagePair" }, { "$ref": "#/$defs/image" }],
       "properties": {
         "type": { "const": "choice" },
         "prompt": { "type": "string", "minLength": 1, "pattern": "\\S" },
@@ -129,27 +149,32 @@
           "type": "array",
           "items": { "type": "string", "minLength": 1, "pattern": "\\S" }
         },
-        "hint": { "type": "string" }
+        "hint": { "type": "string" },
+        "imageType": { "$ref": "#/$defs/imageType" },
+        "imageContent": { "type": "string", "minLength": 1 }
       }
     },
     "itemFreeText": {
       "type": "object",
       "additionalProperties": false,
       "required": ["type", "prompt", "answer"],
-      "allOf": [{ "$ref": "#/$defs/languagePair" }],
+      "allOf": [{ "$ref": "#/$defs/languagePair" }, { "$ref": "#/$defs/image" }],
       "properties": {
         "type": { "const": "freeText" },
         "prompt": { "type": "string", "minLength": 1, "pattern": "\\S" },
         "answer": { "type": "string", "minLength": 1, "pattern": "\\S" },
         "promptLang": { "$ref": "#/$defs/languageCode" },
         "answerLang": { "$ref": "#/$defs/languageCode" },
-        "hint": { "type": "string" }
+        "hint": { "type": "string" },
+        "imageType": { "$ref": "#/$defs/imageType" },
+        "imageContent": { "type": "string", "minLength": 1 }
       }
     },
     "itemPhone": {
       "type": "object",
       "additionalProperties": false,
       "required": ["type", "prompt", "answer"],
+      "allOf": [{ "$ref": "#/$defs/image" }],
       "properties": {
         "type": { "const": "phone" },
         "prompt": { "type": "string", "minLength": 1, "pattern": "\\S" },
@@ -158,13 +183,16 @@
           "minLength": 1,
           "description": "Must become 3-15 digits after stripping spaces, -, /, (, ), ., + — not fully checkable by this schema, see docs/question-set-format.md."
         },
-        "hint": { "type": "string" }
+        "hint": { "type": "string" },
+        "imageType": { "$ref": "#/$defs/imageType" },
+        "imageContent": { "type": "string", "minLength": 1 }
       }
     },
     "itemDate": {
       "type": "object",
       "additionalProperties": false,
       "required": ["type", "prompt", "answer"],
+      "allOf": [{ "$ref": "#/$defs/image" }],
       "properties": {
         "type": { "const": "date" },
         "prompt": { "type": "string", "minLength": 1, "pattern": "\\S" },
@@ -173,7 +201,9 @@
           "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
           "description": "Strict ISO YYYY-MM-DD, must be within 1900-01-01..today — the upper bound is not checkable by this schema, see docs/question-set-format.md."
         },
-        "hint": { "type": "string" }
+        "hint": { "type": "string" },
+        "imageType": { "$ref": "#/$defs/imageType" },
+        "imageContent": { "type": "string", "minLength": 1 }
       }
     },
     "item": {
