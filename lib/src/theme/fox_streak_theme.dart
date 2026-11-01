@@ -72,6 +72,9 @@ abstract final class FoxButtonMetrics {
 /// - [coin]: content color for the coin balance badge (#080) — a distinct
 ///   currency color from [gold], which is reserved for XP; [onCoin] is the
 ///   text color on coin fills.
+/// - [ice]: distinct icy-blue content color for a `streakOnIce` calendar
+///   day / wheel-of-fortune slice (issue #087) — never reuses [flame] or
+///   [info]'s hue; [onIce] is the text color on ice fills.
 @immutable
 class FoxSemanticColors extends ThemeExtension<FoxSemanticColors> {
   final Color success;
@@ -94,6 +97,10 @@ class FoxSemanticColors extends ThemeExtension<FoxSemanticColors> {
   final Color onMath;
   final Color geography;
   final Color onGeography;
+  // #087: distinct icy-blue token for a streak-on-ice calendar day / wheel
+  // slice — never the flame or info hue.
+  final Color ice;
+  final Color onIce;
 
   const FoxSemanticColors({
     required this.success,
@@ -113,6 +120,8 @@ class FoxSemanticColors extends ThemeExtension<FoxSemanticColors> {
     required this.onMath,
     required this.geography,
     required this.onGeography,
+    required this.ice,
+    required this.onIce,
   });
 
   /// Light values. Content colors are darkened so they pass AA on light
@@ -135,6 +144,8 @@ class FoxSemanticColors extends ThemeExtension<FoxSemanticColors> {
     onMath: Color(0xFFFFFFFF),
     geography: Color(0xFF00696C),
     onGeography: Color(0xFFFFFFFF),
+    ice: Color(0xFF01579B),
+    onIce: Color(0xFFFFFFFF),
   );
 
   /// Dark values. Content colors are lightened so they pass AA on dark
@@ -157,6 +168,8 @@ class FoxSemanticColors extends ThemeExtension<FoxSemanticColors> {
     onMath: Color(0xFF381E72),
     geography: Color(0xFF4DD9DC),
     onGeography: Color(0xFF003738),
+    ice: Color(0xFF7EC8E3),
+    onIce: Color(0xFF00344D),
   );
 
   @override
@@ -178,6 +191,8 @@ class FoxSemanticColors extends ThemeExtension<FoxSemanticColors> {
     Color? onMath,
     Color? geography,
     Color? onGeography,
+    Color? ice,
+    Color? onIce,
   }) {
     return FoxSemanticColors(
       success: success ?? this.success,
@@ -197,6 +212,8 @@ class FoxSemanticColors extends ThemeExtension<FoxSemanticColors> {
       onMath: onMath ?? this.onMath,
       geography: geography ?? this.geography,
       onGeography: onGeography ?? this.onGeography,
+      ice: ice ?? this.ice,
+      onIce: onIce ?? this.onIce,
     );
   }
 
@@ -222,6 +239,8 @@ class FoxSemanticColors extends ThemeExtension<FoxSemanticColors> {
       onMath: lerpColor(onMath, other.onMath),
       geography: lerpColor(geography, other.geography),
       onGeography: lerpColor(onGeography, other.onGeography),
+      ice: lerpColor(ice, other.ice),
+      onIce: lerpColor(onIce, other.onIce),
     );
   }
 }

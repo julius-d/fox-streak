@@ -42,6 +42,7 @@ void main() {
       expect(first.lastActiveDay, isNull);
       expect(first.dailyGoalXp, kDefaultDailyGoalXp);
       expect(first.todayXp, 0);
+      expect(first.streakFreezesAvailable, 0);
 
       final second = await repo.getProfile();
       expect(second.id, kProfileId);
@@ -263,6 +264,35 @@ void main() {
       final profile = await repo.getProfile();
       expect(profile.xpTotal, 10);
       expect(profile.todayXp, 10);
+    });
+  });
+
+  group('addStreakFreezes', () {
+    test('a positive delta increments the lifetime balance', () async {
+      await repo.addStreakFreezes(1);
+      expect((await repo.getProfile()).streakFreezesAvailable, 1);
+      await repo.addStreakFreezes(1);
+      expect((await repo.getProfile()).streakFreezesAvailable, 2);
+    });
+
+    test('a negative delta decrements the balance', () async {
+      await repo.addStreakFreezes(2);
+      await repo.addStreakFreezes(-1);
+      expect((await repo.getProfile()).streakFreezesAvailable, 1);
+    });
+
+    test('clamps at 0 rather than going negative', () async {
+      await repo.addStreakFreezes(1);
+      await repo.addStreakFreezes(-5);
+      expect((await repo.getProfile()).streakFreezesAvailable, 0);
+    });
+
+    test('never touches coinsTotal or other profile fields', () async {
+      await repo.addXp(10, now: kTestToday);
+      await repo.addStreakFreezes(1);
+      final profile = await repo.getProfile();
+      expect(profile.coinsTotal, 0);
+      expect(profile.xpTotal, 10);
     });
   });
 

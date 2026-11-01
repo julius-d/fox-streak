@@ -1367,6 +1367,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You won {amount} coins!'**
   String wheelWonText(int amount);
+
+  /// Heading shown once the wheel has stopped on its rare streak-on-ice segment, instead of a coin amount (issue #087)
+  ///
+  /// In en, this message translates to:
+  /// **'You won a streak freeze! ❄️'**
+  String get wheelWonStreakOnIceText;
+
+  /// A11y label for the wheel's streak-on-ice slice/win, once stopped (issue #087) — the streak-on-ice counterpart to coinsSemanticLabel
+  ///
+  /// In en, this message translates to:
+  /// **'Streak freeze'**
+  String get streakOnIceSemanticLabel;
+
+  /// One-time FoxFeedbackBanner on Home informing the user their streak was auto-saved by consuming a banked streak freeze (issue #087)
+  ///
+  /// In en, this message translates to:
+  /// **'Your streak was saved with a streak freeze! ❄️'**
+  String get streakFreezeAppliedBannerText;
+
+  /// Streak Details screen headline showing the current streakFreezesAvailable balance (issue #087)
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No streak freezes available} =1{1 streak freeze available} other{{count} streak freezes available}}'**
+  String streakFreezesAvailableLabel(int count);
+
+  /// Calendar color-bucket legend label for a streakOnIce day, distinct from the ActivityLevel buckets (issue #087)
+  ///
+  /// In en, this message translates to:
+  /// **'Streak freeze used'**
+  String get streakDetailsLegendStreakOnIce;
+
+  /// Screen-reader label for one activity-calendar cell whose daily_activity row has source streakOnIce (issue #087)
+  ///
+  /// In en, this message translates to:
+  /// **'{day}: streak freeze used'**
+  String streakCalendarCellStreakOnIceLabel(String day);
 }
 
 class _AppLocalizationsDelegate

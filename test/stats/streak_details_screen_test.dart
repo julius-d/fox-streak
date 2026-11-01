@@ -89,6 +89,35 @@ void main() {
     await unmount(tester);
   });
 
+  testWidgets('shows the streak-on-ice legend entry and the current '
+      'streakFreezesAvailable count (issue #087)', (tester) async {
+    final clock = FakeClock(kTestToday);
+    await pumpStreakDetails(
+      tester,
+      clock,
+      seed: (stats) async {
+        await stats.addStreakFreezes(2);
+      },
+    );
+
+    expect(find.text('Streak freeze used'), findsOneWidget);
+    expect(
+      find.byKey(const Key('streakFreezesAvailableLabel')),
+      findsOneWidget,
+    );
+    expect(find.text('2 streak freezes available'), findsOneWidget);
+    await unmount(tester);
+  });
+
+  testWidgets('with no streak freezes banked, the count reads zero '
+      '(issue #087)', (tester) async {
+    final clock = FakeClock(kTestToday);
+    await pumpStreakDetails(tester, clock);
+
+    expect(find.text('No streak freezes available'), findsOneWidget);
+    await unmount(tester);
+  });
+
   testWidgets('the current-streak headline reflects profile.streakCount', (
     tester,
   ) async {

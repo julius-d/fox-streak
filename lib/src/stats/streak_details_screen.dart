@@ -51,6 +51,9 @@ class _StreakDetailsBody extends StatelessWidget {
     );
     String cellSemanticsLabel(ActivityDay day) {
       final String formattedDay = dateFormat.format(parseDayString(day.day)!);
+      if (day.isStreakOnIce) {
+        return l10n.streakCalendarCellStreakOnIceLabel(formattedDay);
+      }
       return day.hasActivity
           ? l10n.streakCalendarCellActivityLabel(formattedDay, day.xpEarned)
           : l10n.streakCalendarCellNoActivityLabel(formattedDay);
@@ -73,6 +76,12 @@ class _StreakDetailsBody extends StatelessWidget {
                 data.longestStreakInWindow,
               ),
               key: const Key('longestStreakHeadline'),
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: FoxSpacing.xs),
+            Text(
+              l10n.streakFreezesAvailableLabel(data.streakFreezesAvailable),
+              key: const Key('streakFreezesAvailableLabel'),
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: FoxSpacing.lg),
@@ -99,6 +108,7 @@ class _Legend extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color flame = foxSemantics(context).flame;
+    final Color ice = foxSemantics(context).ice;
     final ColorScheme scheme = Theme.of(context).colorScheme;
     final entries = <(ActivityLevel, String)>[
       (ActivityLevel.none, l10n.streakDetailsLegendNone),
@@ -134,6 +144,28 @@ class _Legend extends StatelessWidget {
               Text(label, style: Theme.of(context).textTheme.labelSmall),
             ],
           ),
+        // #087: a 5th swatch, separate from the ActivityLevel buckets above
+        // (a streak-on-ice day overrides its bucket color entirely).
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: FoxSpacing.md,
+              height: FoxSpacing.md,
+              decoration: BoxDecoration(
+                color: ice,
+                borderRadius: const BorderRadius.all(
+                  Radius.circular(FoxRadius.sm),
+                ),
+              ),
+            ),
+            const SizedBox(width: FoxSpacing.xs),
+            Text(
+              l10n.streakDetailsLegendStreakOnIce,
+              style: Theme.of(context).textTheme.labelSmall,
+            ),
+          ],
+        ),
       ],
     );
   }

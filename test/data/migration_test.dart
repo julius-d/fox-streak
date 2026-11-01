@@ -449,8 +449,10 @@ class _LegacyV10Database extends AppDatabase {
 /// file at the exact version #084's migration upgrades from: every table is
 /// already in its current (post-#068) shape — including the `owned_pets`/
 /// `pet_id`/`equipped_pet_id` rename — except `items` (still lacks #014's
-/// image columns, see [_createItemsTableWithoutImage]) and
-/// `daily_activity`, which doesn't exist yet.
+/// image columns, see [_createItemsTableWithoutImage]), `profile_stats`
+/// (still lacks #087's `streak_freezes_available`, see
+/// [_createProfileStatsTableWithoutStreakFreezes]), and `daily_activity`,
+/// which doesn't exist yet.
 class _LegacyV11Database extends AppDatabase {
   _LegacyV11Database(QueryExecutor executor) : super.forTesting(executor); // ignore: use_super_parameters — must forward to the named forTesting() ctor, not the default unnamed one
 
@@ -464,7 +466,7 @@ class _LegacyV11Database extends AppDatabase {
       await m.createTable(db.questionSets);
       await _createItemsTableWithoutImage(m);
       await m.createTable(db.attempts);
-      await m.createTable(db.profileStats);
+      await _createProfileStatsTableWithoutStreakFreezes(m);
       await m.createTable(db.appSettings);
       await m.createTable(db.ownedPets);
     },
@@ -494,9 +496,10 @@ Future<void> _createItemsTableWithoutImage(Migrator m) async {
 
 /// A schemaVersion-12 view of [AppDatabase], used only to seed a pre-#014
 /// file at the exact version #014's migration upgrades from: every table is
-/// already in its current (post-#084) shape except `items`, which still
-/// lacks `image_type`/`image_content` (see
-/// [_createItemsTableWithoutImage]).
+/// already in its current (post-#084) shape except `items` (still lacks
+/// `image_type`/`image_content`, see [_createItemsTableWithoutImage]) and
+/// `profile_stats` (still lacks #087's `streak_freezes_available`, see
+/// [_createProfileStatsTableWithoutStreakFreezes]).
 class _LegacyV12Database extends AppDatabase {
   _LegacyV12Database(QueryExecutor executor) : super.forTesting(executor); // ignore: use_super_parameters — must forward to the named forTesting() ctor, not the default unnamed one
 
@@ -510,7 +513,7 @@ class _LegacyV12Database extends AppDatabase {
       await m.createTable(db.questionSets);
       await _createItemsTableWithoutImage(m);
       await m.createTable(db.attempts);
-      await m.createTable(db.profileStats);
+      await _createProfileStatsTableWithoutStreakFreezes(m);
       await m.createTable(db.appSettings);
       await m.createTable(db.ownedPets);
       await m.createTable(db.dailyActivity);
@@ -544,8 +547,10 @@ Future<void> _createItemsTableWithImageNoCopyright(Migrator m) async {
 
 /// A schemaVersion-13 view of [AppDatabase], used only to seed a pre-#094
 /// file at the exact version #094's migration upgrades from: every table is
-/// already in its current (post-#014) shape except `items`, which still
-/// lacks `image_copyright` (see [_createItemsTableWithImageNoCopyright]).
+/// already in its current (post-#014) shape except `items` (still lacks
+/// `image_copyright`, see [_createItemsTableWithImageNoCopyright]) and
+/// `profile_stats` (still lacks #087's `streak_freezes_available`, see
+/// [_createProfileStatsTableWithoutStreakFreezes]).
 class _LegacyV13Database extends AppDatabase {
   _LegacyV13Database(QueryExecutor executor) : super.forTesting(executor); // ignore: use_super_parameters — must forward to the named forTesting() ctor, not the default unnamed one
 
@@ -559,7 +564,57 @@ class _LegacyV13Database extends AppDatabase {
       await m.createTable(db.questionSets);
       await _createItemsTableWithImageNoCopyright(m);
       await m.createTable(db.attempts);
-      await m.createTable(db.profileStats);
+      await _createProfileStatsTableWithoutStreakFreezes(m);
+      await m.createTable(db.appSettings);
+      await m.createTable(db.ownedPets);
+      await m.createTable(db.dailyActivity);
+    },
+  );
+}
+
+/// Creates the pre-#087 `profile_stats` shape (every column up to and
+/// including `coins_total`, but not `streak_freezes_available` yet) — the
+/// current Dart `ProfileStats` definition already has all of them, so
+/// `m.createTable(db.profileStats)` can't be used for this pre-v15 fixture.
+Future<void> _createProfileStatsTableWithoutStreakFreezes(Migrator m) async {
+  final db = m.database as AppDatabase;
+  await db.customStatement('''
+    CREATE TABLE profile_stats (
+      id INTEGER NOT NULL PRIMARY KEY,
+      xp_total INTEGER NOT NULL DEFAULT 0,
+      streak_count INTEGER NOT NULL DEFAULT 0,
+      last_active_day TEXT NULL,
+      daily_goal_xp INTEGER NOT NULL DEFAULT 100,
+      today_xp INTEGER NOT NULL DEFAULT 0,
+      display_name TEXT NULL,
+      has_onboarded INTEGER NOT NULL DEFAULT 0 CHECK (has_onboarded IN (0, 1)),
+      equipped_pet_id TEXT NOT NULL DEFAULT 'emoji_u1f98a_lottie',
+      lessons_completed_today INTEGER NOT NULL DEFAULT 0,
+      lessons_completed_day TEXT NULL,
+      coins_total INTEGER NOT NULL DEFAULT 0
+    )
+  ''');
+}
+
+/// A schemaVersion-14 view of [AppDatabase], used only to seed a pre-#087
+/// file at the exact version #087's migration upgrades from: every table is
+/// already in its current (post-#094) shape except `profile_stats`, which
+/// still lacks `streak_freezes_available` (see
+/// [_createProfileStatsTableWithoutStreakFreezes]).
+class _LegacyV14Database extends AppDatabase {
+  _LegacyV14Database(QueryExecutor executor) : super.forTesting(executor); // ignore: use_super_parameters — must forward to the named forTesting() ctor, not the default unnamed one
+
+  @override
+  int get schemaVersion => 14;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) async {
+      final db = m.database as AppDatabase;
+      await m.createTable(db.questionSets);
+      await m.createTable(db.items);
+      await m.createTable(db.attempts);
+      await _createProfileStatsTableWithoutStreakFreezes(m);
       await m.createTable(db.appSettings);
       await m.createTable(db.ownedPets);
       await m.createTable(db.dailyActivity);
@@ -1231,6 +1286,54 @@ void main() {
     expect(
       columns.map((row) => row.read<String>('name')),
       contains('image_copyright'),
+    );
+  });
+
+  test('onUpgrade (v14 -> v15) adds streakFreezesAvailable defaulting to '
+      '0, preserving existing profile fields (#087)', () async {
+    final dir = Directory.systemTemp.createTempSync('foxstreak_migration_v15');
+    final file = File('${dir.path}/test.sqlite');
+    addTearDown(() {
+      if (dir.existsSync()) dir.deleteSync(recursive: true);
+    });
+
+    // 1. Seed a v14 database directly on disk (profile_stats has no
+    // streak_freezes_available column yet) with a pre-existing profile row.
+    final legacyDb = _LegacyV14Database(NativeDatabase(file));
+    await legacyDb
+        .into(legacyDb.profileStats)
+        .insert(
+          const ProfileStatsCompanion(
+            id: Value(0),
+            xpTotal: Value(42),
+            streakCount: Value(3),
+            lastActiveDay: Value('2026-10-10'),
+            coinsTotal: Value(15),
+          ),
+        );
+    await legacyDb.close();
+
+    // 2. Reopen the SAME file with the real (current schemaVersion)
+    // database; drift sees user_version=14 < schemaVersion=15 and runs
+    // onUpgrade's addColumn.
+    final upgradedDb = AppDatabase.forTesting(NativeDatabase(file));
+    addTearDown(upgradedDb.close);
+
+    final profile = await (upgradedDb.select(
+      upgradedDb.profileStats,
+    )..where((t) => t.id.equals(0))).getSingle();
+    expect(profile.streakFreezesAvailable, 0);
+    expect(profile.xpTotal, 42);
+    expect(profile.streakCount, 3);
+    expect(profile.lastActiveDay, '2026-10-10');
+    expect(profile.coinsTotal, 15);
+
+    final columns = await upgradedDb
+        .customSelect("PRAGMA table_info('profile_stats')")
+        .get();
+    expect(
+      columns.map((row) => row.read<String>('name')),
+      contains('streak_freezes_available'),
     );
   });
 }

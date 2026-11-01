@@ -16,8 +16,8 @@ const int kDefaultDailyGoalXp = 100;
 ///
 /// Stored as plain TEXT (`.name`/`values.byName`), enforced in Dart —
 /// matching the house convention used by `Items.type`/`kItemTypes` — not
-/// Drift's `textEnum()` converter. [streakOnIce] is reserved for a future
-/// streak-freeze feature; nothing writes it yet.
+/// Drift's `textEnum()` converter. [streakOnIce] is written by #087's
+/// `StreakFreezeService` when it auto-applies a banked streak freeze.
 enum DailyActivitySource { lessonCompleted, streakOnIce }
 
 /// Repository for `profile_stats` + `attempts`.
@@ -26,7 +26,9 @@ enum DailyActivitySource { lessonCompleted, streakOnIce }
 /// - `xpTotal`/`todayXp` are written exclusively by #010 `XpService` (sole
 ///   caller of [addXp]).
 /// - `streakCount` / `lastActiveDay` are written exclusively by #011
-///   `StreakService`.
+///   `StreakService` via [setStreak] — except #087's `StreakFreezeService`,
+///   which also calls [setStreak] directly (its own, separate app-launch
+///   code path; see that class's doc).
 /// - [recordAttempt] writes an `attempts` row only (+ ensures the profile row
 ///   exists) and MUST NOT touch `streakCount`/`lastActiveDay` — or `xpTotal`.
 /// - This repository owns `dailyGoalXp`, `displayName` and `hasOnboarded`
@@ -36,10 +38,13 @@ enum DailyActivitySource { lessonCompleted, streakOnIce }
 ///   [setEquippedPet]/[setPetLessonCounter].
 /// - `coinsTotal` is written exclusively by #065 `PetService`'s
 ///   coin-reward branch, via [addCoins].
+/// - `streakFreezesAvailable` is written via [addStreakFreezes] (issue
+///   #087): #059 `PetService`'s wheel-of-fortune branch (+1 on a win) and
+///   `StreakFreezeService`'s app-launch auto-apply (-1 on consumption).
 /// - `daily_activity` (issue #084) is not a single-feature sole-writer
 ///   column like the rest of this class — [recordDailyActivity] is called
-///   today only by #010 `XpService.applyLessonResult`, but is deliberately
-///   reusable by a future streak-freeze feature too.
+///   by #010 `XpService.applyLessonResult` and, since #087, by
+///   `StreakFreezeService`'s auto-apply path too.
 class StatsRepository {
   final AppDatabase _db;
   final Clock _clock;
@@ -70,6 +75,7 @@ class StatsRepository {
             lessonsCompletedToday: Value(0),
             lessonsCompletedDay: Value(null),
             coinsTotal: Value(0),
+            streakFreezesAvailable: Value(0),
           ),
         );
     return const ProfileStat(
@@ -85,6 +91,7 @@ class StatsRepository {
       lessonsCompletedToday: 0,
       lessonsCompletedDay: null,
       coinsTotal: 0,
+      streakFreezesAvailable: 0,
     );
   }
 
@@ -107,6 +114,7 @@ class StatsRepository {
             lessonsCompletedToday: 0,
             lessonsCompletedDay: null,
             coinsTotal: 0,
+            streakFreezesAvailable: 0,
           ),
     );
   }
@@ -225,6 +233,24 @@ class StatsRepository {
     );
   }
 
+  /// Adds [delta] to the lifetime `streakFreezesAvailable` balance (issue
+  /// #087) — positive when #059 `PetService`'s wheel-of-fortune branch
+  /// awards a freeze, negative when `StreakFreezeService`'s app-launch
+  /// auto-apply consumes one. Mirrors [addCoins]'s shape. Clamps at 0
+  /// defensively; every caller is expected to check availability before
+  /// passing a negative delta.
+  Future<void> addStreakFreezes(int delta) async {
+    final profile = await getProfile();
+    final updated = profile.streakFreezesAvailable + delta;
+    await (_db.update(
+      _db.profileStats,
+    )..where((t) => t.id.equals(kProfileId))).write(
+      ProfileStatsCompanion(
+        streakFreezesAvailable: Value(updated < 0 ? 0 : updated),
+      ),
+    );
+  }
+
   /// The `setId` of the most recently attempted item, or `null` if no
   /// lesson has ever been completed (#012's Home "Continue" button).
   ///
@@ -279,11 +305,12 @@ class StatsRepository {
   /// day only adds [xpDelta] to the stored `xpEarned` — its `activitySource`
   /// is left untouched (first write for a day wins). Whether a later write
   /// should ever override an earlier day's source (e.g. a lesson completed
-  /// on an already-frozen day, once streak-freeze exists) is an open
-  /// question for that future issue, not decided here.
+  /// on an already-frozen day) is an open question, not decided here.
   ///
-  /// Sole caller today: #010 `XpService.applyLessonResult`, at the same
-  /// call site as `addXp`, reusing its `xpApplied` guard.
+  /// Callers: #010 `XpService.applyLessonResult`, at the same call site as
+  /// `addXp`, reusing its `xpApplied` guard; and #087 `StreakFreezeService`,
+  /// which writes the bridged day's row (`source: streakOnIce`, `xpDelta:
+  /// 0`) as part of its own transaction.
   Future<void> recordDailyActivity({
     required String day,
     required int xpDelta,
@@ -291,8 +318,8 @@ class StatsRepository {
   }) async {
     // Transacted (not plain select-then-write) so a concurrent write to the
     // same day can't interleave between the read and the write — harmless
-    // with today's single caller, but load-bearing once a second writer
-    // (e.g. a future streak-freeze feature) exists.
+    // with today's two callers (each only ever touches "its own" day), but
+    // load-bearing if that ever changes.
     await _db.transaction(() async {
       final existing = await (_db.select(
         _db.dailyActivity,

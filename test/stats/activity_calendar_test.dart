@@ -6,11 +6,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fox_streak_app/src/data/database.dart';
 import 'package:fox_streak_app/src/stats/activity_calendar.dart';
 
-DailyActivityData entry(String day, int xp) => DailyActivityData(
-  day: day,
-  xpEarned: xp,
-  activitySource: 'lessonCompleted',
-);
+DailyActivityData entry(
+  String day,
+  int xp, {
+  String source = 'lessonCompleted',
+}) => DailyActivityData(day: day, xpEarned: xp, activitySource: source);
 
 void main() {
   group('buildWindowDays', () {
@@ -294,5 +294,45 @@ void main() {
         expect(day.level, ActivityLevel.low);
       },
     );
+
+    test('a row with source streakOnIce sets isStreakOnIce; an ordinary '
+        'lessonCompleted row does not (issue #087)', () {
+      final data = ActivityCalendarData.build(
+        today: today,
+        streakCount: 0,
+        lastActiveDay: null,
+        dailyGoalXp: 100,
+        entries: [
+          entry('2026-10-10', 10),
+          entry('2026-10-11', 0, source: 'streakOnIce'),
+        ],
+      );
+      final iceDay = data.days.firstWhere((d) => d.day == '2026-10-11');
+      final ordinaryDay = data.days.firstWhere((d) => d.day == '2026-10-10');
+      expect(iceDay.isStreakOnIce, isTrue);
+      expect(ordinaryDay.isStreakOnIce, isFalse);
+    });
+
+    test('carries streakFreezesAvailable through unchanged, defaulting to '
+        '0 (issue #087)', () {
+      final defaulted = ActivityCalendarData.build(
+        today: today,
+        streakCount: 0,
+        lastActiveDay: null,
+        dailyGoalXp: 100,
+        entries: const [],
+      );
+      expect(defaulted.streakFreezesAvailable, 0);
+
+      final withFreezes = ActivityCalendarData.build(
+        today: today,
+        streakCount: 0,
+        lastActiveDay: null,
+        dailyGoalXp: 100,
+        entries: const [],
+        streakFreezesAvailable: 3,
+      );
+      expect(withFreezes.streakFreezesAvailable, 3);
+    });
   });
 }

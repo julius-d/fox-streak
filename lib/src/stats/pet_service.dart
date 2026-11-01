@@ -27,9 +27,13 @@
 // disjoint from #067's `newCount >= 2 && (newCount - 2) % 3 == 0` (2, 5,
 // 8, 11, ... are all ≡2 mod 3; 3, 6, 9, ... are all ≡0 mod 3), so the two
 // never trigger on the same completion and [recordLessonCompletion]'s
-// `reward`/`wheelCoinAmount` fields are never both non-null. Unlike the
-// lootbox's coin-flip branch, the wheel only ever awards coins (via
-// `drawWheelCoinAmount`/[StatsRepository.addCoins]) — never a pet.
+// `reward`/`wheelReward` fields are never both non-null. Unlike the
+// lootbox's coin-flip branch, the wheel only ever awards a [WheelReward]
+// (via `drawWheelSegment`) — never a pet.
+//
+// v#087: the wheel's draw table gained a 7th, rarer segment —
+// `WheelStreakOnIceReward` — which increments `streakFreezesAvailable`
+// (via [StatsRepository.addStreakFreezes]) instead of `coinsTotal`.
 //
 // v#097: the counter bump and its (at most one) reward write run inside a
 // single [StatsRepository.transaction] call, so a crash/throw between them
@@ -48,7 +52,10 @@ import '../pet/pet_catalog.dart';
 
 /// Sole writer of the pet-collection columns/table and `coinsTotal` (via
 /// [StatsRepository.setEquippedPet]/[StatsRepository.setPetLessonCounter]/
-/// [PetRepository.addOwnedPet]/[StatsRepository.addCoins]).
+/// [PetRepository.addOwnedPet]/[StatsRepository.addCoins]) — and, since
+/// #087, one of two writers of `streakFreezesAvailable` (the other being
+/// `StreakFreezeService`'s app-launch auto-apply), via
+/// [StatsRepository.addStreakFreezes].
 class PetService {
   final StatsRepository _statsRepo;
   final PetRepository _petRepo;
@@ -83,11 +90,13 @@ class PetService {
   /// the result screen's celebration either way) doesn't have to re-query
   /// the same row a second time right after this call returns.
   ///
-  /// `wheelCoinAmount` is issue #085's independent wheel-of-fortune win —
-  /// a drawn-and-persisted coin amount on `newCount % 3 == 0` (3, 6, 9,
+  /// `wheelReward` is issue #085/#087's independent wheel-of-fortune win —
+  /// a drawn-and-persisted [WheelReward] on `newCount % 3 == 0` (3, 6, 9,
   /// ...), uncapped — see this file's header doc for why it never
   /// coincides with a non-null `reward`.
-  Future<({LootboxReward? reward, String equippedPetId, int? wheelCoinAmount})>
+  Future<
+    ({LootboxReward? reward, String equippedPetId, WheelReward? wheelReward})
+  >
   recordLessonCompletion({Random? random}) async {
     final profile = await _statsRepo.getProfile();
     final equippedPetId = profile.equippedPetId;
@@ -97,8 +106,8 @@ class PetService {
 
     // Issue #085: every 3rd completion (3, 6, 9, ...), uncapped — disjoint
     // from the lootbox cadence below (see this file's header doc).
-    final wheelCoinAmount = (newCount > 0 && newCount % 3 == 0)
-        ? drawWheelCoinAmount(random ?? _randomFactory())
+    final wheelReward = (newCount > 0 && newCount % 3 == 0)
+        ? drawWheelSegment(random ?? _randomFactory())
         : null;
 
     // Issue #067: the 2nd completion of the day, then every 3rd one after
@@ -128,15 +137,20 @@ class PetService {
     }
 
     // Issue #097: the counter bump and whichever reward write follows it
-    // (the wheel's coins or the lootbox's coins/pet) run in one transaction,
-    // so a crash/throw between them can't advance the counter without the
-    // reward landing (or vice versa) — the two reward cadences are disjoint
-    // (see this file's header doc), so at most one reward write ever joins
-    // the counter bump here.
+    // (the wheel's coins/freeze or the lootbox's coins/pet) run in one
+    // transaction, so a crash/throw between them can't advance the counter
+    // without the reward landing (or vice versa) — the two reward cadences
+    // are disjoint (see this file's header doc), so at most one reward
+    // write ever joins the counter bump here.
     await _statsRepo.transaction(() async {
       await _statsRepo.setPetLessonCounter(count: newCount, day: today);
-      if (wheelCoinAmount != null) {
-        await _statsRepo.addCoins(wheelCoinAmount);
+      switch (wheelReward) {
+        case WheelCoinsReward(amount: final amount):
+          await _statsRepo.addCoins(amount);
+        case WheelStreakOnIceReward():
+          await _statsRepo.addStreakFreezes(1);
+        case null:
+          break;
       }
       if (lootboxCoinAmount != null) {
         await _statsRepo.addCoins(lootboxCoinAmount);
@@ -151,14 +165,14 @@ class PetService {
     // trips this immediately in debug/test runs, rather than silently
     // pushing both the lootbox and the wheel screens back-to-back.
     assert(
-      reward == null || wheelCoinAmount == null,
+      reward == null || wheelReward == null,
       'lootbox reward and wheel win must never both be non-null for the '
       'same completion',
     );
     return (
       reward: reward,
       equippedPetId: equippedPetId,
-      wheelCoinAmount: wheelCoinAmount,
+      wheelReward: wheelReward,
     );
   }
 

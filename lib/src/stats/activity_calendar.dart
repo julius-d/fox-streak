@@ -9,6 +9,7 @@
 
 import '../data/clock.dart';
 import '../data/database.dart' show DailyActivityData;
+import '../data/stats_repository.dart' show DailyActivitySource;
 
 /// How many months back the calendar window looks from today.
 const int kActivityCalendarWindowMonths = 6;
@@ -26,6 +27,13 @@ class ActivityDay {
   final bool isCurrentStreak;
   final bool isLongestStreak;
 
+  /// Whether this day's `daily_activity` row was written by #087's
+  /// streak-freeze auto-apply (`source: streakOnIce`) rather than an
+  /// ordinary lesson completion — drives the calendar's distinct icy-blue
+  /// cell color, independent of [level] (which a same-bucket low-XP lesson
+  /// day could otherwise share).
+  final bool isStreakOnIce;
+
   const ActivityDay({
     required this.day,
     required this.xpEarned,
@@ -33,6 +41,7 @@ class ActivityDay {
     required this.level,
     required this.isCurrentStreak,
     required this.isLongestStreak,
+    this.isStreakOnIce = false,
   });
 }
 
@@ -49,11 +58,19 @@ class ActivityCalendarData {
   /// instead of highlighting the same days twice.
   final bool longestDiffersFromCurrent;
 
+  /// The profile's current `streakFreezesAvailable` balance (issue #087),
+  /// carried alongside the calendar data purely so the Streak Details
+  /// screen can show the count without a second provider watch. Defaults
+  /// to 0 so every pre-#087 fixture/test constructing this class directly
+  /// keeps compiling unchanged.
+  final int streakFreezesAvailable;
+
   const ActivityCalendarData({
     required this.days,
     required this.currentStreakCount,
     required this.longestStreakInWindow,
     required this.longestDiffersFromCurrent,
+    this.streakFreezesAvailable = 0,
   });
 
   factory ActivityCalendarData.build({
@@ -62,6 +79,7 @@ class ActivityCalendarData {
     required String? lastActiveDay,
     required int dailyGoalXp,
     required List<DailyActivityData> entries,
+    int streakFreezesAvailable = 0,
   }) {
     final windowDays = buildWindowDays(today: today);
     final windowDaySet = windowDays.toSet();
@@ -93,6 +111,8 @@ class ActivityCalendarData {
         ),
         isCurrentStreak: currentSet.contains(d),
         isLongestStreak: longestDiffers && longestSet.contains(d),
+        isStreakOnIce:
+            entry?.activitySource == DailyActivitySource.streakOnIce.name,
       );
     }).toList();
 
@@ -101,6 +121,7 @@ class ActivityCalendarData {
       currentStreakCount: streakCount,
       longestStreakInWindow: longestSet.length,
       longestDiffersFromCurrent: longestDiffers,
+      streakFreezesAvailable: streakFreezesAvailable,
     );
   }
 }
@@ -129,10 +150,11 @@ List<String> buildWindowDays({
 /// exists) earning [xpEarned] against [dailyGoalXp].
 ///
 /// A day without a row is [ActivityLevel.none]. A day *with* a row —
-/// including a future `streakOnIce` day at `xpEarned: 0` — always renders
-/// as at least [ActivityLevel.low], never [ActivityLevel.none]. Exact
-/// thresholds (`>=100%` / `50-99%` / below) are a UI-polish detail, not a
-/// contract.
+/// including a #087 `streakOnIce` day at `xpEarned: 0` — always renders
+/// as at least [ActivityLevel.low], never [ActivityLevel.none] (though a
+/// `streakOnIce` day's cell overrides this bucket color entirely with the
+/// icy-blue token — see [ActivityDay.isStreakOnIce]). Exact thresholds
+/// (`>=100%` / `50-99%` / below) are a UI-polish detail, not a contract.
 ActivityLevel bucketFor({
   required bool hasActivity,
   required int xpEarned,

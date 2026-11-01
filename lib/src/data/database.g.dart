@@ -1649,6 +1649,17 @@ class $ProfileStatsTable extends ProfileStats
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _streakFreezesAvailableMeta =
+      const VerificationMeta('streakFreezesAvailable');
+  @override
+  late final GeneratedColumn<int> streakFreezesAvailable = GeneratedColumn<int>(
+    'streak_freezes_available',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1663,6 +1674,7 @@ class $ProfileStatsTable extends ProfileStats
     lessonsCompletedToday,
     lessonsCompletedDay,
     coinsTotal,
+    streakFreezesAvailable,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1769,6 +1781,15 @@ class $ProfileStatsTable extends ProfileStats
         coinsTotal.isAcceptableOrUnknown(data['coins_total']!, _coinsTotalMeta),
       );
     }
+    if (data.containsKey('streak_freezes_available')) {
+      context.handle(
+        _streakFreezesAvailableMeta,
+        streakFreezesAvailable.isAcceptableOrUnknown(
+          data['streak_freezes_available']!,
+          _streakFreezesAvailableMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1826,6 +1847,10 @@ class $ProfileStatsTable extends ProfileStats
         DriftSqlType.int,
         data['${effectivePrefix}coins_total'],
       )!,
+      streakFreezesAvailable: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}streak_freezes_available'],
+      )!,
     );
   }
 
@@ -1848,6 +1873,7 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
   final int lessonsCompletedToday;
   final String? lessonsCompletedDay;
   final int coinsTotal;
+  final int streakFreezesAvailable;
   const ProfileStat({
     required this.id,
     required this.xpTotal,
@@ -1861,6 +1887,7 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
     required this.lessonsCompletedToday,
     this.lessonsCompletedDay,
     required this.coinsTotal,
+    required this.streakFreezesAvailable,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1883,6 +1910,7 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
       map['lessons_completed_day'] = Variable<String>(lessonsCompletedDay);
     }
     map['coins_total'] = Variable<int>(coinsTotal);
+    map['streak_freezes_available'] = Variable<int>(streakFreezesAvailable);
     return map;
   }
 
@@ -1906,6 +1934,7 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
           ? const Value.absent()
           : Value(lessonsCompletedDay),
       coinsTotal: Value(coinsTotal),
+      streakFreezesAvailable: Value(streakFreezesAvailable),
     );
   }
 
@@ -1931,6 +1960,9 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
         json['lessonsCompletedDay'],
       ),
       coinsTotal: serializer.fromJson<int>(json['coinsTotal']),
+      streakFreezesAvailable: serializer.fromJson<int>(
+        json['streakFreezesAvailable'],
+      ),
     );
   }
   @override
@@ -1949,6 +1981,7 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
       'lessonsCompletedToday': serializer.toJson<int>(lessonsCompletedToday),
       'lessonsCompletedDay': serializer.toJson<String?>(lessonsCompletedDay),
       'coinsTotal': serializer.toJson<int>(coinsTotal),
+      'streakFreezesAvailable': serializer.toJson<int>(streakFreezesAvailable),
     };
   }
 
@@ -1965,6 +1998,7 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
     int? lessonsCompletedToday,
     Value<String?> lessonsCompletedDay = const Value.absent(),
     int? coinsTotal,
+    int? streakFreezesAvailable,
   }) => ProfileStat(
     id: id ?? this.id,
     xpTotal: xpTotal ?? this.xpTotal,
@@ -1982,6 +2016,8 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
         ? lessonsCompletedDay.value
         : this.lessonsCompletedDay,
     coinsTotal: coinsTotal ?? this.coinsTotal,
+    streakFreezesAvailable:
+        streakFreezesAvailable ?? this.streakFreezesAvailable,
   );
   ProfileStat copyWithCompanion(ProfileStatsCompanion data) {
     return ProfileStat(
@@ -2015,6 +2051,9 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
       coinsTotal: data.coinsTotal.present
           ? data.coinsTotal.value
           : this.coinsTotal,
+      streakFreezesAvailable: data.streakFreezesAvailable.present
+          ? data.streakFreezesAvailable.value
+          : this.streakFreezesAvailable,
     );
   }
 
@@ -2032,7 +2071,8 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
           ..write('equippedPetId: $equippedPetId, ')
           ..write('lessonsCompletedToday: $lessonsCompletedToday, ')
           ..write('lessonsCompletedDay: $lessonsCompletedDay, ')
-          ..write('coinsTotal: $coinsTotal')
+          ..write('coinsTotal: $coinsTotal, ')
+          ..write('streakFreezesAvailable: $streakFreezesAvailable')
           ..write(')'))
         .toString();
   }
@@ -2051,6 +2091,7 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
     lessonsCompletedToday,
     lessonsCompletedDay,
     coinsTotal,
+    streakFreezesAvailable,
   );
   @override
   bool operator ==(Object other) =>
@@ -2067,7 +2108,8 @@ class ProfileStat extends DataClass implements Insertable<ProfileStat> {
           other.equippedPetId == this.equippedPetId &&
           other.lessonsCompletedToday == this.lessonsCompletedToday &&
           other.lessonsCompletedDay == this.lessonsCompletedDay &&
-          other.coinsTotal == this.coinsTotal);
+          other.coinsTotal == this.coinsTotal &&
+          other.streakFreezesAvailable == this.streakFreezesAvailable);
 }
 
 class ProfileStatsCompanion extends UpdateCompanion<ProfileStat> {
@@ -2083,6 +2125,7 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStat> {
   final Value<int> lessonsCompletedToday;
   final Value<String?> lessonsCompletedDay;
   final Value<int> coinsTotal;
+  final Value<int> streakFreezesAvailable;
   const ProfileStatsCompanion({
     this.id = const Value.absent(),
     this.xpTotal = const Value.absent(),
@@ -2096,6 +2139,7 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStat> {
     this.lessonsCompletedToday = const Value.absent(),
     this.lessonsCompletedDay = const Value.absent(),
     this.coinsTotal = const Value.absent(),
+    this.streakFreezesAvailable = const Value.absent(),
   });
   ProfileStatsCompanion.insert({
     this.id = const Value.absent(),
@@ -2110,6 +2154,7 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStat> {
     this.lessonsCompletedToday = const Value.absent(),
     this.lessonsCompletedDay = const Value.absent(),
     this.coinsTotal = const Value.absent(),
+    this.streakFreezesAvailable = const Value.absent(),
   });
   static Insertable<ProfileStat> custom({
     Expression<int>? id,
@@ -2124,6 +2169,7 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStat> {
     Expression<int>? lessonsCompletedToday,
     Expression<String>? lessonsCompletedDay,
     Expression<int>? coinsTotal,
+    Expression<int>? streakFreezesAvailable,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2140,6 +2186,8 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStat> {
       if (lessonsCompletedDay != null)
         'lessons_completed_day': lessonsCompletedDay,
       if (coinsTotal != null) 'coins_total': coinsTotal,
+      if (streakFreezesAvailable != null)
+        'streak_freezes_available': streakFreezesAvailable,
     });
   }
 
@@ -2156,6 +2204,7 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStat> {
     Value<int>? lessonsCompletedToday,
     Value<String?>? lessonsCompletedDay,
     Value<int>? coinsTotal,
+    Value<int>? streakFreezesAvailable,
   }) {
     return ProfileStatsCompanion(
       id: id ?? this.id,
@@ -2171,6 +2220,8 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStat> {
           lessonsCompletedToday ?? this.lessonsCompletedToday,
       lessonsCompletedDay: lessonsCompletedDay ?? this.lessonsCompletedDay,
       coinsTotal: coinsTotal ?? this.coinsTotal,
+      streakFreezesAvailable:
+          streakFreezesAvailable ?? this.streakFreezesAvailable,
     );
   }
 
@@ -2217,6 +2268,11 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStat> {
     if (coinsTotal.present) {
       map['coins_total'] = Variable<int>(coinsTotal.value);
     }
+    if (streakFreezesAvailable.present) {
+      map['streak_freezes_available'] = Variable<int>(
+        streakFreezesAvailable.value,
+      );
+    }
     return map;
   }
 
@@ -2234,7 +2290,8 @@ class ProfileStatsCompanion extends UpdateCompanion<ProfileStat> {
           ..write('equippedPetId: $equippedPetId, ')
           ..write('lessonsCompletedToday: $lessonsCompletedToday, ')
           ..write('lessonsCompletedDay: $lessonsCompletedDay, ')
-          ..write('coinsTotal: $coinsTotal')
+          ..write('coinsTotal: $coinsTotal, ')
+          ..write('streakFreezesAvailable: $streakFreezesAvailable')
           ..write(')'))
         .toString();
   }
@@ -4257,6 +4314,7 @@ typedef $$ProfileStatsTableCreateCompanionBuilder =
       Value<int> lessonsCompletedToday,
       Value<String?> lessonsCompletedDay,
       Value<int> coinsTotal,
+      Value<int> streakFreezesAvailable,
     });
 typedef $$ProfileStatsTableUpdateCompanionBuilder =
     ProfileStatsCompanion Function({
@@ -4272,6 +4330,7 @@ typedef $$ProfileStatsTableUpdateCompanionBuilder =
       Value<int> lessonsCompletedToday,
       Value<String?> lessonsCompletedDay,
       Value<int> coinsTotal,
+      Value<int> streakFreezesAvailable,
     });
 
 class $$ProfileStatsTableFilterComposer
@@ -4340,6 +4399,11 @@ class $$ProfileStatsTableFilterComposer
 
   ColumnFilters<int> get coinsTotal => $composableBuilder(
     column: $table.coinsTotal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get streakFreezesAvailable => $composableBuilder(
+    column: $table.streakFreezesAvailable,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -4412,6 +4476,11 @@ class $$ProfileStatsTableOrderingComposer
     column: $table.coinsTotal,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get streakFreezesAvailable => $composableBuilder(
+    column: $table.streakFreezesAvailable,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ProfileStatsTableAnnotationComposer
@@ -4476,6 +4545,11 @@ class $$ProfileStatsTableAnnotationComposer
     column: $table.coinsTotal,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get streakFreezesAvailable => $composableBuilder(
+    column: $table.streakFreezesAvailable,
+    builder: (column) => column,
+  );
 }
 
 class $$ProfileStatsTableTableManager
@@ -4521,6 +4595,7 @@ class $$ProfileStatsTableTableManager
                 Value<int> lessonsCompletedToday = const Value.absent(),
                 Value<String?> lessonsCompletedDay = const Value.absent(),
                 Value<int> coinsTotal = const Value.absent(),
+                Value<int> streakFreezesAvailable = const Value.absent(),
               }) => ProfileStatsCompanion(
                 id: id,
                 xpTotal: xpTotal,
@@ -4534,6 +4609,7 @@ class $$ProfileStatsTableTableManager
                 lessonsCompletedToday: lessonsCompletedToday,
                 lessonsCompletedDay: lessonsCompletedDay,
                 coinsTotal: coinsTotal,
+                streakFreezesAvailable: streakFreezesAvailable,
               ),
           createCompanionCallback:
               ({
@@ -4549,6 +4625,7 @@ class $$ProfileStatsTableTableManager
                 Value<int> lessonsCompletedToday = const Value.absent(),
                 Value<String?> lessonsCompletedDay = const Value.absent(),
                 Value<int> coinsTotal = const Value.absent(),
+                Value<int> streakFreezesAvailable = const Value.absent(),
               }) => ProfileStatsCompanion.insert(
                 id: id,
                 xpTotal: xpTotal,
@@ -4562,6 +4639,7 @@ class $$ProfileStatsTableTableManager
                 lessonsCompletedToday: lessonsCompletedToday,
                 lessonsCompletedDay: lessonsCompletedDay,
                 coinsTotal: coinsTotal,
+                streakFreezesAvailable: streakFreezesAvailable,
               ),
           withReferenceMapper: (p0) => p0
               .map(

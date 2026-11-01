@@ -770,4 +770,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String wheelWonText(int amount) {
     return 'You won $amount coins!';
   }
+
+  @override
+  String get wheelWonStreakOnIceText => 'You won a streak freeze! ❄️';
+
+  @override
+  String get streakOnIceSemanticLabel => 'Streak freeze';
+
+  @override
+  String get streakFreezeAppliedBannerText =>
+      'Your streak was saved with a streak freeze! ❄️';
+
+  @override
+  String streakFreezesAvailableLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count streak freezes available',
+      one: '1 streak freeze available',
+      zero: 'No streak freezes available',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get streakDetailsLegendStreakOnIce => 'Streak freeze used';
+
+  @override
+  String streakCalendarCellStreakOnIceLabel(String day) {
+    return '$day: streak freeze used';
+  }
 }

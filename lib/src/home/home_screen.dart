@@ -28,6 +28,7 @@ import '../settings/settings_providers.dart';
 import '../settings/settings_screen.dart';
 import '../stats/stats_providers.dart';
 import '../stats/streak_details_screen.dart';
+import '../stats/streak_freeze_service.dart';
 import '../stats/xp_service.dart';
 import '../theme/fox_streak_theme.dart';
 import '../widgets/widgets.dart';
@@ -140,6 +141,11 @@ class _HomeDashboard extends ConsumerWidget {
     final AsyncValue<int?> lastSetIdAsync = ref.watch(
       lastPracticedSetIdProvider,
     );
+    // Issue #087: checked once on app launch (not re-watched on every
+    // profile write — see the provider's own doc). `asData?.value` reads
+    // the resolved result without blocking Home's own loading gate on it.
+    final bool streakFreezeApplied =
+        ref.watch(streakFreezeAutoApplyProvider).asData?.value ?? false;
 
     return Scaffold(
       key: const Key('homeScreen'),
@@ -227,6 +233,13 @@ class _HomeDashboard extends ConsumerWidget {
                   ],
                 ],
               ),
+              if (streakFreezeApplied) ...[
+                const SizedBox(height: FoxSpacing.lg),
+                FoxFeedbackBanner.info(
+                  key: const Key('streakFreezeAppliedBanner'),
+                  message: l10n.streakFreezeAppliedBannerText,
+                ),
+              ],
               const SizedBox(height: FoxSpacing.lg),
               Center(
                 child: InkWell(

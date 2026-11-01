@@ -902,5 +902,39 @@
       "amount": {"type": "int"}
     }
   },
-  "wheelWonText": "You won {amount} coins!"
+  "wheelWonText": "You won {amount} coins!",
+  "@wheelWonStreakOnIceText": {
+    "description": "Heading shown once the wheel has stopped on its rare streak-on-ice segment, instead of a coin amount (issue #087)",
+    "placeholders": {}
+  },
+  "wheelWonStreakOnIceText": "You won a streak freeze! ❄️",
+  "@streakOnIceSemanticLabel": {
+    "description": "A11y label for the wheel's streak-on-ice slice/win, once stopped (issue #087) — the streak-on-ice counterpart to coinsSemanticLabel",
+    "placeholders": {}
+  },
+  "streakOnIceSemanticLabel": "Streak freeze",
+  "@streakFreezeAppliedBannerText": {
+    "description": "One-time FoxFeedbackBanner on Home informing the user their streak was auto-saved by consuming a banked streak freeze (issue #087)",
+    "placeholders": {}
+  },
+  "streakFreezeAppliedBannerText": "Your streak was saved with a streak freeze! ❄️",
+  "@streakFreezesAvailableLabel": {
+    "description": "Streak Details screen headline showing the current streakFreezesAvailable balance (issue #087)",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "streakFreezesAvailableLabel": "{count, plural, =0{No streak freezes available} =1{1 streak freeze available} other{{count} streak freezes available}}",
+  "@streakDetailsLegendStreakOnIce": {
+    "description": "Calendar color-bucket legend label for a streakOnIce day, distinct from the ActivityLevel buckets (issue #087)",
+    "placeholders": {}
+  },
+  "streakDetailsLegendStreakOnIce": "Streak freeze used",
+  "@streakCalendarCellStreakOnIceLabel": {
+    "description": "Screen-reader label for one activity-calendar cell whose daily_activity row has source streakOnIce (issue #087)",
+    "placeholders": {
+      "day": {"type": "String"}
+    }
+  },
+  "streakCalendarCellStreakOnIceLabel": "{day}: streak freeze used"
 }

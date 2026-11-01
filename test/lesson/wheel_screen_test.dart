@@ -1,9 +1,11 @@
-// Widget tests for `WheelScreen` (issue #085).
+// Widget tests for `WheelScreen` (issue #085; #087 adds the streak-on-ice
+// segment).
 //
 // Covers what an integration test driving the whole `LessonScreen` can't
 // easily isolate: that the spin — however it's stopped — always lands on
-// the already-decided coin amount, and that the screen blocks back nav
-// from the start (unlike the lootbox/streak-saved/XP-up screens, #082).
+// the already-decided reward's segment, that a streak-on-ice win renders
+// distinctly from a coin win, and that the screen blocks back nav from the
+// start (unlike the lootbox/streak-saved/XP-up screens, #082).
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,12 +18,12 @@ import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
 
 final _l10n = AppLocalizationsEn();
 
-Widget _harness(int coinAmount) {
+Widget _harness(WheelReward reward) {
   return MaterialApp(
     theme: FoxStreakTheme.light(),
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
-    home: WheelScreen(coinAmount: coinAmount, l10n: _l10n),
+    home: WheelScreen(reward: reward, l10n: _l10n),
   );
 }
 
@@ -43,20 +45,21 @@ double _currentRotationTurns(WidgetTester tester) {
 
 void main() {
   group('wheelTargetRotationTurns', () {
-    test('every amount lands on a distinct fractional turn, invariant to '
+    test('every segment lands on a distinct fractional turn, invariant to '
         'extraFullTurns', () {
-      final fractions = kWheelCoinAmounts
+      final fractions = kWheelSegments
           .map(
-            (amount) => wheelTargetRotationTurns(amount, extraFullTurns: 0) % 1,
+            (segment) =>
+                wheelTargetRotationTurns(segment, extraFullTurns: 0) % 1,
           )
           .toSet();
-      expect(fractions, hasLength(kWheelCoinAmounts.length));
+      expect(fractions, hasLength(kWheelSegments.length));
 
-      for (final amount in kWheelCoinAmounts) {
+      for (final segment in kWheelSegments) {
         expect(
-          wheelTargetRotationTurns(amount, extraFullTurns: 4) % 1,
+          wheelTargetRotationTurns(segment, extraFullTurns: 4) % 1,
           closeTo(
-            wheelTargetRotationTurns(amount, extraFullTurns: 0) % 1,
+            wheelTargetRotationTurns(segment, extraFullTurns: 0) % 1,
             1e-9,
           ),
         );
@@ -65,8 +68,9 @@ void main() {
 
     test('adds exactly extraFullTurns whole turns on top of the landing '
         'fraction', () {
-      final withoutExtra = wheelTargetRotationTurns(30, extraFullTurns: 0);
-      final withExtra = wheelTargetRotationTurns(30, extraFullTurns: 7);
+      const reward = WheelCoinsReward(30);
+      final withoutExtra = wheelTargetRotationTurns(reward, extraFullTurns: 0);
+      final withExtra = wheelTargetRotationTurns(reward, extraFullTurns: 7);
       expect(withExtra - withoutExtra, closeTo(7, 1e-9));
     });
   });
@@ -74,7 +78,7 @@ void main() {
   testWidgets('starts idle, tappable, with no Continue button yet', (
     tester,
   ) async {
-    await tester.pumpWidget(_harness(30));
+    await tester.pumpWidget(_harness(const WheelCoinsReward(30)));
     await tester.pump();
 
     expect(find.text(_l10n.wheelHeading), findsOneWidget);
@@ -84,7 +88,7 @@ void main() {
 
   testWidgets('blocks back navigation from the start (PopScope canPop: '
       'false)', (tester) async {
-    await tester.pumpWidget(_harness(30));
+    await tester.pumpWidget(_harness(const WheelCoinsReward(30)));
     await tester.pump();
 
     expect(tester.widget<PopScope>(find.byType(PopScope)).canPop, isFalse);
@@ -92,7 +96,8 @@ void main() {
 
   testWidgets('a manual second tap stops the spin early, landing on the '
       'already-decided segment', (tester) async {
-    await tester.pumpWidget(_harness(50));
+    const reward = WheelCoinsReward(50);
+    await tester.pumpWidget(_harness(reward));
     await tester.pump();
 
     await tester.tap(find.byKey(const Key('wheelSpinButton')));
@@ -103,7 +108,7 @@ void main() {
 
     expect(
       _currentRotationTurns(tester),
-      closeTo(wheelTargetRotationTurns(50), 1e-9),
+      closeTo(wheelTargetRotationTurns(reward), 1e-9),
     );
     expect(find.text(_l10n.wheelWonText(50)), findsOneWidget);
     expect(find.byKey(const Key('wheelContinueButton')), findsOneWidget);
@@ -111,7 +116,8 @@ void main() {
 
   testWidgets('letting the automatic timeout stop the spin lands on the same '
       'segment a manual stop would', (tester) async {
-    await tester.pumpWidget(_harness(50));
+    const reward = WheelCoinsReward(50);
+    await tester.pumpWidget(_harness(reward));
     await tester.pump();
 
     await tester.tap(find.byKey(const Key('wheelSpinButton')));
@@ -120,17 +126,38 @@ void main() {
 
     expect(
       _currentRotationTurns(tester),
-      closeTo(wheelTargetRotationTurns(50), 1e-9),
+      closeTo(wheelTargetRotationTurns(reward), 1e-9),
     );
     expect(find.text(_l10n.wheelWonText(50)), findsOneWidget);
     expect(find.byKey(const Key('wheelContinueButton')), findsOneWidget);
   });
 
   testWidgets(
+    'a streak-on-ice win (issue #087) shows its own won-text/semantic '
+    'label, distinct from a coin win, and lands on its own segment',
+    (tester) async {
+      const reward = WheelStreakOnIceReward();
+      await tester.pumpWidget(_harness(reward));
+      await tester.pump();
+
+      await tester.tap(find.byKey(const Key('wheelSpinButton')));
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(
+        _currentRotationTurns(tester),
+        closeTo(wheelTargetRotationTurns(reward), 1e-9),
+      );
+      expect(find.text(_l10n.wheelWonStreakOnIceText), findsOneWidget);
+      expect(find.byKey(const Key('wheelContinueButton')), findsOneWidget);
+    },
+  );
+
+  testWidgets(
     'a second tap during the wind-down (the stopping phase) is ignored — '
     "it doesn't restart the wind-down (regression guard)",
     (tester) async {
-      await tester.pumpWidget(_harness(50));
+      await tester.pumpWidget(_harness(const WheelCoinsReward(50)));
       await tester.pump();
 
       await tester.tap(find.byKey(const Key('wheelSpinButton')));
@@ -170,7 +197,10 @@ void main() {
               child: FilledButton(
                 onPressed: () => Navigator.of(context).push<void>(
                   MaterialPageRoute<void>(
-                    builder: (_) => WheelScreen(coinAmount: 20, l10n: _l10n),
+                    builder: (_) => WheelScreen(
+                      reward: const WheelCoinsReward(20),
+                      l10n: _l10n,
+                    ),
                   ),
                 ),
                 child: const Text('open'),

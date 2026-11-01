@@ -94,8 +94,11 @@ class Attempts extends Table {
 ///   (StreakService-owned-write, see above).
 /// - `coinsTotal` — written exclusively by #065 `PetService`'s
 ///   coin-reward branch, via [StatsRepository.addCoins]. Lifetime-only
-///   (no day-scoped twin, unlike `todayXp`/`lessonsCompletedToday`); no
-///   spending mechanic yet (a future "streak on ice" issue).
+///   (no day-scoped twin, unlike `todayXp`/`lessonsCompletedToday`).
+/// - `streakFreezesAvailable` — written via [StatsRepository.addStreakFreezes]
+///   (issue #087): #059 `PetService`'s wheel-of-fortune branch increments it
+///   by 1 on a streak-on-ice win; `StreakFreezeService`'s app-launch
+///   auto-apply decrements it by 1 when it bridges exactly one missed day.
 class ProfileStats extends Table {
   IntColumn get id => integer()();
   IntColumn get xpTotal => integer().withDefault(const Constant(0))();
@@ -123,6 +126,11 @@ class ProfileStats extends Table {
   // v10 (#065): lifetime coin balance, accumulated from the lootbox's
   // coin-reward outcome. No spending mechanic yet.
   IntColumn get coinsTotal => integer().withDefault(const Constant(0))();
+  // v15 (#087): stackable, uncapped count of banked "streak on ice" wins —
+  // the wheel's rare 7th segment increments it; the app-launch auto-apply
+  // consumes one to bridge exactly one missed day.
+  IntColumn get streakFreezesAvailable =>
+      integer().withDefault(const Constant(0))();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -205,7 +213,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 15;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -339,6 +347,12 @@ class AppDatabase extends _$AppDatabase {
       if (from < 14) {
         await m.addColumn(items, items.imageCopyright);
       }
+      // v15 (#087): adds the lifetime streak-freeze balance, defaulting
+      // existing rows to 0. `profileStats`/`streakFreezesAvailable` were
+      // never renamed, so the ordinary Drift helper is safe here.
+      if (from < 15) {
+        await m.addColumn(profileStats, profileStats.streakFreezesAvailable);
+      }
     },
     beforeOpen: (details) async {
       // SQLite disables FK enforcement by default; without this,
@@ -360,7 +374,8 @@ class AppDatabase extends _$AppDatabase {
   // `mascot_id`/`equipped_mascot_id` to `owned_pets`/`pet_id`/
   // `equipped_pet_id`; v12 (#084) added the `daily_activity` table; v13
   // (#014) added `items.imageType`/`items.imageContent`; v14 (#094) added
-  // `items.imageCopyright`.
+  // `items.imageCopyright`; v15 (#087) added
+  // `profileStats.streakFreezesAvailable`.
 }
 
 DatabaseConnection _openConnection() => driftDatabase(name: 'fox_streak');

@@ -42,6 +42,7 @@ ActivityDay day(
   ActivityLevel level = ActivityLevel.none,
   bool isCurrentStreak = false,
   bool isLongestStreak = false,
+  bool isStreakOnIce = false,
 }) => ActivityDay(
   day: d,
   xpEarned: xp,
@@ -49,6 +50,7 @@ ActivityDay day(
   level: level,
   isCurrentStreak: isCurrentStreak,
   isLongestStreak: isLongestStreak,
+  isStreakOnIce: isStreakOnIce,
 );
 
 BoxDecoration decorationOf(WidgetTester tester, String dayStr) {
@@ -145,6 +147,34 @@ void main() {
       expect(low.a, lessThan(medium.a));
       expect(medium.a, lessThan(high.a));
       expect(high.a, 1.0);
+    },
+  );
+
+  testWidgets(
+    'a streak-on-ice day renders the icy-blue color, distinct from every '
+    'flame bucket (issue #087)',
+    (tester) async {
+      final data = ActivityCalendarData(
+        days: [
+          day('2026-10-10', hasActivity: true, level: ActivityLevel.low),
+          day(
+            '2026-10-11',
+            hasActivity: true,
+            level: ActivityLevel.low,
+            isStreakOnIce: true,
+          ),
+        ],
+        currentStreakCount: 0,
+        longestStreakInWindow: 0,
+        longestDiffersFromCurrent: false,
+      );
+      await pumpCalendar(tester, data);
+
+      final ordinaryLow = decorationOf(tester, '2026-10-10').color!;
+      final iceColor = decorationOf(tester, '2026-10-11').color!;
+      final ice = foxSemantics(tester.element(find.byType(Scaffold))).ice;
+      expect(iceColor, ice);
+      expect(iceColor, isNot(ordinaryLow));
     },
   );
 

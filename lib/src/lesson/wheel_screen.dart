@@ -1,4 +1,5 @@
-// Wheel-of-fortune reveal screen (issue #085).
+// Wheel-of-fortune reveal screen (issue #085; #087 adds the 7th
+// streak-on-ice segment).
 //
 // Shown after the lesson result screen, on the day's 3rd lesson completion
 // and then again every 3rd completion after that (6, 9, 12, ..., uncapped)
@@ -7,15 +8,15 @@
 // 11, ...), so this screen occupies the same "reward slot" in the
 // completion sequence as `LootboxScreen` without ever competing with it.
 //
-// The coin amount was already drawn + persisted to `coinsTotal` by
-// `PetService.recordLessonCompletion` before this screen ever opens — the
-// spin itself is purely cosmetic and always lands on that amount's slice,
-// regardless of whether the user taps a second time to stop it early or
-// lets the automatic timeout stop it. Unlike the lootbox/streak-saved/
-// XP-up screens (#082, still open for those three), this one ships with
-// `PopScope(canPop: false)` from day one: a spin result is visible
-// (persisted to `coinsTotal`) as soon as it's drawn, so there's no safe
-// "undo" point to back out to.
+// The reward was already drawn + persisted (to `coinsTotal` or
+// `streakFreezesAvailable`) by `PetService.recordLessonCompletion` before
+// this screen ever opens — the spin itself is purely cosmetic and always
+// lands on that reward's slice, regardless of whether the user taps a
+// second time to stop it early or lets the automatic timeout stop it.
+// Unlike the lootbox/streak-saved/XP-up screens (#082, still open for those
+// three), this one ships with `PopScope(canPop: false)` from day one: a
+// spin result is visible (persisted) as soon as it's drawn, so there's no
+// safe "undo" point to back out to.
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -27,7 +28,7 @@ import '../theme/fox_streak_theme.dart';
 import '../widgets/widgets.dart';
 
 /// How far around the wheel (in full turns) the spin must land to put
-/// [coinAmount]'s slice under the fixed top pointer, plus [extraFullTurns]
+/// [reward]'s slice under the fixed top pointer, plus [extraFullTurns]
 /// whole turns purely for visual flair — adding whole turns never changes
 /// which slice ends up under the pointer, since a full turn brings every
 /// slice back to where it started.
@@ -35,13 +36,10 @@ import '../widgets/widgets.dart';
 /// Pulled out of [_WheelScreenState] so the landing math is unit-testable
 /// without a running animation.
 @visibleForTesting
-double wheelTargetRotationTurns(int coinAmount, {int extraFullTurns = 4}) {
-  final index = kWheelCoinAmounts.indexOf(coinAmount);
-  assert(
-    index != -1,
-    'coinAmount must be one of kWheelCoinAmounts, was $coinAmount',
-  );
-  final sliceTurn = 1 / kWheelCoinAmounts.length;
+double wheelTargetRotationTurns(WheelReward reward, {int extraFullTurns = 4}) {
+  final index = kWheelSegments.indexOf(reward);
+  assert(index != -1, 'reward must be one of kWheelSegments, was $reward');
+  final sliceTurn = 1 / kWheelSegments.length;
   final sliceCenterTurn = (index + 0.5) * sliceTurn;
   // The pointer reads whatever slice sits at turn 0 (the top) once rotated;
   // rotating by (1 - sliceCenterTurn) turns brings that slice's center back
@@ -57,12 +55,12 @@ double wheelTargetRotationTurns(int coinAmount, {int extraFullTurns = 4}) {
 /// stopped on the already-decided segment.
 enum _WheelPhase { idle, spinning, stopping, stopped }
 
-/// Tap-to-spin wheel-of-fortune reveal for an already-won [coinAmount].
+/// Tap-to-spin wheel-of-fortune reveal for an already-won [reward].
 class WheelScreen extends StatefulWidget {
-  final int coinAmount;
+  final WheelReward reward;
   final AppLocalizations l10n;
 
-  const WheelScreen({super.key, required this.coinAmount, required this.l10n});
+  const WheelScreen({super.key, required this.reward, required this.l10n});
 
   @override
   State<WheelScreen> createState() => _WheelScreenState();
@@ -86,7 +84,7 @@ class _WheelScreenState extends State<WheelScreen>
     _controller = AnimationController(vsync: this, duration: _spinDuration)
       ..addStatusListener(_handleStatus);
     final targetTurns = wheelTargetRotationTurns(
-      widget.coinAmount,
+      widget.reward,
       extraFullTurns: _extraFullTurns,
     );
     _rotation = Tween<double>(
@@ -128,9 +126,9 @@ class _WheelScreenState extends State<WheelScreen>
 
   /// Ends the spin, whether called from a second tap or [_autoStopTimer] —
   /// either way, animates the *same* [_controller] from wherever it
-  /// currently is up to `1.0` (i.e. [Tween.end], [widget.coinAmount]'s
-  /// slice), just over a shorter, fixed [_quickStopDuration]. Only how long
-  /// the remaining spin takes differs between the two callers, never the
+  /// currently is up to `1.0` (i.e. [Tween.end], [widget.reward]'s slice),
+  /// just over a shorter, fixed [_quickStopDuration]. Only how long the
+  /// remaining spin takes differs between the two callers, never the
   /// landing slice.
   ///
   /// Moves to [_WheelPhase.stopping] (rather than leaving [_phase] at
@@ -151,7 +149,16 @@ class _WheelScreenState extends State<WheelScreen>
   @override
   Widget build(BuildContext context) {
     final l10n = widget.l10n;
+    final reward = widget.reward;
     final stopped = _phase == _WheelPhase.stopped;
+    final String wonText = switch (reward) {
+      WheelCoinsReward(amount: final amount) => l10n.wheelWonText(amount),
+      WheelStreakOnIceReward() => l10n.wheelWonStreakOnIceText,
+    };
+    final String wonSemanticLabel = switch (reward) {
+      WheelCoinsReward(amount: final amount) => l10n.coinsSemanticLabel(amount),
+      WheelStreakOnIceReward() => l10n.streakOnIceSemanticLabel,
+    };
     return PopScope(
       canPop: false,
       child: Scaffold(
@@ -164,9 +171,7 @@ class _WheelScreenState extends State<WheelScreen>
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
                   Text(
-                    stopped
-                        ? l10n.wheelWonText(widget.coinAmount)
-                        : l10n.wheelHeading,
+                    stopped ? wonText : l10n.wheelHeading,
                     style: Theme.of(context).textTheme.headlineSmall,
                     textAlign: TextAlign.center,
                   ),
@@ -175,9 +180,7 @@ class _WheelScreenState extends State<WheelScreen>
                     FoxCelebration(
                       child: _WheelDial(
                         rotation: _rotation,
-                        semanticLabel: l10n.coinsSemanticLabel(
-                          widget.coinAmount,
-                        ),
+                        semanticLabel: wonSemanticLabel,
                       ),
                     )
                   else
@@ -203,6 +206,16 @@ class _WheelScreenState extends State<WheelScreen>
     );
   }
 }
+
+/// The text label painted on one wheel slice: the coin amount, or a
+/// snowflake glyph for the streak-on-ice segment — decorative only (the
+/// dial's own [FoxRevealTapTarget.semanticLabel] carries the a11y text), so
+/// a plain Unicode character needs no l10n entry, same as the wheel's own
+/// pointer icon.
+String _labelFor(WheelReward segment) => switch (segment) {
+  WheelCoinsReward(amount: final amount) => '$amount',
+  WheelStreakOnIceReward() => '❄',
+};
 
 /// The wheel's rotating [CustomPaint] plus its fixed (non-rotating) top
 /// pointer, wrapped in the shared [FoxRevealTapTarget] (issue #095) that
@@ -230,6 +243,7 @@ class _WheelDial extends StatelessWidget {
       semantics.success,
       semantics.info,
       semantics.math,
+      semantics.ice,
     ];
     final onSliceColors = <Color>[
       semantics.onGold,
@@ -238,6 +252,7 @@ class _WheelDial extends StatelessWidget {
       semantics.onSuccess,
       semantics.onInfo,
       semantics.onMath,
+      semantics.onIce,
     ];
     final textStyle =
         Theme.of(context).textTheme.titleMedium
@@ -260,7 +275,7 @@ class _WheelDial extends StatelessWidget {
             child: CustomPaint(
               size: const Size.square(_size),
               painter: _WheelPainter(
-                amounts: kWheelCoinAmounts,
+                labels: kWheelSegments.map(_labelFor).toList(),
                 sliceColors: sliceColors,
                 onSliceColors: onSliceColors,
                 textStyle: textStyle,
@@ -289,29 +304,29 @@ class _WheelDial extends StatelessWidget {
   }
 }
 
-/// Paints [amounts.length] equal pie slices, each filled with its
-/// [sliceColors] entry and labelled with its coin amount in the matching
+/// Paints [labels.length] equal pie slices, each filled with its
+/// [sliceColors] entry and labelled with its [labels] entry in the matching
 /// [onSliceColors] entry (the AA-checked "safe for text on this fill"
 /// counterpart — see `FoxSemanticColors`'s class doc). Slice `0` starts at
-/// the top (12 o'clock) and slices proceed clockwise — [wheelTargetRotationTurns]
-/// relies on this exact layout to compute which rotation lands which slice
-/// under the fixed pointer.
+/// the top (12 o'clock) and slices proceed clockwise —
+/// [wheelTargetRotationTurns] relies on this exact layout to compute which
+/// rotation lands which slice under the fixed pointer.
 class _WheelPainter extends CustomPainter {
-  final List<int> amounts;
+  final List<String> labels;
   final List<Color> sliceColors;
   final List<Color> onSliceColors;
   final TextStyle textStyle;
 
   const _WheelPainter({
-    required this.amounts,
+    required this.labels,
     required this.sliceColors,
     required this.onSliceColors,
     required this.textStyle,
   }) : assert(
-         sliceColors.length == amounts.length &&
-             onSliceColors.length == amounts.length,
-         'sliceColors/onSliceColors must have one entry per amounts entry '
-         '(amounts: ${amounts.length}, sliceColors: ${sliceColors.length}, '
+         sliceColors.length == labels.length &&
+             onSliceColors.length == labels.length,
+         'sliceColors/onSliceColors must have one entry per labels entry '
+         '(labels: ${labels.length}, sliceColors: ${sliceColors.length}, '
          'onSliceColors: ${onSliceColors.length})',
        );
 
@@ -319,9 +334,9 @@ class _WheelPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final Offset center = size.center(Offset.zero);
     final double radius = size.shortestSide / 2;
-    final double sliceAngle = 2 * math.pi / amounts.length;
+    final double sliceAngle = 2 * math.pi / labels.length;
 
-    for (var i = 0; i < amounts.length; i++) {
+    for (var i = 0; i < labels.length; i++) {
       final double startAngle = -math.pi / 2 + i * sliceAngle;
       final Paint fillPaint = Paint()..color = sliceColors[i];
       canvas.drawArc(
@@ -338,7 +353,7 @@ class _WheelPainter extends CustomPainter {
           Offset(math.cos(labelAngle), math.sin(labelAngle)) * radius * 0.65;
       final TextPainter textPainter = TextPainter(
         text: TextSpan(
-          text: '${amounts[i]}',
+          text: labels[i],
           style: textStyle.copyWith(color: onSliceColors[i]),
         ),
         textDirection: TextDirection.ltr,

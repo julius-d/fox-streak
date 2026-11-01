@@ -460,8 +460,8 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
   }
 
   /// Pushes each applicable completion screen in turn — loot box (#059, if
-  /// [LessonState.lootboxReward] isn't null) or wheel of fortune (#085, if
-  /// [LessonState.wheelCoinAmount] isn't null — the two share this one
+  /// [LessonState.lootboxReward] isn't null) or wheel of fortune (#085/#087,
+  /// if [LessonState.wheelReward] isn't null — the two share this one
   /// sequence slot since their cadences are mutually exclusive, see
   /// `PetService`'s class doc) -> streak saved (#011, if
   /// [LessonState.streakIsNewDayAfterLesson]) -> XP up (#010/#053, always)
@@ -493,10 +493,10 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
         return;
       }
     }
-    final wheelCoinAmount = state.wheelCoinAmount;
-    if (wheelCoinAmount != null) {
+    final wheelReward = state.wheelReward;
+    if (wheelReward != null) {
       if (!await _pushAndWait(
-        (_) => WheelScreen(coinAmount: wheelCoinAmount, l10n: l10n),
+        (_) => WheelScreen(reward: wheelReward, l10n: l10n),
       )) {
         return;
       }

@@ -46,5 +46,6 @@ final activityCalendarProvider =
         lastActiveDay: profile.lastActiveDay,
         dailyGoalXp: profile.dailyGoalXp,
         entries: entries,
+        streakFreezesAvailable: profile.streakFreezesAvailable,
       );
     });

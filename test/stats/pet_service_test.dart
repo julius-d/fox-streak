@@ -364,7 +364,7 @@ void main() {
     });
   });
 
-  group('recordLessonCompletion wheel of fortune (#085)', () {
+  group('recordLessonCompletion wheel of fortune (#085/#087)', () {
     test('triggers on the 3rd, 6th, 9th, and an arbitrarily high multiple '
         '(48th) completion of the day, uncapped', () async {
       final service = buildService();
@@ -373,7 +373,7 @@ void main() {
         final update = await service.recordLessonCompletion(
           random: _ZeroRandom(),
         );
-        if (update.wheelCoinAmount != null) {
+        if (update.wheelReward != null) {
           triggeredCounts.add(count);
         }
       }
@@ -389,7 +389,7 @@ void main() {
         final update = await service.recordLessonCompletion(
           random: _ZeroRandom(),
         );
-        if (update.wheelCoinAmount == null) {
+        if (update.wheelReward == null) {
           nonTriggering.add(count);
         }
       }
@@ -405,17 +405,17 @@ void main() {
           random: _ZeroRandom(),
         );
         expect(
-          update.reward != null && update.wheelCoinAmount != null,
+          update.reward != null && update.wheelReward != null,
           isFalse,
           reason:
               'completion $count won both a loot-box reward and a '
-              'wheel coin amount',
+              'wheel reward',
         );
       }
     });
 
-    test('the drawn wheel amount is added to coinsTotal via '
-        'StatsRepository.addCoins', () async {
+    test('a WheelCoinsReward win (the ZeroRandom default branch) is added '
+        'to coinsTotal via StatsRepository.addCoins', () async {
       final service = buildService();
       await service.recordLessonCompletion(); // 1
       await service.recordLessonCompletion(
@@ -425,8 +425,30 @@ void main() {
         random: _ZeroRandom(),
       ); // 3 (wheel)
 
-      expect(third.wheelCoinAmount, isNotNull);
-      expect((await statsRepo.getProfile()).coinsTotal, third.wheelCoinAmount);
+      final reward = third.wheelReward;
+      expect(reward, isA<WheelCoinsReward>());
+      final amount = (reward as WheelCoinsReward).amount;
+      expect((await statsRepo.getProfile()).coinsTotal, amount);
+    });
+
+    test('a WheelStreakOnIceReward win increments streakFreezesAvailable '
+        'via StatsRepository.addStreakFreezes, never coinsTotal', () async {
+      final service = buildService();
+      await service.recordLessonCompletion(); // 1
+      await service.recordLessonCompletion(
+        // 2 (lootbox, pet branch, harmless index-0 pick).
+        random: _ScriptedRandom(boolValue: false, intValue: 0),
+      );
+      final third = await service.recordLessonCompletion(
+        // 3 (wheel): the last draw value lands in the final bucket, the
+        // streak-on-ice segment (weight 5, the table's last entry).
+        random: _ScriptedRandom(intValue: kWheelSegmentsTotalWeight - 1),
+      );
+
+      expect(third.wheelReward, isA<WheelStreakOnIceReward>());
+      final profile = await statsRepo.getProfile();
+      expect(profile.streakFreezesAvailable, 1);
+      expect(profile.coinsTotal, 0);
     });
   });
 
@@ -537,32 +559,58 @@ void main() {
     });
   });
 
-  group('drawWheelCoinAmount (#085)', () {
+  group('drawWheelSegment (#085/#087)', () {
+    int? amountOf(WheelReward reward) =>
+        reward is WheelCoinsReward ? reward.amount : null;
+
     test('the cumulative-weight table: boundary draws land on the right '
-        'amount', () {
+        'segment', () {
       // weight(10) == 100, so draws 0..99 land on 10.
-      expect(drawWheelCoinAmount(_ScriptedRandom(intValue: 0)), 10);
-      expect(drawWheelCoinAmount(_ScriptedRandom(intValue: 99)), 10);
+      expect(amountOf(drawWheelSegment(_ScriptedRandom(intValue: 0))), 10);
+      expect(amountOf(drawWheelSegment(_ScriptedRandom(intValue: 99))), 10);
       // weight(20) == 90, the next bucket: draws 100..189 land on 20.
-      expect(drawWheelCoinAmount(_ScriptedRandom(intValue: 100)), 20);
-      // weight(75) == 35, the second-to-last bucket: draws 330..364.
-      expect(drawWheelCoinAmount(_ScriptedRandom(intValue: 364)), 75);
-      // weight(100) == 10, the last bucket: draws 365..374.
-      expect(drawWheelCoinAmount(_ScriptedRandom(intValue: 365)), 100);
-      expect(drawWheelCoinAmount(_ScriptedRandom(intValue: 374)), 100);
+      expect(amountOf(drawWheelSegment(_ScriptedRandom(intValue: 100))), 20);
+      // weight(75) == 35, the second-to-last coin bucket: draws 330..364.
+      expect(amountOf(drawWheelSegment(_ScriptedRandom(intValue: 364))), 75);
+      // weight(100) == 10, the last coin bucket: draws 365..374.
+      expect(amountOf(drawWheelSegment(_ScriptedRandom(intValue: 365))), 100);
+      expect(amountOf(drawWheelSegment(_ScriptedRandom(intValue: 374))), 100);
+      // weight(streak-on-ice) == 5, the final bucket: draws 375..379.
+      expect(
+        drawWheelSegment(_ScriptedRandom(intValue: 375)),
+        isA<WheelStreakOnIceReward>(),
+      );
+      expect(
+        drawWheelSegment(_ScriptedRandom(intValue: 379)),
+        isA<WheelStreakOnIceReward>(),
+      );
     });
 
-    test('distribution sanity: 10 is drawn more often than 100 over many '
-        'seeded trials, matching their 10x weight ratio', () {
+    test('distribution sanity: 10 coins is drawn more often than 100 coins '
+        'over many seeded trials, matching their 10x weight ratio', () {
       final random = Random(42);
       var tenCount = 0;
       var hundredCount = 0;
       for (var i = 0; i < 5000; i++) {
-        final amount = drawWheelCoinAmount(random);
+        final amount = amountOf(drawWheelSegment(random));
         if (amount == 10) tenCount++;
         if (amount == 100) hundredCount++;
       }
       expect(tenCount, greaterThan(hundredCount));
+    });
+
+    test('distribution sanity: streak-on-ice is drawn less often than every '
+        'coin amount (the rarest segment)', () {
+      final random = Random(42);
+      var iceCount = 0;
+      var leastCommonCoinCount = 0; // 100 coins, the rarest coin amount.
+      for (var i = 0; i < 20000; i++) {
+        final reward = drawWheelSegment(random);
+        if (reward is WheelStreakOnIceReward) iceCount++;
+        if (amountOf(reward) == 100) leastCommonCoinCount++;
+      }
+      expect(iceCount, greaterThan(0));
+      expect(iceCount, lessThan(leastCommonCoinCount));
     });
   });
 

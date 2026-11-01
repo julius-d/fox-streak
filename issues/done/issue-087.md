@@ -1,6 +1,6 @@
 # Issue 087: Streak on ice
 
-Status: open | Priority: P3 | Type: feature | Refined-at: 2026-10-31
+Status: done | Priority: P3 | Type: feature | Refined-at: 2026-10-31 | Completed-at: 2026-11-01
 
 ## Context
 
@@ -80,34 +80,34 @@ issue.
 
 ## Acceptance criteria
 
-- [ ] New `profile_stats.streakFreezesAvailable` column (schema migration,
+- [x] New `profile_stats.streakFreezesAvailable` column (schema migration,
   default 0, existing rows migrate with no data loss).
-- [ ] A repository method increments/decrements `streakFreezesAvailable`
+- [x] A repository method increments/decrements `streakFreezesAvailable`
   (mirroring `addCoins`'s shape); no ad-hoc SQL elsewhere.
-- [ ] Once #085's wheel exists, one of its segments awards a streak-on-ice
+- [x] Once #085's wheel exists, one of its segments awards a streak-on-ice
   (increments `streakFreezesAvailable`) at a low/rare draw weight, never
   simultaneously with a coin win on the same spin.
-- [ ] On app launch, if `lastActiveDay` is exactly 2 local days before
+- [x] On app launch, if `lastActiveDay` is exactly 2 local days before
   today and `streakFreezesAvailable > 0`: one freeze is consumed, a
   `daily_activity` row is written for the missed day (`source:
   streakOnIce`, `xpEarned: 0`), and the streak continues (`streak_count`
   unchanged, `last_active_day` effectively bridged) instead of resetting
   to 1.
-- [ ] A gap of 2+ full missed days still resets the streak to 1 as today,
+- [x] A gap of 2+ full missed days still resets the streak to 1 as today,
   regardless of `streakFreezesAvailable` — no ice is spent.
-- [ ] A one-time `FoxFeedbackBanner` on Home informs the user their streak
+- [x] A one-time `FoxFeedbackBanner` on Home informs the user their streak
   was saved by a streak-on-ice, shown once for that occurrence only.
-- [ ] Streak Details calendar renders a `streakOnIce` day in a distinct
+- [x] Streak Details calendar renders a `streakOnIce` day in a distinct
   icy-blue color, visually different from every flame-bucket color.
-- [ ] `streakFreezesAvailable` count is visible on screen (placement per
+- [x] `streakFreezesAvailable` count is visible on screen (placement per
   implementation).
-- [ ] New DE + EN l10n strings (auto-save banner text, freeze-count label)
+- [x] New DE + EN l10n strings (auto-save banner text, freeze-count label)
   — no hardcoded strings.
-- [ ] Tests: repository increment/decrement; the app-start auto-apply path
+- [x] Tests: repository increment/decrement; the app-start auto-apply path
   (exactly-one-missed-day trigger, no-op when 0 available, no-op/reset-as-
   before when gap is 2+ days); calendar rendering of the icy-blue
   `streakOnIce` cell; wheel-segment win path (once #085 exists).
-- [ ] `flutter analyze`, `dart format --output=none
+- [x] `flutter analyze`, `dart format --output=none
   --set-exit-if-changed .`, `dart fix --dry-run`, and `flutter test` are
   all clean per AGENTS.md's Verify section.
 
@@ -140,3 +140,26 @@ dart format --output=none --set-exit-if-changed .
 dart fix --dry-run
 flutter test
 ```
+
+## Summary
+
+Added `profileStats.streakFreezesAvailable` (v15 migration) +
+`StatsRepository.addStreakFreezes`. Extended #085's wheel with a 7th,
+rarer `WheelStreakOnIceReward` segment (`kWheelSegments`/
+`drawWheelSegment` in `lootbox_reward.dart`; `PetService`/
+`LessonController`/`LessonScreen`/`WheelScreen` generalized from a bare
+coin `int` to the `WheelReward` sealed type). New
+`StreakFreezeService.checkAndApplyOnLaunch` (watched once on app launch
+via Home) bridges exactly one missed day by consuming a freeze,
+writing a `streakOnIce` `daily_activity` row, and re-pointing
+`lastActiveDay` — `StreakService.computeNext` itself is untouched. Home
+shows a one-time `FoxFeedbackBanner.info`; Streak Details shows the
+freeze count + a new icy-blue `FoxSemanticColors.ice`/`onIce` token for
+`streakOnIce` calendar cells and legend entry. New DE/EN l10n strings
+throughout.
+
+## Code review
+
+A medium-effort review of the full worktree diff found no correctness,
+cleanup, or convention issues.
+No findings — nothing to fix.

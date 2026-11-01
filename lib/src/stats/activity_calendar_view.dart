@@ -111,6 +111,7 @@ class _ActivityCalendarViewState extends State<ActivityCalendarView> {
   @override
   Widget build(BuildContext context) {
     final flame = foxSemantics(context).flame;
+    final ice = foxSemantics(context).ice;
     final ColorScheme scheme = Theme.of(context).colorScheme;
     final String locale = Localizations.localeOf(context).toString();
     final weeks = _groupIntoWeeks(widget.data.days);
@@ -139,6 +140,7 @@ class _ActivityCalendarViewState extends State<ActivityCalendarView> {
                   _CalendarGrid(
                     weeks: weeks,
                     flame: flame,
+                    ice: ice,
                     scheme: scheme,
                     cellSemanticsLabel: widget.cellSemanticsLabel,
                   ),
@@ -369,12 +371,14 @@ List<_Connector> _computeConnectors(List<List<ActivityDay?>> weeks) {
 class _CalendarGrid extends StatelessWidget {
   final List<List<ActivityDay?>> weeks;
   final Color flame;
+  final Color ice;
   final ColorScheme scheme;
   final String Function(ActivityDay day) cellSemanticsLabel;
 
   const _CalendarGrid({
     required this.weeks,
     required this.flame,
+    required this.ice,
     required this.scheme,
     required this.cellSemanticsLabel,
   });
@@ -407,6 +411,7 @@ class _CalendarGrid extends StatelessWidget {
                           : _DayCell(
                               day: week[i]!,
                               flame: flame,
+                              ice: ice,
                               scheme: scheme,
                               semanticsLabel: cellSemanticsLabel(week[i]!),
                             ),
@@ -489,18 +494,30 @@ class _CalendarGrid extends StatelessWidget {
 class _DayCell extends StatelessWidget {
   final ActivityDay day;
   final Color flame;
+  final Color ice;
   final ColorScheme scheme;
   final String semanticsLabel;
 
   const _DayCell({
     required this.day,
     required this.flame,
+    required this.ice,
     required this.scheme,
     required this.semanticsLabel,
   });
 
   @override
   Widget build(BuildContext context) {
+    // A streak-on-ice day (#087) always renders icy-blue, overriding its
+    // bucket color entirely — distinct from every flame-bucket color and
+    // from a same-bucket low-XP lesson day.
+    final Color cellColor = day.isStreakOnIce
+        ? ice
+        : colorForActivityLevel(
+            day.level,
+            flame: flame,
+            emptyColor: scheme.surfaceContainerHighest,
+          );
     return Semantics(
       key: Key('activityCalendarCell-${day.day}'),
       label: semanticsLabel,
@@ -508,11 +525,7 @@ class _DayCell extends StatelessWidget {
         width: _kCellSize,
         height: _kCellSize,
         decoration: BoxDecoration(
-          color: colorForActivityLevel(
-            day.level,
-            flame: flame,
-            emptyColor: scheme.surfaceContainerHighest,
-          ),
+          color: cellColor,
           borderRadius: const BorderRadius.all(Radius.circular(FoxRadius.sm)),
         ),
       ),
