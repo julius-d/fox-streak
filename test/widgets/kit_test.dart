@@ -740,4 +740,98 @@ void main() {
     expect(find.text('+10 XP'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  group('FoxRevealTapTarget (issue #095)', () {
+    testWidgets('with onTap: wraps child in an InkWell + button semantics, '
+        'sized to at least the 48dp floor, and fires on tap', (
+      WidgetTester tester,
+    ) async {
+      bool tapped = false;
+      await pumpKit(
+        tester,
+        FoxRevealTapTarget(
+          tapKey: const Key('revealTapTarget'),
+          borderRadius: const BorderRadius.all(Radius.circular(8)),
+          onTap: () => tapped = true,
+          semanticLabel: 'Tap to reveal',
+          child: const SizedBox(key: Key('revealChild'), width: 20, height: 20),
+        ),
+      );
+
+      expect(find.byKey(const Key('revealTapTarget')), findsOneWidget);
+      final Size size = tester.getSize(
+        find.byKey(const Key('revealTapTarget')),
+      );
+      expect(size.width, greaterThanOrEqualTo(FoxButtonMetrics.minSize));
+      expect(size.height, greaterThanOrEqualTo(FoxButtonMetrics.minSize));
+
+      final Semantics semantics = tester.widget<Semantics>(
+        find
+            .ancestor(
+              of: find.byKey(const Key('revealChild')),
+              matching: find.byType(Semantics),
+            )
+            .first,
+      );
+      expect(semantics.properties.button, isTrue);
+      expect(semantics.properties.label, 'Tap to reveal');
+
+      await tester.tap(find.byKey(const Key('revealTapTarget')));
+      expect(tapped, isTrue);
+    });
+
+    testWidgets('without onTap but with a semanticLabel: wraps child in an '
+        'image-style semantics, no InkWell', (WidgetTester tester) async {
+      await pumpKit(
+        tester,
+        const FoxRevealTapTarget(
+          borderRadius: BorderRadius.all(Radius.circular(8)),
+          semanticLabel: 'Revealed result',
+          child: SizedBox(key: Key('revealChild'), width: 20, height: 20),
+        ),
+      );
+
+      expect(find.byType(InkWell), findsNothing);
+      final Semantics semantics = tester.widget<Semantics>(
+        find
+            .ancestor(
+              of: find.byKey(const Key('revealChild')),
+              matching: find.byType(Semantics),
+            )
+            .first,
+      );
+      expect(semantics.properties.image, isTrue);
+      expect(semantics.properties.label, 'Revealed result');
+    });
+
+    testWidgets('without onTap and without a semanticLabel: renders the child '
+        'unwrapped, no InkWell or Semantics added', (
+      WidgetTester tester,
+    ) async {
+      await pumpKit(
+        tester,
+        const FoxRevealTapTarget(
+          borderRadius: BorderRadius.all(Radius.circular(8)),
+          child: SizedBox(key: Key('revealChild'), width: 20, height: 20),
+        ),
+      );
+
+      expect(find.byKey(const Key('revealChild')), findsOneWidget);
+      expect(find.byType(InkWell), findsNothing);
+      expect(
+        find.ancestor(
+          of: find.byKey(const Key('revealChild')),
+          matching: find.byType(FoxRevealTapTarget),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(FoxRevealTapTarget),
+          matching: find.byType(Semantics),
+        ),
+        findsNothing,
+      );
+    });
+  });
 }

@@ -16,5 +16,6 @@ export 'fox_level_progress_bar.dart';
 export 'fox_pet.dart';
 export 'fox_progress_bar.dart';
 export 'fox_reveal_hint_button.dart';
+export 'fox_reveal_tap_target.dart';
 export 'fox_sound.dart';
 export 'streak_badge.dart';

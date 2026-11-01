@@ -205,10 +205,8 @@ class _WheelScreenState extends State<WheelScreen>
 }
 
 /// The wheel's rotating [CustomPaint] plus its fixed (non-rotating) top
-/// pointer. Whether [onTap] is non-null gates both the tap target and its
-/// a11y semantics — mirrors `LootboxScreen`'s `_LootboxAnimation`: while
-/// stopped (`onTap` null), this renders with no `InkWell`/button
-/// semantics, just an image-style label naming the result.
+/// pointer, wrapped in the shared [FoxRevealTapTarget] (issue #095) that
+/// also gates `LootboxScreen`'s `_LootboxAnimation`.
 class _WheelDial extends StatelessWidget {
   static const double _size = 220;
 
@@ -281,26 +279,12 @@ class _WheelDial extends StatelessWidget {
       ),
     );
 
-    final onTap = this.onTap;
-    if (onTap == null) {
-      return Semantics(label: semanticLabel, image: true, child: dial);
-    }
-
-    return InkWell(
-      key: const Key('wheelSpinButton'),
+    return FoxRevealTapTarget(
+      tapKey: const Key('wheelSpinButton'),
       borderRadius: const BorderRadius.all(Radius.circular(_size / 2)),
       onTap: onTap,
-      child: Semantics(
-        button: true,
-        label: semanticLabel,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            minWidth: FoxButtonMetrics.minSize,
-            minHeight: FoxButtonMetrics.minSize,
-          ),
-          child: dial,
-        ),
-      ),
+      semanticLabel: semanticLabel,
+      child: dial,
     );
   }
 }

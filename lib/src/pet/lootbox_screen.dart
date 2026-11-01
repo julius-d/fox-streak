@@ -275,9 +275,10 @@ class _LootboxScreenState extends State<LootboxScreen>
 /// The lootbox's Lottie, [controller]-driven so the caller can hold it on
 /// frame 0 until tapped ([interactive], the closed state) and then advance
 /// it once via [onTap]. [interactive] gates both the tap target and its
-/// a11y semantics; while `false` (mid-animation) the box renders with no
-/// `InkWell`/`Semantics` at all, so a re-tap is a true no-op and screen
-/// readers never announce it as a button.
+/// a11y semantics via the shared [FoxRevealTapTarget] (issue #095) that
+/// also gates `WheelScreen`'s `_WheelDial`; while `false` (mid-animation)
+/// the box renders with no `InkWell`/`Semantics` at all, so a re-tap is a
+/// true no-op and screen readers never announce it as a button.
 class _LootboxAnimation extends StatelessWidget {
   final AnimationController controller;
   final bool interactive;
@@ -307,25 +308,12 @@ class _LootboxAnimation extends StatelessWidget {
       ),
     );
 
-    if (!interactive) {
-      return lottie;
-    }
-
-    return InkWell(
-      key: const Key('lootboxOpenButton'),
+    return FoxRevealTapTarget(
+      tapKey: const Key('lootboxOpenButton'),
       borderRadius: const BorderRadius.all(Radius.circular(FoxRadius.lg)),
-      onTap: onTap,
-      child: Semantics(
-        button: true,
-        label: label,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            minWidth: FoxButtonMetrics.minSize,
-            minHeight: FoxButtonMetrics.minSize,
-          ),
-          child: lottie,
-        ),
-      ),
+      onTap: interactive ? onTap : null,
+      semanticLabel: interactive ? label : null,
+      child: lottie,
     );
   }
 }

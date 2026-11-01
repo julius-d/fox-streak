@@ -1,6 +1,11 @@
-# Issue 093: Extract a shared reward-reveal dial/animation widget
+# Issue 095: Extract a shared reward-reveal dial/animation widget
 
-Status: open | Priority: P3 | Type: chore
+Status: done | Priority: P3 | Type: chore
+Completed-at: 2026-11-01
+
+Note: originally filed as #093, renumbered to #095 before completion — #093
+was already taken by an unrelated, already-done issue (docs/question-set
+format); see #096 for the backlog numbering-collision bug this surfaced.
 
 ## Context
 
@@ -41,3 +46,20 @@ dart format --output=none --set-exit-if-changed .
 dart fix --dry-run
 flutter test
 ```
+
+## Summary
+
+Added `FoxRevealTapTarget` (`lib/src/widgets/fox_reveal_tap_target.dart`):
+gated by `onTap`, with an optional `semanticLabel` for the non-interactive
+case (`null` renders the child unwrapped, matching `LootboxScreen`'s
+mid-animation state exactly). `_WheelDial` and `_LootboxAnimation` now
+both delegate to it; no visual/behavioral change, all existing keys
+(`wheelSpinButton`, `lootboxOpenButton`, `wheelDial`, `lootboxAnimation`)
+preserved. New widget tests cover all three gating branches.
+
+## Code review
+
+No findings — reviewer confirmed both call sites' branches (interactive,
+non-interactive-with-label, non-interactive-without-label) are reproduced
+exactly, and existing key-based tests still pass.
+Not applicable — nothing needed fixing.
