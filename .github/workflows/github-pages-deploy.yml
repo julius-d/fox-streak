@@ -1,0 +1,98 @@
+name: Deploy Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Pandoc
+        uses: pandoc/actions/setup@v1
+
+      - name: Build site directory
+        run: |
+          mkdir -p dist
+
+          # Start an automated llms.txt discovery file
+          cat << 'EOF' > dist/llms.txt
+          # Documentation
+          > LLM and human documentation index.
+
+          ## Markdown Files
+          EOF
+
+          # 1. Process all Markdown files in docs/
+          shopt -s nullglob
+          for md_file in docs/*.md; do
+            filename=$(basename "$md_file")
+            base="${filename%.md}"
+
+            # Convert to HTML
+            pandoc "$md_file" \
+              --standalone \
+              --metadata title="$base" \
+              --variable header-includes="<link rel=\"alternate\" type=\"text/markdown\" href=\"$filename\">" \
+              -o "dist/${base}.html"
+
+            # Copy the original raw markdown file
+            cp "$md_file" "dist/$filename"
+
+            # Append to llms.txt index
+            echo "- [$base]($filename): Raw markdown for $base" >> dist/llms.txt
+          done
+
+          # 2. Process all JSON files in docs/
+          echo -e "\n## Data Files" >> dist/llms.txt
+          for json_file in docs/*.json; do
+            filename=$(basename "$json_file")
+            base="${filename%.json}"
+
+            cp "$json_file" "dist/$filename"
+            echo "- [$base]($filename): Raw data JSON" >> dist/llms.txt
+          done
+
+          # 3. Ensure a landing page exists (fallback to first HTML file or README)
+          if [ -f "dist/index.html" ]; then
+            : # index.html already exists
+          elif [ -f "dist/README.html" ]; then
+            cp "dist/README.html" "dist/index.html"
+          else
+            first_html=$(ls -1 dist/*.html 2>/dev/null | head -n 1)
+            if [ -n "$first_html" ]; then
+              cp "$first_html" "dist/index.html"
+            fi
+          fi
+
+          # Disable Jekyll execution on Pages
+          touch dist/.nojekyll
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
