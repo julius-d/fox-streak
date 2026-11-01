@@ -60,6 +60,13 @@ import 'exercise_card.dart';
 ///   stream, which it would otherwise have to hold open for a screen
 ///   that, like the XP/streak fields above, is a one-shot snapshot, not
 ///   a live-updating dashboard.
+/// [wheelCoinAmount] is issue #085's independent wheel-of-fortune win — a
+///   coin amount already drawn and persisted by `PetService` on the
+///   day's 3rd completion, then every 3rd one after that — handed to
+///   `LessonScreen` so it can insert the wheel reveal in the lootbox's
+///   sequence slot. Disjoint from `lootboxReward` by construction (see
+///   `PetService`'s class doc): never both non-null for the same
+///   completion.
 /// [busy] mirrors the controller's in-flight guard (issue #031) so the
 ///   shell can disable CHECK/CONTINUE and hide Skip while a prior
 ///   submitGrade/skip/next call hasn't resolved yet — otherwise e.g. a
@@ -88,6 +95,7 @@ class LessonState {
   final bool? streakIsNewDayAfterLesson;
   final LootboxReward? lootboxReward;
   final String? equippedPetId;
+  final int? wheelCoinAmount;
   final bool busy;
   final int attempt;
 
@@ -107,6 +115,7 @@ class LessonState {
     this.streakIsNewDayAfterLesson,
     this.lootboxReward,
     this.equippedPetId,
+    this.wheelCoinAmount,
     this.busy = false,
     this.attempt = 0,
   });
@@ -127,6 +136,7 @@ class LessonState {
     bool? streakIsNewDayAfterLesson,
     LootboxReward? lootboxReward,
     String? equippedPetId,
+    int? wheelCoinAmount,
     bool? busy,
     int? attempt,
     bool clearDraft = false,
@@ -152,6 +162,7 @@ class LessonState {
           streakIsNewDayAfterLesson ?? this.streakIsNewDayAfterLesson,
       lootboxReward: lootboxReward ?? this.lootboxReward,
       equippedPetId: equippedPetId ?? this.equippedPetId,
+      wheelCoinAmount: wheelCoinAmount ?? this.wheelCoinAmount,
       busy: busy ?? this.busy,
       attempt: attempt ?? this.attempt,
     );
@@ -197,6 +208,7 @@ class LessonState {
           other.streakIsNewDayAfterLesson == streakIsNewDayAfterLesson &&
           other.lootboxReward == lootboxReward &&
           other.equippedPetId == equippedPetId &&
+          other.wheelCoinAmount == wheelCoinAmount &&
           other.busy == busy &&
           other.attempt == attempt);
 
@@ -217,6 +229,7 @@ class LessonState {
     xpTotalAfterLesson,
     lootboxReward,
     equippedPetId,
+    wheelCoinAmount,
     busy,
     attempt,
   );
@@ -528,6 +541,7 @@ class LessonController extends Notifier<LessonState> {
       streakIsNewDayAfterLesson: streakUpdate?.isNewDay,
       lootboxReward: petUpdate?.reward,
       equippedPetId: petUpdate?.equippedPetId,
+      wheelCoinAmount: petUpdate?.wheelCoinAmount,
     );
   }
 

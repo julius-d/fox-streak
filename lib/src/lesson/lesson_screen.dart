@@ -7,10 +7,11 @@
 // Bottom: FoxCheckButton (CHECK→CONTINUE, same key, tinted by correctState).
 // Completion (issue #078): once the lesson is done, a sequential, non-
 // skippable, non-back-navigable set of full-screen pushes plays out — loot
-// box (#059, if won) -> streak saved (#011, if it advanced today's streak)
-// -> XP up (#010/#053, always) -> summary (LessonResultScreen, always:
-// pet celebration, score, Home/Set overview/Redo whole set/Redo missed
-// items).
+// box (#059, if won) or wheel of fortune (#085, if won — mutually
+// exclusive with the loot box by cadence, same sequence slot) -> streak
+// saved (#011, if it advanced today's streak) -> XP up (#010/#053,
+// always) -> summary (LessonResultScreen, always: pet celebration, score,
+// Home/Set overview/Redo whole set/Redo missed items).
 //
 // All strings via AppLocalizations (DE + EN). Follows #015 kit reuse only.
 
@@ -32,6 +33,7 @@ import '../exercises/dial_pad_exercise.dart';
 import '../exercises/free_text_exercise.dart';
 import '../exercises/multiple_choice_exercise.dart';
 import 'exercise_card.dart';
+import 'wheel_screen.dart';
 import 'lesson_controller.dart';
 import 'lesson_result.dart';
 import 'streak_saved_screen.dart';
@@ -458,7 +460,10 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
   }
 
   /// Pushes each applicable completion screen in turn — loot box (#059, if
-  /// [LessonState.lootboxReward] isn't null) -> streak saved (#011, if
+  /// [LessonState.lootboxReward] isn't null) or wheel of fortune (#085, if
+  /// [LessonState.wheelCoinAmount] isn't null — the two share this one
+  /// sequence slot since their cadences are mutually exclusive, see
+  /// `PetService`'s class doc) -> streak saved (#011, if
   /// [LessonState.streakIsNewDayAfterLesson]) -> XP up (#010/#053, always)
   /// — awaiting each Continue tap before pushing the next. Once the last
   /// one pops, the summary screen underneath (already the current body) is
@@ -484,6 +489,14 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
     if (lootboxReward != null) {
       if (!await _pushAndWait(
         (_) => LootboxScreen(reward: lootboxReward, l10n: l10n),
+      )) {
+        return;
+      }
+    }
+    final wheelCoinAmount = state.wheelCoinAmount;
+    if (wheelCoinAmount != null) {
+      if (!await _pushAndWait(
+        (_) => WheelScreen(coinAmount: wheelCoinAmount, l10n: l10n),
       )) {
         return;
       }

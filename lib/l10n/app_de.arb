@@ -791,5 +791,22 @@
       "day": {"type": "String"}
     }
   },
-  "streakCalendarCellNoActivityLabel": "{day}: keine Aktivität"
+  "streakCalendarCellNoActivityLabel": "{day}: keine Aktivität",
+  "@wheelHeading": {
+    "description": "Heading on the unspun wheel-of-fortune screen (issue #085)",
+    "placeholders": {}
+  },
+  "wheelHeading": "Dreh das Glücksrad!",
+  "@wheelTapPrompt": {
+    "description": "Tap-to-spin prompt on the unspun wheel-of-fortune screen, also its a11y button label while idle/spinning (issue #085)",
+    "placeholders": {}
+  },
+  "wheelTapPrompt": "Tippen, um zu drehen!",
+  "@wheelWonText": {
+    "description": "Heading shown once the wheel has stopped, naming the won coin amount (issue #085)",
+    "placeholders": {
+      "amount": {"type": "int"}
+    }
+  },
+  "wheelWonText": "Du hast {amount} Münzen gewonnen!"
 }

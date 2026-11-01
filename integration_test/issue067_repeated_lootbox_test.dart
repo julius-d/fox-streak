@@ -36,11 +36,16 @@ final List<PetEntry> _fixtureCatalog = [
 ];
 
 /// Forces #065's coin-flip to the pet branch (`nextBool()` always
-/// `false`) and the pool pick to a fixed [index] — the
-/// `petRandomProvider` factory is only ever invoked once per lootbox
-/// trigger (see `PetService.recordLessonCompletion`'s early return for
-/// non-trigger completions), so passing a different `index` per trigger
-/// forces distinct, predictable pet picks across triggers.
+/// `false`) and the pool pick to a fixed [index] — letting the caller
+/// hand a different `index` per lootbox trigger forces distinct,
+/// predictable pet picks across triggers.
+///
+/// The `petRandomProvider` factory itself is no longer invoked only on
+/// lootbox triggers since #085: the day's 3rd completion also calls it
+/// once for the wheel's own (otherwise-irrelevant to this flow) coin
+/// draw. `main()` below accounts for this by advancing its own pick
+/// index only when a lootbox pick is actually consumed, not on every
+/// factory call.
 class _FixedPetRandom implements Random {
   _FixedPetRandom(this.index);
 
@@ -143,13 +148,17 @@ void main() {
       now: DateTime(2026, 10, 16, 9),
     );
 
-    var petPickCount = 0;
+    // Advanced only right after a lootbox pick is actually consumed (see
+    // `_FixedPetRandom`'s doc) — the 3rd completion's wheel trigger (#085)
+    // also calls this factory in between, but must not shift which index
+    // the 5th completion's lootbox pick receives.
+    var petPickIndex = 0;
     await pumpFoxStreakApp(
       tester,
       db: db,
       clock: clock,
       petCatalogLoader: () async => _fixtureCatalog,
-      petRandom: () => _FixedPetRandom(petPickCount++),
+      petRandom: () => _FixedPetRandom(petPickIndex),
     );
     expect(find.byKey(const Key('homeScreen')), findsOneWidget);
 
@@ -160,11 +169,13 @@ void main() {
     // 2nd completion: the original #059 trigger still fires.
     await _completeOneLessonFromHome(tester);
     await _openAndDismissLootbox(tester);
+    petPickIndex++;
     final ownedAfterSecond = await petRepo.getOwnedPetIds();
     expect(ownedAfterSecond, hasLength(2));
 
-    // 3rd and 4th completions: no retrigger (issue #067's next one is
-    // the 5th).
+    // 3rd and 4th completions: no lootbox retrigger (issue #067's next
+    // one is the 5th) — the 3rd's wheel trigger (#085) is dismissed by
+    // `_skipToHome`'s own `dismissCompletionScreens` call.
     await _completeOneLessonFromHome(tester);
     await _skipToHome(tester);
 

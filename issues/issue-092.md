@@ -1,0 +1,43 @@
+# Issue 092: Wrap PetService's counter + reward writes in one transaction
+
+Status: open | Priority: P3 | Type: chore
+
+## Context
+
+Found during #085's (Wheel of Fortune) code review. `PetService
+.recordLessonCompletion` (`lib/src/stats/pet_service.dart`) does several
+sequential, unguarded `await`s against `StatsRepository`/`PetRepository`:
+`setPetLessonCounter`, then (independently) `addCoins` for the wheel,
+then `addCoins` or `addOwnedPet` for the lootbox. If the app process dies
+or a write throws partway through (e.g. after `setPetLessonCounter`
+commits but before the reward write runs), the day's completion counter
+has already advanced past the trigger count, but the reward itself (coins
+or an owned pet) is silently and permanently lost — that counter value
+never recurs.
+
+`StatsRepository` already has a `transaction` helper
+(`stats_repository.dart`) used elsewhere for exactly this kind of
+multi-write atomicity. This isn't new in #085 — the lootbox's own
+counter+reward writes (#059/#065) have the same gap — #085 just added a
+second instance of the same pattern (the wheel's counter+coins writes).
+
+## Goal
+
+Wrap each of `recordLessonCompletion`'s write sequences (counter bump +
+wheel coins; counter bump + lootbox reward) in a single
+`StatsRepository.transaction` call so a crash/throw between them can
+never advance the counter without the reward landing (or vice versa).
+
+## Out of scope
+
+- Any change to the trigger cadences or reward tables themselves.
+- `PetService.equip` (single write already, nothing to wrap).
+
+## Verify
+
+```shell
+flutter analyze
+dart format --output=none --set-exit-if-changed .
+dart fix --dry-run
+flutter test
+```

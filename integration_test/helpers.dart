@@ -24,7 +24,9 @@
 //   (`quitLessonMenuItem`/`skipItemMenuItem`), `checkButton` (CHECK then
 //   CONTINUE, same key), `lessonFeedbackBanner`.
 // - Completion sequence (issue #078) — loot box (`lootboxScreen`,
-//   `lootboxOpenButton`/`lootboxContinueButton`, if won), streak saved
+//   `lootboxOpenButton`/`lootboxContinueButton`, if won) or wheel of
+//   fortune (`wheelScreen`, `wheelSpinButton`/`wheelContinueButton`,
+//   issue #085 — shares the loot box's slot, never both), streak saved
 //   (`streakSavedScreen`, `streakSavedContinueButton`, only when the
 //   completion advanced today's streak), XP up (`xpUpScreen`,
 //   `xpUpContinueButton`, always), summary (`lessonResultScreen`, always:
@@ -251,11 +253,13 @@ Future<void> pumpLessonScreen(
 
 /// Taps through whichever of the #078 post-lesson completion sequence's
 /// screens are currently showing — loot box (#059, tap-to-open then
-/// Continue), streak saved (#011), XP up (#010/#053) — landing on the
-/// summary screen (`lessonResultScreen`). Each step is a no-op if that
-/// screen isn't present (e.g. no loot box won, or this completion didn't
-/// advance the streak), so it's safe to call unconditionally after any
-/// lesson completion a test doesn't care to inspect screen-by-screen.
+/// Continue), wheel of fortune (#085, tap-to-spin then Continue — shares
+/// the loot box's sequence slot, never shown together), streak saved
+/// (#011), XP up (#010/#053) — landing on the summary screen
+/// (`lessonResultScreen`). Each step is a no-op if that screen isn't
+/// present (e.g. no loot box/wheel won, or this completion didn't advance
+/// the streak), so it's safe to call unconditionally after any lesson
+/// completion a test doesn't care to inspect screen-by-screen.
 Future<void> dismissCompletionScreens(WidgetTester tester) async {
   await settle(tester);
   final lootboxOpen = find.byKey(const Key('lootboxOpenButton'));
@@ -266,6 +270,16 @@ Future<void> dismissCompletionScreens(WidgetTester tester) async {
   final lootboxContinue = find.byKey(const Key('lootboxContinueButton'));
   if (lootboxContinue.evaluate().isNotEmpty) {
     await tester.tap(lootboxContinue);
+    await settle(tester);
+  }
+  final wheelSpin = find.byKey(const Key('wheelSpinButton'));
+  if (wheelSpin.evaluate().isNotEmpty) {
+    await tester.tap(wheelSpin);
+    await settle(tester);
+  }
+  final wheelContinue = find.byKey(const Key('wheelContinueButton'));
+  if (wheelContinue.evaluate().isNotEmpty) {
+    await tester.tap(wheelContinue);
     await settle(tester);
   }
   final streakContinue = find.byKey(const Key('streakSavedContinueButton'));

@@ -3,6 +3,13 @@
 // `PetService.recordLessonCompletion`'s 50/50 coin flip either wins a
 // catalog pet (#064's full-pool draw, unchanged) or a coin amount here —
 // never both in the same trigger.
+//
+// Issue #085 adds the wheel-of-fortune's own coin table/draw
+// ([kWheelCoinAmounts]/[drawWheelCoinAmount]) alongside the lootbox's —
+// a distinct, wheel-sized (6-value, vs. the lootbox's 20-value) table so
+// every slice stays legible on a drawn wheel. The wheel's trigger is a
+// disjoint cadence from the lootbox's (see `PetService`'s class doc), so
+// the two draws never both run for the same completion.
 
 import 'dart:math';
 
@@ -61,12 +68,58 @@ final int kLootboxCoinTotalWeight = kLootboxCoinAmounts
 /// Draws a coin amount from [kLootboxCoinAmounts] via a single
 /// cumulative-weight draw off [random], weighted so smaller amounts are
 /// more likely per [_weightForCoinAmount].
-int drawCoinAmount(Random random) {
-  var draw = random.nextInt(kLootboxCoinTotalWeight);
-  for (final amount in kLootboxCoinAmounts) {
-    final weight = _weightForCoinAmount(amount);
-    if (draw < weight) return amount;
+int drawCoinAmount(Random random) => _drawWeighted(
+  random,
+  kLootboxCoinAmounts,
+  _weightForCoinAmount,
+  kLootboxCoinTotalWeight,
+);
+
+/// Single cumulative-weight draw shared by [drawCoinAmount]/
+/// [drawWheelCoinAmount]: picks one of [items] off [random], weighted by
+/// [weightOf] — smaller [totalWeight]-th of the way through [random]'s
+/// draw lands on items whose cumulative weight-so-far is smaller.
+T _drawWeighted<T>(
+  Random random,
+  List<T> items,
+  int Function(T) weightOf,
+  int totalWeight,
+) {
+  var draw = random.nextInt(totalWeight);
+  for (final item in items) {
+    final weight = weightOf(item);
+    if (draw < weight) return item;
     draw -= weight;
   }
-  throw StateError('unreachable: draw exceeded total coin weight');
+  throw StateError('unreachable: draw exceeded total weight');
 }
+
+/// The wheel's possible coin amounts (issue #085) — a distinct, 6-value
+/// table from [kLootboxCoinAmounts], sized so every slice stays legible
+/// on a drawn wheel. Order matters: `WheelScreen` paints slice `i` for
+/// `kWheelCoinAmounts[i]` and relies on this fixed order to compute which
+/// slice to land the spin on.
+const List<int> kWheelCoinAmounts = [10, 20, 30, 50, 75, 100];
+
+/// Each amount's draw weight, linearly decreasing so smaller amounts are
+/// more likely — 100 for 10 coins, down to 10 for 100 coins — the same
+/// "smaller is more likely" shape as [_weightForCoinAmount].
+int _weightForWheelCoinAmount(int amount) => 110 - amount;
+
+/// Sum of every [kWheelCoinAmounts] entry's [_weightForWheelCoinAmount]
+/// (375), i.e. the exclusive upper bound for the cumulative draw in
+/// [drawWheelCoinAmount].
+final int kWheelCoinTotalWeight = kWheelCoinAmounts
+    .map(_weightForWheelCoinAmount)
+    .reduce((a, b) => a + b);
+
+/// Draws a coin amount from [kWheelCoinAmounts] via a single
+/// cumulative-weight draw off [random], weighted so smaller amounts are
+/// more likely per [_weightForWheelCoinAmount] — mirrors [drawCoinAmount]'s
+/// shape against the wheel's own, smaller table.
+int drawWheelCoinAmount(Random random) => _drawWeighted(
+  random,
+  kWheelCoinAmounts,
+  _weightForWheelCoinAmount,
+  kWheelCoinTotalWeight,
+);

@@ -1331,6 +1331,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{day}: no activity'**
   String streakCalendarCellNoActivityLabel(String day);
+
+  /// Heading on the unspun wheel-of-fortune screen (issue #085)
+  ///
+  /// In en, this message translates to:
+  /// **'Spin the wheel!'**
+  String get wheelHeading;
+
+  /// Tap-to-spin prompt on the unspun wheel-of-fortune screen, also its a11y button label while idle/spinning (issue #085)
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to spin!'**
+  String get wheelTapPrompt;
+
+  /// Heading shown once the wheel has stopped, naming the won coin amount (issue #085)
+  ///
+  /// In en, this message translates to:
+  /// **'You won {amount} coins!'**
+  String wheelWonText(int amount);
 }
 
 class _AppLocalizationsDelegate

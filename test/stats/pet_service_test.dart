@@ -341,6 +341,72 @@ void main() {
     });
   });
 
+  group('recordLessonCompletion wheel of fortune (#085)', () {
+    test('triggers on the 3rd, 6th, 9th, and an arbitrarily high multiple '
+        '(48th) completion of the day, uncapped', () async {
+      final service = buildService();
+      final triggeredCounts = <int>{};
+      for (var count = 1; count <= 48; count++) {
+        final update = await service.recordLessonCompletion(
+          random: _ZeroRandom(),
+        );
+        if (update.wheelCoinAmount != null) {
+          triggeredCounts.add(count);
+        }
+      }
+
+      expect(triggeredCounts, containsAll(<int>[3, 6, 9, 48]));
+      expect(triggeredCounts.every((count) => count % 3 == 0), isTrue);
+    });
+
+    test('does not trigger on completions 1, 2, 4, 5, 7, or 8', () async {
+      final service = buildService();
+      final nonTriggering = <int>{};
+      for (var count = 1; count <= 8; count++) {
+        final update = await service.recordLessonCompletion(
+          random: _ZeroRandom(),
+        );
+        if (update.wheelCoinAmount == null) {
+          nonTriggering.add(count);
+        }
+      }
+
+      expect(nonTriggering, {1, 2, 4, 5, 7, 8});
+    });
+
+    test('never coincides with a loot-box trigger on the same completion '
+        '(disjoint mod-3 cadences)', () async {
+      final service = buildService();
+      for (var count = 1; count <= 12; count++) {
+        final update = await service.recordLessonCompletion(
+          random: _ZeroRandom(),
+        );
+        expect(
+          update.reward != null && update.wheelCoinAmount != null,
+          isFalse,
+          reason:
+              'completion $count won both a loot-box reward and a '
+              'wheel coin amount',
+        );
+      }
+    });
+
+    test('the drawn wheel amount is added to coinsTotal via '
+        'StatsRepository.addCoins', () async {
+      final service = buildService();
+      await service.recordLessonCompletion(); // 1
+      await service.recordLessonCompletion(
+        random: _ZeroRandom(),
+      ); // 2 (lootbox)
+      final third = await service.recordLessonCompletion(
+        random: _ZeroRandom(),
+      ); // 3 (wheel)
+
+      expect(third.wheelCoinAmount, isNotNull);
+      expect((await statsRepo.getProfile()).coinsTotal, third.wheelCoinAmount);
+    });
+  });
+
   group('drawCoinAmount (#065)', () {
     test('the cumulative-weight table: boundary draws land on the right '
         'amount', () {
@@ -367,6 +433,35 @@ void main() {
         if (amount == 100) hundredCount++;
       }
       expect(fiveCount, greaterThan(hundredCount));
+    });
+  });
+
+  group('drawWheelCoinAmount (#085)', () {
+    test('the cumulative-weight table: boundary draws land on the right '
+        'amount', () {
+      // weight(10) == 100, so draws 0..99 land on 10.
+      expect(drawWheelCoinAmount(_ScriptedRandom(intValue: 0)), 10);
+      expect(drawWheelCoinAmount(_ScriptedRandom(intValue: 99)), 10);
+      // weight(20) == 90, the next bucket: draws 100..189 land on 20.
+      expect(drawWheelCoinAmount(_ScriptedRandom(intValue: 100)), 20);
+      // weight(75) == 35, the second-to-last bucket: draws 330..364.
+      expect(drawWheelCoinAmount(_ScriptedRandom(intValue: 364)), 75);
+      // weight(100) == 10, the last bucket: draws 365..374.
+      expect(drawWheelCoinAmount(_ScriptedRandom(intValue: 365)), 100);
+      expect(drawWheelCoinAmount(_ScriptedRandom(intValue: 374)), 100);
+    });
+
+    test('distribution sanity: 10 is drawn more often than 100 over many '
+        'seeded trials, matching their 10x weight ratio', () {
+      final random = Random(42);
+      var tenCount = 0;
+      var hundredCount = 0;
+      for (var i = 0; i < 5000; i++) {
+        final amount = drawWheelCoinAmount(random);
+        if (amount == 10) tenCount++;
+        if (amount == 100) hundredCount++;
+      }
+      expect(tenCount, greaterThan(hundredCount));
     });
   });
 

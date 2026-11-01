@@ -1,6 +1,6 @@
 # Issue 085: Wheel of Fortune
 
-Status: open | Priority: P3 | Type: feature | Refined-at: 2026-10-31
+Status: done | Priority: P3 | Type: feature | Refined-at: 2026-10-31 | Completed-at: 2026-10-31
 
 ## Context
 
@@ -159,3 +159,68 @@ dart format --output=none --set-exit-if-changed .
 dart fix --dry-run
 flutter test
 ```
+
+## Summary
+
+Added `kWheelCoinAmounts`/`drawWheelCoinAmount` (`lootbox_reward.dart`),
+wired a `newCount % 3 == 0` check into `PetService.recordLessonCompletion`
+alongside the existing loot box trigger, and a new `WheelScreen`
+(`lib/src/lesson/wheel_screen.dart`) inserted into
+`LessonScreen._runCompletionSequence` in the loot box's slot. The spin's
+landing segment is computed by the pure `wheelTargetRotationTurns` helper
+and is identical whether stopped by a second tap or the automatic
+timeout. New DE/EN l10n strings (`wheelHeading`/`wheelTapPrompt`/
+`wheelWonText`); reuses `coinsSemanticLabel`/`lessonContinue`.
+
+## Code review
+
+`dismissCompletionScreens` (integration_test/helpers.dart) had no idea
+`WheelScreen` existed, breaking the pre-existing `issue067`/`issue069`
+integration tests whose completion-3 wheel trigger it now has to dismiss.
+Fixed — helper taps `wheelSpinButton`/`wheelContinueButton` too; also
+fixed `issue067`'s `_FixedPetRandom` counter, which the wheel's own extra
+`petRandomProvider` call was silently shifting.
+
+Rapid repeated taps during the wind-down (`_stopSpin`'s `animateTo`)
+could restart it indefinitely, leaving the user stuck with no back nav.
+Fixed — added a `stopping` phase so a tap during wind-down is a no-op;
+added a regression widget test that fails without the fix.
+
+Wheel/lootbox cadence disjointness was enforced only by a prose comment,
+not by code — a future edit to either formula could silently break it.
+Fixed — added a runtime `assert` in `recordLessonCompletion` asserting
+`reward`/`wheelCoinAmount` are never both non-null.
+
+`drawWheelCoinAmount` duplicated `drawCoinAmount`'s weighted-draw loop
+almost verbatim.
+Fixed — extracted a shared `_drawWeighted<T>` helper in
+`lootbox_reward.dart`.
+
+Hand-written 6-entry color arrays in `_WheelDial` had no length tie to
+`kWheelCoinAmounts`, risking an uncaught `RangeError` if either changes.
+Fixed — added a constructor-time `assert` in `_WheelPainter`.
+
+`_WheelDial.interactive` was a redundant boolean always equal to
+`onTap != null`.
+Fixed — removed the field; interactivity is now derived from `onTap`.
+
+Four near-identical return statements in `recordLessonCompletion`,
+differing only in `reward`.
+Fixed as a side effect of the disjointness-assert refactor (single
+return path now, one `reward` local instead of four branches).
+
+`PetService`'s counter-bump + reward writes aren't wrapped in a
+transaction; a crash between them silently loses the reward.
+Not fixed — pre-existing gap (also affects the lootbox's own writes, not
+new in this issue); filed as #092.
+
+`_WheelDial` re-implements `LootboxScreen`'s `_LootboxAnimation` almost
+verbatim (interactive/revealed gating + `InkWell`/`Semantics` wrapper).
+Not fixed — needs a proper shared kit-widget design, not a quick patch;
+filed as #093.
+
+`_runCompletionSequence`'s loot-box and wheel pushes are two
+structurally duplicated null-check-and-push blocks.
+Not fixed — only two call sites today and the file's header already
+flags #082 as the broader open follow-up for this sequence; not worth a
+new abstraction yet.

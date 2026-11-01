@@ -751,4 +751,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String streakCalendarCellNoActivityLabel(String day) {
     return '$day: keine Aktivität';
   }
+
+  @override
+  String get wheelHeading => 'Dreh das Glücksrad!';
+
+  @override
+  String get wheelTapPrompt => 'Tippen, um zu drehen!';
+
+  @override
+  String wheelWonText(int amount) {
+    return 'Du hast $amount Münzen gewonnen!';
+  }
 }
