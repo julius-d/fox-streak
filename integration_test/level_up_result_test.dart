@@ -21,6 +21,16 @@
 // count that never reaches zero. A bounded `pump()` loop is used instead,
 // long enough to settle the (ordinary, finite) count-up/celebration/bar
 // animations without waiting on confetti.
+//
+// The `ConfettiControllerState.playing` assertion below (issue #077) is
+// checked via [pumpUntilFound] right as the XP-up screen mounts — *before*
+// the long settle loop runs. The confetti package only flips the
+// controller to `stopped` once its particle system reports "finished",
+// which (like the animation frames above) is driven by real wall-clock
+// deltas rather than the test clock. Checking immediately after mount,
+// rather than after ~1.5s of settling, keeps that window small instead of
+// racing a real-time particle simulation that can finish first on a slow
+// run.
 
 import 'package:confetti/confetti.dart';
 import 'package:drift/drift.dart';
@@ -114,6 +124,24 @@ Future<void> answerAllCorrectly(
   }
 }
 
+/// Pumps in small steps until [finder] matches something, instead of a
+/// single long bounded `pump()` run — used right before a
+/// time-sensitive assertion (issue #077) so it fires as soon as the
+/// awaited widget mounts rather than after a fixed, possibly-too-long
+/// delay. Fails via the subsequent `expect` if [finder] never matches
+/// within [maxSteps] steps.
+Future<void> pumpUntilFound(
+  WidgetTester tester,
+  Finder finder, {
+  int maxSteps = 30,
+  Duration step = const Duration(milliseconds: 16),
+}) async {
+  for (var i = 0; i < maxSteps; i++) {
+    if (finder.evaluate().isNotEmpty) return;
+    await tester.pump(step);
+  }
+}
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -178,16 +206,12 @@ void main() {
       }
       await tester.tap(find.byKey(const Key('streakSavedContinueButton')));
 
-      // XP up mounts next (confetti starts playing) — see file doc for why
-      // this uses a bounded pump loop instead of pumpAndSettle().
-      for (var i = 0; i < 15; i++) {
-        await tester.pump(const Duration(milliseconds: 100));
-      }
-
+      // XP up mounts next (confetti starts playing). Pump just until it
+      // appears, then check the confetti is still playing right away —
+      // see file doc (issue #077) for why this can't wait for the longer
+      // settle loop below.
+      await pumpUntilFound(tester, find.byKey(const Key('xpUpScreen')));
       expect(find.byKey(const Key('xpUpScreen')), findsOneWidget);
-      expect(find.byKey(const Key('levelUpCallout')), findsOneWidget);
-      expect(find.text('Level Up! Level 2'), findsOneWidget);
-      expect(find.byKey(const Key('levelUpProgressAnimation')), findsOneWidget);
 
       final confettiWidget = tester.widget<ConfettiWidget>(
         find.byKey(const Key('levelUpConfetti')),
@@ -196,6 +220,17 @@ void main() {
         confettiWidget.confettiController.state,
         ConfettiControllerState.playing,
       );
+
+      // Now let the ordinary (finite) count-up/celebration/bar animations
+      // settle — see file doc for why this is a bounded pump loop instead
+      // of pumpAndSettle().
+      for (var i = 0; i < 15; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+
+      expect(find.byKey(const Key('levelUpCallout')), findsOneWidget);
+      expect(find.text('Level Up! Level 2'), findsOneWidget);
+      expect(find.byKey(const Key('levelUpProgressAnimation')), findsOneWidget);
       expect(fakeSoundPlayer.playLevelUpCallCount, 1);
 
       final profile = await statsRepo.getProfile();
