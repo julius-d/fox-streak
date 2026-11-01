@@ -467,6 +467,26 @@ void main() {
   );
 
   testWidgets(
+    "the streak badge's tap target meets the 48dp a11y floor, without "
+    'growing StreakBadge itself (issue #088)',
+    (tester) async {
+      final clock = FakeClock(kTestToday);
+      await pumpOnboardedHome(tester, clock);
+
+      final tapTargetHeight = tester
+          .getSize(find.byKey(const Key('streakBadgeButton')))
+          .height;
+      final badgeHeight = tester
+          .getSize(find.byKey(const Key('streakBadge')))
+          .height;
+
+      expect(tapTargetHeight, greaterThanOrEqualTo(FoxButtonMetrics.minSize));
+      expect(badgeHeight, lessThan(tapTargetHeight));
+      await unmount(tester);
+    },
+  );
+
+  testWidgets(
     'coin badge is absent on Home when coinsTotal is 0 (issue #080)',
     (tester) async {
       final clock = FakeClock(kTestToday);

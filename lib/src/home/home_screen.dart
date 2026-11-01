@@ -247,36 +247,51 @@ class _HomeDashboard extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: FoxSpacing.lg),
-              InkWell(
-                key: const Key('streakBadgeButton'),
-                borderRadius: const BorderRadius.all(
-                  Radius.circular(FoxRadius.pill),
+              ConstrainedBox(
+                constraints: const BoxConstraints(
+                  minHeight: FoxButtonMetrics.minSize,
                 ),
-                onTap: () => Navigator.of(context).push<void>(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const StreakDetailsScreen(),
+                child: InkWell(
+                  key: const Key('streakBadgeButton'),
+                  borderRadius: const BorderRadius.all(
+                    Radius.circular(FoxRadius.pill),
                   ),
-                ),
-                // StreakBadge already wraps itself in its own Semantics
-                // label; MergeSemantics folds that together with the
-                // button-role label below into one screen-reader stop
-                // instead of two.
-                child: MergeSemantics(
-                  child: Semantics(
-                    button: true,
-                    label: l10n.homeStreakDetailsSemanticLabel,
-                    child: StreakBadge(
-                      key: const Key('streakBadge'),
-                      streakCount: profile.streakCount,
-                      todayDone: todayDone,
-                      streakCountLabel: l10n.streakCountLabel(
-                        profile.streakCount,
+                  onTap: () => Navigator.of(context).push<void>(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const StreakDetailsScreen(),
+                    ),
+                  ),
+                  // `constrainedAxis: horizontal` keeps the badge's existing
+                  // full-width stretch (from the Column's
+                  // crossAxisAlignment.stretch) untouched while leaving its
+                  // height unconstrained, so the outer ConstrainedBox grows
+                  // only the invisible tap area to 48dp and StreakBadge
+                  // itself still renders at its own natural (40dp) height,
+                  // centered within it (#088).
+                  child: UnconstrainedBox(
+                    constrainedAxis: Axis.horizontal,
+                    // StreakBadge already wraps itself in its own Semantics
+                    // label; MergeSemantics folds that together with the
+                    // button-role label below into one screen-reader stop
+                    // instead of two.
+                    child: MergeSemantics(
+                      child: Semantics(
+                        button: true,
+                        label: l10n.homeStreakDetailsSemanticLabel,
+                        child: StreakBadge(
+                          key: const Key('streakBadge'),
+                          streakCount: profile.streakCount,
+                          todayDone: todayDone,
+                          streakCountLabel: l10n.streakCountLabel(
+                            profile.streakCount,
+                          ),
+                          todayDoneLabel: l10n.streakTodayDoneLabel,
+                          semanticsLabel: todayDone
+                              ? '${l10n.streakCountLabel(profile.streakCount)} '
+                                    '${l10n.streakTodayDoneLabel}'
+                              : l10n.streakCountLabel(profile.streakCount),
+                        ),
                       ),
-                      todayDoneLabel: l10n.streakTodayDoneLabel,
-                      semanticsLabel: todayDone
-                          ? '${l10n.streakCountLabel(profile.streakCount)} '
-                                '${l10n.streakTodayDoneLabel}'
-                          : l10n.streakCountLabel(profile.streakCount),
                     ),
                   ),
                 ),

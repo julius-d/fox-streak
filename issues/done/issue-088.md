@@ -1,6 +1,7 @@
 # Issue 088: StreakBadge's tap target is short of the 48dp a11y floor
 
-Status: open | Priority: P3 | Type: bug
+Status: done | Priority: P3 | Type: bug
+Completed-at: 2026-11-01
 
 ## Context
 
@@ -28,10 +29,10 @@ pad the `InkWell` itself) — same look, compliant hit area.
 
 ## Acceptance criteria
 
-- [ ] Home's streak-badge tap target is >= 48dp tall.
-- [ ] `StreakBadge`'s rendered/visual size is unchanged on Home and on the
+- [x] Home's streak-badge tap target is >= 48dp tall.
+- [x] `StreakBadge`'s rendered/visual size is unchanged on Home and on the
       lesson result/streak-saved screens (no golden-test diffs there).
-- [ ] A widget test asserts the tap target's height/hit-area meets the
+- [x] A widget test asserts the tap target's height/hit-area meets the
       48dp floor.
 
 ## Out of scope
@@ -51,3 +52,28 @@ dart format --output=none --set-exit-if-changed .
 dart fix --dry-run
 flutter test
 ```
+
+## Summary
+
+Wrapped Home's `streakBadgeButton` `InkWell` in `ConstrainedBox(minHeight:
+48)` > `UnconstrainedBox(constrainedAxis: Axis.horizontal)`. The badge's
+`InkWell` already inherits a *tight* full-width constraint from the Column's
+`crossAxisAlignment.stretch` (the pill visibly spans full width today, per
+`issues/done/issue-084-home_streak_badge.png`) — `constrainedAxis:
+Axis.horizontal` preserves that tight width unchanged while leaving height
+unconstrained, so `StreakBadge` still renders at its natural 40dp, centered
+in the new 48dp tap box. A plain `Align`/`Container(alignment:)` (as used by
+`homeGreeting`) would have loosened *both* axes, shrinking the pill to
+hug-content width — a visible regression, not just a bigger hit area.
+
+## Code review
+
+Finding: suggested reusing `homeGreeting`'s simpler `Container(constraints:,
+alignment:)` pattern instead of `ConstrainedBox`+`UnconstrainedBox`.
+Not applied: that pattern loosens the width constraint too, which would
+shrink the badge's current full-width pill to a compact chip — confirmed via
+constraint-propagation analysis (`Align`/`Container.alignment` always calls
+`constraints.loosen()` on its child) and the existing full-width screenshot;
+`UnconstrainedBox(constrainedAxis: Axis.horizontal)` is the correct tool
+because it keeps the tight width axis untouched while only decoupling
+height.
