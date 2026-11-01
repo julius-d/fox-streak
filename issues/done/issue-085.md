@@ -212,7 +212,7 @@ return path now, one `reward` local instead of four branches).
 `PetService`'s counter-bump + reward writes aren't wrapped in a
 transaction; a crash between them silently loses the reward.
 Not fixed — pre-existing gap (also affects the lootbox's own writes, not
-new in this issue); filed as #092.
+new in this issue); filed as #092, renumbered to #097 (see #096).
 
 `_WheelDial` re-implements `LootboxScreen`'s `_LootboxAnimation` almost
 verbatim (interactive/revealed gating + `InkWell`/`Semantics` wrapper).

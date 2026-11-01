@@ -1,6 +1,6 @@
 # Issue 096: Backlog has duplicate issue numbers (083, 092, 093)
 
-Status: open | Priority: P3 | Type: chore
+Status: done | Priority: P3 | Type: chore | Completed-at: 2026-11-01
 
 ## Context
 
@@ -50,3 +50,24 @@ dart format --output=none --set-exit-if-changed .
 dart fix --dry-run
 flutter test
 ```
+
+## Summary
+
+- Deleted `issues/issue-083.md` — confirmed byte-identical to
+  `issues/done/issue-083.md` apart from the `Status`/`Completed-at`
+  fields and the done copy's appended Summary/Code-review sections; it
+  was a leftover from a prior completion that moved the file without
+  removing the stale original.
+- `issues/issue-092.md` ("Wrap PetService's counter + reward writes in
+  one transaction") renamed to `issues/issue-097.md` (next free number);
+  added a "originally filed as #092" note, and updated the one
+  cross-reference (`issues/done/issue-085.md`) that pointed at #092.
+  `issues/done/issue-092.md` (the date/free-text exercise fix) keeps its
+  number — it has several in-code/test comment references (`#092`) that
+  would otherwise need touching.
+- #093 collision was already resolved before this issue was filed (per
+  `issues/done/issue-095.md`'s note) — nothing left to do there.
+- Root-cause fix for new numbers reusing a freed slot: already addressed
+  — `.claude/skills/new-issue/SKILL.md` already instructs checking both
+  `issues/` and `issues/done/` for the highest ID before assigning a new
+  one. No code/skill change needed.

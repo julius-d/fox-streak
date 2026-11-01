@@ -1,6 +1,11 @@
-# Issue 092: Wrap PetService's counter + reward writes in one transaction
+# Issue 097: Wrap PetService's counter + reward writes in one transaction
 
 Status: open | Priority: P3 | Type: chore
+
+Note: originally filed as #092, renumbered to #097 — #092 was already
+taken by an unrelated, already-done issue (date/free-text exercise
+keyboard-stability fix); see #096 for the backlog numbering-collision bug
+this surfaced.
 
 ## Context
 
