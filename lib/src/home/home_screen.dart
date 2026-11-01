@@ -23,6 +23,7 @@ import '../data/providers.dart';
 import '../library/library_screen.dart';
 import '../lesson/lesson_screen.dart';
 import '../pet/pet_collection_screen.dart';
+import '../pet/pet_hero.dart';
 import '../pet/pet_providers.dart';
 import '../settings/settings_providers.dart';
 import '../settings/settings_screen.dart';
@@ -278,7 +279,10 @@ class _HomeDashboard extends ConsumerWidget {
                   child: Semantics(
                     button: true,
                     label: l10n.homePetSemanticLabel,
-                    child: FoxPet(pet: ref.watch(equippedPetProvider)),
+                    child: wrapEquippedPetHero(
+                      context,
+                      FoxPet(pet: ref.watch(equippedPetProvider)),
+                    ),
                   ),
                 ),
               ),

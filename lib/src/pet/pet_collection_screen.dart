@@ -10,6 +10,7 @@
 // (owned and locked alike, no percentage shown), and an owned-more-than-
 // once tile shows a "×N" badge in its top-right corner.
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/app_localizations.dart';
@@ -18,6 +19,7 @@ import '../stats/stats_providers.dart';
 import '../theme/fox_streak_theme.dart';
 import '../widgets/widgets.dart';
 import 'pet_catalog.dart';
+import 'pet_hero.dart';
 import 'pet_providers.dart';
 
 class PetCollectionScreen extends ConsumerWidget {
@@ -51,6 +53,15 @@ class PetCollectionScreen extends ConsumerWidget {
             return GridView.builder(
               key: const Key('petCollectionGrid'),
               padding: const EdgeInsets.all(FoxSpacing.lg),
+              // Issue #100: the equipped tile's Hero flight is computed
+              // against whatever this grid has already built — a lazy
+              // `GridView.builder`'s default cacheExtent only guarantees
+              // tiles near the top, so an equipped pet sorted further down
+              // could silently fail to fly on push from Home. A large
+              // finite extent builds the whole catalog eagerly (cheap at
+              // today's size) without hitting the semantics-tree assertion
+              // crash `ScrollCacheExtent.pixels(double.infinity)` triggers.
+              scrollCacheExtent: const ScrollCacheExtent.pixels(4000),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
                 mainAxisSpacing: FoxSpacing.md,
@@ -156,7 +167,9 @@ class _PetTile extends ConsumerWidget {
           label: isEquipped
               ? l10n.petEquippedSemanticLabel(entry.emoji)
               : l10n.petSemanticLabel(entry.emoji),
-          child: FoxPet(pet: entry, size: 72),
+          child: isEquipped
+              ? wrapEquippedPetHero(context, FoxPet(pet: entry, size: 72))
+              : FoxPet(pet: entry, size: 72),
         ),
       ),
     );

@@ -1,6 +1,6 @@
 # Issue 100: Hero animation for the pet between Home and Pet Collection
 
-Status: open | Priority: P3 | Type: enhancement | Refined-at: 2026-11-01
+Status: done | Priority: P3 | Type: enhancement | Refined-at: 2026-11-01 | Completed-at: 2026-11-01
 
 ## Context
 
@@ -80,3 +80,26 @@ Collection to Home).
   lesson result, empty states) — ruled out above, not pursued in this issue.
 - Changing what the pet avatar does when tapped, or the Pet Collection
   screen's layout/behavior otherwise.
+
+## Summary
+
+Added `lib/src/pet/pet_hero.dart`: a shared `equippedPetHeroTag` + a
+`wrapEquippedPetHero` helper that wraps a `FoxPet` in a `Hero` unless OS
+reduce-motion is on (then it's returned bare, so push/pop swaps it
+instantly). Wired into `HomeScreen`'s `homePetButton` and
+`PetCollectionScreen`'s equipped tile only (other owned tiles also render a
+`FoxPet` but are never Hero-wrapped, so each screen has exactly one Hero
+with the shared tag). Standard Flutter Hero flight handles the 96px/72px
+size animation automatically. Covered by widget tests (Hero present/absent
+under reduce motion) and a new `integration_test/issue100_pet_hero_test.dart`
+driving the real Home ⇄ PetCollection push/pop.
+
+## Code review
+
+- Finding: `PetCollectionScreen`'s `GridView.builder` only builds tiles
+  within its default (small) cache extent, so an equipped pet sorted
+  further down the catalog could silently miss its Hero flight on push.
+  Fixed — added `scrollCacheExtent: ScrollCacheExtent.pixels(4000)` so the
+  whole (currently 13-entry) catalog builds eagerly; `double.infinity`
+  was tried first but crashes Flutter's semantics-tree assertion, so a
+  large finite bound was used instead.

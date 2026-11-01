@@ -23,6 +23,8 @@ import 'package:fox_streak_app/src/data/settings_repository.dart';
 import 'package:fox_streak_app/src/data/sets_repository.dart';
 import 'package:fox_streak_app/src/data/stats_repository.dart';
 import 'package:fox_streak_app/src/home/home_screen.dart';
+import 'package:fox_streak_app/src/pet/pet_catalog.dart';
+import 'package:fox_streak_app/src/pet/pet_hero.dart';
 import 'package:fox_streak_app/src/widgets/widgets.dart';
 import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
 
@@ -86,6 +88,38 @@ Future<AppDatabase> pumpOnboardedHome(
         theme: FoxStreakTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
+        home: const HomeScreen(),
+      ),
+    ),
+  );
+  await settle(tester);
+  return db;
+}
+
+/// Variant of [pumpOnboardedHome] with OS reduce-motion forced on (issue
+/// #100's Hero should then be skipped entirely — see fox_pet.dart's own
+/// `MediaQuery.disableAnimationsOf` convention).
+Future<AppDatabase> pumpOnboardedHomeReduceMotion(
+  WidgetTester tester,
+  FakeClock clock,
+) async {
+  final db = AppDatabase.forTesting(NativeDatabase.memory());
+  addTearDown(() async => db.close());
+  await StatsRepository(db, clock).setOnboarded();
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        appDatabaseProvider.overrideWithValue(db),
+        systemClockProvider.overrideWithValue(clock),
+      ],
+      child: MaterialApp(
+        theme: FoxStreakTheme.light(),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        builder: (BuildContext context, Widget? child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(disableAnimations: true),
+          child: child!,
+        ),
         home: const HomeScreen(),
       ),
     ),
@@ -567,6 +601,42 @@ void main() {
         tester.element(find.byKey(const Key('goalRing'))),
       )!;
       expect(ring.primaryLabel, l10n.homeGoalRingXp(0));
+      await unmount(tester);
+    },
+  );
+
+  testWidgets("the pet avatar's FoxPet is wrapped in a Hero sharing "
+      'equippedPetHeroTag with PetCollectionScreen (issue #100)', (
+    tester,
+  ) async {
+    final clock = FakeClock(kTestToday);
+    await pumpOnboardedHome(tester, clock);
+
+    final hero = find.ancestor(
+      of: find.byKey(const Key('foxPet-$kDefaultPetId')),
+      matching: find.byType(Hero),
+    );
+    expect(hero, findsOneWidget);
+    expect(tester.widget<Hero>(hero).tag, equippedPetHeroTag);
+
+    await unmount(tester);
+  });
+
+  testWidgets(
+    'with OS reduce motion on, the pet avatar is not wrapped in a Hero at '
+    'all — navigation swaps it instantly (issue #100)',
+    (tester) async {
+      final clock = FakeClock(kTestToday);
+      await pumpOnboardedHomeReduceMotion(tester, clock);
+
+      expect(
+        find.ancestor(
+          of: find.byKey(const Key('foxPet-$kDefaultPetId')),
+          matching: find.byType(Hero),
+        ),
+        findsNothing,
+      );
+
       await unmount(tester);
     },
   );

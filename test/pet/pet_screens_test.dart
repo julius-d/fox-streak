@@ -20,6 +20,7 @@ import 'package:fox_streak_app/src/pet/lootbox_reward.dart';
 import 'package:fox_streak_app/src/pet/lootbox_screen.dart';
 import 'package:fox_streak_app/src/pet/pet_catalog.dart';
 import 'package:fox_streak_app/src/pet/pet_collection_screen.dart';
+import 'package:fox_streak_app/src/pet/pet_hero.dart';
 import 'package:fox_streak_app/src/stats/pet_service.dart';
 
 /// Turns off a `FoxPet`'s loop-with-pause (issue #071) so it plays once
@@ -97,6 +98,34 @@ Future<AppDatabase> pumpCollectionScreen(
     ),
   );
   await settle(tester);
+  return db;
+}
+
+/// Variant of [pumpCollectionScreen] that leaves animations enabled (no
+/// `_disableAnimations` builder), for asserting Hero-wrapping behavior that
+/// only kicks in when OS reduce-motion is actually off (issue #100). Do not
+/// follow this with `settle()`/`pumpAndSettle()` — `FoxPet`'s indefinite
+/// play-then-pause loop (#071) never lets `hasScheduledFrame` go false.
+Future<AppDatabase> pumpCollectionScreenWithMotion(
+  WidgetTester tester, {
+  AppDatabase? database,
+}) async {
+  final db = database ?? AppDatabase.forTesting(NativeDatabase.memory());
+  addTearDown(() async => db.close());
+  await tester.binding.setSurfaceSize(const Size(800, 1200));
+  addTearDown(() => tester.binding.setSurfaceSize(null));
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [appDatabaseProvider.overrideWithValue(db)],
+      child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: PetCollectionScreen(),
+      ),
+    ),
+  );
+  await tester.pump();
+  await tester.pump();
   return db;
 }
 
@@ -367,6 +396,55 @@ void main() {
 
       await unmount(tester);
     });
+
+    testWidgets(
+      "the equipped tile's FoxPet is wrapped in a Hero sharing Home's "
+      'equippedPetHeroTag; a non-equipped owned tile is not (issue #100)',
+      (tester) async {
+        final db = AppDatabase.forTesting(NativeDatabase.memory());
+        final petRepo = PetRepository(db);
+        await petRepo.addOwnedPet(_reward.id);
+
+        await pumpCollectionScreenWithMotion(tester, database: db);
+
+        final equippedHero = find.ancestor(
+          of: find.byKey(const Key('foxPet-$kDefaultPetId')),
+          matching: find.byType(Hero),
+        );
+        expect(equippedHero, findsOneWidget);
+        expect(tester.widget<Hero>(equippedHero).tag, equippedPetHeroTag);
+
+        expect(
+          find.ancestor(
+            of: find.byKey(Key('foxPet-${_reward.id}')),
+            matching: find.byType(Hero),
+          ),
+          findsNothing,
+        );
+
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump(const Duration(milliseconds: 100));
+      },
+    );
+
+    testWidgets(
+      'with OS reduce motion on, the equipped tile is not wrapped in a '
+      'Hero at all — navigation swaps it instantly (issue #100)',
+      (tester) async {
+        await pumpCollectionScreen(tester);
+
+        expect(
+          find.ancestor(
+            of: find.byKey(const Key('foxPet-$kDefaultPetId')),
+            matching: find.byType(Hero),
+          ),
+          findsNothing,
+        );
+
+        await unmount(tester);
+      },
+    );
 
     testWidgets('tapping an owned, not-yet-equipped pet equips it', (
       tester,
