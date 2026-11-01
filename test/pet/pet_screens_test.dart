@@ -102,6 +102,19 @@ Future<AppDatabase> pumpCollectionScreen(
 
 void main() {
   group('LootboxScreen', () {
+    testWidgets('blocks back navigation from the start (PopScope canPop: '
+        'false, issue #082)', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          builder: _disableAnimations,
+          home: LootboxScreen(reward: _petReward, l10n: AppLocalizationsEn()),
+        ),
+      );
+      await tester.pump();
+
+      expect(tester.widget<PopScope>(find.byType(PopScope)).canPop, isFalse);
+    });
+
     testWidgets(
       'tap starts the opening animation (no immediate reveal, no longer '
       'tappable); it reveals the reward + a single continue action only '

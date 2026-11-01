@@ -1,6 +1,6 @@
 # Issue 082: Completion-sequence screens don't block system back/swipe
 
-Status: open | Priority: P3 | Type: tech-debt
+Status: done | Priority: P3 | Type: tech-debt | Completed-at: 2026-11-01
 
 ## Context
 
@@ -34,3 +34,24 @@ add a shared `PopScope(canPop: false)` (or equivalent) to `LootboxScreen`,
 
 Changing `LootboxScreen`'s reveal content/animation — only its back-nav
 handling, if this is picked up.
+
+## Summary
+
+Decided this was worth fixing: added `PopScope(canPop: false)` to
+`LootboxScreen`, `StreakSavedScreen`, and `XpUpScreen`, matching
+`WheelScreen`'s existing posture. New widget tests (one per screen,
+asserting `PopScope.canPop == false`) mirror `wheel_screen_test.dart`'s
+own pattern; `test/lesson/xp_up_screen_test.dart` is a new file since no
+dedicated widget test existed for that screen before. No UI changed
+visually, so no screenshots. Filed #098 for a robustness edge case found
+during review: `LootboxScreen`'s Continue button (and thus any way to
+leave the screen) never renders if its opening Lottie fails to decode —
+judged out of scope for this issue's narrow `PopScope` ask.
+
+## Code review
+
+`LootboxScreen`'s new `PopScope(canPop: false)` has no escape if the
+opening Lottie asset never loads (Continue only renders once `revealed`,
+which depends on the asset's `onLoaded` firing).
+Not fixed: rare edge case (bundled local asset, not a network fetch),
+non-trivial to design a recovery path for — filed as #098.

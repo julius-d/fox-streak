@@ -8,7 +8,9 @@
 // shape as `LootboxScreen`. Confetti burst on mount (issue #083), reusing
 // `XpUpScreen`'s `_LevelUpEffects` pattern verbatim but unconditional (this
 // screen is only ever shown when the streak actually advanced) and with no
-// sound — see that screen's doc for why.
+// sound — see that screen's doc for why. `PopScope(canPop: false)` (#082)
+// blocks system back/swipe mid-sequence, matching `LootboxScreen`/
+// `XpUpScreen`.
 
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
@@ -31,60 +33,63 @@ class StreakSavedScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Scaffold(
-          key: const Key('streakSavedScreen'),
-          body: SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(FoxSpacing.xxl),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      l10n.lessonStreakSavedHeading,
-                      style: Theme.of(context).textTheme.headlineSmall,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: FoxSpacing.xl),
-                    FoxCelebration(
-                      child: Text(
-                        l10n.lessonStreakResultText(streakCount),
-                        key: const Key('streakResultText'),
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(
-                              color: foxSemantics(context).flame,
-                              fontWeight: FontWeight.w700,
-                            ),
+    return PopScope(
+      canPop: false,
+      child: Stack(
+        children: [
+          Scaffold(
+            key: const Key('streakSavedScreen'),
+            body: SafeArea(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(FoxSpacing.xxl),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        l10n.lessonStreakSavedHeading,
+                        style: Theme.of(context).textTheme.headlineSmall,
+                        textAlign: TextAlign.center,
                       ),
-                    ),
-                    const SizedBox(height: FoxSpacing.sm),
-                    StreakBadge(
-                      key: const Key('streakBadge'),
-                      streakCount: streakCount,
-                      todayDone: true,
-                      streakCountLabel: l10n.streakCountLabel(streakCount),
-                      todayDoneLabel: l10n.streakTodayDoneLabel,
-                      semanticsLabel:
-                          '${l10n.lessonStreakResultText(streakCount)} '
-                          '${l10n.streakTodayDoneLabel}',
-                    ),
-                    const SizedBox(height: FoxSpacing.xxl),
-                    FoxPrimaryButton(
-                      key: const Key('streakSavedContinueButton'),
-                      label: l10n.lessonContinue,
-                      expanded: true,
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
+                      const SizedBox(height: FoxSpacing.xl),
+                      FoxCelebration(
+                        child: Text(
+                          l10n.lessonStreakResultText(streakCount),
+                          key: const Key('streakResultText'),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                color: foxSemantics(context).flame,
+                                fontWeight: FontWeight.w700,
+                              ),
+                        ),
+                      ),
+                      const SizedBox(height: FoxSpacing.sm),
+                      StreakBadge(
+                        key: const Key('streakBadge'),
+                        streakCount: streakCount,
+                        todayDone: true,
+                        streakCountLabel: l10n.streakCountLabel(streakCount),
+                        todayDoneLabel: l10n.streakTodayDoneLabel,
+                        semanticsLabel:
+                            '${l10n.lessonStreakResultText(streakCount)} '
+                            '${l10n.streakTodayDoneLabel}',
+                      ),
+                      const SizedBox(height: FoxSpacing.xxl),
+                      FoxPrimaryButton(
+                        key: const Key('streakSavedContinueButton'),
+                        label: l10n.lessonContinue,
+                        expanded: true,
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-        const _StreakConfettiEffects(),
-      ],
+          const _StreakConfettiEffects(),
+        ],
+      ),
     );
   }
 }

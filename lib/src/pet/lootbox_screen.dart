@@ -13,6 +13,9 @@
 // for what's shown *after* the box finishes opening — the opening phase
 // and its Lottie are the same for both outcomes. Pops itself on Continue,
 // so callers just `await Navigator.push(...)` it like `FoxConfirmDialog`.
+// `PopScope(canPop: false)` (issue #082) blocks system back/swipe mid-reveal
+// — without it, swiping away while still closed would permanently hide a
+// reward `PetService.recordLessonCompletion()` already persisted.
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -224,46 +227,51 @@ class _LootboxScreenState extends State<LootboxScreen>
   Widget build(BuildContext context) {
     final AppLocalizations l10n = widget.l10n;
     final bool revealed = _phase == _LootboxPhase.revealed;
-    return Scaffold(
-      key: const Key('lootboxScreen'),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(FoxSpacing.xxl),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Text(
-                  revealed ? _revealedTitle(l10n) : l10n.lootboxHeading,
-                  style: Theme.of(context).textTheme.headlineSmall,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: FoxSpacing.xl),
-                if (revealed)
-                  FoxCelebration(child: _revealedContent(l10n))
-                else
-                  AnimatedBuilder(
-                    key: const Key('lootboxPulse'),
-                    animation: _pulseController,
-                    builder: (context, child) =>
-                        Transform.scale(scale: _pulseScale.value, child: child),
-                    child: _LootboxAnimation(
-                      controller: _animationController,
-                      interactive: _phase == _LootboxPhase.closed,
-                      label: l10n.lootboxTapPrompt,
-                      onTap: _open,
-                      onLoaded: _handleCompositionLoaded,
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
+        key: const Key('lootboxScreen'),
+        body: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(FoxSpacing.xxl),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Text(
+                    revealed ? _revealedTitle(l10n) : l10n.lootboxHeading,
+                    style: Theme.of(context).textTheme.headlineSmall,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: FoxSpacing.xl),
+                  if (revealed)
+                    FoxCelebration(child: _revealedContent(l10n))
+                  else
+                    AnimatedBuilder(
+                      key: const Key('lootboxPulse'),
+                      animation: _pulseController,
+                      builder: (context, child) => Transform.scale(
+                        scale: _pulseScale.value,
+                        child: child,
+                      ),
+                      child: _LootboxAnimation(
+                        controller: _animationController,
+                        interactive: _phase == _LootboxPhase.closed,
+                        label: l10n.lootboxTapPrompt,
+                        onTap: _open,
+                        onLoaded: _handleCompositionLoaded,
+                      ),
                     ),
-                  ),
-                const SizedBox(height: FoxSpacing.xxl),
-                if (revealed)
-                  FoxPrimaryButton(
-                    key: const Key('lootboxContinueButton'),
-                    label: l10n.lessonContinue,
-                    expanded: true,
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-              ],
+                  const SizedBox(height: FoxSpacing.xxl),
+                  if (revealed)
+                    FoxPrimaryButton(
+                      key: const Key('lootboxContinueButton'),
+                      label: l10n.lessonContinue,
+                      expanded: true,
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                ],
+              ),
             ),
           ),
         ),

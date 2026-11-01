@@ -4,7 +4,8 @@
 // the summary screen. Carries over #010's XP count-up + perfect-score
 // bonus callout + level-progress bar, and #053's level-up callout +
 // confetti + chime, unchanged. Pops itself on Continue, same shape as
-// `LootboxScreen`/`StreakSavedScreen`.
+// `LootboxScreen`/`StreakSavedScreen`. `PopScope(canPop: false)` (#082)
+// blocks system back/swipe mid-sequence, matching those two screens.
 
 import 'dart:async';
 
@@ -47,80 +48,83 @@ class XpUpScreen extends StatelessWidget {
         ? XpService.progressToNextLevel(xpTotalBefore)
         : null;
 
-    return Stack(
-      children: [
-        Scaffold(
-          key: const Key('xpUpScreen'),
-          body: SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(FoxSpacing.xxl),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    FoxCelebration(
-                      child: _XpCountUp(xp: xpEarned, l10n: l10n),
-                    ),
-                    if (bonus > 0) ...[
-                      const SizedBox(height: FoxSpacing.xs),
+    return PopScope(
+      canPop: false,
+      child: Stack(
+        children: [
+          Scaffold(
+            key: const Key('xpUpScreen'),
+            body: SafeArea(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(FoxSpacing.xxl),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                       FoxCelebration(
-                        child: Text(
-                          l10n.lessonXpBonusCallout(bonus),
-                          key: const Key('xpBonusCallout'),
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(
-                                color: Theme.of(context)
-                                    .extension<FoxSemanticColors>()!
-                                    .goldInk,
-                                fontWeight: FontWeight.w700,
-                              ),
+                        child: _XpCountUp(xp: xpEarned, l10n: l10n),
+                      ),
+                      if (bonus > 0) ...[
+                        const SizedBox(height: FoxSpacing.xs),
+                        FoxCelebration(
+                          child: Text(
+                            l10n.lessonXpBonusCallout(bonus),
+                            key: const Key('xpBonusCallout'),
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  color: Theme.of(context)
+                                      .extension<FoxSemanticColors>()!
+                                      .goldInk,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                          ),
                         ),
+                      ],
+                      if (leveledUp) ...[
+                        const SizedBox(height: FoxSpacing.xs),
+                        FoxCelebration(
+                          child: Text(
+                            l10n.lessonLevelUpCallout(level),
+                            key: const Key('levelUpCallout'),
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  color: Theme.of(context)
+                                      .extension<FoxSemanticColors>()!
+                                      .goldInk,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: FoxSpacing.md),
+                      FoxLevelProgressBar(
+                        key: const Key('levelProgressBar'),
+                        level: level,
+                        progress: XpService.progressToNextLevel(xpTotal),
+                        levelLabel: l10n.levelLabel(level),
+                        progressText: l10n.levelProgressText(
+                          xpTotal - lo,
+                          hi - lo,
+                        ),
+                        semanticsLabel: l10n.levelProgressLabel,
+                        levelUpAnimateFrom: animateFrom,
+                      ),
+                      const SizedBox(height: FoxSpacing.xxl),
+                      FoxPrimaryButton(
+                        key: const Key('xpUpContinueButton'),
+                        label: l10n.lessonContinue,
+                        expanded: true,
+                        onPressed: () => Navigator.of(context).pop(),
                       ),
                     ],
-                    if (leveledUp) ...[
-                      const SizedBox(height: FoxSpacing.xs),
-                      FoxCelebration(
-                        child: Text(
-                          l10n.lessonLevelUpCallout(level),
-                          key: const Key('levelUpCallout'),
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(
-                                color: Theme.of(context)
-                                    .extension<FoxSemanticColors>()!
-                                    .goldInk,
-                                fontWeight: FontWeight.w700,
-                              ),
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: FoxSpacing.md),
-                    FoxLevelProgressBar(
-                      key: const Key('levelProgressBar'),
-                      level: level,
-                      progress: XpService.progressToNextLevel(xpTotal),
-                      levelLabel: l10n.levelLabel(level),
-                      progressText: l10n.levelProgressText(
-                        xpTotal - lo,
-                        hi - lo,
-                      ),
-                      semanticsLabel: l10n.levelProgressLabel,
-                      levelUpAnimateFrom: animateFrom,
-                    ),
-                    const SizedBox(height: FoxSpacing.xxl),
-                    FoxPrimaryButton(
-                      key: const Key('xpUpContinueButton'),
-                      label: l10n.lessonContinue,
-                      expanded: true,
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-        _LevelUpEffects(active: leveledUp),
-      ],
+          _LevelUpEffects(active: leveledUp),
+        ],
+      ),
     );
   }
 }

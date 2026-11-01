@@ -1,10 +1,11 @@
-// Widget tests for `StreakSavedScreen`'s confetti burst (issue #083).
+// Widget tests for `StreakSavedScreen`'s confetti burst (issue #083) and
+// back-nav blocking (issue #082).
 //
-// Covers the one thing an integration test driving the whole `LessonScreen`
+// Covers the things an integration test driving the whole `LessonScreen`
 // can't easily isolate: that the burst plays exactly once per screen
 // instance, surviving a stray ancestor rebuild without replaying — same
 // guarantee `XpUpScreen`'s `_LevelUpEffects` makes for its own level-up
-// burst (see that file's doc).
+// burst (see that file's doc) — and that system back/swipe is blocked.
 
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
@@ -63,6 +64,14 @@ Widget _harness(int streakCount) {
 }
 
 void main() {
+  testWidgets('blocks back navigation from the start (PopScope canPop: '
+      'false, issue #082)', (tester) async {
+    await tester.pumpWidget(_harness(3));
+    await tester.pump();
+
+    expect(tester.widget<PopScope>(find.byType(PopScope)).canPop, isFalse);
+  });
+
   testWidgets('shows a confetti burst, already playing on first mount', (
     tester,
   ) async {
