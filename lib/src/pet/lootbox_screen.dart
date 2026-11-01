@@ -107,23 +107,27 @@ class _LootboxScreenState extends State<LootboxScreen>
   // from [_animationController] so stopping it the instant [_open] fires
   // never touches the open-Lottie's own state. Plays one scale-up-and-back
   // "breath" then pauses before repeating — the same bounded
-  // play-then-pause shape as `FoxPet`'s own loop (#071) — rather than a
-  // true non-stop `repeat()`, so the box sits idle/unanimated most of the
-  // time. A perpetually-ticking transform otherwise races both a real
-  // tap's hit-test and `settle()`-style bounded-frame polling, since
-  // neither ever lands on a frame where nothing is scheduled.
+  // play-then-pause shape as `FoxPet`'s own loop (#071), extracted to
+  // `BoundedLoopController` (#079) so both share one place for this
+  // bookkeeping — rather than a true non-stop `repeat()`, so the box sits
+  // idle/unanimated most of the time. A perpetually-ticking transform
+  // otherwise races both a real tap's hit-test and `settle()`-style
+  // bounded-frame polling, since neither ever lands on a frame where
+  // nothing is scheduled.
   static const Duration _pulseBreathDuration = Duration(milliseconds: 700);
   static const Duration _pulsePauseDuration = Duration(milliseconds: 1600);
 
-  late final AnimationController _pulseController = AnimationController(
+  late final BoundedLoopController _pulseLoop = BoundedLoopController(
     vsync: this,
+    playback: BoundedLoopPlayback.pingPong,
     duration: _pulseBreathDuration,
-  )..addStatusListener(_handlePulseStatus);
-  late final Animation<double> _pulseScale = Tween<double>(
-    begin: 1.0,
-    end: 1.05,
-  ).animate(CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut));
-  Timer? _pulsePauseTimer;
+    pauseDuration: () => _pulsePauseDuration,
+    reduceMotion: () => MediaQuery.disableAnimationsOf(context),
+  );
+  late final Animation<double> _pulseScale =
+      Tween<double>(begin: 1.0, end: 1.05).animate(
+        CurvedAnimation(parent: _pulseLoop.controller, curve: Curves.easeInOut),
+      );
 
   // Started by [_open], cancelled once [_handleAnimationStatus] reaches
   // `completed` on its own — the #098 stall fallback, see this file's
@@ -147,16 +151,16 @@ class _LootboxScreenState extends State<LootboxScreen>
       // `_open()` already froze the pulse mid-breath (deliberately, so
       // the opening Lottie takes over with no visible snap) — this is
       // just a defensive no-op for that case, not a reset.
-      _stopPulse();
+      _pulseLoop.stop();
       return;
     }
     if (MediaQuery.disableAnimationsOf(context)) {
       // Unlike the freeze above, a reduce-motion toggle while still
       // *closed* must land on the static, unscaled frame — otherwise a
       // live toggle mid-breath would leave the box permanently scaled.
-      _resetPulse();
+      _pulseLoop.reset();
     } else {
-      _startPulseIfIdle();
+      _pulseLoop.startIfIdle();
     }
   }
 
@@ -164,8 +168,7 @@ class _LootboxScreenState extends State<LootboxScreen>
   void dispose() {
     _animationController.dispose();
     _openStallTimer?.cancel();
-    _pulsePauseTimer?.cancel();
-    _pulseController.dispose();
+    _pulseLoop.dispose();
     super.dispose();
   }
 
@@ -191,43 +194,6 @@ class _LootboxScreenState extends State<LootboxScreen>
     }
   }
 
-  void _handlePulseStatus(AnimationStatus status) {
-    if (status == AnimationStatus.completed) {
-      _pulseController.reverse();
-    } else if (status == AnimationStatus.dismissed) {
-      _pulsePauseTimer = Timer(_pulsePauseDuration, () {
-        _pulsePauseTimer = null;
-        if (mounted && _phase == _LootboxPhase.closed) {
-          _pulseController.forward();
-        }
-      });
-    }
-  }
-
-  void _startPulseIfIdle() {
-    if (_pulseController.isAnimating || _pulsePauseTimer != null) {
-      return;
-    }
-    _pulseController.forward();
-  }
-
-  void _stopPulse() {
-    _pulsePauseTimer?.cancel();
-    _pulsePauseTimer = null;
-    if (_pulseController.isAnimating) {
-      _pulseController.stop();
-    }
-  }
-
-  /// Like [_stopPulse], but also snaps back to the static, unscaled frame
-  /// — for reduce-motion turning on while still closed, where leaving
-  /// whatever mid-breath scale value it stopped at would render a
-  /// permanently-pulsed-looking box instead of a plain static one.
-  void _resetPulse() {
-    _stopPulse();
-    _pulseController.value = 0.0;
-  }
-
   void _handleCompositionLoaded(LottieComposition composition) {
     _animationController.duration = composition.duration;
     _compositionLoaded = true;
@@ -240,7 +206,7 @@ class _LootboxScreenState extends State<LootboxScreen>
     if (_phase != _LootboxPhase.closed) {
       return;
     }
-    _stopPulse();
+    _pulseLoop.stop();
     setState(() => _phase = _LootboxPhase.opening);
     _openStallTimer = Timer(widget.openStallTimeout, _handleOpenStalled);
     if (_compositionLoaded) {
@@ -292,7 +258,7 @@ class _LootboxScreenState extends State<LootboxScreen>
                   else
                     AnimatedBuilder(
                       key: const Key('lootboxPulse'),
-                      animation: _pulseController,
+                      animation: _pulseLoop.controller,
                       builder: (context, child) => Transform.scale(
                         scale: _pulseScale.value,
                         child: child,

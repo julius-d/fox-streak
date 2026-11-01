@@ -1,6 +1,6 @@
 # Issue 079: Extract a shared "bounded breath/play, pause, repeat" animation helper
 
-Status: open | Priority: P3 | Type: chore | Refined-at: 2026-10-26
+Status: done | Priority: P3 | Type: chore | Refined-at: 2026-10-26 | Completed-at: 2026-11-01
 
 ## Goal
 
@@ -37,3 +37,27 @@ pulse onto it, keeping both widgets' existing tests green.
 ## Dependencies
 
 None blocking; depends on #071 and #073 both already being merged.
+
+## Summary
+
+Added `lib/src/widgets/bounded_loop_controller.dart`'s `BoundedLoopController`
+(`BoundedLoopPlayback.forwardOnly`/`.pingPong`), owning the
+`AnimationController` + pause `Timer` + dispose bookkeeping. Migrated
+`FoxPet` (forward-only) and `LootboxScreen`'s closed-state pulse
+(ping-pong) onto it; both keep their own start/stop/reset call sites
+since their lifecycles differ. As a side effect of unifying the "schedule
+next cycle" logic, the shared class now re-checks `reduceMotion()` again
+right before an already-scheduled pause fires (closing a race `FoxPet`
+had but `LootboxScreen` didn't need, since its own `didChangeDependencies`
+already reacted immediately) — `fox_pet_test.dart`/`lootbox_screen_test.dart`/
+`pet_screens_test.dart`/the #073 integration test all stayed green
+unchanged. New `test/widgets/bounded_loop_controller_test.dart` (9 tests)
+drives the shared class directly. No UI changed visually, so no
+screenshots.
+
+## Code review
+
+Reviewed via subagent (code-review skill, medium effort): both findings
+were in pre-existing `lootbox_screen.dart` code this issue's diff never
+touched (the #098 stall-timeout/`_openRequested` interaction).
+Not fixed here — out of scope for this issue; filed as #099.

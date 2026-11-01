@@ -4,6 +4,7 @@
 // #010/#011 XP + streak widgets, #012 home/onboarding, #013 QA surfaces)
 // reuses these widgets instead of reimplementing buttons, banners,
 // dialogs, empty states, progress, pet, or feedback effects.
+export 'bounded_loop_controller.dart';
 export 'coin_badge.dart';
 export 'feedback_banner.dart';
 export 'feedback_effects.dart';
