@@ -134,7 +134,8 @@ void main() {
   });
 
   testWidgets(
-    'newSetFab expands into a scrim + two labeled mini-FABs (issue #074)',
+    'newSetFab expands into a scrim + three labeled mini-FABs, including '
+    'Marketplace (issue #074, #101)',
     (tester) async {
       final clock = FakeClock(kTestToday);
       await pumpLibrary(tester, clock);
@@ -142,6 +143,7 @@ void main() {
       expect(find.byKey(const Key('newSetFabScrim')), findsNothing);
       expect(find.byKey(const Key('newSetMiniFab')), findsNothing);
       expect(find.byKey(const Key('importSetFab')), findsNothing);
+      expect(find.byKey(const Key('marketplaceFab')), findsNothing);
 
       await tester.tap(find.byKey(const Key('newSetFab')));
       await settle(tester);
@@ -149,8 +151,27 @@ void main() {
       expect(find.byKey(const Key('newSetFabScrim')), findsOneWidget);
       expect(find.byKey(const Key('newSetMiniFab')), findsOneWidget);
       expect(find.byKey(const Key('importSetFab')), findsOneWidget);
+      expect(find.byKey(const Key('marketplaceFab')), findsOneWidget);
       expect(find.text('New set'), findsOneWidget);
       expect(find.text('Import'), findsOneWidget);
+      expect(find.text('Marketplace'), findsOneWidget);
+      await unmount(tester);
+    },
+  );
+
+  testWidgets(
+    'tapping marketplaceFab opens the Marketplace sources screen (issue '
+    '#101)',
+    (tester) async {
+      final clock = FakeClock(kTestToday);
+      await pumpLibrary(tester, clock);
+
+      await tester.tap(find.byKey(const Key('newSetFab')));
+      await settle(tester);
+      await tester.tap(find.byKey(const Key('marketplaceFab')));
+      await settle(tester);
+
+      expect(find.byKey(const Key('marketplaceSourcesScreen')), findsOneWidget);
       await unmount(tester);
     },
   );

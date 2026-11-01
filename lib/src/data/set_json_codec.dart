@@ -22,6 +22,14 @@
 // pre-#014 exports/seeds). `imageCopyright` (#094) is optional and
 // one-sided: only ever set alongside a `base64`/`url` `imageType`; missing
 // on import decodes as `null` (backward compatible with pre-#094 exports).
+// A top-level set `id` and a per-item `id` (#101) are optional UUID strings
+// (RFC 4122 shape, see `validation.dart`'s `isValidUuid`) identifying "this
+// set"/"this item" independent of hosting — absent on hand-created/legacy
+// sets, same opt-in pattern as `imageCopyright`. The per-item `id` is what
+// the marketplace update flow matches on to keep attempt history for
+// unchanged items; the set-level `id` is validated here but not otherwise
+// used by the app (the marketplace's own listing ids are authoritative for
+// identity, see `docs/marketplace-api.md`).
 //
 // The codec is pure Dart (no Drift) so UI share/picker code in #003 and the
 // repository import/export paths share validation. Import never overwrites:
@@ -55,6 +63,9 @@ class ShareItem {
   // #094: optional copyright/credit line, one-sided-paired with [imageType]
   // (only ever set when it's `base64`/`url`).
   final String? imageCopyright;
+  // #101: optional UUID identifying "this item" within its set, for
+  // marketplace update matching. `null` on hand-created/legacy items.
+  final String? id;
 
   const ShareItem({
     required this.type,
@@ -67,6 +78,7 @@ class ShareItem {
     this.imageType,
     this.imageContent,
     this.imageCopyright,
+    this.id,
   });
 
   Map<String, dynamic> toJson() {
@@ -82,6 +94,7 @@ class ShareItem {
     if (imageType != null) map['imageType'] = imageType;
     if (imageContent != null) map['imageContent'] = imageContent;
     if (imageCopyright != null) map['imageCopyright'] = imageCopyright;
+    if (id != null) map['id'] = id;
     return map;
   }
 }
@@ -95,6 +108,9 @@ class ShareSet {
   // on import resolves to `kDefaultSetCategory` before this is built.
   final String category;
   final List<ShareItem> items;
+  // #101: optional UUID identifying "this set" independent of hosting.
+  // `null` on hand-created/legacy sets.
+  final String? id;
 
   const ShareSet({
     required this.title,
@@ -102,11 +118,13 @@ class ShareSet {
     required this.createdBy,
     this.category = kDefaultSetCategory,
     required this.items,
+    this.id,
   });
 
   Map<String, dynamic> toJson() => {
     'format': kShareFormat,
     'version': kShareVersion,
+    if (id != null) 'id': id,
     'title': title,
     'description': description,
     'createdBy': createdBy,
@@ -128,6 +146,7 @@ Map<String, dynamic> encodeSetToJson({
   String category = kDefaultSetCategory,
   required List<ShareItem> items,
   DateTime? today,
+  String? id,
 }) {
   final set = ShareSet(
     title: title,
@@ -135,6 +154,7 @@ Map<String, dynamic> encodeSetToJson({
     createdBy: createdBy,
     category: category,
     items: items,
+    id: id,
   );
   validateShareSet(set, today: today);
   return set.toJson();
@@ -195,6 +215,12 @@ ShareSet decodeSetFromJson(Map<dynamic, dynamic> json, {DateTime? today}) {
   }
   final category = effectiveSetCategory(rawCategory as String?);
 
+  // #101: optional top-level set id, absent on hand-created/legacy sets.
+  final rawId = map['id'];
+  if (rawId != null && (rawId is! String || !isValidUuid(rawId))) {
+    throw const SetImportException('id must be a valid UUID when present');
+  }
+
   final items = <ShareItem>[];
   for (var i = 0; i < rawItems.length; i++) {
     final raw = rawItems[i];
@@ -210,6 +236,7 @@ ShareSet decodeSetFromJson(Map<dynamic, dynamic> json, {DateTime? today}) {
     createdBy: createdBy.trim(),
     category: category,
     items: items,
+    id: rawId as String?,
   );
   validateShareSet(set, today: today);
   return set;
@@ -327,6 +354,12 @@ ShareItem _decodeItem(int index, Map<dynamic, dynamic> raw, {DateTime? today}) {
     );
   }
 
+  // #101: optional per-item id, absent on hand-created/legacy items.
+  final rawId = m['id'];
+  if (rawId != null && (rawId is! String || !isValidUuid(rawId))) {
+    throw SetImportException('$prefix: id must be a valid UUID when present');
+  }
+
   return ShareItem(
     type: type,
     prompt: prompt.trim(),
@@ -340,6 +373,7 @@ ShareItem _decodeItem(int index, Map<dynamic, dynamic> raw, {DateTime? today}) {
     imageType: imageType,
     imageContent: cleanImageContent,
     imageCopyright: cleanImageCopyright,
+    id: rawId as String?,
   );
 }
 
@@ -355,9 +389,15 @@ void validateShareSet(ShareSet set, {DateTime? today}) {
   if (!kSetCategories.contains(set.category)) {
     throw SetImportException('unknown category "${set.category}"');
   }
+  if (set.id != null && !isValidUuid(set.id!)) {
+    throw const SetImportException('id must be a valid UUID when present');
+  }
   for (var i = 0; i < set.items.length; i++) {
     final item = set.items[i];
     final prefix = 'items[$i]';
+    if (item.id != null && !isValidUuid(item.id!)) {
+      throw SetImportException('$prefix: id must be a valid UUID when present');
+    }
     if (!kItemTypes.contains(item.type)) {
       throw SetImportException('$prefix: unknown type "${item.type}"');
     }

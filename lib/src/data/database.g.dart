@@ -603,6 +603,18 @@ class $ItemsTable extends Items with TableInfo<$ItemsTable, Item> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _marketplaceItemIdMeta = const VerificationMeta(
+    'marketplaceItemId',
+  );
+  @override
+  late final GeneratedColumn<String> marketplaceItemId =
+      GeneratedColumn<String>(
+        'marketplace_item_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -618,6 +630,7 @@ class $ItemsTable extends Items with TableInfo<$ItemsTable, Item> {
     imageType,
     imageContent,
     imageCopyright,
+    marketplaceItemId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -722,6 +735,15 @@ class $ItemsTable extends Items with TableInfo<$ItemsTable, Item> {
         ),
       );
     }
+    if (data.containsKey('marketplace_item_id')) {
+      context.handle(
+        _marketplaceItemIdMeta,
+        marketplaceItemId.isAcceptableOrUnknown(
+          data['marketplace_item_id']!,
+          _marketplaceItemIdMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -783,6 +805,10 @@ class $ItemsTable extends Items with TableInfo<$ItemsTable, Item> {
         DriftSqlType.string,
         data['${effectivePrefix}image_copyright'],
       ),
+      marketplaceItemId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}marketplace_item_id'],
+      ),
     );
   }
 
@@ -806,6 +832,7 @@ class Item extends DataClass implements Insertable<Item> {
   final String? imageType;
   final String? imageContent;
   final String? imageCopyright;
+  final String? marketplaceItemId;
   const Item({
     required this.id,
     required this.setId,
@@ -820,6 +847,7 @@ class Item extends DataClass implements Insertable<Item> {
     this.imageType,
     this.imageContent,
     this.imageCopyright,
+    this.marketplaceItemId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -851,6 +879,9 @@ class Item extends DataClass implements Insertable<Item> {
     if (!nullToAbsent || imageCopyright != null) {
       map['image_copyright'] = Variable<String>(imageCopyright);
     }
+    if (!nullToAbsent || marketplaceItemId != null) {
+      map['marketplace_item_id'] = Variable<String>(marketplaceItemId);
+    }
     return map;
   }
 
@@ -881,6 +912,9 @@ class Item extends DataClass implements Insertable<Item> {
       imageCopyright: imageCopyright == null && nullToAbsent
           ? const Value.absent()
           : Value(imageCopyright),
+      marketplaceItemId: marketplaceItemId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(marketplaceItemId),
     );
   }
 
@@ -903,6 +937,9 @@ class Item extends DataClass implements Insertable<Item> {
       imageType: serializer.fromJson<String?>(json['imageType']),
       imageContent: serializer.fromJson<String?>(json['imageContent']),
       imageCopyright: serializer.fromJson<String?>(json['imageCopyright']),
+      marketplaceItemId: serializer.fromJson<String?>(
+        json['marketplaceItemId'],
+      ),
     );
   }
   @override
@@ -922,6 +959,7 @@ class Item extends DataClass implements Insertable<Item> {
       'imageType': serializer.toJson<String?>(imageType),
       'imageContent': serializer.toJson<String?>(imageContent),
       'imageCopyright': serializer.toJson<String?>(imageCopyright),
+      'marketplaceItemId': serializer.toJson<String?>(marketplaceItemId),
     };
   }
 
@@ -939,6 +977,7 @@ class Item extends DataClass implements Insertable<Item> {
     Value<String?> imageType = const Value.absent(),
     Value<String?> imageContent = const Value.absent(),
     Value<String?> imageCopyright = const Value.absent(),
+    Value<String?> marketplaceItemId = const Value.absent(),
   }) => Item(
     id: id ?? this.id,
     setId: setId ?? this.setId,
@@ -955,6 +994,9 @@ class Item extends DataClass implements Insertable<Item> {
     imageCopyright: imageCopyright.present
         ? imageCopyright.value
         : this.imageCopyright,
+    marketplaceItemId: marketplaceItemId.present
+        ? marketplaceItemId.value
+        : this.marketplaceItemId,
   );
   Item copyWithCompanion(ItemsCompanion data) {
     return Item(
@@ -979,6 +1021,9 @@ class Item extends DataClass implements Insertable<Item> {
       imageCopyright: data.imageCopyright.present
           ? data.imageCopyright.value
           : this.imageCopyright,
+      marketplaceItemId: data.marketplaceItemId.present
+          ? data.marketplaceItemId.value
+          : this.marketplaceItemId,
     );
   }
 
@@ -997,7 +1042,8 @@ class Item extends DataClass implements Insertable<Item> {
           ..write('position: $position, ')
           ..write('imageType: $imageType, ')
           ..write('imageContent: $imageContent, ')
-          ..write('imageCopyright: $imageCopyright')
+          ..write('imageCopyright: $imageCopyright, ')
+          ..write('marketplaceItemId: $marketplaceItemId')
           ..write(')'))
         .toString();
   }
@@ -1017,6 +1063,7 @@ class Item extends DataClass implements Insertable<Item> {
     imageType,
     imageContent,
     imageCopyright,
+    marketplaceItemId,
   );
   @override
   bool operator ==(Object other) =>
@@ -1034,7 +1081,8 @@ class Item extends DataClass implements Insertable<Item> {
           other.position == this.position &&
           other.imageType == this.imageType &&
           other.imageContent == this.imageContent &&
-          other.imageCopyright == this.imageCopyright);
+          other.imageCopyright == this.imageCopyright &&
+          other.marketplaceItemId == this.marketplaceItemId);
 }
 
 class ItemsCompanion extends UpdateCompanion<Item> {
@@ -1051,6 +1099,7 @@ class ItemsCompanion extends UpdateCompanion<Item> {
   final Value<String?> imageType;
   final Value<String?> imageContent;
   final Value<String?> imageCopyright;
+  final Value<String?> marketplaceItemId;
   const ItemsCompanion({
     this.id = const Value.absent(),
     this.setId = const Value.absent(),
@@ -1065,6 +1114,7 @@ class ItemsCompanion extends UpdateCompanion<Item> {
     this.imageType = const Value.absent(),
     this.imageContent = const Value.absent(),
     this.imageCopyright = const Value.absent(),
+    this.marketplaceItemId = const Value.absent(),
   });
   ItemsCompanion.insert({
     this.id = const Value.absent(),
@@ -1080,6 +1130,7 @@ class ItemsCompanion extends UpdateCompanion<Item> {
     this.imageType = const Value.absent(),
     this.imageContent = const Value.absent(),
     this.imageCopyright = const Value.absent(),
+    this.marketplaceItemId = const Value.absent(),
   }) : setId = Value(setId),
        type = Value(type),
        prompt = Value(prompt),
@@ -1099,6 +1150,7 @@ class ItemsCompanion extends UpdateCompanion<Item> {
     Expression<String>? imageType,
     Expression<String>? imageContent,
     Expression<String>? imageCopyright,
+    Expression<String>? marketplaceItemId,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1114,6 +1166,7 @@ class ItemsCompanion extends UpdateCompanion<Item> {
       if (imageType != null) 'image_type': imageType,
       if (imageContent != null) 'image_content': imageContent,
       if (imageCopyright != null) 'image_copyright': imageCopyright,
+      if (marketplaceItemId != null) 'marketplace_item_id': marketplaceItemId,
     });
   }
 
@@ -1131,6 +1184,7 @@ class ItemsCompanion extends UpdateCompanion<Item> {
     Value<String?>? imageType,
     Value<String?>? imageContent,
     Value<String?>? imageCopyright,
+    Value<String?>? marketplaceItemId,
   }) {
     return ItemsCompanion(
       id: id ?? this.id,
@@ -1146,6 +1200,7 @@ class ItemsCompanion extends UpdateCompanion<Item> {
       imageType: imageType ?? this.imageType,
       imageContent: imageContent ?? this.imageContent,
       imageCopyright: imageCopyright ?? this.imageCopyright,
+      marketplaceItemId: marketplaceItemId ?? this.marketplaceItemId,
     );
   }
 
@@ -1191,6 +1246,9 @@ class ItemsCompanion extends UpdateCompanion<Item> {
     if (imageCopyright.present) {
       map['image_copyright'] = Variable<String>(imageCopyright.value);
     }
+    if (marketplaceItemId.present) {
+      map['marketplace_item_id'] = Variable<String>(marketplaceItemId.value);
+    }
     return map;
   }
 
@@ -1209,7 +1267,8 @@ class ItemsCompanion extends UpdateCompanion<Item> {
           ..write('position: $position, ')
           ..write('imageType: $imageType, ')
           ..write('imageContent: $imageContent, ')
-          ..write('imageCopyright: $imageCopyright')
+          ..write('imageCopyright: $imageCopyright, ')
+          ..write('marketplaceItemId: $marketplaceItemId')
           ..write(')'))
         .toString();
   }
@@ -3093,6 +3152,684 @@ class DailyActivityCompanion extends UpdateCompanion<DailyActivityData> {
   }
 }
 
+class $MarketplaceSourcesTable extends MarketplaceSources
+    with TableInfo<$MarketplaceSourcesTable, MarketplaceSource> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MarketplaceSourcesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _urlMeta = const VerificationMeta('url');
+  @override
+  late final GeneratedColumn<String> url = GeneratedColumn<String>(
+    'url',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, url, name];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'marketplace_sources';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MarketplaceSource> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('url')) {
+      context.handle(
+        _urlMeta,
+        url.isAcceptableOrUnknown(data['url']!, _urlMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_urlMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  MarketplaceSource map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MarketplaceSource(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      url: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}url'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+    );
+  }
+
+  @override
+  $MarketplaceSourcesTable createAlias(String alias) {
+    return $MarketplaceSourcesTable(attachedDatabase, alias);
+  }
+}
+
+class MarketplaceSource extends DataClass
+    implements Insertable<MarketplaceSource> {
+  final int id;
+  final String url;
+  final String name;
+  const MarketplaceSource({
+    required this.id,
+    required this.url,
+    required this.name,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['url'] = Variable<String>(url);
+    map['name'] = Variable<String>(name);
+    return map;
+  }
+
+  MarketplaceSourcesCompanion toCompanion(bool nullToAbsent) {
+    return MarketplaceSourcesCompanion(
+      id: Value(id),
+      url: Value(url),
+      name: Value(name),
+    );
+  }
+
+  factory MarketplaceSource.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MarketplaceSource(
+      id: serializer.fromJson<int>(json['id']),
+      url: serializer.fromJson<String>(json['url']),
+      name: serializer.fromJson<String>(json['name']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'url': serializer.toJson<String>(url),
+      'name': serializer.toJson<String>(name),
+    };
+  }
+
+  MarketplaceSource copyWith({int? id, String? url, String? name}) =>
+      MarketplaceSource(
+        id: id ?? this.id,
+        url: url ?? this.url,
+        name: name ?? this.name,
+      );
+  MarketplaceSource copyWithCompanion(MarketplaceSourcesCompanion data) {
+    return MarketplaceSource(
+      id: data.id.present ? data.id.value : this.id,
+      url: data.url.present ? data.url.value : this.url,
+      name: data.name.present ? data.name.value : this.name,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MarketplaceSource(')
+          ..write('id: $id, ')
+          ..write('url: $url, ')
+          ..write('name: $name')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, url, name);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MarketplaceSource &&
+          other.id == this.id &&
+          other.url == this.url &&
+          other.name == this.name);
+}
+
+class MarketplaceSourcesCompanion extends UpdateCompanion<MarketplaceSource> {
+  final Value<int> id;
+  final Value<String> url;
+  final Value<String> name;
+  const MarketplaceSourcesCompanion({
+    this.id = const Value.absent(),
+    this.url = const Value.absent(),
+    this.name = const Value.absent(),
+  });
+  MarketplaceSourcesCompanion.insert({
+    this.id = const Value.absent(),
+    required String url,
+    required String name,
+  }) : url = Value(url),
+       name = Value(name);
+  static Insertable<MarketplaceSource> custom({
+    Expression<int>? id,
+    Expression<String>? url,
+    Expression<String>? name,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (url != null) 'url': url,
+      if (name != null) 'name': name,
+    });
+  }
+
+  MarketplaceSourcesCompanion copyWith({
+    Value<int>? id,
+    Value<String>? url,
+    Value<String>? name,
+  }) {
+    return MarketplaceSourcesCompanion(
+      id: id ?? this.id,
+      url: url ?? this.url,
+      name: name ?? this.name,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (url.present) {
+      map['url'] = Variable<String>(url.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MarketplaceSourcesCompanion(')
+          ..write('id: $id, ')
+          ..write('url: $url, ')
+          ..write('name: $name')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ImportedMarketplaceSetsTable extends ImportedMarketplaceSets
+    with TableInfo<$ImportedMarketplaceSetsTable, ImportedMarketplaceSet> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ImportedMarketplaceSetsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _localSetIdMeta = const VerificationMeta(
+    'localSetId',
+  );
+  @override
+  late final GeneratedColumn<int> localSetId = GeneratedColumn<int>(
+    'local_set_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES question_sets (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _sourceUrlMeta = const VerificationMeta(
+    'sourceUrl',
+  );
+  @override
+  late final GeneratedColumn<String> sourceUrl = GeneratedColumn<String>(
+    'source_url',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _packIdMeta = const VerificationMeta('packId');
+  @override
+  late final GeneratedColumn<String> packId = GeneratedColumn<String>(
+    'pack_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _setIdMeta = const VerificationMeta('setId');
+  @override
+  late final GeneratedColumn<String> setId = GeneratedColumn<String>(
+    'set_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _listingUpdatedAtMeta = const VerificationMeta(
+    'listingUpdatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> listingUpdatedAt = GeneratedColumn<String>(
+    'listing_updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _localUpdatedAtAtSyncMeta =
+      const VerificationMeta('localUpdatedAtAtSync');
+  @override
+  late final GeneratedColumn<int> localUpdatedAtAtSync = GeneratedColumn<int>(
+    'local_updated_at_at_sync',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    localSetId,
+    sourceUrl,
+    packId,
+    setId,
+    listingUpdatedAt,
+    localUpdatedAtAtSync,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'imported_marketplace_sets';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ImportedMarketplaceSet> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('local_set_id')) {
+      context.handle(
+        _localSetIdMeta,
+        localSetId.isAcceptableOrUnknown(
+          data['local_set_id']!,
+          _localSetIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('source_url')) {
+      context.handle(
+        _sourceUrlMeta,
+        sourceUrl.isAcceptableOrUnknown(data['source_url']!, _sourceUrlMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceUrlMeta);
+    }
+    if (data.containsKey('pack_id')) {
+      context.handle(
+        _packIdMeta,
+        packId.isAcceptableOrUnknown(data['pack_id']!, _packIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_packIdMeta);
+    }
+    if (data.containsKey('set_id')) {
+      context.handle(
+        _setIdMeta,
+        setId.isAcceptableOrUnknown(data['set_id']!, _setIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_setIdMeta);
+    }
+    if (data.containsKey('listing_updated_at')) {
+      context.handle(
+        _listingUpdatedAtMeta,
+        listingUpdatedAt.isAcceptableOrUnknown(
+          data['listing_updated_at']!,
+          _listingUpdatedAtMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_listingUpdatedAtMeta);
+    }
+    if (data.containsKey('local_updated_at_at_sync')) {
+      context.handle(
+        _localUpdatedAtAtSyncMeta,
+        localUpdatedAtAtSync.isAcceptableOrUnknown(
+          data['local_updated_at_at_sync']!,
+          _localUpdatedAtAtSyncMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_localUpdatedAtAtSyncMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {localSetId};
+  @override
+  ImportedMarketplaceSet map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ImportedMarketplaceSet(
+      localSetId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}local_set_id'],
+      )!,
+      sourceUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_url'],
+      )!,
+      packId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}pack_id'],
+      )!,
+      setId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}set_id'],
+      )!,
+      listingUpdatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}listing_updated_at'],
+      )!,
+      localUpdatedAtAtSync: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}local_updated_at_at_sync'],
+      )!,
+    );
+  }
+
+  @override
+  $ImportedMarketplaceSetsTable createAlias(String alias) {
+    return $ImportedMarketplaceSetsTable(attachedDatabase, alias);
+  }
+}
+
+class ImportedMarketplaceSet extends DataClass
+    implements Insertable<ImportedMarketplaceSet> {
+  final int localSetId;
+  final String sourceUrl;
+  final String packId;
+  final String setId;
+  final String listingUpdatedAt;
+  final int localUpdatedAtAtSync;
+  const ImportedMarketplaceSet({
+    required this.localSetId,
+    required this.sourceUrl,
+    required this.packId,
+    required this.setId,
+    required this.listingUpdatedAt,
+    required this.localUpdatedAtAtSync,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['local_set_id'] = Variable<int>(localSetId);
+    map['source_url'] = Variable<String>(sourceUrl);
+    map['pack_id'] = Variable<String>(packId);
+    map['set_id'] = Variable<String>(setId);
+    map['listing_updated_at'] = Variable<String>(listingUpdatedAt);
+    map['local_updated_at_at_sync'] = Variable<int>(localUpdatedAtAtSync);
+    return map;
+  }
+
+  ImportedMarketplaceSetsCompanion toCompanion(bool nullToAbsent) {
+    return ImportedMarketplaceSetsCompanion(
+      localSetId: Value(localSetId),
+      sourceUrl: Value(sourceUrl),
+      packId: Value(packId),
+      setId: Value(setId),
+      listingUpdatedAt: Value(listingUpdatedAt),
+      localUpdatedAtAtSync: Value(localUpdatedAtAtSync),
+    );
+  }
+
+  factory ImportedMarketplaceSet.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ImportedMarketplaceSet(
+      localSetId: serializer.fromJson<int>(json['localSetId']),
+      sourceUrl: serializer.fromJson<String>(json['sourceUrl']),
+      packId: serializer.fromJson<String>(json['packId']),
+      setId: serializer.fromJson<String>(json['setId']),
+      listingUpdatedAt: serializer.fromJson<String>(json['listingUpdatedAt']),
+      localUpdatedAtAtSync: serializer.fromJson<int>(
+        json['localUpdatedAtAtSync'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'localSetId': serializer.toJson<int>(localSetId),
+      'sourceUrl': serializer.toJson<String>(sourceUrl),
+      'packId': serializer.toJson<String>(packId),
+      'setId': serializer.toJson<String>(setId),
+      'listingUpdatedAt': serializer.toJson<String>(listingUpdatedAt),
+      'localUpdatedAtAtSync': serializer.toJson<int>(localUpdatedAtAtSync),
+    };
+  }
+
+  ImportedMarketplaceSet copyWith({
+    int? localSetId,
+    String? sourceUrl,
+    String? packId,
+    String? setId,
+    String? listingUpdatedAt,
+    int? localUpdatedAtAtSync,
+  }) => ImportedMarketplaceSet(
+    localSetId: localSetId ?? this.localSetId,
+    sourceUrl: sourceUrl ?? this.sourceUrl,
+    packId: packId ?? this.packId,
+    setId: setId ?? this.setId,
+    listingUpdatedAt: listingUpdatedAt ?? this.listingUpdatedAt,
+    localUpdatedAtAtSync: localUpdatedAtAtSync ?? this.localUpdatedAtAtSync,
+  );
+  ImportedMarketplaceSet copyWithCompanion(
+    ImportedMarketplaceSetsCompanion data,
+  ) {
+    return ImportedMarketplaceSet(
+      localSetId: data.localSetId.present
+          ? data.localSetId.value
+          : this.localSetId,
+      sourceUrl: data.sourceUrl.present ? data.sourceUrl.value : this.sourceUrl,
+      packId: data.packId.present ? data.packId.value : this.packId,
+      setId: data.setId.present ? data.setId.value : this.setId,
+      listingUpdatedAt: data.listingUpdatedAt.present
+          ? data.listingUpdatedAt.value
+          : this.listingUpdatedAt,
+      localUpdatedAtAtSync: data.localUpdatedAtAtSync.present
+          ? data.localUpdatedAtAtSync.value
+          : this.localUpdatedAtAtSync,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ImportedMarketplaceSet(')
+          ..write('localSetId: $localSetId, ')
+          ..write('sourceUrl: $sourceUrl, ')
+          ..write('packId: $packId, ')
+          ..write('setId: $setId, ')
+          ..write('listingUpdatedAt: $listingUpdatedAt, ')
+          ..write('localUpdatedAtAtSync: $localUpdatedAtAtSync')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    localSetId,
+    sourceUrl,
+    packId,
+    setId,
+    listingUpdatedAt,
+    localUpdatedAtAtSync,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ImportedMarketplaceSet &&
+          other.localSetId == this.localSetId &&
+          other.sourceUrl == this.sourceUrl &&
+          other.packId == this.packId &&
+          other.setId == this.setId &&
+          other.listingUpdatedAt == this.listingUpdatedAt &&
+          other.localUpdatedAtAtSync == this.localUpdatedAtAtSync);
+}
+
+class ImportedMarketplaceSetsCompanion
+    extends UpdateCompanion<ImportedMarketplaceSet> {
+  final Value<int> localSetId;
+  final Value<String> sourceUrl;
+  final Value<String> packId;
+  final Value<String> setId;
+  final Value<String> listingUpdatedAt;
+  final Value<int> localUpdatedAtAtSync;
+  const ImportedMarketplaceSetsCompanion({
+    this.localSetId = const Value.absent(),
+    this.sourceUrl = const Value.absent(),
+    this.packId = const Value.absent(),
+    this.setId = const Value.absent(),
+    this.listingUpdatedAt = const Value.absent(),
+    this.localUpdatedAtAtSync = const Value.absent(),
+  });
+  ImportedMarketplaceSetsCompanion.insert({
+    this.localSetId = const Value.absent(),
+    required String sourceUrl,
+    required String packId,
+    required String setId,
+    required String listingUpdatedAt,
+    required int localUpdatedAtAtSync,
+  }) : sourceUrl = Value(sourceUrl),
+       packId = Value(packId),
+       setId = Value(setId),
+       listingUpdatedAt = Value(listingUpdatedAt),
+       localUpdatedAtAtSync = Value(localUpdatedAtAtSync);
+  static Insertable<ImportedMarketplaceSet> custom({
+    Expression<int>? localSetId,
+    Expression<String>? sourceUrl,
+    Expression<String>? packId,
+    Expression<String>? setId,
+    Expression<String>? listingUpdatedAt,
+    Expression<int>? localUpdatedAtAtSync,
+  }) {
+    return RawValuesInsertable({
+      if (localSetId != null) 'local_set_id': localSetId,
+      if (sourceUrl != null) 'source_url': sourceUrl,
+      if (packId != null) 'pack_id': packId,
+      if (setId != null) 'set_id': setId,
+      if (listingUpdatedAt != null) 'listing_updated_at': listingUpdatedAt,
+      if (localUpdatedAtAtSync != null)
+        'local_updated_at_at_sync': localUpdatedAtAtSync,
+    });
+  }
+
+  ImportedMarketplaceSetsCompanion copyWith({
+    Value<int>? localSetId,
+    Value<String>? sourceUrl,
+    Value<String>? packId,
+    Value<String>? setId,
+    Value<String>? listingUpdatedAt,
+    Value<int>? localUpdatedAtAtSync,
+  }) {
+    return ImportedMarketplaceSetsCompanion(
+      localSetId: localSetId ?? this.localSetId,
+      sourceUrl: sourceUrl ?? this.sourceUrl,
+      packId: packId ?? this.packId,
+      setId: setId ?? this.setId,
+      listingUpdatedAt: listingUpdatedAt ?? this.listingUpdatedAt,
+      localUpdatedAtAtSync: localUpdatedAtAtSync ?? this.localUpdatedAtAtSync,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (localSetId.present) {
+      map['local_set_id'] = Variable<int>(localSetId.value);
+    }
+    if (sourceUrl.present) {
+      map['source_url'] = Variable<String>(sourceUrl.value);
+    }
+    if (packId.present) {
+      map['pack_id'] = Variable<String>(packId.value);
+    }
+    if (setId.present) {
+      map['set_id'] = Variable<String>(setId.value);
+    }
+    if (listingUpdatedAt.present) {
+      map['listing_updated_at'] = Variable<String>(listingUpdatedAt.value);
+    }
+    if (localUpdatedAtAtSync.present) {
+      map['local_updated_at_at_sync'] = Variable<int>(
+        localUpdatedAtAtSync.value,
+      );
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ImportedMarketplaceSetsCompanion(')
+          ..write('localSetId: $localSetId, ')
+          ..write('sourceUrl: $sourceUrl, ')
+          ..write('packId: $packId, ')
+          ..write('setId: $setId, ')
+          ..write('listingUpdatedAt: $listingUpdatedAt, ')
+          ..write('localUpdatedAtAtSync: $localUpdatedAtAtSync')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3103,6 +3840,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $AppSettingsTable appSettings = $AppSettingsTable(this);
   late final $OwnedPetsTable ownedPets = $OwnedPetsTable(this);
   late final $DailyActivityTable dailyActivity = $DailyActivityTable(this);
+  late final $MarketplaceSourcesTable marketplaceSources =
+      $MarketplaceSourcesTable(this);
+  late final $ImportedMarketplaceSetsTable importedMarketplaceSets =
+      $ImportedMarketplaceSetsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3115,6 +3856,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     appSettings,
     ownedPets,
     dailyActivity,
+    marketplaceSources,
+    importedMarketplaceSets,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -3131,6 +3874,15 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('attempts', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'question_sets',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [
+        TableUpdate('imported_marketplace_sets', kind: UpdateKind.delete),
+      ],
     ),
   ]);
 }
@@ -3174,6 +3926,31 @@ final class $$QuestionSetsTableReferences
     ).filter((f) => f.setId.id.sqlEquals($_itemColumn<int>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_itemsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $ImportedMarketplaceSetsTable,
+    List<ImportedMarketplaceSet>
+  >
+  _importedMarketplaceSetsRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.importedMarketplaceSets,
+        aliasName: 'question_sets__id__imported_marketplace_sets__local_set_id',
+      );
+
+  $$ImportedMarketplaceSetsTableProcessedTableManager
+  get importedMarketplaceSetsRefs {
+    final manager = $$ImportedMarketplaceSetsTableTableManager(
+      $_db,
+      $_db.importedMarketplaceSets,
+    ).filter((f) => f.localSetId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _importedMarketplaceSetsRefsTable($_db),
+    );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -3246,6 +4023,32 @@ class $$QuestionSetsTableFilterComposer
                 $removeJoinBuilderFromRootComposer,
           ),
     );
+    return f(composer);
+  }
+
+  Expression<bool> importedMarketplaceSetsRefs(
+    Expression<bool> Function($$ImportedMarketplaceSetsTableFilterComposer f) f,
+  ) {
+    final $$ImportedMarketplaceSetsTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.importedMarketplaceSets,
+          getReferencedColumn: (t) => t.localSetId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ImportedMarketplaceSetsTableFilterComposer(
+                $db: $db,
+                $table: $db.importedMarketplaceSets,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return f(composer);
   }
 }
@@ -3351,6 +4154,33 @@ class $$QuestionSetsTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> importedMarketplaceSetsRefs<T extends Object>(
+    Expression<T> Function($$ImportedMarketplaceSetsTableAnnotationComposer a)
+    f,
+  ) {
+    final $$ImportedMarketplaceSetsTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.importedMarketplaceSets,
+          getReferencedColumn: (t) => t.localSetId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ImportedMarketplaceSetsTableAnnotationComposer(
+                $db: $db,
+                $table: $db.importedMarketplaceSets,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$QuestionSetsTableTableManager
@@ -3366,7 +4196,10 @@ class $$QuestionSetsTableTableManager
           $$QuestionSetsTableUpdateCompanionBuilder,
           (QuestionSet, $$QuestionSetsTableReferences),
           QuestionSet,
-          PrefetchHooks Function({bool itemsRefs})
+          PrefetchHooks Function({
+            bool itemsRefs,
+            bool importedMarketplaceSetsRefs,
+          })
         > {
   $$QuestionSetsTableTableManager(_$AppDatabase db, $QuestionSetsTable table)
     : super(
@@ -3423,36 +4256,63 @@ class $$QuestionSetsTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({itemsRefs = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [if (itemsRefs) db.items],
-              addJoins: null,
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (itemsRefs)
-                    await $_getPrefetchedData<
-                      QuestionSet,
-                      $QuestionSetsTable,
-                      Item
-                    >(
-                      currentTable: table,
-                      referencedTable: $$QuestionSetsTableReferences
-                          ._itemsRefsTable(db),
-                      managerFromTypedResult: (p0) =>
-                          $$QuestionSetsTableReferences(
-                            db,
-                            table,
-                            p0,
-                          ).itemsRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.setId == item.id),
-                      typedResults: items,
-                    ),
-                ];
+          prefetchHooksCallback:
+              ({itemsRefs = false, importedMarketplaceSetsRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (itemsRefs) db.items,
+                    if (importedMarketplaceSetsRefs) db.importedMarketplaceSets,
+                  ],
+                  addJoins: null,
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (itemsRefs)
+                        await $_getPrefetchedData<
+                          QuestionSet,
+                          $QuestionSetsTable,
+                          Item
+                        >(
+                          currentTable: table,
+                          referencedTable: $$QuestionSetsTableReferences
+                              ._itemsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$QuestionSetsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).itemsRefs,
+                          referencedItemsForCurrentItem: (
+                            item,
+                            referencedItems,
+                          ) => referencedItems.where((e) => e.setId == item.id),
+                          typedResults: items,
+                        ),
+                      if (importedMarketplaceSetsRefs)
+                        await $_getPrefetchedData<
+                          QuestionSet,
+                          $QuestionSetsTable,
+                          ImportedMarketplaceSet
+                        >(
+                          currentTable: table,
+                          referencedTable: $$QuestionSetsTableReferences
+                              ._importedMarketplaceSetsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$QuestionSetsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).importedMarketplaceSetsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.localSetId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
               },
-            );
-          },
         ),
       );
 }
@@ -3469,7 +4329,7 @@ typedef $$QuestionSetsTableProcessedTableManager =
       $$QuestionSetsTableUpdateCompanionBuilder,
       (QuestionSet, $$QuestionSetsTableReferences),
       QuestionSet,
-      PrefetchHooks Function({bool itemsRefs})
+      PrefetchHooks Function({bool itemsRefs, bool importedMarketplaceSetsRefs})
     >;
 typedef $$ItemsTableCreateCompanionBuilder = ItemsCompanion Function({
   Value<int> id,
@@ -3485,6 +4345,7 @@ typedef $$ItemsTableCreateCompanionBuilder = ItemsCompanion Function({
   Value<String?> imageType,
   Value<String?> imageContent,
   Value<String?> imageCopyright,
+  Value<String?> marketplaceItemId,
 });
 typedef $$ItemsTableUpdateCompanionBuilder = ItemsCompanion Function({
   Value<int> id,
@@ -3500,6 +4361,7 @@ typedef $$ItemsTableUpdateCompanionBuilder = ItemsCompanion Function({
   Value<String?> imageType,
   Value<String?> imageContent,
   Value<String?> imageCopyright,
+  Value<String?> marketplaceItemId,
 });
 
 final class $$ItemsTableReferences
@@ -3608,6 +4470,11 @@ class $$ItemsTableFilterComposer extends Composer<_$AppDatabase, $ItemsTable> {
 
   ColumnFilters<String> get imageCopyright => $composableBuilder(
     column: $table.imageCopyright,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get marketplaceItemId => $composableBuilder(
+    column: $table.marketplaceItemId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3729,6 +4596,11 @@ class $$ItemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get marketplaceItemId => $composableBuilder(
+    column: $table.marketplaceItemId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$QuestionSetsTableOrderingComposer get setId {
     final $$QuestionSetsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -3803,6 +4675,11 @@ class $$ItemsTableAnnotationComposer
 
   GeneratedColumn<String> get imageCopyright => $composableBuilder(
     column: $table.imageCopyright,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get marketplaceItemId => $composableBuilder(
+    column: $table.marketplaceItemId,
     builder: (column) => column,
   );
 
@@ -3896,6 +4773,7 @@ class $$ItemsTableTableManager
                 Value<String?> imageType = const Value.absent(),
                 Value<String?> imageContent = const Value.absent(),
                 Value<String?> imageCopyright = const Value.absent(),
+                Value<String?> marketplaceItemId = const Value.absent(),
               }) => ItemsCompanion(
                 id: id,
                 setId: setId,
@@ -3910,6 +4788,7 @@ class $$ItemsTableTableManager
                 imageType: imageType,
                 imageContent: imageContent,
                 imageCopyright: imageCopyright,
+                marketplaceItemId: marketplaceItemId,
               ),
           createCompanionCallback:
               ({
@@ -3926,6 +4805,7 @@ class $$ItemsTableTableManager
                 Value<String?> imageType = const Value.absent(),
                 Value<String?> imageContent = const Value.absent(),
                 Value<String?> imageCopyright = const Value.absent(),
+                Value<String?> marketplaceItemId = const Value.absent(),
               }) => ItemsCompanion.insert(
                 id: id,
                 setId: setId,
@@ -3940,6 +4820,7 @@ class $$ItemsTableTableManager
                 imageType: imageType,
                 imageContent: imageContent,
                 imageCopyright: imageCopyright,
+                marketplaceItemId: marketplaceItemId,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -5186,6 +6067,540 @@ typedef $$DailyActivityTableProcessedTableManager =
       DailyActivityData,
       PrefetchHooks Function()
     >;
+typedef $$MarketplaceSourcesTableCreateCompanionBuilder =
+    MarketplaceSourcesCompanion Function({
+      Value<int> id,
+      required String url,
+      required String name,
+    });
+typedef $$MarketplaceSourcesTableUpdateCompanionBuilder =
+    MarketplaceSourcesCompanion Function({
+      Value<int> id,
+      Value<String> url,
+      Value<String> name,
+    });
+
+class $$MarketplaceSourcesTableFilterComposer
+    extends Composer<_$AppDatabase, $MarketplaceSourcesTable> {
+  $$MarketplaceSourcesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get url => $composableBuilder(
+    column: $table.url,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$MarketplaceSourcesTableOrderingComposer
+    extends Composer<_$AppDatabase, $MarketplaceSourcesTable> {
+  $$MarketplaceSourcesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get url => $composableBuilder(
+    column: $table.url,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$MarketplaceSourcesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MarketplaceSourcesTable> {
+  $$MarketplaceSourcesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get url =>
+      $composableBuilder(column: $table.url, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+}
+
+class $$MarketplaceSourcesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $MarketplaceSourcesTable,
+          MarketplaceSource,
+          $$MarketplaceSourcesTableFilterComposer,
+          $$MarketplaceSourcesTableOrderingComposer,
+          $$MarketplaceSourcesTableAnnotationComposer,
+          $$MarketplaceSourcesTableCreateCompanionBuilder,
+          $$MarketplaceSourcesTableUpdateCompanionBuilder,
+          (
+            MarketplaceSource,
+            BaseReferences<
+              _$AppDatabase,
+              $MarketplaceSourcesTable,
+              MarketplaceSource
+            >,
+          ),
+          MarketplaceSource,
+          PrefetchHooks Function()
+        > {
+  $$MarketplaceSourcesTableTableManager(
+    _$AppDatabase db,
+    $MarketplaceSourcesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MarketplaceSourcesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MarketplaceSourcesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MarketplaceSourcesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String> url = const Value.absent(),
+            Value<String> name = const Value.absent(),
+          }) => MarketplaceSourcesCompanion(id: id, url: url, name: name),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String url,
+                required String name,
+              }) => MarketplaceSourcesCompanion.insert(
+                id: id,
+                url: url,
+                name: name,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$MarketplaceSourcesTable, MarketplaceSource>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $MarketplaceSourcesTable,
+                    MarketplaceSource
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$MarketplaceSourcesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $MarketplaceSourcesTable,
+      MarketplaceSource,
+      $$MarketplaceSourcesTableFilterComposer,
+      $$MarketplaceSourcesTableOrderingComposer,
+      $$MarketplaceSourcesTableAnnotationComposer,
+      $$MarketplaceSourcesTableCreateCompanionBuilder,
+      $$MarketplaceSourcesTableUpdateCompanionBuilder,
+      (
+        MarketplaceSource,
+        BaseReferences<
+          _$AppDatabase,
+          $MarketplaceSourcesTable,
+          MarketplaceSource
+        >,
+      ),
+      MarketplaceSource,
+      PrefetchHooks Function()
+    >;
+typedef $$ImportedMarketplaceSetsTableCreateCompanionBuilder =
+    ImportedMarketplaceSetsCompanion Function({
+      Value<int> localSetId,
+      required String sourceUrl,
+      required String packId,
+      required String setId,
+      required String listingUpdatedAt,
+      required int localUpdatedAtAtSync,
+    });
+typedef $$ImportedMarketplaceSetsTableUpdateCompanionBuilder =
+    ImportedMarketplaceSetsCompanion Function({
+      Value<int> localSetId,
+      Value<String> sourceUrl,
+      Value<String> packId,
+      Value<String> setId,
+      Value<String> listingUpdatedAt,
+      Value<int> localUpdatedAtAtSync,
+    });
+
+final class $$ImportedMarketplaceSetsTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $ImportedMarketplaceSetsTable,
+          ImportedMarketplaceSet
+        > {
+  $$ImportedMarketplaceSetsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $QuestionSetsTable _localSetIdTable(_$AppDatabase db) =>
+      db.questionSets.createAlias(
+        'imported_marketplace_sets__local_set_id__question_sets__id',
+      );
+
+  $$QuestionSetsTableProcessedTableManager get localSetId {
+    final $_column = $_itemColumn<int>('local_set_id')!;
+
+    final manager = $$QuestionSetsTableTableManager(
+      $_db,
+      $_db.questionSets,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_localSetIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ImportedMarketplaceSetsTableFilterComposer
+    extends Composer<_$AppDatabase, $ImportedMarketplaceSetsTable> {
+  $$ImportedMarketplaceSetsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get sourceUrl => $composableBuilder(
+    column: $table.sourceUrl,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get packId => $composableBuilder(
+    column: $table.packId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get setId => $composableBuilder(
+    column: $table.setId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get listingUpdatedAt => $composableBuilder(
+    column: $table.listingUpdatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get localUpdatedAtAtSync => $composableBuilder(
+    column: $table.localUpdatedAtAtSync,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$QuestionSetsTableFilterComposer get localSetId {
+    final $$QuestionSetsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.localSetId,
+      referencedTable: $db.questionSets,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$QuestionSetsTableFilterComposer(
+            $db: $db,
+            $table: $db.questionSets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ImportedMarketplaceSetsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ImportedMarketplaceSetsTable> {
+  $$ImportedMarketplaceSetsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get sourceUrl => $composableBuilder(
+    column: $table.sourceUrl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get packId => $composableBuilder(
+    column: $table.packId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get setId => $composableBuilder(
+    column: $table.setId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get listingUpdatedAt => $composableBuilder(
+    column: $table.listingUpdatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get localUpdatedAtAtSync => $composableBuilder(
+    column: $table.localUpdatedAtAtSync,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$QuestionSetsTableOrderingComposer get localSetId {
+    final $$QuestionSetsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.localSetId,
+      referencedTable: $db.questionSets,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$QuestionSetsTableOrderingComposer(
+            $db: $db,
+            $table: $db.questionSets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ImportedMarketplaceSetsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ImportedMarketplaceSetsTable> {
+  $$ImportedMarketplaceSetsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get sourceUrl =>
+      $composableBuilder(column: $table.sourceUrl, builder: (column) => column);
+
+  GeneratedColumn<String> get packId =>
+      $composableBuilder(column: $table.packId, builder: (column) => column);
+
+  GeneratedColumn<String> get setId =>
+      $composableBuilder(column: $table.setId, builder: (column) => column);
+
+  GeneratedColumn<String> get listingUpdatedAt => $composableBuilder(
+    column: $table.listingUpdatedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get localUpdatedAtAtSync => $composableBuilder(
+    column: $table.localUpdatedAtAtSync,
+    builder: (column) => column,
+  );
+
+  $$QuestionSetsTableAnnotationComposer get localSetId {
+    final $$QuestionSetsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.localSetId,
+      referencedTable: $db.questionSets,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$QuestionSetsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.questionSets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ImportedMarketplaceSetsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ImportedMarketplaceSetsTable,
+          ImportedMarketplaceSet,
+          $$ImportedMarketplaceSetsTableFilterComposer,
+          $$ImportedMarketplaceSetsTableOrderingComposer,
+          $$ImportedMarketplaceSetsTableAnnotationComposer,
+          $$ImportedMarketplaceSetsTableCreateCompanionBuilder,
+          $$ImportedMarketplaceSetsTableUpdateCompanionBuilder,
+          (ImportedMarketplaceSet, $$ImportedMarketplaceSetsTableReferences),
+          ImportedMarketplaceSet,
+          PrefetchHooks Function({bool localSetId})
+        > {
+  $$ImportedMarketplaceSetsTableTableManager(
+    _$AppDatabase db,
+    $ImportedMarketplaceSetsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ImportedMarketplaceSetsTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$ImportedMarketplaceSetsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$ImportedMarketplaceSetsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> localSetId = const Value.absent(),
+                Value<String> sourceUrl = const Value.absent(),
+                Value<String> packId = const Value.absent(),
+                Value<String> setId = const Value.absent(),
+                Value<String> listingUpdatedAt = const Value.absent(),
+                Value<int> localUpdatedAtAtSync = const Value.absent(),
+              }) => ImportedMarketplaceSetsCompanion(
+                localSetId: localSetId,
+                sourceUrl: sourceUrl,
+                packId: packId,
+                setId: setId,
+                listingUpdatedAt: listingUpdatedAt,
+                localUpdatedAtAtSync: localUpdatedAtAtSync,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> localSetId = const Value.absent(),
+                required String sourceUrl,
+                required String packId,
+                required String setId,
+                required String listingUpdatedAt,
+                required int localUpdatedAtAtSync,
+              }) => ImportedMarketplaceSetsCompanion.insert(
+                localSetId: localSetId,
+                sourceUrl: sourceUrl,
+                packId: packId,
+                setId: setId,
+                listingUpdatedAt: listingUpdatedAt,
+                localUpdatedAtAtSync: localUpdatedAtAtSync,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<
+                    $ImportedMarketplaceSetsTable,
+                    ImportedMarketplaceSet
+                  >(table),
+                  $$ImportedMarketplaceSetsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({localSetId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (localSetId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.localSetId,
+                        referencedTable:
+                            $$ImportedMarketplaceSetsTableReferences
+                                ._localSetIdTable(db),
+                        referencedColumn:
+                            $$ImportedMarketplaceSetsTableReferences
+                                ._localSetIdTable(db)
+                                .id,
+                      ) as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ImportedMarketplaceSetsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ImportedMarketplaceSetsTable,
+      ImportedMarketplaceSet,
+      $$ImportedMarketplaceSetsTableFilterComposer,
+      $$ImportedMarketplaceSetsTableOrderingComposer,
+      $$ImportedMarketplaceSetsTableAnnotationComposer,
+      $$ImportedMarketplaceSetsTableCreateCompanionBuilder,
+      $$ImportedMarketplaceSetsTableUpdateCompanionBuilder,
+      (ImportedMarketplaceSet, $$ImportedMarketplaceSetsTableReferences),
+      ImportedMarketplaceSet,
+      PrefetchHooks Function({bool localSetId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -5204,4 +6619,11 @@ class $AppDatabaseManager {
       $$OwnedPetsTableTableManager(_db, _db.ownedPets);
   $$DailyActivityTableTableManager get dailyActivity =>
       $$DailyActivityTableTableManager(_db, _db.dailyActivity);
+  $$MarketplaceSourcesTableTableManager get marketplaceSources =>
+      $$MarketplaceSourcesTableTableManager(_db, _db.marketplaceSources);
+  $$ImportedMarketplaceSetsTableTableManager get importedMarketplaceSets =>
+      $$ImportedMarketplaceSetsTableTableManager(
+        _db,
+        _db.importedMarketplaceSets,
+      );
 }

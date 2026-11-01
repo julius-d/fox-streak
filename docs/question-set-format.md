@@ -40,6 +40,7 @@ not add or change any fields or rules.
 | `description` | no | string | Defaults to `""` when absent. |
 | `createdBy` | yes | string | Free-text name, non-empty after trimming, at most 50 characters. Any name works (e.g. `"Mama"`, `"Ms. Smith"`) — it is not restricted to a fixed role list. |
 | `category` | no | string | One of `vocab`, `general`, `math`, `geography`. Defaults to `vocab` when absent. |
+| `id` | no | string | A UUID identifying "this set", independent of where it's hosted (issue #101). See [Identity](#identity-id) below. |
 | `items` | yes | array | The questions in this set, see below. |
 
 ### `category` values
@@ -70,6 +71,9 @@ next to the question. Omit it or leave it `""` for no hint.
 
 `imageType`/`imageContent` are optional on every type — see
 [Images](#images-imagetypeimagecontent) below.
+
+Every item may also optionally carry an `id` — see [Identity](#identity-id)
+below.
 
 ### `choice` — multiple choice
 
@@ -210,6 +214,36 @@ An item may optionally carry a short copyright/credit line alongside a
   lesson exercise card and the full-screen view it opens, not on the
   compact set-detail/library thumbnail (too small to fit a caption).
 
+### Identity (`id`)
+
+The top-level set `id` and each item's `id` are optional UUID strings
+(issue #101):
+
+```json
+{
+  "id": "3f2504e0-4f89-41d3-9a0c-0305e82c3301",
+  "items": [
+    { "id": "a1b2c3d4-0000-4000-8000-000000000001", "type": "choice", "...": "..." }
+  ]
+}
+```
+
+- Both must be a valid UUID when present: RFC 4122 shape (the standard
+  8-4-4-4-12 hex-with-hyphens grouping), case-insensitive — version/variant
+  nibbles aren't checked, so v4/v5/etc. all work.
+- Both are **absent on hand-created/legacy sets** — the app never generates
+  one for a set you create or edit by hand. Same opt-in pattern as
+  `imageCopyright`.
+- They exist for the [Marketplace](marketplace-api.md) feature: a
+  marketplace set is expected to always set both, so a later re-import of a
+  changed set can tell which items are unchanged (matched by `id`, keeping
+  their practice history) from which are new or edited (no match, starting
+  with no history). A plain file import (this document) accepts and stores
+  them too, but doesn't otherwise act on them.
+- The app does not cross-validate a set's own `id` against anything else —
+  see [`marketplace-api.md`](marketplace-api.md)'s "Out of scope" for the
+  one place this matters.
+
 ## A complete multi-item example
 
 ```json
@@ -291,6 +325,7 @@ hand-writing or AI-generating a file:
 - `imageCopyright` is set but `imageType` isn't `base64`/`url` (e.g. it's
   `emoji` or absent), or it's empty after trimming, multi-line, or longer
   than 120 characters.
+- A set or item `id` is present but isn't a valid UUID (RFC 4122 shape).
 
 Unknown fields are currently ignored by the app (not rejected) at both the
 set level and the item level. The schema is stricter than the app on

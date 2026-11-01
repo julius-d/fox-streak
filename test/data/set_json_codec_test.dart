@@ -104,6 +104,55 @@ void main() {
     });
   });
 
+  group('identity (id, #101)', () {
+    test('a missing set/item id decodes as null (backward compatible with '
+        'hand-created/legacy sets)', () {
+      final set = decodeSetFromJson(validSetJson(), today: kTestToday);
+      expect(set.id, isNull);
+      expect(set.items, everyElement(predicate<dynamic>((i) => i.id == null)));
+    });
+
+    test('a valid UUID set id and per-item id round-trip', () {
+      final json = validSetJson();
+      json['id'] = '3f2504e0-4f89-41d3-9a0c-0305e82c3301';
+      (json['items'] as List)[0] = {
+        ...(json['items'] as List)[0] as Map,
+        'id': 'a1b2c3d4-0000-4000-8000-000000000001',
+      };
+      final set = decodeSetFromJson(json, today: kTestToday);
+      expect(set.id, '3f2504e0-4f89-41d3-9a0c-0305e82c3301');
+      expect(set.items[0].id, 'a1b2c3d4-0000-4000-8000-000000000001');
+      expect(set.items[1].id, isNull);
+      final reEncoded = set.toJson();
+      expect(reEncoded['id'], '3f2504e0-4f89-41d3-9a0c-0305e82c3301');
+      expect(
+        (reEncoded['items'] as List)[0]['id'],
+        'a1b2c3d4-0000-4000-8000-000000000001',
+      );
+      expect((reEncoded['items'] as List)[1].containsKey('id'), isFalse);
+    });
+
+    test('a malformed set id is rejected', () {
+      final json = {...validSetJson(), 'id': 'not-a-uuid'};
+      expect(
+        () => decodeSetFromJson(json, today: kTestToday),
+        throwsA(isA<SetImportException>()),
+      );
+    });
+
+    test('a malformed item id is rejected', () {
+      final json = validSetJson();
+      (json['items'] as List)[0] = {
+        ...(json['items'] as List)[0] as Map,
+        'id': 'not-a-uuid',
+      };
+      expect(
+        () => decodeSetFromJson(json, today: kTestToday),
+        throwsA(isA<SetImportException>()),
+      );
+    });
+  });
+
   group('image fields (#014)', () {
     test('missing imageType/imageContent decode as null/null (backward '
         'compatible with pre-#014 exports/seeds)', () {

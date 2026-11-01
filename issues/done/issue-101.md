@@ -1,6 +1,6 @@
 # Issue 101: Marketplace — browse and import question packs from external sources
 
-Status: open | Priority: P2 | Type: feature | Refined-at: 2026-11-01
+Status: done | Priority: P2 | Type: feature | Refined-at: 2026-11-01 | Completed-at: 2026-11-01
 
 ## Context
 
@@ -209,46 +209,77 @@ v1 publishers.
 
 ## Acceptance criteria
 
-- [ ] `LibraryScreen`'s `newSetFab` speed-dial gains a third mini-FAB,
+- [x] `LibraryScreen`'s `newSetFab` speed-dial gains a third mini-FAB,
       "Marketplace", alongside today's "New set" and "Import" (#074).
-- [ ] Tapping it opens a Marketplace screen listing the user's added
+- [x] Tapping it opens a Marketplace screen listing the user's added
       sources (empty state + "add a marketplace" action when there are
       none yet); adding/removing a source happens on this screen.
-- [ ] "Add a marketplace" accepts either a full manifest URL (ends in
+- [x] "Add a marketplace" accepts either a full manifest URL (ends in
       `.json`) or a bare base URL, appending `/marketplace.json` to the
       latter before the first fetch.
-- [ ] Picking a source shows its list of Packs; picking a Pack shows its
+- [x] Picking a source shows its list of Packs; picking a Pack shows its
       list of Sets (title, description, item count, category per Set).
-- [ ] Picking a Set opens a preview (title, description, creator, category,
+- [x] Picking a Set opens a preview (title, description, creator, category,
       item count) with one contextual primary action: "Add to Library",
       "Update", or a disabled "Already up to date".
-- [ ] "Add to Library" downloads and validates the Set JSON (same
+- [x] "Add to Library" downloads and validates the Set JSON (same
       validation as today's file import, #008) and creates a new local
       set; a validation/network failure shows an error message, no partial
       import.
-- [ ] `packs[].url` and `sets[].url` are resolved only as relative to the
+- [x] `packs[].url` and `sets[].url` are resolved only as relative to the
       document they were fetched from; an absolute (has a scheme) or
       protocol-relative (`//...`) `url` is rejected as a fetch error, not
       followed — no cross-origin fetches beyond the marketplace URL the
       user explicitly added.
-- [ ] "Update" on a locally-edited set shows a confirmation warning before
+- [x] "Update" on a locally-edited set shows a confirmation warning before
       overwriting; on confirm, items matching by the new `id` field keep
       their attempt/progress history, items without a match start fresh.
-- [ ] The app records, per locally-imported marketplace set, the
+- [x] The app records, per locally-imported marketplace set, the
       `(marketplace URL, pack id, set id, updatedAt)` it was imported/
       updated at, so a later visit can tell new / update-available /
       already-up-to-date apart per the Marketplace API section above.
-- [ ] `docs/question-set-format.md` and `docs/question-set.schema.json` are
+- [x] `docs/question-set-format.md` and `docs/question-set.schema.json` are
       updated to document two new optional fields — a top-level Set `id`
       and a per-item `id` — both UUID strings (RFC 4122 shape, case-
       insensitive, version/variant not checked) when present, absent-by-
       default/backward-compatible, same pattern as `imageCopyright`.
-- [ ] A new `docs/marketplace-api.md` documents the Marketplace API (v1)
+- [x] A new `docs/marketplace-api.md` documents the Marketplace API (v1)
       section above (manifest/pack/set shapes, the `url`-linking and
       identity/update rules), in the same style as
       `docs/question-set-format.md`, so a third party can implement a
       marketplace from the doc alone.
-- [ ] New user-visible strings go through `lib/l10n` (DE + EN), none
+- [x] New user-visible strings go through `lib/l10n` (DE + EN), none
       hardcoded, per AGENTS.md.
-- [ ] New widgets reuse the existing kit (#015) — no ad-hoc buttons/dialogs
+- [x] New widgets reuse the existing kit (#015) — no ad-hoc buttons/dialogs
       for the preview action, confirmation warning, or empty states.
+
+## Summary
+
+- Schema v16: `Items.marketplaceItemId`, `MarketplaceSources`,
+  `ImportedMarketplaceSets` tables. Share format gains optional `id` on
+  Set/item (`set_json_codec.dart`, `validation.dart`'s `isValidUuid`).
+- New `lib/src/marketplace/` (`marketplace_client.dart` — HTTP fetch +
+  relative-url security + envelope validation; 4 screens;
+  `marketplace_providers.dart` with an overridable `httpClientProvider`)
+  and `lib/src/data/marketplace_repository.dart` (sources CRUD,
+  import/update orchestration, item-matching for attempt-history
+  preservation on Update).
+- `docs/marketplace-api.md` added; `docs/question-set-format.md` +
+  `question-set.schema.json` updated for the new `id` fields.
+- Added `http` package dependency (pure-Dart, all 4 platforms).
+- Tests: unit (validation/codec/sets_repository/marketplace_repository/
+  marketplace_client), widget (library speed-dial, marketplace sources
+  screen), integration (full browse → add-to-library → update flow,
+  `integration_test/issue101_marketplace_test.dart`).
+
+## Code review
+
+- `MarketplaceRepository.updateSet`/`importSet` weren't wrapped in a DB transaction, risking a partially-applied write on failure mid-loop.
+  Fixed: both now run inside `_db.transaction()`.
+- `_AddMarketplaceSourceDialog._submit`'s error-handling branches called `setState` without a `mounted` guard (dialog can be dismissed while a fetch is in flight).
+  Fixed: added `if (!mounted) return;` before each.
+- `SetsRepository.duplicateSet` didn't carry over `marketplaceItemId`, unlike every other item-copy path (addItem/import/export).
+  Fixed: now threaded through, with a new repository test.
+- `MarketplaceClient._fetchJsonObject` rebuilt a new map + re-stringified every key instead of a cheap cast.
+  Fixed: uses `decoded.cast<String, dynamic>()`.
+- Reviewer also checked relative-URL-only enforcement, the `isLocallyEdited` timestamp comparison, the v15→v16 migration/legacy fixtures, and l10n coverage for hardcoded strings — no issues found in those areas.

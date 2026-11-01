@@ -2,7 +2,8 @@
 // #022), v4 -> v5 (issue #012), v5 -> v6 (issue #045), v6 -> v7 (issue
 // #055), v7 -> v8 (issue #059), v8 -> v9 (issue #064), v9 -> v10 (issue
 // #065), v10 -> v11 (issue #068), v11 -> v12 (issue #084), v12 -> v13
-// (issue #014), and v13 -> v14 (issue #094) migration tests.
+// (issue #014), v13 -> v14 (issue #094), v14 -> v15 (issue #087), and
+// v15 -> v16 (issue #101) migration tests.
 //
 // Simulates pre-migration databases on disk, then reopens them with the
 // real (current schemaVersion) `AppDatabase` and asserts `onUpgrade` applied
@@ -598,8 +599,12 @@ Future<void> _createProfileStatsTableWithoutStreakFreezes(Migrator m) async {
 
 /// A schemaVersion-14 view of [AppDatabase], used only to seed a pre-#087
 /// file at the exact version #087's migration upgrades from: every table is
-/// already in its current (post-#094) shape except `profile_stats`, which
-/// still lacks `streak_freezes_available` (see
+/// already in its current (post-#094) shape except `items` (still lacks
+/// #101's `marketplace_item_id`, see
+/// [_createItemsTableWithoutMarketplaceId] — the current Dart `Items`
+/// definition already has it, so `m.createTable(db.items)` can't be used
+/// here either) and `profile_stats`, which still lacks
+/// `streak_freezes_available` (see
 /// [_createProfileStatsTableWithoutStreakFreezes]).
 class _LegacyV14Database extends AppDatabase {
   _LegacyV14Database(QueryExecutor executor) : super.forTesting(executor); // ignore: use_super_parameters — must forward to the named forTesting() ctor, not the default unnamed one
@@ -612,9 +617,61 @@ class _LegacyV14Database extends AppDatabase {
     onCreate: (m) async {
       final db = m.database as AppDatabase;
       await m.createTable(db.questionSets);
-      await m.createTable(db.items);
+      await _createItemsTableWithoutMarketplaceId(m);
       await m.createTable(db.attempts);
       await _createProfileStatsTableWithoutStreakFreezes(m);
+      await m.createTable(db.appSettings);
+      await m.createTable(db.ownedPets);
+      await m.createTable(db.dailyActivity);
+    },
+  );
+}
+
+/// Creates the pre-#101 `items` shape (every column up to and including
+/// `image_copyright`, but not `marketplace_item_id` yet) — the current
+/// Dart `Items` definition already has it, so `m.createTable(db.items)`
+/// can't be used for this pre-v16 fixture.
+Future<void> _createItemsTableWithoutMarketplaceId(Migrator m) async {
+  final db = m.database as AppDatabase;
+  await db.customStatement('''
+    CREATE TABLE items (
+      id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+      set_id INTEGER NOT NULL REFERENCES question_sets (id) ON DELETE CASCADE,
+      type TEXT NOT NULL,
+      prompt TEXT NOT NULL,
+      answer TEXT NOT NULL,
+      prompt_lang TEXT NULL,
+      answer_lang TEXT NULL,
+      choices TEXT NULL,
+      hint TEXT NULL DEFAULT '',
+      position INTEGER NOT NULL,
+      image_type TEXT NULL,
+      image_content TEXT NULL,
+      image_copyright TEXT NULL
+    )
+  ''');
+}
+
+/// A schemaVersion-15 view of [AppDatabase], used only to seed a pre-#101
+/// file at the exact version #101's migration upgrades from: every table
+/// is already in its current (post-#087) shape except `items` (still
+/// lacks `marketplace_item_id`, see
+/// [_createItemsTableWithoutMarketplaceId]); `marketplace_sources` and
+/// `imported_marketplace_sets` don't exist yet.
+class _LegacyV15Database extends AppDatabase {
+  _LegacyV15Database(QueryExecutor executor) : super.forTesting(executor); // ignore: use_super_parameters — must forward to the named forTesting() ctor, not the default unnamed one
+
+  @override
+  int get schemaVersion => 15;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) async {
+      final db = m.database as AppDatabase;
+      await m.createTable(db.questionSets);
+      await _createItemsTableWithoutMarketplaceId(m);
+      await m.createTable(db.attempts);
+      await m.createTable(db.profileStats);
       await m.createTable(db.appSettings);
       await m.createTable(db.ownedPets);
       await m.createTable(db.dailyActivity);
@@ -1334,6 +1391,71 @@ void main() {
     expect(
       columns.map((row) => row.read<String>('name')),
       contains('streak_freezes_available'),
+    );
+  });
+
+  test('onUpgrade (v15 -> v16) adds marketplaceItemId (null) and creates '
+      'marketplace_sources/imported_marketplace_sets, preserving existing '
+      'item fields (#101)', () async {
+    final dir = Directory.systemTemp.createTempSync('foxstreak_migration_v16');
+    final file = File('${dir.path}/test.sqlite');
+    addTearDown(() {
+      if (dir.existsSync()) dir.deleteSync(recursive: true);
+    });
+
+    // 1. Seed a v15 database directly on disk (items has no
+    // marketplace_item_id column yet, the two marketplace tables don't
+    // exist) with a pre-existing item row.
+    final legacyDb = _LegacyV15Database(NativeDatabase(file));
+    final setId = await legacyDb
+        .into(legacyDb.questionSets)
+        .insert(
+          QuestionSetsCompanion.insert(
+            title: 'Legacy set',
+            createdBy: 'teacher',
+            createdAt: 1,
+            updatedAt: 2,
+          ),
+        );
+    final itemId = await legacyDb.customInsert(
+      'INSERT INTO items (set_id, type, prompt, answer, position) '
+      'VALUES (?, ?, ?, ?, ?)',
+      variables: [
+        Variable.withInt(setId),
+        Variable.withString('choice'),
+        Variable.withString('Hund'),
+        Variable.withString('dog'),
+        Variable.withInt(0),
+      ],
+    );
+    await legacyDb.close();
+
+    // 2. Reopen the SAME file with the real (current schemaVersion)
+    // database; drift sees user_version=15 < schemaVersion=16 and runs
+    // onUpgrade's `addColumn`/`createTable`s.
+    final upgradedDb = AppDatabase.forTesting(NativeDatabase(file));
+    addTearDown(upgradedDb.close);
+
+    final item = await upgradedDb.getItemById(itemId);
+    expect(item?.marketplaceItemId, isNull);
+    expect(item?.prompt, 'Hund');
+    expect(item?.answer, 'dog');
+
+    final itemColumns = await upgradedDb
+        .customSelect("PRAGMA table_info('items')")
+        .get();
+    expect(
+      itemColumns.map((row) => row.read<String>('name')),
+      contains('marketplace_item_id'),
+    );
+
+    expect(
+      await (upgradedDb.select(upgradedDb.marketplaceSources)).get(),
+      isEmpty,
+    );
+    expect(
+      await (upgradedDb.select(upgradedDb.importedMarketplaceSets)).get(),
+      isEmpty,
     );
   });
 }

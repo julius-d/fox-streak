@@ -6,11 +6,12 @@
 // `LessonScreen`, skipping `SetDetailScreen` entirely (#042).
 //
 // `newSetFab` is a speed-dial (issue #074): collapsed, it's a single
-// extended FAB; tapping it expands two labeled mini-FABs ("New set",
-// "Import") behind a scrim. Tapping a mini-FAB, the scrim, the main FAB
-// again, or the back gesture collapses it. Import/Share used to live on
-// `SetDetailScreen`'s now-removed overflow menu — Import moved to this
-// speed-dial, Share moved into each card's three-dot menu.
+// extended FAB; tapping it expands labeled mini-FABs ("New set", "Import",
+// and — issue #101 — "Marketplace") behind a scrim. Tapping a mini-FAB,
+// the scrim, the main FAB again, or the back gesture collapses it.
+// Import/Share used to live on `SetDetailScreen`'s now-removed overflow
+// menu — Import moved to this speed-dial, Share moved into each card's
+// three-dot menu.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,6 +21,7 @@ import '../data/database.dart';
 import '../data/providers.dart';
 import '../data/set_json_codec.dart';
 import '../lesson/lesson.dart';
+import '../marketplace/marketplace_sources_screen.dart';
 import '../pet/pet_providers.dart';
 import '../theme/fox_streak_theme.dart';
 import '../widgets/widgets.dart';
@@ -108,6 +110,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     }
   }
 
+  Future<void> _openMarketplace() async {
+    _collapseFabMenu();
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const MarketplaceSourcesScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -190,6 +199,15 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               crossAxisAlignment: CrossAxisAlignment.end,
               mainAxisSize: MainAxisSize.min,
               children: [
+                FloatingActionButton.extended(
+                  key: const Key('marketplaceFab'),
+                  heroTag: 'marketplaceFab',
+                  tooltip: l10n.marketplace,
+                  onPressed: _openMarketplace,
+                  icon: const Icon(Icons.storefront),
+                  label: Text(l10n.marketplace),
+                ),
+                const SizedBox(height: FoxSpacing.sm),
                 FloatingActionButton.extended(
                   key: const Key('importSetFab'),
                   heroTag: 'importSetFab',

@@ -977,5 +977,129 @@
     "description": "A11y label for Home's tap-to-open coin shop button (issue #091)",
     "placeholders": {}
   },
-  "homeCoinShopSemanticLabel": "Open the coin shop"
+  "homeCoinShopSemanticLabel": "Open the coin shop",
+  "@marketplace": {
+    "description": "Marketplace mini-FAB label/tooltip on the Library speed-dial, and the Marketplace sources screen's app bar title (issue #101)",
+    "placeholders": {}
+  },
+  "marketplace": "Marketplace",
+  "@marketplaceSourcesEmptyTitle": {
+    "description": "Empty-state title on the Marketplace sources screen when no source has been added yet (issue #101)",
+    "placeholders": {}
+  },
+  "marketplaceSourcesEmptyTitle": "No marketplaces yet",
+  "@marketplaceSourcesEmptyMessage": {
+    "description": "Empty-state message on the Marketplace sources screen (issue #101)",
+    "placeholders": {}
+  },
+  "marketplaceSourcesEmptyMessage": "Add a marketplace to browse ready-made packs.",
+  "@marketplaceAddSource": {
+    "description": "Action label for adding a marketplace source (FAB, empty-state CTA, dialog title) (issue #101)",
+    "placeholders": {}
+  },
+  "marketplaceAddSource": "Add a marketplace",
+  "@marketplaceAddSourceUrlHint": {
+    "description": "Hint text for the marketplace URL field in the add-a-marketplace dialog (issue #101)",
+    "placeholders": {}
+  },
+  "marketplaceAddSourceUrlHint": "Marketplace URL",
+  "@marketplaceAddSourceConfirm": {
+    "description": "Confirm button label in the add-a-marketplace dialog (issue #101)",
+    "placeholders": {}
+  },
+  "marketplaceAddSourceConfirm": "Add",
+  "@marketplaceAddSourceError": {
+    "description": "Error shown in the add-a-marketplace dialog when the URL could not be fetched/validated as a marketplace manifest (issue #101)",
+    "placeholders": {}
+  },
+  "marketplaceAddSourceError": "Could not add this marketplace. Check the URL and try again.",
+  "@marketplaceAddSourceDuplicate": {
+    "description": "Error shown in the add-a-marketplace dialog when the URL was already added as a source (issue #101)",
+    "placeholders": {}
+  },
+  "marketplaceAddSourceDuplicate": "This marketplace was already added.",
+  "@marketplaceRemoveSourceAction": {
+    "description": "Menu entry + confirm-dialog button label for removing a marketplace source (issue #101)",
+    "placeholders": {}
+  },
+  "marketplaceRemoveSourceAction": "Remove",
+  "@marketplaceRemoveSourceTitle": {
+    "description": "Confirm-dialog title for removing a marketplace source (issue #101)",
+    "placeholders": {}
+  },
+  "marketplaceRemoveSourceTitle": "Remove marketplace?",
+  "@marketplaceRemoveSourceMessage": {
+    "description": "Confirm-dialog body for removing a marketplace source, with its name; sets already imported from it are kept (issue #101)",
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "marketplaceRemoveSourceMessage": "Remove \"{name}\"? Sets you already imported from it stay in your Library.",
+  "@marketplacePacksEmptyTitle": {
+    "description": "Empty-state title on the Marketplace Packs screen when a source has no packs (issue #101)",
+    "placeholders": {}
+  },
+  "marketplacePacksEmptyTitle": "No packs yet",
+  "@marketplacePacksEmptyMessage": {
+    "description": "Empty-state message on the Marketplace Packs screen (issue #101)",
+    "placeholders": {}
+  },
+  "marketplacePacksEmptyMessage": "This marketplace has no packs yet.",
+  "@marketplaceSetsEmptyTitle": {
+    "description": "Empty-state title on the Marketplace Sets screen when a pack has no sets (issue #101)",
+    "placeholders": {}
+  },
+  "marketplaceSetsEmptyTitle": "No sets yet",
+  "@marketplaceSetsEmptyMessage": {
+    "description": "Empty-state message on the Marketplace Sets screen (issue #101)",
+    "placeholders": {}
+  },
+  "marketplaceSetsEmptyMessage": "This pack has no sets yet.",
+  "@marketplaceFetchError": {
+    "description": "Error shown in place of the list/preview on any Marketplace screen when a fetch fails (no network, broken source, bad response) (issue #101)",
+    "placeholders": {}
+  },
+  "marketplaceFetchError": "Could not load this marketplace. Check your connection and try again.",
+  "@marketplacePreviewCreatedBy": {
+    "description": "Creator line on the Marketplace Set preview screen (issue #101)",
+    "placeholders": {
+      "creator": {"type": "String"}
+    }
+  },
+  "marketplacePreviewCreatedBy": "Created by {creator}",
+  "@marketplaceAddToLibrary": {
+    "description": "Set preview primary button label when the set was never imported before (issue #101)",
+    "placeholders": {}
+  },
+  "marketplaceAddToLibrary": "Add to Library",
+  "@marketplaceUpdateAction": {
+    "description": "Set preview primary button label when the set was imported before and the marketplace copy changed (issue #101)",
+    "placeholders": {}
+  },
+  "marketplaceUpdateAction": "Update",
+  "@marketplaceAlreadyUpToDate": {
+    "description": "Set preview primary button's disabled label when the set was imported before and is unchanged (issue #101)",
+    "placeholders": {}
+  },
+  "marketplaceAlreadyUpToDate": "Already up to date",
+  "@marketplaceUpdateConfirmTitle": {
+    "description": "Confirm-dialog title shown before Update overwrites a locally-edited imported set (issue #101)",
+    "placeholders": {}
+  },
+  "marketplaceUpdateConfirmTitle": "Overwrite your local edits?",
+  "@marketplaceUpdateConfirmMessage": {
+    "description": "Confirm-dialog body shown before Update overwrites a locally-edited imported set, explaining which items keep progress (issue #101)",
+    "placeholders": {}
+  },
+  "marketplaceUpdateConfirmMessage": "You edited this set since importing it. Updating replaces it with the marketplace's current version — matching items keep their progress, others start fresh.",
+  "@marketplaceImportSuccessMessage": {
+    "description": "Snackbar shown after successfully adding a marketplace set to the Library (issue #101)",
+    "placeholders": {}
+  },
+  "marketplaceImportSuccessMessage": "Added to your Library.",
+  "@marketplaceUpdateSuccessMessage": {
+    "description": "Snackbar shown after successfully updating a previously-imported marketplace set (issue #101)",
+    "placeholders": {}
+  },
+  "marketplaceUpdateSuccessMessage": "Set updated."
 }

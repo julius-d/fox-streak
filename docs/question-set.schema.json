@@ -36,6 +36,10 @@
       "default": "vocab",
       "description": "Optional on import; defaults to \"vocab\" when absent."
     },
+    "id": {
+      "$ref": "#/$defs/uuid",
+      "description": "Optional (issue #101): identifies \"this set\" independent of hosting. Absent on hand-created/legacy sets; a marketplace set is expected to always set it."
+    },
     "items": {
       "type": "array",
       "items": {
@@ -91,6 +95,11 @@
     "languageCode": {
       "type": "string",
       "enum": ["de", "en"]
+    },
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "description": "RFC 4122 shape (8-4-4-4-12 hex-with-hyphens), case-insensitive; version/variant nibbles are not checked (issue #101)."
     },
     "imageType": {
       "type": "string",
@@ -162,6 +171,7 @@
       ],
       "properties": {
         "type": { "const": "choice" },
+        "id": { "$ref": "#/$defs/uuid" },
         "prompt": { "type": "string", "minLength": 1, "pattern": "\\S" },
         "answer": { "type": "string", "minLength": 1, "pattern": "\\S" },
         "promptLang": { "$ref": "#/$defs/languageCode" },
@@ -187,6 +197,7 @@
       ],
       "properties": {
         "type": { "const": "freeText" },
+        "id": { "$ref": "#/$defs/uuid" },
         "prompt": { "type": "string", "minLength": 1, "pattern": "\\S" },
         "answer": { "type": "string", "minLength": 1, "pattern": "\\S" },
         "promptLang": { "$ref": "#/$defs/languageCode" },
@@ -207,6 +218,7 @@
       ],
       "properties": {
         "type": { "const": "phone" },
+        "id": { "$ref": "#/$defs/uuid" },
         "prompt": { "type": "string", "minLength": 1, "pattern": "\\S" },
         "answer": {
           "type": "string",
@@ -229,6 +241,7 @@
       ],
       "properties": {
         "type": { "const": "date" },
+        "id": { "$ref": "#/$defs/uuid" },
         "prompt": { "type": "string", "minLength": 1, "pattern": "\\S" },
         "answer": {
           "type": "string",

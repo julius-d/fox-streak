@@ -1445,6 +1445,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open the coin shop'**
   String get homeCoinShopSemanticLabel;
+
+  /// Marketplace mini-FAB label/tooltip on the Library speed-dial, and the Marketplace sources screen's app bar title (issue #101)
+  ///
+  /// In en, this message translates to:
+  /// **'Marketplace'**
+  String get marketplace;
+
+  /// Empty-state title on the Marketplace sources screen when no source has been added yet (issue #101)
+  ///
+  /// In en, this message translates to:
+  /// **'No marketplaces yet'**
+  String get marketplaceSourcesEmptyTitle;
+
+  /// Empty-state message on the Marketplace sources screen (issue #101)
+  ///
+  /// In en, this message translates to:
+  /// **'Add a marketplace to browse ready-made packs.'**
+  String get marketplaceSourcesEmptyMessage;
+
+  /// Action label for adding a marketplace source (FAB, empty-state CTA, dialog title) (issue #101)
+  ///
+  /// In en, this message translates to:
+  /// **'Add a marketplace'**
+  String get marketplaceAddSource;
+
+  /// Hint text for the marketplace URL field in the add-a-marketplace dialog (issue #101)
+  ///
+  /// In en, this message translates to:
+  /// **'Marketplace URL'**
+  String get marketplaceAddSourceUrlHint;
+
+  /// Confirm button label in the add-a-marketplace dialog (issue #101)
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get marketplaceAddSourceConfirm;
+
+  /// Error shown in the add-a-marketplace dialog when the URL could not be fetched/validated as a marketplace manifest (issue #101)
+  ///
+  /// In en, this message translates to:
+  /// **'Could not add this marketplace. Check the URL and try again.'**
+  String get marketplaceAddSourceError;
+
+  /// Error shown in the add-a-marketplace dialog when the URL was already added as a source (issue #101)
+  ///
+  /// In en, this message translates to:
+  /// **'This marketplace was already added.'**
+  String get marketplaceAddSourceDuplicate;
+
+  /// Menu entry + confirm-dialog button label for removing a marketplace source (issue #101)
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get marketplaceRemoveSourceAction;
+
+  /// Confirm-dialog title for removing a marketplace source (issue #101)
+  ///
+  /// In en, this message translates to:
+  /// **'Remove marketplace?'**
+  String get marketplaceRemoveSourceTitle;
+
+  /// Confirm-dialog body for removing a marketplace source, with its name; sets already imported from it are kept (issue #101)
+  ///
+  /// In en, this message translates to:
+  /// **'Remove \"{name}\"? Sets you already imported from it stay in your Library.'**
+  String marketplaceRemoveSourceMessage(String name);
+
+  /// Empty-state title on the Marketplace Packs screen when a source has no packs (issue #101)
+  ///
+  /// In en, this message translates to:
+  /// **'No packs yet'**
+  String get marketplacePacksEmptyTitle;
+
+  /// Empty-state message on the Marketplace Packs screen (issue #101)
+  ///
+  /// In en, this message translates to:
+  /// **'This marketplace has no packs yet.'**
+  String get marketplacePacksEmptyMessage;
+
+  /// Empty-state title on the Marketplace Sets screen when a pack has no sets (issue #101)
+  ///
+  /// In en, this message translates to:
+  /// **'No sets yet'**
+  String get marketplaceSetsEmptyTitle;
+
+  /// Empty-state message on the Marketplace Sets screen (issue #101)
+  ///
+  /// In en, this message translates to:
+  /// **'This pack has no sets yet.'**
+  String get marketplaceSetsEmptyMessage;
+
+  /// Error shown in place of the list/preview on any Marketplace screen when a fetch fails (no network, broken source, bad response) (issue #101)
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load this marketplace. Check your connection and try again.'**
+  String get marketplaceFetchError;
+
+  /// Creator line on the Marketplace Set preview screen (issue #101)
+  ///
+  /// In en, this message translates to:
+  /// **'Created by {creator}'**
+  String marketplacePreviewCreatedBy(String creator);
+
+  /// Set preview primary button label when the set was never imported before (issue #101)
+  ///
+  /// In en, this message translates to:
+  /// **'Add to Library'**
+  String get marketplaceAddToLibrary;
+
+  /// Set preview primary button label when the set was imported before and the marketplace copy changed (issue #101)
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get marketplaceUpdateAction;
+
+  /// Set preview primary button's disabled label when the set was imported before and is unchanged (issue #101)
+  ///
+  /// In en, this message translates to:
+  /// **'Already up to date'**
+  String get marketplaceAlreadyUpToDate;
+
+  /// Confirm-dialog title shown before Update overwrites a locally-edited imported set (issue #101)
+  ///
+  /// In en, this message translates to:
+  /// **'Overwrite your local edits?'**
+  String get marketplaceUpdateConfirmTitle;
+
+  /// Confirm-dialog body shown before Update overwrites a locally-edited imported set, explaining which items keep progress (issue #101)
+  ///
+  /// In en, this message translates to:
+  /// **'You edited this set since importing it. Updating replaces it with the marketplace\'s current version — matching items keep their progress, others start fresh.'**
+  String get marketplaceUpdateConfirmMessage;
+
+  /// Snackbar shown after successfully adding a marketplace set to the Library (issue #101)
+  ///
+  /// In en, this message translates to:
+  /// **'Added to your Library.'**
+  String get marketplaceImportSuccessMessage;
+
+  /// Snackbar shown after successfully updating a previously-imported marketplace set (issue #101)
+  ///
+  /// In en, this message translates to:
+  /// **'Set updated.'**
+  String get marketplaceUpdateSuccessMessage;
 }
 
 class _AppLocalizationsDelegate

@@ -317,4 +317,25 @@ void main() {
       );
     });
   });
+
+  group('isValidUuid (#101)', () {
+    test('accepts the standard 8-4-4-4-12 hex-with-hyphens shape', () {
+      expect(isValidUuid('c56a4180-65aa-42ec-a945-5fd21dec0538'), isTrue);
+      expect(isValidUuid('3F2504E0-4F89-41D3-9A0C-0305E82C3301'), isTrue);
+    });
+
+    test('version/variant nibbles are not checked', () {
+      // Not a real v4/v5 UUID (wrong version nibble), still accepted — the
+      // RFC 4122 *shape* is all this checks.
+      expect(isValidUuid('00000000-0000-0000-0000-000000000000'), isTrue);
+    });
+
+    test('rejects wrong-length groups, missing hyphens, and non-hex chars', () {
+      expect(isValidUuid('c56a4180-65aa-42ec-a945-5fd21dec053'), isFalse);
+      expect(isValidUuid('c56a418065aa42eca9455fd21dec0538'), isFalse);
+      expect(isValidUuid('g56a4180-65aa-42ec-a945-5fd21dec0538'), isFalse);
+      expect(isValidUuid('not-a-uuid'), isFalse);
+      expect(isValidUuid(''), isFalse);
+    });
+  });
 }

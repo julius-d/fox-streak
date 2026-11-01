@@ -123,6 +123,9 @@ class SetsRepository {
     String? imageType,
     String? imageContent,
     String? imageCopyright,
+    // #101: the item's `id` from the share format, when importing from a
+    // file/marketplace set that has one. `null` for hand-created items.
+    String? marketplaceItemId,
   }) async {
     final set = await getSetById(setId);
     if (set == null) throw ArgumentError('unknown setId $setId');
@@ -156,6 +159,7 @@ class SetsRepository {
             imageType: Value(clean.imageType),
             imageContent: Value(clean.imageContent),
             imageCopyright: Value(clean.imageCopyright),
+            marketplaceItemId: Value(marketplaceItemId),
             position: nextPos,
           ),
         );
@@ -320,6 +324,7 @@ class SetsRepository {
                 imageType: Value(item.imageType),
                 imageContent: Value(item.imageContent),
                 imageCopyright: Value(item.imageCopyright),
+                marketplaceItemId: Value(item.marketplaceItemId),
                 position: item.position,
               ),
             );
@@ -360,6 +365,7 @@ class SetsRepository {
             imageType: item.imageType,
             imageContent: item.imageContent,
             imageCopyright: item.imageCopyright,
+            id: item.marketplaceItemId,
           ),
       ],
       today: today,
@@ -407,6 +413,7 @@ class SetsRepository {
                 imageType: Value(item.imageType),
                 imageContent: Value(item.imageContent),
                 imageCopyright: Value(item.imageCopyright),
+                marketplaceItemId: Value(item.id),
                 position: i,
               ),
             );

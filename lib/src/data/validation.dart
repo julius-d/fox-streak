@@ -290,3 +290,17 @@ String? validateImageCopyright(String? imageType, String? imageCopyright) {
   }
   return null;
 }
+
+/// RFC 4122 shape (8-4-4-4-12 hex-with-hyphens), case-insensitive;
+/// version/variant nibbles are not checked (#101).
+final RegExp kUuidPattern = RegExp(
+  r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+  caseSensitive: false,
+);
+
+/// True when [value] is a valid UUID (RFC 4122 shape, see [kUuidPattern]).
+///
+/// Used for the optional set/item `id` fields (#101 marketplace identity) —
+/// both are absent on hand-created/legacy sets, so callers only invoke this
+/// when the field is present.
+bool isValidUuid(String value) => kUuidPattern.hasMatch(value);

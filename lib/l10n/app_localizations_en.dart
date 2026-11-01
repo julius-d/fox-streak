@@ -834,4 +834,86 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeCoinShopSemanticLabel => 'Open the coin shop';
+
+  @override
+  String get marketplace => 'Marketplace';
+
+  @override
+  String get marketplaceSourcesEmptyTitle => 'No marketplaces yet';
+
+  @override
+  String get marketplaceSourcesEmptyMessage =>
+      'Add a marketplace to browse ready-made packs.';
+
+  @override
+  String get marketplaceAddSource => 'Add a marketplace';
+
+  @override
+  String get marketplaceAddSourceUrlHint => 'Marketplace URL';
+
+  @override
+  String get marketplaceAddSourceConfirm => 'Add';
+
+  @override
+  String get marketplaceAddSourceError =>
+      'Could not add this marketplace. Check the URL and try again.';
+
+  @override
+  String get marketplaceAddSourceDuplicate =>
+      'This marketplace was already added.';
+
+  @override
+  String get marketplaceRemoveSourceAction => 'Remove';
+
+  @override
+  String get marketplaceRemoveSourceTitle => 'Remove marketplace?';
+
+  @override
+  String marketplaceRemoveSourceMessage(String name) {
+    return 'Remove \"$name\"? Sets you already imported from it stay in your Library.';
+  }
+
+  @override
+  String get marketplacePacksEmptyTitle => 'No packs yet';
+
+  @override
+  String get marketplacePacksEmptyMessage =>
+      'This marketplace has no packs yet.';
+
+  @override
+  String get marketplaceSetsEmptyTitle => 'No sets yet';
+
+  @override
+  String get marketplaceSetsEmptyMessage => 'This pack has no sets yet.';
+
+  @override
+  String get marketplaceFetchError =>
+      'Could not load this marketplace. Check your connection and try again.';
+
+  @override
+  String marketplacePreviewCreatedBy(String creator) {
+    return 'Created by $creator';
+  }
+
+  @override
+  String get marketplaceAddToLibrary => 'Add to Library';
+
+  @override
+  String get marketplaceUpdateAction => 'Update';
+
+  @override
+  String get marketplaceAlreadyUpToDate => 'Already up to date';
+
+  @override
+  String get marketplaceUpdateConfirmTitle => 'Overwrite your local edits?';
+
+  @override
+  String get marketplaceUpdateConfirmMessage =>
+      'You edited this set since importing it. Updating replaces it with the marketplace\'s current version — matching items keep their progress, others start fresh.';
+
+  @override
+  String get marketplaceImportSuccessMessage => 'Added to your Library.';
+
+  @override
+  String get marketplaceUpdateSuccessMessage => 'Set updated.';
 }

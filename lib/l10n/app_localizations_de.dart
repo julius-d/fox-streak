@@ -838,4 +838,87 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get homeCoinShopSemanticLabel => 'Münzladen öffnen';
+
+  @override
+  String get marketplace => 'Marktplatz';
+
+  @override
+  String get marketplaceSourcesEmptyTitle => 'Noch keine Marktplätze';
+
+  @override
+  String get marketplaceSourcesEmptyMessage =>
+      'Füge einen Marktplatz hinzu, um fertige Pakete zu entdecken.';
+
+  @override
+  String get marketplaceAddSource => 'Marktplatz hinzufügen';
+
+  @override
+  String get marketplaceAddSourceUrlHint => 'Marktplatz-URL';
+
+  @override
+  String get marketplaceAddSourceConfirm => 'Hinzufügen';
+
+  @override
+  String get marketplaceAddSourceError =>
+      'Marktplatz konnte nicht hinzugefügt werden. Bitte die URL prüfen und erneut versuchen.';
+
+  @override
+  String get marketplaceAddSourceDuplicate =>
+      'Dieser Marktplatz wurde bereits hinzugefügt.';
+
+  @override
+  String get marketplaceRemoveSourceAction => 'Entfernen';
+
+  @override
+  String get marketplaceRemoveSourceTitle => 'Marktplatz entfernen?';
+
+  @override
+  String marketplaceRemoveSourceMessage(String name) {
+    return '\"$name\" entfernen? Bereits importierte Sets bleiben in deiner Bibliothek erhalten.';
+  }
+
+  @override
+  String get marketplacePacksEmptyTitle => 'Noch keine Pakete';
+
+  @override
+  String get marketplacePacksEmptyMessage =>
+      'Dieser Marktplatz hat noch keine Pakete.';
+
+  @override
+  String get marketplaceSetsEmptyTitle => 'Noch keine Sets';
+
+  @override
+  String get marketplaceSetsEmptyMessage => 'Dieses Paket hat noch keine Sets.';
+
+  @override
+  String get marketplaceFetchError =>
+      'Marktplatz konnte nicht geladen werden. Bitte die Verbindung prüfen und erneut versuchen.';
+
+  @override
+  String marketplacePreviewCreatedBy(String creator) {
+    return 'Erstellt von $creator';
+  }
+
+  @override
+  String get marketplaceAddToLibrary => 'Zur Bibliothek hinzufügen';
+
+  @override
+  String get marketplaceUpdateAction => 'Aktualisieren';
+
+  @override
+  String get marketplaceAlreadyUpToDate => 'Bereits aktuell';
+
+  @override
+  String get marketplaceUpdateConfirmTitle =>
+      'Lokale Änderungen überschreiben?';
+
+  @override
+  String get marketplaceUpdateConfirmMessage =>
+      'Du hast dieses Set seit dem Import bearbeitet. Eine Aktualisierung ersetzt es durch die aktuelle Version des Marktplatzes – übereinstimmende Fragen behalten ihren Fortschritt, andere starten neu.';
+
+  @override
+  String get marketplaceImportSuccessMessage => 'Zur Bibliothek hinzugefügt.';
+
+  @override
+  String get marketplaceUpdateSuccessMessage => 'Set aktualisiert.';
 }

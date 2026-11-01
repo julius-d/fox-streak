@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'clock.dart';
 import 'database.dart';
+import 'marketplace_repository.dart';
 import 'seed_loader.dart';
 import 'settings_repository.dart';
 import 'sets_repository.dart';
@@ -41,4 +42,11 @@ final seedLoaderProvider = Provider<SeedLoader>((ref) {
 
 final settingsRepositoryProvider = Provider<SettingsRepository>((ref) {
   return SettingsRepository(ref.watch(appDatabaseProvider));
+});
+
+final marketplaceRepositoryProvider = Provider<MarketplaceRepository>((ref) {
+  return MarketplaceRepository(
+    ref.watch(appDatabaseProvider),
+    ref.watch(setsRepositoryProvider),
+  );
 });

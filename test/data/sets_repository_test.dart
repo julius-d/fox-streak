@@ -629,6 +629,31 @@ void main() {
       expect(() => repo.duplicateSet(99999), throwsArgumentError);
     });
 
+    test('duplicateSet carries over marketplaceItemId (#101), consistent with '
+        'addItem/import/export', () async {
+      final setId = await repo.importSetFromJson({
+        'format': 'foxstreak-set',
+        'version': 1,
+        'title': 'T',
+        'createdBy': 'learner',
+        'items': [
+          {
+            'type': 'phone',
+            'prompt': 'A',
+            'answer': '111',
+            'id': 'a1b2c3d4-0000-4000-8000-000000000001',
+          },
+        ],
+      }, today: kTestToday);
+
+      final copyId = await repo.duplicateSet(setId);
+      final copyItems = await repo.getItemsForSet(copyId);
+      expect(
+        copyItems.single.marketplaceItemId,
+        'a1b2c3d4-0000-4000-8000-000000000001',
+      );
+    });
+
     test('duplicateSet carries over the category (#045)', () async {
       final setId = await repo.createSet(
         title: 'Facts',
@@ -763,6 +788,61 @@ void main() {
       );
       // Failed import creates nothing.
       expect(await repo.getAllSets(), isEmpty);
+    });
+
+    test('import stores a per-item id (#101) in marketplaceItemId; export '
+        'carries it back out as the item\'s "id" field', () async {
+      final id = await repo.importSetFromJson({
+        'format': 'foxstreak-set',
+        'version': 1,
+        'id': '3f2504e0-4f89-41d3-9a0c-0305e82c3301',
+        'title': 'T',
+        'createdBy': 'learner',
+        'items': [
+          {
+            'type': 'phone',
+            'prompt': 'A',
+            'answer': '111',
+            'id': 'a1b2c3d4-0000-4000-8000-000000000001',
+          },
+          {'type': 'phone', 'prompt': 'B', 'answer': '222'},
+        ],
+      }, today: kTestToday);
+      final items = await repo.getItemsForSet(id);
+      expect(
+        items[0].marketplaceItemId,
+        'a1b2c3d4-0000-4000-8000-000000000001',
+      );
+      expect(items[1].marketplaceItemId, isNull);
+
+      final exported = await repo.exportSetToJson(id, today: kTestToday);
+      final exportedItems = (exported['items'] as List)
+          .cast<Map<String, dynamic>>();
+      expect(exportedItems[0]['id'], 'a1b2c3d4-0000-4000-8000-000000000001');
+      expect(exportedItems[1].containsKey('id'), isFalse);
+    });
+
+    test('addItem accepts an optional marketplaceItemId (#101), defaulting to '
+        'null for hand-created items', () async {
+      final setId = await repo.createSet(title: 'S', createdBy: 'teacher');
+      final withId = await repo.addItem(
+        setId: setId,
+        type: 'phone',
+        prompt: 'A',
+        answer: '111',
+        marketplaceItemId: 'a1b2c3d4-0000-4000-8000-000000000001',
+      );
+      final withoutId = await repo.addItem(
+        setId: setId,
+        type: 'phone',
+        prompt: 'B',
+        answer: '222',
+      );
+      expect(
+        (await repo.getItemById(withId))?.marketplaceItemId,
+        'a1b2c3d4-0000-4000-8000-000000000001',
+      );
+      expect((await repo.getItemById(withoutId))?.marketplaceItemId, isNull);
     });
 
     test('import assigns positions in file order', () async {

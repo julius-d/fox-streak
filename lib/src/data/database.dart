@@ -61,6 +61,13 @@ class Items extends Table {
   // `emoji`/NULL). NULL on every pre-#094 row (no caption, unchanged
   // rendering).
   TextColumn get imageCopyright => text().nullable()();
+  // v16 (#101): the item's `id` from the share format's optional per-item
+  // UUID (both plain file import and marketplace import populate this when
+  // the source JSON has one); NULL for hand-created items or an import
+  // whose source JSON omitted it. Sole purpose: the marketplace update flow
+  // matches an incoming item against this column to decide which items keep
+  // their attempt history vs. start fresh (see `MarketplaceRepository`).
+  TextColumn get marketplaceItemId => text().nullable()();
 }
 
 /// One row per graded answer. No per-attempt XP column (see #010).
@@ -194,6 +201,47 @@ class DailyActivity extends Table {
   Set<Column> get primaryKey => {day};
 }
 
+/// A marketplace source the user has added by URL (issue #101). [url] is
+/// the resolved manifest URL (always ends in `.json` — the bare-base-URL
+/// shorthand is resolved once, at add time, not stored as typed). [name]
+/// is cached from the manifest fetched at add time — the Marketplace
+/// sources screen lists names without a live fetch per row; browsing one
+/// level deeper (its Packs) always fetches fresh (no offline caching of
+/// listings, per the issue's MVP decision).
+class MarketplaceSources extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get url => text().unique()();
+  TextColumn get name => text()();
+}
+
+/// Tracks one locally-imported set's marketplace origin (issue #101), so a
+/// later visit to that Set in the Marketplace can tell new / update-
+/// available / already-up-to-date apart, per the Marketplace API's
+/// identity rule: keyed on `(marketplace URL, pack id, set id)`.
+///
+/// [localSetId] is the primary key — one local set has at most one
+/// marketplace origin — and cascades away if the local set is deleted, so
+/// a re-import after deletion is treated as new again.
+/// [listingUpdatedAt] is the pack listing's `updatedAt` string at the last
+/// import/update; compared verbatim (opaque version string, no date
+/// parsing) against the marketplace's current value to detect updates.
+/// [localUpdatedAtAtSync] snapshots `QuestionSets.updatedAt` right after
+/// that same import/update completes; a later mismatch against the live
+/// `QuestionSets.updatedAt` means the user edited their local copy since,
+/// which gates the "Update" flow's overwrite warning.
+class ImportedMarketplaceSets extends Table {
+  IntColumn get localSetId =>
+      integer().references(QuestionSets, #id, onDelete: KeyAction.cascade)();
+  TextColumn get sourceUrl => text()();
+  TextColumn get packId => text()();
+  TextColumn get setId => text()();
+  TextColumn get listingUpdatedAt => text()();
+  IntColumn get localUpdatedAtAtSync => integer()();
+
+  @override
+  Set<Column> get primaryKey => {localSetId};
+}
+
 @DriftDatabase(
   tables: [
     QuestionSets,
@@ -203,6 +251,8 @@ class DailyActivity extends Table {
     AppSettings,
     OwnedPets,
     DailyActivity,
+    MarketplaceSources,
+    ImportedMarketplaceSets,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -213,7 +263,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -353,6 +403,16 @@ class AppDatabase extends _$AppDatabase {
       if (from < 15) {
         await m.addColumn(profileStats, profileStats.streakFreezesAvailable);
       }
+      // v16 (#101): adds the optional per-item marketplace id column plus
+      // the marketplace-sources and imported-marketplace-sets tables.
+      // Brand new tables matching the current Dart definitions exactly, so
+      // the ordinary `createTable` helper is safe (unlike v8's
+      // owned_mascots, which needed raw DDL for a since-renamed table).
+      if (from < 16) {
+        await m.addColumn(items, items.marketplaceItemId);
+        await m.createTable(marketplaceSources);
+        await m.createTable(importedMarketplaceSets);
+      }
     },
     beforeOpen: (details) async {
       // SQLite disables FK enforcement by default; without this,
@@ -375,7 +435,9 @@ class AppDatabase extends _$AppDatabase {
   // `equipped_pet_id`; v12 (#084) added the `daily_activity` table; v13
   // (#014) added `items.imageType`/`items.imageContent`; v14 (#094) added
   // `items.imageCopyright`; v15 (#087) added
-  // `profileStats.streakFreezesAvailable`.
+  // `profileStats.streakFreezesAvailable`; v16 (#101) added
+  // `items.marketplaceItemId` plus the `marketplace_sources`/
+  // `imported_marketplace_sets` tables.
 }
 
 DatabaseConnection _openConnection() => driftDatabase(name: 'fox_streak');
