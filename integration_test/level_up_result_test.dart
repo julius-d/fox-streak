@@ -23,14 +23,14 @@
 // animations without waiting on confetti.
 //
 // The `ConfettiControllerState.playing` assertion below (issue #077) is
-// checked via [pumpUntilFound] right as the XP-up screen mounts — *before*
-// the long settle loop runs. The confetti package only flips the
-// controller to `stopped` once its particle system reports "finished",
-// which (like the animation frames above) is driven by real wall-clock
-// deltas rather than the test clock. Checking immediately after mount,
-// rather than after ~1.5s of settling, keeps that window small instead of
-// racing a real-time particle simulation that can finish first on a slow
-// run.
+// checked via `helpers.dart`'s shared `pumpUntilFound` right as the XP-up
+// screen mounts — *before* the long settle loop runs. The confetti package
+// only flips the controller to `stopped` once its particle system reports
+// "finished", which (like the animation frames above) is driven by real
+// wall-clock deltas rather than the test clock. Checking immediately after
+// mount, rather than after ~1.5s of settling, keeps that window small
+// instead of racing a real-time particle simulation that can finish first
+// on a slow run.
 
 import 'package:confetti/confetti.dart';
 import 'package:drift/drift.dart';
@@ -47,7 +47,8 @@ import 'package:fox_streak_app/src/data/stats_repository.dart';
 import 'package:fox_streak_app/src/lesson/lesson_screen.dart';
 import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
 import 'package:fox_streak_app/src/widgets/widgets.dart';
-import 'package:fox_streak_app/test/data/test_helpers.dart';
+
+import 'helpers.dart';
 
 /// Records calls instead of touching a real platform audio channel.
 class FakeSoundPlayer implements FoxSoundPlayer {
@@ -121,24 +122,6 @@ Future<void> answerAllCorrectly(
       await tester.tap(find.byKey(const Key('checkButton'))); // CONTINUE
       await tester.pumpAndSettle();
     }
-  }
-}
-
-/// Pumps in small steps until [finder] matches something, instead of a
-/// single long bounded `pump()` run — used right before a
-/// time-sensitive assertion (issue #077) so it fires as soon as the
-/// awaited widget mounts rather than after a fixed, possibly-too-long
-/// delay. Fails via the subsequent `expect` if [finder] never matches
-/// within [maxSteps] steps.
-Future<void> pumpUntilFound(
-  WidgetTester tester,
-  Finder finder, {
-  int maxSteps = 30,
-  Duration step = const Duration(milliseconds: 16),
-}) async {
-  for (var i = 0; i < maxSteps; i++) {
-    if (finder.evaluate().isNotEmpty) return;
-    await tester.pump(step);
   }
 }
 

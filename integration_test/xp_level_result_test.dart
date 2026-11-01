@@ -7,6 +7,17 @@
 // count-up, perfect-score bonus callout, and level-progress bar genuinely
 // render with the right numbers — and that the underlying `xp_total`/
 // `today_xp` columns were actually written exactly once.
+//
+// The `+25 XP` assertion below is checked via `helpers.dart`'s shared
+// `pumpUntilFound` rather than trusting the preceding `pumpAndSettle()`
+// alone (issue #076): on a macOS desktop integration run,
+// `pumpAndSettle()` can occasionally report settled a frame or two before
+// `_XpCountUp`'s 600ms `TweenAnimationBuilder` has actually reached its
+// final value — confirmed by re-running this spec dozens of times, where
+// the `xpUpScreen`/`xpEarnedLabel` keys were already present but the text
+// was still mid-count-up. Not a product bug (the same real-time-vs-fake
+// clock class of race `pumpUntilFound` was introduced for in issue #077's
+// confetti-state check) — forcing a few extra frames here is enough.
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
@@ -130,14 +141,19 @@ void main() {
 
       // This fresh profile's first-ever lesson also advances the streak,
       // so the streak-saved screen appears before XP up (no level-up here,
-      // so plain pumpAndSettle() is safe once the streak screen's own
-      // confetti is dismissed).
+      // so no XP-up confetti — plain pumpAndSettle() doesn't need to race
+      // a real-time particle simulation once the streak screen's own
+      // confetti is dismissed). See the `pumpUntilFound` call below for
+      // the other, unrelated real-time race this spec still has to guard.
       await tester.tap(find.byKey(const Key('streakSavedContinueButton')));
       await tester.pumpAndSettle();
 
       // XP up screen: 100% score -> 10+10 per-item XP + 5 perfect bonus.
       expect(find.byKey(const Key('xpUpScreen')), findsOneWidget);
       expect(find.byKey(const Key('xpEarnedLabel')), findsOneWidget);
+      // See file doc (issue #076) for why this waits via `pumpUntilFound`
+      // instead of trusting `pumpAndSettle()` alone.
+      await pumpUntilFound(tester, find.text('+25 XP'));
       expect(find.text('+25 XP'), findsOneWidget);
       expect(find.byKey(const Key('xpBonusCallout')), findsOneWidget);
       expect(find.text('+5 Perfect!'), findsOneWidget);

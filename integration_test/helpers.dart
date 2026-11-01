@@ -306,3 +306,26 @@ Future<void> skipOnboardingAndOpenLibrary(WidgetTester tester) async {
   await tester.tap(find.byKey(const Key('homeBrowseSetsButton')));
   await settle(tester);
 }
+
+/// Pumps in small steps until [finder] matches something, instead of
+/// trusting a single `pumpAndSettle()`/bounded settle call to have already
+/// reached that state — used right before a time-sensitive assertion on a
+/// real-time-driven value. `pumpAndSettle()` stops as soon as
+/// `hasScheduledFrame` goes quiet, but on a macOS desktop integration run
+/// that can occasionally happen a frame or two before a just-mounted
+/// `TweenAnimationBuilder` (e.g. the XP count-up, issue #076) or
+/// `ConfettiController` (issue #077) has actually reached the state being
+/// asserted on; forcing extra frames here, rather than trusting that flag,
+/// gives it the remaining ticks it needs. Fails via the subsequent
+/// `expect` if [finder] never matches within [maxSteps] steps.
+Future<void> pumpUntilFound(
+  WidgetTester tester,
+  Finder finder, {
+  int maxSteps = 30,
+  Duration step = const Duration(milliseconds: 16),
+}) async {
+  for (var i = 0; i < maxSteps; i++) {
+    if (finder.evaluate().isNotEmpty) return;
+    await tester.pump(step);
+  }
+}
