@@ -30,6 +30,10 @@
 // `reward`/`wheelCoinAmount` fields are never both non-null. Unlike the
 // lootbox's coin-flip branch, the wheel only ever awards coins (via
 // `drawWheelCoinAmount`/[StatsRepository.addCoins]) — never a pet.
+//
+// v#097: the counter bump and its (at most one) reward write run inside a
+// single [StatsRepository.transaction] call, so a crash/throw between them
+// can never advance the counter without the reward landing, or vice versa.
 
 import 'dart:math';
 
@@ -90,38 +94,56 @@ class PetService {
     final today = toLocalDayString(_clock.now());
     final sameDay = profile.lessonsCompletedDay == today;
     final newCount = sameDay ? profile.lessonsCompletedToday + 1 : 1;
-    await _statsRepo.setPetLessonCounter(count: newCount, day: today);
 
     // Issue #085: every 3rd completion (3, 6, 9, ...), uncapped — disjoint
     // from the lootbox cadence below (see this file's header doc).
-    int? wheelCoinAmount;
-    if (newCount > 0 && newCount % 3 == 0) {
-      wheelCoinAmount = drawWheelCoinAmount(random ?? _randomFactory());
-      await _statsRepo.addCoins(wheelCoinAmount);
-    }
+    final wheelCoinAmount = (newCount > 0 && newCount % 3 == 0)
+        ? drawWheelCoinAmount(random ?? _randomFactory())
+        : null;
 
     // Issue #067: the 2nd completion of the day, then every 3rd one after
     // that (5, 8, 11, ...), uncapped.
     LootboxReward? reward;
+    int? lootboxCoinAmount;
+    PetEntry? wonPetEntry;
     final triggers = newCount >= 2 && (newCount - 2) % 3 == 0;
     if (triggers) {
       final rng = random ?? _randomFactory();
       // 50/50 coin flip (issue #065): true wins coins, false wins a pet.
       if (rng.nextBool()) {
-        final amount = drawCoinAmount(rng);
-        await _statsRepo.addCoins(amount);
-        reward = CoinsReward(amount);
+        lootboxCoinAmount = drawCoinAmount(rng);
+        reward = CoinsReward(lootboxCoinAmount);
       } else {
+        // Async but DB-free (asset/file I/O) — loaded here, outside the
+        // transaction below, so the write-transaction's lifetime doesn't
+        // stretch across unrelated I/O.
         final catalog = await _loadCatalog();
         final now = _clock.now();
         final pool = catalog.where((entry) => entry.isInSeasonAt(now)).toList();
         if (pool.isNotEmpty) {
-          final wonEntry = drawPet(pool, rng);
-          await _petRepo.addOwnedPet(wonEntry.id, now: _clock.now());
-          reward = PetReward(wonEntry);
+          wonPetEntry = drawPet(pool, rng);
+          reward = PetReward(wonPetEntry);
         }
       }
     }
+
+    // Issue #097: the counter bump and whichever reward write follows it
+    // (the wheel's coins or the lootbox's coins/pet) run in one transaction,
+    // so a crash/throw between them can't advance the counter without the
+    // reward landing (or vice versa) — the two reward cadences are disjoint
+    // (see this file's header doc), so at most one reward write ever joins
+    // the counter bump here.
+    await _statsRepo.transaction(() async {
+      await _statsRepo.setPetLessonCounter(count: newCount, day: today);
+      if (wheelCoinAmount != null) {
+        await _statsRepo.addCoins(wheelCoinAmount);
+      }
+      if (lootboxCoinAmount != null) {
+        await _statsRepo.addCoins(lootboxCoinAmount);
+      } else if (wonPetEntry != null) {
+        await _petRepo.addOwnedPet(wonPetEntry.id, now: _clock.now());
+      }
+    });
 
     // Single source of truth for the "never both non-null" invariant the
     // disjoint cadences are supposed to guarantee (see this file's header

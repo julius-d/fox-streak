@@ -52,6 +52,29 @@ class _FixedIndexRandom implements Random {
   bool nextBool() => false;
 }
 
+/// A [StatsRepository] whose [addCoins] always throws — simulates a reward
+/// write failing after [StatsRepository.setPetLessonCounter] already ran in
+/// the same transaction (issue #097), so a test can assert the counter bump
+/// rolls back too rather than leaving the day's count stranded ahead of a
+/// lost reward.
+class _ThrowingAddCoinsStatsRepository extends StatsRepository {
+  _ThrowingAddCoinsStatsRepository(super.db, super.clock);
+
+  @override
+  Future<void> addCoins(int amount) =>
+      throw Exception('simulated addCoins failure');
+}
+
+/// A [PetRepository] whose [addOwnedPet] always throws — the pet-branch
+/// counterpart to [_ThrowingAddCoinsStatsRepository] (issue #097).
+class _ThrowingAddOwnedPetRepository extends PetRepository {
+  _ThrowingAddOwnedPetRepository(super.db, super.clock);
+
+  @override
+  Future<void> addOwnedPet(String petId, {DateTime? now}) =>
+      throw Exception('simulated addOwnedPet failure');
+}
+
 /// A fully scripted "random": [boolValue] answers every `nextBool()` call
 /// (issue #065's coin-flip branch pick) and [intValue] answers every
 /// `nextInt(max)` call regardless of [max] (the pet-pool index or the
@@ -404,6 +427,84 @@ void main() {
 
       expect(third.wheelCoinAmount, isNotNull);
       expect((await statsRepo.getProfile()).coinsTotal, third.wheelCoinAmount);
+    });
+  });
+
+  group('recordLessonCompletion transaction atomicity (#097)', () {
+    test('a throw from the wheel-coin write rolls back the counter bump '
+        'too, so the day is left exactly as it was before the call', () async {
+      final normalService = buildService();
+      await normalService.recordLessonCompletion(random: _ZeroRandom()); // 1
+      await normalService.recordLessonCompletion(random: _ZeroRandom()); // 2
+
+      final throwingService = PetService(
+        _ThrowingAddCoinsStatsRepository(db, clock),
+        petRepo,
+        clock,
+      );
+      await expectLater(
+        // Would be the 3rd completion (the wheel's trigger count); addCoins
+        // throws after setPetLessonCounter already ran in the same
+        // transaction.
+        throwingService.recordLessonCompletion(random: _ZeroRandom()),
+        throwsException,
+      );
+
+      final profile = await statsRepo.getProfile();
+      expect(profile.lessonsCompletedToday, 2);
+      expect(profile.coinsTotal, 0);
+    });
+
+    test('a throw from the lootbox pet write rolls back the counter bump '
+        'too, leaving no pet owned and the day unchanged', () async {
+      final normalService = buildService();
+      await normalService.recordLessonCompletion(); // 1
+
+      final throwingService = PetService(
+        statsRepo,
+        _ThrowingAddOwnedPetRepository(db, clock),
+        clock,
+        () async => _threePetCatalog,
+      );
+      await expectLater(
+        // Would be the 2nd completion (the lootbox's trigger count); the
+        // pet-flip branch (nextBool()==false) throws from addOwnedPet after
+        // setPetLessonCounter already ran in the same transaction.
+        throwingService.recordLessonCompletion(
+          random: _ScriptedRandom(boolValue: false),
+        ),
+        throwsException,
+      );
+
+      final profile = await statsRepo.getProfile();
+      expect(profile.lessonsCompletedToday, 1);
+      final owned = await petRepo.getOwnedPetIds();
+      expect(owned, [kDefaultPetId]);
+    });
+
+    test('a throw from the lootbox coin write rolls back the counter bump '
+        'too', () async {
+      final normalService = buildService();
+      await normalService.recordLessonCompletion(); // 1
+
+      final throwingService = PetService(
+        _ThrowingAddCoinsStatsRepository(db, clock),
+        petRepo,
+        clock,
+      );
+      await expectLater(
+        // Would be the 2nd completion; the coin-flip branch
+        // (nextBool()==true) throws from addCoins after setPetLessonCounter
+        // already ran in the same transaction.
+        throwingService.recordLessonCompletion(
+          random: _ScriptedRandom(boolValue: true),
+        ),
+        throwsException,
+      );
+
+      final profile = await statsRepo.getProfile();
+      expect(profile.lessonsCompletedToday, 1);
+      expect(profile.coinsTotal, 0);
     });
   });
 
