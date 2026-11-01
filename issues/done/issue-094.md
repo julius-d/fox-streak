@@ -1,6 +1,6 @@
 # Issue 094: Image copyright caption + full-screen view
 
-Status: open | Priority: P2 | Type: feature | Refined-at: 2026-10-31
+Status: done | Priority: P2 | Type: feature | Refined-at: 2026-10-31 | Completed-at: 2026-11-01
 
 ## Goal
 Extend #014's question images with an optional short copyright/credit
@@ -43,42 +43,54 @@ same widget with a credit line and a tap-to-expand full-screen view.
 - **Everywhere `FoxItemImage` renders**: exercise cards, library list
   thumbnails, and set-detail rows all get the same tap-to-expand + caption
   behavior, since they share the one widget.
+  **Revised during implementation (2026-11-01, with repo owner):** a
+  caption bar doesn't fit Material's `ListTile.leading` slot (40px
+  thumbnail + caption needs ~64dp; `ListTile` caps leading height at
+  48–56dp — confirmed via a real overflow crash). Split into two widgets
+  instead: `FoxItemImage` (#014, unchanged) stays the small, square,
+  non-interactive thumbnail for set-detail/library rows; a new
+  `FoxQuestionImage` (not cropped to square, more room) carries the
+  caption + tap-to-expand, used only on the lesson exercise card (and the
+  full-screen view it opens). See the Summary below.
 
 ## Acceptance criteria
-- [ ] `items` gains a nullable `imageCopyright` text column via an
+- [x] `items` gains a nullable `imageCopyright` text column via an
   additive migration (next `schemaVersion` after #014's); existing rows
   get `null` (no caption, unchanged rendering).
-- [ ] `imageCopyright` can only be non-null when `imageType` is `base64`
+- [x] `imageCopyright` can only be non-null when `imageType` is `base64`
   or `url`; validation rejects it on `emoji`/`null` image items, rejects
   empty-after-trim, multi-line, and longer-than-120-character values.
-- [ ] `set_json_codec.dart` import/export round-trips `imageCopyright`;
+- [x] `set_json_codec.dart` import/export round-trips `imageCopyright`;
   missing field in older exported JSON decodes as `null` (backward
   compatible).
-- [ ] Item editor (#004's `item_editor.dart`): when image type is `base64`
+- [x] Item editor (#004's `item_editor.dart`): when image type is `base64`
   or `url`, an optional copyright text field appears below the image
   content field; hidden for `emoji`/"none"; inline error on invalid
   content (too long, multi-line); can be cleared back to empty.
-- [ ] `FoxItemImage` (#014): renders a right-aligned caption bar below the
-  image when `imageCopyright` is set (themed per #015, light/dark), and
-  wraps `base64`/`url` images in a tap target that pushes a new
-  full-screen image-viewer route.
-- [ ] New full-screen image-viewer screen: shows the image and, if set,
+- [x] **Revised** (see Decisions): the caption bar + tap target live on a
+  new `FoxQuestionImage` widget, not `FoxItemImage` — renders a
+  right-aligned caption bar below the image when `imageCopyright` is set
+  (themed per #015, light/dark), and wraps `base64`/`url` images in a tap
+  target that pushes a new full-screen image-viewer route.
+- [x] New full-screen image-viewer screen: shows the image and, if set,
   the same caption bar below it; tapping anywhere on the image closes the
   route; the platform back button/gesture also closes it.
-- [ ] Behavior is consistent everywhere `FoxItemImage` is used today:
-  exercise cards (#006–#009), library list, and set detail (#003).
-- [ ] A11y: the tap target carries a semantic hint that it opens a
+- [x] **Revised** (see Decisions): the caption + tap-to-expand are
+  question-card-only (`FoxQuestionImage`, used by exercise cards
+  #006–#009) — not on the set-detail/library thumbnail (`FoxItemImage`,
+  unchanged from #014, doesn't fit a caption in `ListTile.leading`).
+- [x] A11y: the tap target carries a semantic hint that it opens a
   full-screen view; the caption text is included in the image's semantic
   label alongside the existing `prompt`-based label from #014.
-- [ ] Follows #015: kit tokens/spacing for the caption bar, no ad-hoc
+- [x] Follows #015: kit tokens/spacing for the caption bar, no ad-hoc
   styling; all new UI-chrome strings (not the user-entered copyright text
   itself) via `lib/l10n` arb params (DE + EN).
-- [ ] `docs/question-set-format.md` and `docs/question-set.schema.json`
+- [x] `docs/question-set-format.md` and `docs/question-set.schema.json`
   are updated to document the new optional `imageCopyright` field
   alongside whatever #014 already documented for `imageType`/
   `imageContent` (coordinate with #014's own doc update if it lands
   first).
-- [ ] Unit + widget tests green (see Tasks).
+- [x] Unit + widget tests green (see Tasks).
 
 ## Tasks
 1. Schema: add `items.imageCopyright` (nullable text) via the next
@@ -129,3 +141,37 @@ dart format --output=none --set-exit-if-changed .
 dart fix --dry-run
 flutter test
 ```
+
+## Summary
+Schema v14 adds `items.imageCopyright` (nullable, one-sided-paired with
+`base64`/`url`, ≤120 chars, single line). Split rendering into two
+widgets: `FoxItemImage` (#014, unchanged — small square thumbnail, no
+caption/tap) for set-detail/library rows, and a new `FoxQuestionImage`
+(not cropped to square, more room, caption bar, tap-to-expand) for the
+lesson exercise card, which opens the new `FoxFullScreenImageViewer`
+route. Item editor gained an optional copyright field (base64/url only).
+Screenshots: `issue-094-item_editor_copyright_field.png`,
+`issue-094-exercise_card_caption.png`, `issue-094-fullscreen_viewer.png`.
+
+## Code review
+- `FoxQuestionImage`'s base64/url image box uses a fixed `width`/`height`
+  instead of sizing from the decoded image's intrinsic dimensions.
+  No change needed — intentional: a size derived from the real decoded
+  `ui.Image` can stay zero-height indefinitely in headless tests (the
+  codec `Future` may not resolve within a pump loop); fixed dimensions +
+  `BoxFit.contain` keep layout deterministic while still preserving
+  aspect ratio (confirmed via a real bug hit during implementation).
+- The integration test's set-detail-thumbnail-not-tappable assertion
+  originally checked a `Key` (`foxItemImageTapTarget`) that was never
+  defined anywhere, making it vacuously true.
+  Fixed — now taps the real `FoxItemImage` widget and asserts the
+  full-screen viewer does not open.
+- JSON Schema's `imageCopyright.maxLength: 120` counts raw (untrimmed)
+  string length, while Dart's `isValidImageCopyright` counts post-trim
+  length, so a padded string could pass the schema but fail Dart
+  validation in a pathological case.
+  Not fixed — already disclosed in the schema's own `description` field
+  as a known, narrow looseness (consistent with several other
+  schema-can't-fully-enforce-this gaps already documented in
+  `question-set-format.md`); not worth a schema `allOf`/regex contortion
+  for this edge case.

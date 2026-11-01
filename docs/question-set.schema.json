@@ -110,6 +110,23 @@
         { "required": ["imageType", "imageContent"] }
       ]
     },
+    "imageCopyright": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "pattern": "^[^\\n]*\\S[^\\n]*$",
+      "description": "Optional short copyright/credit line (issue #094). Single line (no newline anywhere in the string) and non-empty-after-trim (not fully checkable by this schema — leading/trailing whitespace within the 120-char budget isn't rejected here)."
+    },
+    "imageCopyrightPairing": {
+      "description": "imageCopyright (issue #094) may only be present when imageType is base64 or url — a system emoji glyph has no meaningful copyright. One-sided: an image may exist without a copyright, but not vice versa.",
+      "oneOf": [
+        { "not": { "required": ["imageCopyright"] } },
+        {
+          "required": ["imageCopyright", "imageType"],
+          "properties": { "imageType": { "enum": ["base64", "url"] } }
+        }
+      ]
+    },
     "languagePair": {
       "description": "promptLang/answerLang must be both absent, or both present with distinct codes from {de, en}.",
       "oneOf": [
@@ -138,7 +155,11 @@
       "type": "object",
       "additionalProperties": false,
       "required": ["type", "prompt", "answer"],
-      "allOf": [{ "$ref": "#/$defs/languagePair" }, { "$ref": "#/$defs/image" }],
+      "allOf": [
+        { "$ref": "#/$defs/languagePair" },
+        { "$ref": "#/$defs/image" },
+        { "$ref": "#/$defs/imageCopyrightPairing" }
+      ],
       "properties": {
         "type": { "const": "choice" },
         "prompt": { "type": "string", "minLength": 1, "pattern": "\\S" },
@@ -151,14 +172,19 @@
         },
         "hint": { "type": "string" },
         "imageType": { "$ref": "#/$defs/imageType" },
-        "imageContent": { "type": "string", "minLength": 1 }
+        "imageContent": { "type": "string", "minLength": 1 },
+        "imageCopyright": { "$ref": "#/$defs/imageCopyright" }
       }
     },
     "itemFreeText": {
       "type": "object",
       "additionalProperties": false,
       "required": ["type", "prompt", "answer"],
-      "allOf": [{ "$ref": "#/$defs/languagePair" }, { "$ref": "#/$defs/image" }],
+      "allOf": [
+        { "$ref": "#/$defs/languagePair" },
+        { "$ref": "#/$defs/image" },
+        { "$ref": "#/$defs/imageCopyrightPairing" }
+      ],
       "properties": {
         "type": { "const": "freeText" },
         "prompt": { "type": "string", "minLength": 1, "pattern": "\\S" },
@@ -167,14 +193,18 @@
         "answerLang": { "$ref": "#/$defs/languageCode" },
         "hint": { "type": "string" },
         "imageType": { "$ref": "#/$defs/imageType" },
-        "imageContent": { "type": "string", "minLength": 1 }
+        "imageContent": { "type": "string", "minLength": 1 },
+        "imageCopyright": { "$ref": "#/$defs/imageCopyright" }
       }
     },
     "itemPhone": {
       "type": "object",
       "additionalProperties": false,
       "required": ["type", "prompt", "answer"],
-      "allOf": [{ "$ref": "#/$defs/image" }],
+      "allOf": [
+        { "$ref": "#/$defs/image" },
+        { "$ref": "#/$defs/imageCopyrightPairing" }
+      ],
       "properties": {
         "type": { "const": "phone" },
         "prompt": { "type": "string", "minLength": 1, "pattern": "\\S" },
@@ -185,14 +215,18 @@
         },
         "hint": { "type": "string" },
         "imageType": { "$ref": "#/$defs/imageType" },
-        "imageContent": { "type": "string", "minLength": 1 }
+        "imageContent": { "type": "string", "minLength": 1 },
+        "imageCopyright": { "$ref": "#/$defs/imageCopyright" }
       }
     },
     "itemDate": {
       "type": "object",
       "additionalProperties": false,
       "required": ["type", "prompt", "answer"],
-      "allOf": [{ "$ref": "#/$defs/image" }],
+      "allOf": [
+        { "$ref": "#/$defs/image" },
+        { "$ref": "#/$defs/imageCopyrightPairing" }
+      ],
       "properties": {
         "type": { "const": "date" },
         "prompt": { "type": "string", "minLength": 1, "pattern": "\\S" },
@@ -203,7 +237,8 @@
         },
         "hint": { "type": "string" },
         "imageType": { "$ref": "#/$defs/imageType" },
-        "imageContent": { "type": "string", "minLength": 1 }
+        "imageContent": { "type": "string", "minLength": 1 },
+        "imageCopyright": { "$ref": "#/$defs/imageCopyright" }
       }
     },
     "item": {

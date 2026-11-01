@@ -187,6 +187,29 @@ Any item type may optionally carry a prompt-side image, attached to the
   bundled seed sets (`assets/seed/`) only ever use `emoji`/`base64` for this
   reason. `url` is fine for sets you create yourself.
 
+### Image copyright (`imageCopyright`)
+
+An item may optionally carry a short copyright/credit line alongside a
+`base64` or `url` image (issue #094):
+
+```json
+{
+  "imageType": "url",
+  "imageContent": "https://example.com/fox.png",
+  "imageCopyright": "© Jane Doe"
+}
+```
+
+- Optional; unlike `imageType`/`imageContent`, it's **one-sided** — an image
+  may exist without a copyright, but a copyright may never exist without a
+  `base64`/`url` image. It's rejected on `emoji` items (a system glyph has
+  no meaningful copyright) and on items with no image at all.
+- When present, must be a single line (no `\n`), non-empty after trimming,
+  and at most 120 characters.
+- Rendered as a small, right-aligned caption below the image — on the
+  lesson exercise card and the full-screen view it opens, not on the
+  compact set-detail/library thumbnail (too small to fit a caption).
+
 ## A complete multi-item example
 
 ```json
@@ -265,6 +288,9 @@ hand-writing or AI-generating a file:
   that type (e.g. `base64` content that isn't decodable, or a `url` that
   isn't a valid `http`/`https` link). **The schema can't fully enforce
   this** — it accepts any non-empty `imageContent` string.
+- `imageCopyright` is set but `imageType` isn't `base64`/`url` (e.g. it's
+  `emoji` or absent), or it's empty after trimming, multi-line, or longer
+  than 120 characters.
 
 Unknown fields are currently ignored by the app (not rejected) at both the
 set level and the item level. The schema is stricter than the app on

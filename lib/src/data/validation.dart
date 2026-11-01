@@ -252,3 +252,41 @@ String? validateImagePair(String? imageType, String? imageContent) {
   }
   return null;
 }
+
+/// Maximum length (after trimming) of an item's optional image
+/// copyright/credit line (#094).
+const int kMaxImageCopyrightLength = 120;
+
+/// True when [value] is a valid, non-empty image copyright/credit line:
+/// single-line (no `\n`, checked before trimming so an embedded newline is
+/// always rejected) and at most [kMaxImageCopyrightLength] characters after
+/// trimming. Does not treat an empty-after-trim value as valid — callers
+/// that want "blank clears the copyright" must check that separately (see
+/// the item editor).
+bool isValidImageCopyright(String value) {
+  final trimmed = value.trim();
+  return trimmed.isNotEmpty &&
+      !value.contains('\n') &&
+      trimmed.length <= kMaxImageCopyrightLength;
+}
+
+/// Validates an item's [imageType]/[imageCopyright] pairing (#094); returns
+/// an error message or `null`.
+///
+/// One-sided (unlike [validateImagePair]'s both-or-neither): `null`/empty
+/// [imageCopyright] is always valid (the copyright itself is optional), but
+/// a non-null, non-empty one requires [imageType] to be `base64` or `url` —
+/// a system `emoji` glyph has no meaningful copyright — and must satisfy
+/// [isValidImageCopyright].
+String? validateImageCopyright(String? imageType, String? imageCopyright) {
+  if (imageCopyright == null || imageCopyright.isEmpty) return null;
+  if (imageType != 'base64' && imageType != 'url') {
+    return 'imageCopyright is only allowed when imageType is "base64" or '
+        '"url"';
+  }
+  if (!isValidImageCopyright(imageCopyright)) {
+    return 'invalid imageCopyright (must be a single line, non-empty, at '
+        'most $kMaxImageCopyrightLength characters)';
+  }
+  return null;
+}

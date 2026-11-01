@@ -180,7 +180,7 @@ class _DialPadExerciseState extends ConsumerState<DialPadExercise> {
     final FoxSemanticColors tokens = foxSemantics(context);
     final ColorScheme scheme = Theme.of(context).colorScheme;
     final TextTheme text = Theme.of(context).textTheme;
-    final image = buildItemImage(widget.item);
+    final image = buildItemImage(widget.item, l10n: widget.l10n);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(vertical: FoxSpacing.md),

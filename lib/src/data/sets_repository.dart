@@ -122,6 +122,7 @@ class SetsRepository {
     String? hint,
     String? imageType,
     String? imageContent,
+    String? imageCopyright,
   }) async {
     final set = await getSetById(setId);
     if (set == null) throw ArgumentError('unknown setId $setId');
@@ -134,6 +135,7 @@ class SetsRepository {
       choices: choices,
       imageType: imageType,
       imageContent: imageContent,
+      imageCopyright: imageCopyright,
     );
     final siblings = await getItemsForSet(setId);
     final nextPos = siblings.isEmpty
@@ -153,6 +155,7 @@ class SetsRepository {
             hint: Value(hint ?? ''),
             imageType: Value(clean.imageType),
             imageContent: Value(clean.imageContent),
+            imageCopyright: Value(clean.imageCopyright),
             position: nextPos,
           ),
         );
@@ -168,7 +171,9 @@ class SetsRepository {
     ({String? promptLang, String? answerLang})? Function()? languagePairUpdate,
     List<String>? Function()? choicesUpdate,
     String? hint,
-    ({String? imageType, String? imageContent})? Function()? imageUpdate,
+    ({String? imageType, String? imageContent, String? imageCopyright})?
+    Function()?
+    imageUpdate,
   }) async {
     final existing = await (_db.select(
       _db.items,
@@ -206,10 +211,12 @@ class SetsRepository {
 
     String? newImageType = existing.imageType;
     String? newImageContent = existing.imageContent;
+    String? newImageCopyright = existing.imageCopyright;
     if (imageUpdate != null) {
       final pair = imageUpdate();
       newImageType = pair?.imageType;
       newImageContent = pair?.imageContent;
+      newImageCopyright = pair?.imageCopyright;
     }
 
     final clean = _checkItemFields(
@@ -221,6 +228,7 @@ class SetsRepository {
       choices: newChoices,
       imageType: newImageType,
       imageContent: newImageContent,
+      imageCopyright: newImageCopyright,
     );
     await (_db.update(_db.items)..where((t) => t.id.equals(id))).write(
       ItemsCompanion(
@@ -243,6 +251,9 @@ class SetsRepository {
         imageContent: imageUpdate == null
             ? const Value.absent()
             : Value(clean.imageContent),
+        imageCopyright: imageUpdate == null
+            ? const Value.absent()
+            : Value(clean.imageCopyright),
       ),
     );
     await _touchSet(existing.setId);
@@ -308,6 +319,7 @@ class SetsRepository {
                 hint: Value(item.hint ?? ''),
                 imageType: Value(item.imageType),
                 imageContent: Value(item.imageContent),
+                imageCopyright: Value(item.imageCopyright),
                 position: item.position,
               ),
             );
@@ -347,6 +359,7 @@ class SetsRepository {
             hint: item.hint ?? '',
             imageType: item.imageType,
             imageContent: item.imageContent,
+            imageCopyright: item.imageCopyright,
           ),
       ],
       today: today,
@@ -393,6 +406,7 @@ class SetsRepository {
                 hint: Value(item.hint),
                 imageType: Value(item.imageType),
                 imageContent: Value(item.imageContent),
+                imageCopyright: Value(item.imageCopyright),
                 position: i,
               ),
             );
@@ -429,6 +443,7 @@ class SetsRepository {
     List<String>? choices,
     String? imageType,
     String? imageContent,
+    String? imageCopyright,
   }) {
     if (!kItemTypes.contains(type)) {
       throw ArgumentError('unknown type "$type"');
@@ -462,6 +477,16 @@ class SetsRepository {
         : imageContent;
     final imageError = validateImagePair(imageType, cleanImageContent);
     if (imageError != null) throw ArgumentError(imageError);
+    final trimmedCopyright = imageCopyright?.trim();
+    final cleanImageCopyright =
+        (trimmedCopyright == null || trimmedCopyright.isEmpty)
+        ? null
+        : trimmedCopyright;
+    final copyrightError = validateImageCopyright(
+      imageType,
+      cleanImageCopyright,
+    );
+    if (copyrightError != null) throw ArgumentError(copyrightError);
     final cleanAnswer = type == 'phone'
         ? normalizePhone(answer.trim())
         : answer.trim();
@@ -473,6 +498,7 @@ class SetsRepository {
       choicesJson: choices == null ? null : jsonEncode(choices),
       imageType: imageType,
       imageContent: cleanImageContent,
+      imageCopyright: cleanImageCopyright,
     );
   }
 
@@ -495,6 +521,7 @@ class _CleanItem {
   final String? choicesJson;
   final String? imageType;
   final String? imageContent;
+  final String? imageCopyright;
   _CleanItem({
     required this.prompt,
     required this.answer,
@@ -503,5 +530,6 @@ class _CleanItem {
     required this.choicesJson,
     required this.imageType,
     required this.imageContent,
+    required this.imageCopyright,
   });
 }

@@ -54,10 +54,15 @@ Future<void> unmount(WidgetTester tester) async {
 }
 
 /// Scrolls the Save button into view before tapping it: some type/toggle
-/// combinations (choice with the language-pair toggle + 3 distractors) make
-/// the form taller than the test surface, pushing the button out of the
-/// hit-testable area.
+/// combinations (choice with the language-pair toggle + 3 distractors, or
+/// #094's base64 content field + copyright field stacked) make the form
+/// taller than the test surface, pushing the button out of the
+/// hit-testable area. `ensureVisible` alone isn't reliable once the form
+/// gets tall enough (it can leave the button a few px below the viewport),
+/// so this also grows the surface itself.
 Future<void> tapSaveItem(WidgetTester tester) async {
+  await tester.binding.setSurfaceSize(const Size(800, 2000));
+  addTearDown(() => tester.binding.setSurfaceSize(null));
   await tester.ensureVisible(find.byKey(const Key('saveItemButton')));
   await settle(tester);
   await tester.tap(find.byKey(const Key('saveItemButton')));

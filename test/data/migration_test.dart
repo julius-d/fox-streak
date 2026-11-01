@@ -1,8 +1,8 @@
 // Schema v1 -> v2 (issue #026), v2 -> v3 (issue #010), v3 -> v4 (issue
 // #022), v4 -> v5 (issue #012), v5 -> v6 (issue #045), v6 -> v7 (issue
 // #055), v7 -> v8 (issue #059), v8 -> v9 (issue #064), v9 -> v10 (issue
-// #065), v10 -> v11 (issue #068), v11 -> v12 (issue #084), and v12 -> v13
-// (issue #014) migration tests.
+// #065), v10 -> v11 (issue #068), v11 -> v12 (issue #084), v12 -> v13
+// (issue #014), and v13 -> v14 (issue #094) migration tests.
 //
 // Simulates pre-migration databases on disk, then reopens them with the
 // real (current schemaVersion) `AppDatabase` and asserts `onUpgrade` applied
@@ -509,6 +509,55 @@ class _LegacyV12Database extends AppDatabase {
       final db = m.database as AppDatabase;
       await m.createTable(db.questionSets);
       await _createItemsTableWithoutImage(m);
+      await m.createTable(db.attempts);
+      await m.createTable(db.profileStats);
+      await m.createTable(db.appSettings);
+      await m.createTable(db.ownedPets);
+      await m.createTable(db.dailyActivity);
+    },
+  );
+}
+
+/// Creates the pre-#094 `items` shape (has `image_type`/`image_content`,
+/// but not `image_copyright` yet) — the current Dart `Items` definition
+/// already has all three, so `m.createTable(db.items)` can't be used for
+/// this pre-v14 fixture.
+Future<void> _createItemsTableWithImageNoCopyright(Migrator m) async {
+  final db = m.database as AppDatabase;
+  await db.customStatement('''
+    CREATE TABLE items (
+      id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+      set_id INTEGER NOT NULL REFERENCES question_sets (id) ON DELETE CASCADE,
+      type TEXT NOT NULL,
+      prompt TEXT NOT NULL,
+      answer TEXT NOT NULL,
+      prompt_lang TEXT NULL,
+      answer_lang TEXT NULL,
+      choices TEXT NULL,
+      hint TEXT NULL DEFAULT '',
+      position INTEGER NOT NULL,
+      image_type TEXT NULL,
+      image_content TEXT NULL
+    )
+  ''');
+}
+
+/// A schemaVersion-13 view of [AppDatabase], used only to seed a pre-#094
+/// file at the exact version #094's migration upgrades from: every table is
+/// already in its current (post-#014) shape except `items`, which still
+/// lacks `image_copyright` (see [_createItemsTableWithImageNoCopyright]).
+class _LegacyV13Database extends AppDatabase {
+  _LegacyV13Database(QueryExecutor executor) : super.forTesting(executor); // ignore: use_super_parameters — must forward to the named forTesting() ctor, not the default unnamed one
+
+  @override
+  int get schemaVersion => 13;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) async {
+      final db = m.database as AppDatabase;
+      await m.createTable(db.questionSets);
+      await _createItemsTableWithImageNoCopyright(m);
       await m.createTable(db.attempts);
       await m.createTable(db.profileStats);
       await m.createTable(db.appSettings);
@@ -1122,6 +1171,66 @@ void main() {
     expect(
       columns.map((row) => row.read<String>('name')),
       containsAll(<String>['image_type', 'image_content']),
+    );
+  });
+
+  test('onUpgrade (v13 -> v14) adds imageCopyright (null), preserving '
+      'existing item fields (#094)', () async {
+    final dir = Directory.systemTemp.createTempSync('foxstreak_migration_v14');
+    final file = File('${dir.path}/test.sqlite');
+    addTearDown(() {
+      if (dir.existsSync()) dir.deleteSync(recursive: true);
+    });
+
+    // 1. Seed a v13 database directly on disk (items has image_type/
+    // image_content but no image_copyright yet) with a pre-existing item
+    // row that already carries an image.
+    final legacyDb = _LegacyV13Database(NativeDatabase(file));
+    final setId = await legacyDb
+        .into(legacyDb.questionSets)
+        .insert(
+          QuestionSetsCompanion.insert(
+            title: 'Legacy set',
+            createdBy: 'teacher',
+            createdAt: 1,
+            updatedAt: 2,
+          ),
+        );
+    final itemId = await legacyDb.customInsert(
+      'INSERT INTO items '
+      '(set_id, type, prompt, answer, position, image_type, image_content) '
+      'VALUES (?, ?, ?, ?, ?, ?, ?)',
+      variables: [
+        Variable.withInt(setId),
+        Variable.withString('choice'),
+        Variable.withString('Hund'),
+        Variable.withString('dog'),
+        Variable.withInt(0),
+        Variable.withString('emoji'),
+        Variable.withString('🐶'),
+      ],
+    );
+    await legacyDb.close();
+
+    // 2. Reopen the SAME file with the real (current schemaVersion)
+    // database; drift sees user_version=13 < schemaVersion=14 and runs
+    // onUpgrade's addColumn.
+    final upgradedDb = AppDatabase.forTesting(NativeDatabase(file));
+    addTearDown(upgradedDb.close);
+
+    final item = await upgradedDb.getItemById(itemId);
+    expect(item?.imageCopyright, isNull);
+    expect(item?.imageType, 'emoji');
+    expect(item?.imageContent, '🐶');
+    expect(item?.prompt, 'Hund');
+    expect(item?.answer, 'dog');
+
+    final columns = await upgradedDb
+        .customSelect("PRAGMA table_info('items')")
+        .get();
+    expect(
+      columns.map((row) => row.read<String>('name')),
+      contains('image_copyright'),
     );
   });
 }

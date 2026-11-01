@@ -169,6 +169,21 @@
     "placeholders": {}
   },
   "errorInvalidImageUrl": "Enter a valid http(s) link",
+  "@itemImageCopyrightFieldLabel": {
+    "description": "Label for the item editor's optional image copyright/credit field, shown only for base64/url image types (issue #094)",
+    "placeholders": {}
+  },
+  "itemImageCopyrightFieldLabel": "Copyright / credit (optional)",
+  "@errorInvalidImageCopyright": {
+    "description": "Inline error when the image copyright field is multi-line or over 120 characters (issue #094)",
+    "placeholders": {}
+  },
+  "errorInvalidImageCopyright": "Enter a single line, up to 120 characters",
+  "@fullScreenImageViewHint": {
+    "description": "Screen-reader hint on a tappable base64/url item image, announcing that it opens a full-screen view (issue #094)",
+    "placeholders": {}
+  },
+  "fullScreenImageViewHint": "Opens a full-screen view",
   "itemDayLabel": "Day",
   "itemMonthLabel": "Month",
   "itemYearLabel": "Year",

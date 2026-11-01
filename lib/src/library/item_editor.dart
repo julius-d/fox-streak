@@ -31,6 +31,9 @@
 //   prompt, not to any type-specific field below it. "None" clears stored
 //   content; any other type requires valid type-specific content
 //   (`validation.dart`'s `isValidImageContent`) before save.
+// - Image copyright (#094): optional credit line field shown only when the
+//   image type is base64/url (never emoji/none); empty clears it, non-empty
+//   must be a single line up to 120 chars (`isValidImageCopyright`).
 
 import 'dart:convert';
 
@@ -79,6 +82,7 @@ class _ItemEditorScreenState extends ConsumerState<ItemEditorScreen> {
   String? _promptLang;
   String? _answerLang;
   late final TextEditingController _imageContent;
+  late final TextEditingController _imageCopyright;
   // null = "none" (#014): no image on this item.
   String? _imageType;
   bool _saving = false;
@@ -132,6 +136,9 @@ class _ItemEditorScreenState extends ConsumerState<ItemEditorScreen> {
     _languagePairEnabled = _promptLang != null && _answerLang != null;
     _imageType = existing?.imageType;
     _imageContent = TextEditingController(text: existing?.imageContent ?? '');
+    _imageCopyright = TextEditingController(
+      text: existing?.imageCopyright ?? '',
+    );
     _dayFocus = FocusNode(debugLabel: 'itemDay');
     _monthFocus = FocusNode(debugLabel: 'itemMonth');
     _yearFocus = FocusNode(debugLabel: 'itemYear');
@@ -146,6 +153,7 @@ class _ItemEditorScreenState extends ConsumerState<ItemEditorScreen> {
     _month.dispose();
     _year.dispose();
     _imageContent.dispose();
+    _imageCopyright.dispose();
     for (final c in _choices) {
       c.dispose();
     }
@@ -191,6 +199,19 @@ class _ItemEditorScreenState extends ConsumerState<ItemEditorScreen> {
         'url' => l10n.errorInvalidImageUrl,
         _ => l10n.errorInvalidImageEmoji,
       };
+    }
+    return null;
+  }
+
+  /// Validates the optional copyright/credit field, shown only when
+  /// [_imageType] is `base64`/`url` (#094). Empty (after trim) is always
+  /// valid — it clears the copyright rather than erroring, since the field
+  /// itself is optional.
+  String? _validateImageCopyright(String? v) {
+    final raw = (v ?? '').trim();
+    if (raw.isEmpty) return null;
+    if (!isValidImageCopyright(raw)) {
+      return AppLocalizations.of(context)!.errorInvalidImageCopyright;
     }
     return null;
   }
@@ -364,6 +385,14 @@ class _ItemEditorScreenState extends ConsumerState<ItemEditorScreen> {
     // multi-line base64 paste's embedded newlines) before storing.
     final imageTypeForSave = _imageType;
     final imageContentForSave = _imageType == null ? null : _imageContent.text;
+    // #094: imageCopyright is one-sided-paired with base64/url only; empty
+    // (after trim) clears it rather than storing an empty string.
+    final trimmedCopyright = _imageCopyright.text.trim();
+    final imageCopyrightForSave =
+        (_imageType == 'base64' || _imageType == 'url') &&
+            trimmedCopyright.isNotEmpty
+        ? trimmedCopyright
+        : null;
     setState(() {
       _saving = true;
       _saveError = null;
@@ -387,6 +416,7 @@ class _ItemEditorScreenState extends ConsumerState<ItemEditorScreen> {
           choices: choicesForSave,
           imageType: imageTypeForSave,
           imageContent: imageContentForSave,
+          imageCopyright: imageCopyrightForSave,
         );
       } else {
         await repo.updateItem(
@@ -397,8 +427,11 @@ class _ItemEditorScreenState extends ConsumerState<ItemEditorScreen> {
           languagePairUpdate: () =>
               (promptLang: promptLangForSave, answerLang: answerLangForSave),
           choicesUpdate: () => choicesForSave,
-          imageUpdate: () =>
-              (imageType: imageTypeForSave, imageContent: imageContentForSave),
+          imageUpdate: () => (
+            imageType: imageTypeForSave,
+            imageContent: imageContentForSave,
+            imageCopyright: imageCopyrightForSave,
+          ),
         );
       }
       if (!mounted) return;
@@ -535,6 +568,19 @@ class _ItemEditorScreenState extends ConsumerState<ItemEditorScreen> {
             maxLines: _imageType == 'base64' ? 3 : 1,
             decoration: InputDecoration(labelText: contentLabel),
             validator: _validateImageContent,
+          ),
+        ],
+        // #094: copyright/credit is base64/url-only — a system emoji glyph
+        // has no meaningful copyright, and isn't worth zooming into.
+        if (_imageType == 'base64' || _imageType == 'url') ...[
+          const SizedBox(height: FoxSpacing.md),
+          TextFormField(
+            key: const Key('itemImageCopyrightField'),
+            controller: _imageCopyright,
+            decoration: InputDecoration(
+              labelText: l10n.itemImageCopyrightFieldLabel,
+            ),
+            validator: _validateImageCopyright,
           ),
         ],
       ],

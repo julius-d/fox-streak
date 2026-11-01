@@ -10,7 +10,15 @@
 //
 // No separate alt-text field in v1 (#014 Decisions): callers must pass the
 // item's `prompt` text as [semanticLabel].
-
+//
+// This is the compact, square, non-interactive thumbnail used for small
+// summary contexts (set-detail/library rows) — #094 added a copyright
+// caption + tap-to-expand full-screen view, but only for the *question*
+// context, via the separate `FoxQuestionImage` (`fox_question_image.dart`):
+// a caption bar and tap target don't fit this widget's small fixed square
+// box (Material's `ListTile.leading` caps height well under what an image
+// + caption needs), and a thumbnail-sized credit line isn't legible or
+// useful anyway. Both widgets share the same decode/placeholder helpers.
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -75,7 +83,7 @@ class FoxItemImage extends StatelessWidget {
   }
 
   Widget _buildBase64(BuildContext context) {
-    final bytes = _decodeBase64(imageContent);
+    final bytes = decodeImageBase64(imageContent);
     if (bytes == null) return _buildPlaceholder(context);
     return ClipRRect(
       borderRadius: BorderRadius.circular(FoxRadius.md),
@@ -141,7 +149,10 @@ class FoxItemImage extends StatelessWidget {
 /// is already whitespace-stripped (see `normalizeImageContent`), but
 /// stripping again here is cheap and defends against any pre-existing row
 /// that predates that normalization.
-Uint8List? _decodeBase64(String content) {
+///
+/// Shared with `FoxQuestionImage` (#094) — not private so that widget can
+/// reuse the same decode behavior.
+Uint8List? decodeImageBase64(String content) {
   try {
     return base64Decode(normalizeImageContent('base64', content));
   } on FormatException {

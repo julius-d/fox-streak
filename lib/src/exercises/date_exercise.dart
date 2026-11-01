@@ -283,7 +283,7 @@ class _DateExerciseState extends ConsumerState<DateExercise> {
         ? [dayWidget, monthWidget, yearWidget]
         : [monthWidget, dayWidget, yearWidget];
     final separator = Text(_isGerman ? '.' : '/');
-    final image = buildItemImage(widget.item);
+    final image = buildItemImage(widget.item, l10n: widget.l10n);
 
     // Anchored to the top of the content area (#092), not vertically
     // centered: stays in the same place whether the keyboard is open or

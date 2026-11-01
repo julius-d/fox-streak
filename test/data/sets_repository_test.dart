@@ -362,7 +362,8 @@ void main() {
 
       await repo.updateItem(
         id: itemId,
-        imageUpdate: () => (imageType: 'base64', imageContent: 'AAAA'),
+        imageUpdate: () =>
+            (imageType: 'base64', imageContent: 'AAAA', imageCopyright: null),
       );
       expect((await repo.getItemById(itemId))?.imageType, 'base64');
       expect((await repo.getItemById(itemId))?.imageContent, 'AAAA');
@@ -403,6 +404,105 @@ void main() {
         (await repo.getItemById(withUrl))?.imageContent,
         'https://example.com/fox.png',
       );
+    });
+
+    test('addItem accepts an optional imageCopyright paired with base64/url '
+        '(#094)', () async {
+      final setId = await repo.createSet(title: 'S', createdBy: 'teacher');
+      final withCopyright = await repo.addItem(
+        setId: setId,
+        type: 'choice',
+        prompt: 'Hund',
+        answer: 'dog',
+        imageType: 'url',
+        imageContent: 'https://example.com/fox.png',
+        imageCopyright: '  © Jane Doe  ',
+      );
+      expect(
+        (await repo.getItemById(withCopyright))?.imageCopyright,
+        '© Jane Doe',
+      );
+
+      final withoutCopyright = await repo.addItem(
+        setId: setId,
+        type: 'choice',
+        prompt: 'Katze',
+        answer: 'cat',
+        imageType: 'url',
+        imageContent: 'https://example.com/cat.png',
+      );
+      expect(
+        (await repo.getItemById(withoutCopyright))?.imageCopyright,
+        isNull,
+      );
+    });
+
+    test('addItem rejects an imageCopyright on an emoji/no-image item, and '
+        'invalid copyright content (#094)', () async {
+      final setId = await repo.createSet(title: 'S', createdBy: 'teacher');
+      expect(
+        () => repo.addItem(
+          setId: setId,
+          type: 'choice',
+          prompt: 'p',
+          answer: 'a',
+          imageType: 'emoji',
+          imageContent: '🐶',
+          imageCopyright: '© Jane Doe',
+        ),
+        throwsArgumentError,
+      );
+      expect(
+        () => repo.addItem(
+          setId: setId,
+          type: 'choice',
+          prompt: 'p',
+          answer: 'a',
+          imageCopyright: '© Jane Doe',
+        ),
+        throwsArgumentError,
+      );
+      expect(
+        () => repo.addItem(
+          setId: setId,
+          type: 'choice',
+          prompt: 'p',
+          answer: 'a',
+          imageType: 'url',
+          imageContent: 'https://example.com/fox.png',
+          imageCopyright: 'line one\nline two',
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test('updateItem: imageUpdate sets/clears imageCopyright alongside the '
+        'image (#094)', () async {
+      final setId = await repo.createSet(title: 'S', createdBy: 'teacher');
+      final itemId = await repo.addItem(
+        setId: setId,
+        type: 'choice',
+        prompt: 'Hund',
+        answer: 'dog',
+        imageType: 'url',
+        imageContent: 'https://example.com/fox.png',
+        imageCopyright: '© Jane Doe',
+      );
+
+      // Omitting imageUpdate leaves the stored copyright untouched.
+      await repo.updateItem(id: itemId, prompt: 'Hund 2');
+      expect((await repo.getItemById(itemId))?.imageCopyright, '© Jane Doe');
+
+      // imageUpdate without imageCopyright clears it back to null.
+      await repo.updateItem(
+        id: itemId,
+        imageUpdate: () => (
+          imageType: 'url',
+          imageContent: 'https://example.com/fox.png',
+          imageCopyright: null,
+        ),
+      );
+      expect((await repo.getItemById(itemId))?.imageCopyright, isNull);
     });
 
     test('reorder persists new positions; rejects mismatched ids', () async {
@@ -583,6 +683,29 @@ void main() {
       // Re-export of the copy matches the original payload.
       final reExported = await repo.exportSetToJson(newId, today: kTestToday);
       expect(reExported['items'], exported['items']);
+    });
+
+    test('export/import round-trips imageCopyright (#094)', () async {
+      final setId = await repo.createSet(title: 'Share', createdBy: 'teacher');
+      await repo.addItem(
+        setId: setId,
+        type: 'choice',
+        prompt: 'Hund',
+        answer: 'dog',
+        imageType: 'url',
+        imageContent: 'https://example.com/fox.png',
+        imageCopyright: '© Jane Doe',
+      );
+
+      final exported = await repo.exportSetToJson(setId, today: kTestToday);
+      expect(
+        (exported['items'] as List).single['imageCopyright'],
+        '© Jane Doe',
+      );
+
+      final newId = await repo.importSetFromJson(exported, today: kTestToday);
+      final items = await repo.getItemsForSet(newId);
+      expect(items.single.imageCopyright, '© Jane Doe');
     });
 
     test(

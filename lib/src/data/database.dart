@@ -56,6 +56,11 @@ class Items extends Table {
   // unchanged text-only rendering).
   TextColumn get imageType => text().nullable()();
   TextColumn get imageContent => text().nullable()();
+  // v14 (#094): optional short copyright/credit line, one-sided-paired with
+  // `imageType` — only ever set when `imageType` is `base64`/`url` (never
+  // `emoji`/NULL). NULL on every pre-#094 row (no caption, unchanged
+  // rendering).
+  TextColumn get imageCopyright => text().nullable()();
 }
 
 /// One row per graded answer. No per-attempt XP column (see #010).
@@ -200,7 +205,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -329,6 +334,11 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(items, items.imageType);
         await m.addColumn(items, items.imageContent);
       }
+      // v14 (#094): adds the optional image copyright/credit column;
+      // existing rows get NULL (no caption, unchanged rendering).
+      if (from < 14) {
+        await m.addColumn(items, items.imageCopyright);
+      }
     },
     beforeOpen: (details) async {
       // SQLite disables FK enforcement by default; without this,
@@ -349,7 +359,8 @@ class AppDatabase extends _$AppDatabase {
   // `profileStats.coinsTotal`; v11 (#068) renamed `owned_mascots`/
   // `mascot_id`/`equipped_mascot_id` to `owned_pets`/`pet_id`/
   // `equipped_pet_id`; v12 (#084) added the `daily_activity` table; v13
-  // (#014) added `items.imageType`/`items.imageContent`.
+  // (#014) added `items.imageType`/`items.imageContent`; v14 (#094) added
+  // `items.imageCopyright`.
 }
 
 DatabaseConnection _openConnection() => driftDatabase(name: 'fox_streak');

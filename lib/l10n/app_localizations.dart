@@ -530,6 +530,24 @@ abstract class AppLocalizations {
   /// **'Enter a valid http(s) link'**
   String get errorInvalidImageUrl;
 
+  /// Label for the item editor's optional image copyright/credit field, shown only for base64/url image types (issue #094)
+  ///
+  /// In en, this message translates to:
+  /// **'Copyright / credit (optional)'**
+  String get itemImageCopyrightFieldLabel;
+
+  /// Inline error when the image copyright field is multi-line or over 120 characters (issue #094)
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a single line, up to 120 characters'**
+  String get errorInvalidImageCopyright;
+
+  /// Screen-reader hint on a tappable base64/url item image, announcing that it opens a full-screen view (issue #094)
+  ///
+  /// In en, this message translates to:
+  /// **'Opens a full-screen view'**
+  String get fullScreenImageViewHint;
+
   /// No description provided for @itemDayLabel.
   ///
   /// In en, this message translates to:

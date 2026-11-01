@@ -271,4 +271,50 @@ void main() {
       expect(validateImagePair('url', 'not a url'), isNotNull);
     });
   });
+
+  group('isValidImageCopyright (#094)', () {
+    test('accepts a non-empty, single-line value up to 120 chars', () {
+      expect(isValidImageCopyright('© Jane Doe'), isTrue);
+      expect(isValidImageCopyright('a' * kMaxImageCopyrightLength), isTrue);
+    });
+
+    test('rejects empty-after-trim, multi-line, and over-long values', () {
+      expect(isValidImageCopyright(''), isFalse);
+      expect(isValidImageCopyright('   '), isFalse);
+      expect(isValidImageCopyright('line one\nline two'), isFalse);
+      expect(
+        isValidImageCopyright('a' * (kMaxImageCopyrightLength + 1)),
+        isFalse,
+      );
+    });
+  });
+
+  group('validateImageCopyright (#094)', () {
+    test('null/empty (no copyright) is always valid, regardless of '
+        'imageType', () {
+      expect(validateImageCopyright(null, null), isNull);
+      expect(validateImageCopyright('emoji', null), isNull);
+      expect(validateImageCopyright(null, ''), isNull);
+    });
+
+    test('a valid copyright is accepted for base64/url, one-sided (unlike '
+        'validateImagePair\'s both-or-neither)', () {
+      expect(validateImageCopyright('base64', '© Jane Doe'), isNull);
+      expect(validateImageCopyright('url', '© Jane Doe'), isNull);
+    });
+
+    test('a copyright is rejected when imageType is emoji or null — a '
+        'system glyph has no meaningful copyright', () {
+      expect(validateImageCopyright('emoji', '© Jane Doe'), isNotNull);
+      expect(validateImageCopyright(null, '© Jane Doe'), isNotNull);
+    });
+
+    test('an invalid copyright value is rejected even for base64/url', () {
+      expect(validateImageCopyright('base64', 'line one\nline two'), isNotNull);
+      expect(
+        validateImageCopyright('url', 'a' * (kMaxImageCopyrightLength + 1)),
+        isNotNull,
+      );
+    });
+  });
 }

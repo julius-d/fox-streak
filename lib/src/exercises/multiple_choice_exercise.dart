@@ -115,7 +115,7 @@ class _MultipleChoiceCardState extends State<MultipleChoiceCard> {
       widget.item.answerLang,
       l10n,
     );
-    final image = buildItemImage(widget.item);
+    final image = buildItemImage(widget.item, l10n: l10n);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(vertical: FoxSpacing.md),

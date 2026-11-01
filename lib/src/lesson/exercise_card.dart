@@ -31,6 +31,8 @@ import 'package:fox_streak_app/src/data/database.dart';
 import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
 import 'package:fox_streak_app/src/widgets/widgets.dart';
 
+import '../../l10n/app_localizations.dart';
+
 /// Draft state reported by an exercise card while the user is answering.
 ///
 /// [hasAnswer] — whether the user has provided an answer (enables CHECK).
@@ -76,23 +78,31 @@ double exerciseCardMinHeight(BuildContext context) {
       FoxSpacing.xxl * 2;
 }
 
-/// Builds [item]'s shared prompt-side image block (issue #014), already
-/// including its own trailing spacer — or an empty, zero-size
-/// [SizedBox.shrink] when [item] has none, so every exercise card
-/// (#006–#009) can place this unconditionally above its prompt text without
-/// each repeating its own null-check + spacer.
-Widget buildItemImage(Item item, {double size = 96}) {
+/// Builds [item]'s shared prompt-side image block (issue #014; copyright
+/// caption + tap-to-expand added by #094), already including its own
+/// trailing spacer — or an empty, zero-size [SizedBox.shrink] when [item]
+/// has none, so every exercise card (#006–#009) can place this
+/// unconditionally above its prompt text without each repeating its own
+/// null-check + spacer.
+///
+/// Uses `FoxQuestionImage` (not the small, square, non-interactive
+/// `FoxItemImage` used for set-detail/library thumbnails) — the question
+/// context gets more room and shows the image at its natural aspect ratio.
+/// [l10n] resolves the tap-to-expand a11y hint (#094) — kit widgets never
+/// resolve l10n themselves.
+Widget buildItemImage(Item item, {required AppLocalizations l10n}) {
   final type = item.imageType;
   final content = item.imageContent;
   if (type == null || content == null) return const SizedBox.shrink();
   return Column(
     mainAxisSize: MainAxisSize.min,
     children: [
-      FoxItemImage(
+      FoxQuestionImage(
         imageType: type,
         imageContent: content,
         semanticLabel: item.prompt,
-        size: size,
+        imageCopyright: item.imageCopyright,
+        expandHint: l10n.fullScreenImageViewHint,
       ),
       const SizedBox(height: FoxSpacing.md),
     ],

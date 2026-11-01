@@ -19,7 +19,9 @@
 // rule as the DB migration default) but always written on export.
 // `imageType`/`imageContent` are optional and both-or-neither (#014);
 // missing on import decodes as `null`/`null` (backward compatible with
-// pre-#014 exports/seeds).
+// pre-#014 exports/seeds). `imageCopyright` (#094) is optional and
+// one-sided: only ever set alongside a `base64`/`url` `imageType`; missing
+// on import decodes as `null` (backward compatible with pre-#094 exports).
 //
 // The codec is pure Dart (no Drift) so UI share/picker code in #003 and the
 // repository import/export paths share validation. Import never overwrites:
@@ -50,6 +52,9 @@ class ShareItem {
   // #014: optional prompt-side image, both-or-neither with [imageContent].
   final String? imageType;
   final String? imageContent;
+  // #094: optional copyright/credit line, one-sided-paired with [imageType]
+  // (only ever set when it's `base64`/`url`).
+  final String? imageCopyright;
 
   const ShareItem({
     required this.type,
@@ -61,6 +66,7 @@ class ShareItem {
     this.hint = '',
     this.imageType,
     this.imageContent,
+    this.imageCopyright,
   });
 
   Map<String, dynamic> toJson() {
@@ -75,6 +81,7 @@ class ShareItem {
     if (hint.isNotEmpty) map['hint'] = hint;
     if (imageType != null) map['imageType'] = imageType;
     if (imageContent != null) map['imageContent'] = imageContent;
+    if (imageCopyright != null) map['imageCopyright'] = imageCopyright;
     return map;
   }
 }
@@ -292,6 +299,22 @@ ShareItem _decodeItem(int index, Map<dynamic, dynamic> raw, {DateTime? today}) {
     throw SetImportException('$prefix: $imageError');
   }
 
+  // #094: missing imageCopyright decodes as null (backward compatible with
+  // pre-#094 exports/seeds).
+  final imageCopyright = m['imageCopyright'];
+  if (imageCopyright != null && imageCopyright is! String) {
+    throw SetImportException('$prefix: imageCopyright must be a string');
+  }
+  final trimmedCopyright = (imageCopyright as String?)?.trim();
+  final cleanImageCopyright =
+      (trimmedCopyright == null || trimmedCopyright.isEmpty)
+      ? null
+      : trimmedCopyright;
+  final copyrightError = validateImageCopyright(imageType, cleanImageCopyright);
+  if (copyrightError != null) {
+    throw SetImportException('$prefix: $copyrightError');
+  }
+
   // Type-specific answer validation.
   if (type == 'phone' && !isValidPhoneAnswer(answer)) {
     throw SetImportException(
@@ -316,6 +339,7 @@ ShareItem _decodeItem(int index, Map<dynamic, dynamic> raw, {DateTime? today}) {
     hint: (hint as String?) ?? '',
     imageType: imageType,
     imageContent: cleanImageContent,
+    imageCopyright: cleanImageCopyright,
   );
 }
 
@@ -364,6 +388,13 @@ void validateShareSet(ShareSet set, {DateTime? today}) {
     final imageError = validateImagePair(item.imageType, item.imageContent);
     if (imageError != null) {
       throw SetImportException('$prefix: $imageError');
+    }
+    final copyrightError = validateImageCopyright(
+      item.imageType,
+      item.imageCopyright,
+    );
+    if (copyrightError != null) {
+      throw SetImportException('$prefix: $copyrightError');
     }
   }
 }

@@ -201,6 +201,88 @@ void main() {
     });
   });
 
+  group('imageCopyright (#094)', () {
+    test('missing imageCopyright decodes as null (backward compatible with '
+        'pre-#094 exports/seeds)', () {
+      final json = validSetJson();
+      (json['items'] as List)[0] = {
+        ...(json['items'] as List)[0] as Map,
+        'imageType': 'base64',
+        'imageContent': base64Encode([1, 2, 3]),
+      };
+      final set = decodeSetFromJson(json, today: kTestToday);
+      expect(set.items[0].imageCopyright, isNull);
+    });
+
+    test('a valid copyright paired with base64/url decodes, trimmed', () {
+      final json = validSetJson();
+      (json['items'] as List)[0] = {
+        ...(json['items'] as List)[0] as Map,
+        'imageType': 'url',
+        'imageContent': 'https://example.com/fox.png',
+        'imageCopyright': '  © Jane Doe  ',
+      };
+      final set = decodeSetFromJson(json, today: kTestToday);
+      expect(set.items[0].imageCopyright, '© Jane Doe');
+    });
+
+    test('a copyright on an emoji item is rejected — a system glyph has no '
+        'meaningful copyright', () {
+      final json = validSetJson();
+      (json['items'] as List)[0] = {
+        ...(json['items'] as List)[0] as Map,
+        'imageType': 'emoji',
+        'imageContent': '🐶',
+        'imageCopyright': '© Jane Doe',
+      };
+      expect(
+        () => decodeSetFromJson(json, today: kTestToday),
+        throwsA(isA<SetImportException>()),
+      );
+    });
+
+    test('a copyright without any image is rejected (one-sided: image can '
+        'exist without a copyright, not vice versa)', () {
+      final json = validSetJson();
+      (json['items'] as List)[0] = {
+        ...(json['items'] as List)[0] as Map,
+        'imageCopyright': '© Jane Doe',
+      };
+      expect(
+        () => decodeSetFromJson(json, today: kTestToday),
+        throwsA(isA<SetImportException>()),
+      );
+    });
+
+    test('a multi-line or over-120-char copyright is rejected', () {
+      final json = validSetJson();
+      (json['items'] as List)[0] = {
+        ...(json['items'] as List)[0] as Map,
+        'imageType': 'base64',
+        'imageContent': base64Encode([1, 2, 3]),
+        'imageCopyright': 'line one\nline two',
+      };
+      expect(
+        () => decodeSetFromJson(json, today: kTestToday),
+        throwsA(isA<SetImportException>()),
+      );
+    });
+
+    test('a non-string imageCopyright is rejected', () {
+      final json = validSetJson();
+      (json['items'] as List)[0] = {
+        ...(json['items'] as List)[0] as Map,
+        'imageType': 'base64',
+        'imageContent': base64Encode([1, 2, 3]),
+        'imageCopyright': 42,
+      };
+      expect(
+        () => decodeSetFromJson(json, today: kTestToday),
+        throwsA(isA<SetImportException>()),
+      );
+    });
+  });
+
   group('decodeSetFromJson — rejection cases', () {
     Future<void> expectRejects(
       Map<dynamic, dynamic> json, [
@@ -507,6 +589,32 @@ void main() {
       expect(viaString.items[0].imageContent, '🐶');
       expect(viaString.items[1].imageType, isNull);
       expect(viaString.items[1].imageContent, isNull);
+      expect(viaString.toJson(), original.toJson());
+    });
+
+    test('decode(encode(x)) round-trips imageCopyright (#094)', () {
+      const original = ShareSet(
+        title: 'Round',
+        description: '',
+        createdBy: 'teacher',
+        items: [
+          ShareItem(
+            type: 'choice',
+            prompt: 'Hund',
+            answer: 'dog',
+            imageType: 'url',
+            imageContent: 'https://example.com/fox.png',
+            imageCopyright: '© Jane Doe',
+          ),
+          ShareItem(type: 'phone', prompt: 'M', answer: '01711234567'),
+        ],
+      );
+      final viaString = decodeSetFromJson(
+        jsonDecode(original.encode()) as Map<String, dynamic>,
+        today: kTestToday,
+      );
+      expect(viaString.items[0].imageCopyright, '© Jane Doe');
+      expect(viaString.items[1].imageCopyright, isNull);
       expect(viaString.toJson(), original.toJson());
     });
   });

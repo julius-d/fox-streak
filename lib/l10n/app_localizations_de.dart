@@ -245,6 +245,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get errorInvalidImageUrl => 'Gib einen gültigen http(s)-Link ein';
 
   @override
+  String get itemImageCopyrightFieldLabel => 'Bildnachweis (optional)';
+
+  @override
+  String get errorInvalidImageCopyright =>
+      'Gib eine einzelne Zeile mit bis zu 120 Zeichen ein';
+
+  @override
+  String get fullScreenImageViewHint => 'Öffnet eine Vollbildansicht';
+
+  @override
   String get itemDayLabel => 'Tag';
 
   @override

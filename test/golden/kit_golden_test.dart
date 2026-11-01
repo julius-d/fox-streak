@@ -13,6 +13,7 @@
 // docs, which handle this the same way (Flutter Gold keeps one baseline
 // per platform). Regenerate scoped to this directory + your platform when
 // a kit widget's visuals intentionally change: see AGENTS.md.
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -20,6 +21,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fox_streak_app/src/pet/pet_catalog.dart';
 import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
 import 'package:fox_streak_app/src/widgets/widgets.dart';
+
+/// A minimal valid 1x1 transparent PNG, decodable by `Image.memory` (#094
+/// caption-bar golden).
+final _kTinyPng = base64Decode(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+A8AAQUAAdafFaMAAAAASUVORK5CYII=',
+);
 
 /// Baseline subfolder for the OS this test run is executing on.
 String get _goldenPlatformDir {
@@ -243,6 +250,29 @@ void main() {
           theme: theme,
           surfaceSize: const Size(140, 140),
           disableAnimations: true,
+        );
+      });
+    }
+  });
+
+  group('question image caption', () {
+    for (final (String themeName, ThemeData theme) in themes) {
+      testWidgets('question image caption ($themeName)', (
+        WidgetTester tester,
+      ) async {
+        await _expectGolden(
+          tester,
+          'fox_question_image_caption_$themeName',
+          FoxQuestionImage(
+            imageType: 'base64',
+            imageContent: base64Encode(_kTinyPng),
+            semanticLabel: 'A sticker',
+            imageCopyright: '© Jane Doe',
+            expandHint: 'Opens a full-screen view',
+            maxImageHeight: 120,
+          ),
+          theme: theme,
+          surfaceSize: const Size(220, 160),
         );
       });
     }

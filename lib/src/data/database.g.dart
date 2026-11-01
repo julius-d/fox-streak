@@ -592,6 +592,17 @@ class $ItemsTable extends Items with TableInfo<$ItemsTable, Item> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _imageCopyrightMeta = const VerificationMeta(
+    'imageCopyright',
+  );
+  @override
+  late final GeneratedColumn<String> imageCopyright = GeneratedColumn<String>(
+    'image_copyright',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -606,6 +617,7 @@ class $ItemsTable extends Items with TableInfo<$ItemsTable, Item> {
     position,
     imageType,
     imageContent,
+    imageCopyright,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -701,6 +713,15 @@ class $ItemsTable extends Items with TableInfo<$ItemsTable, Item> {
         ),
       );
     }
+    if (data.containsKey('image_copyright')) {
+      context.handle(
+        _imageCopyrightMeta,
+        imageCopyright.isAcceptableOrUnknown(
+          data['image_copyright']!,
+          _imageCopyrightMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -758,6 +779,10 @@ class $ItemsTable extends Items with TableInfo<$ItemsTable, Item> {
         DriftSqlType.string,
         data['${effectivePrefix}image_content'],
       ),
+      imageCopyright: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}image_copyright'],
+      ),
     );
   }
 
@@ -780,6 +805,7 @@ class Item extends DataClass implements Insertable<Item> {
   final int position;
   final String? imageType;
   final String? imageContent;
+  final String? imageCopyright;
   const Item({
     required this.id,
     required this.setId,
@@ -793,6 +819,7 @@ class Item extends DataClass implements Insertable<Item> {
     required this.position,
     this.imageType,
     this.imageContent,
+    this.imageCopyright,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -821,6 +848,9 @@ class Item extends DataClass implements Insertable<Item> {
     if (!nullToAbsent || imageContent != null) {
       map['image_content'] = Variable<String>(imageContent);
     }
+    if (!nullToAbsent || imageCopyright != null) {
+      map['image_copyright'] = Variable<String>(imageCopyright);
+    }
     return map;
   }
 
@@ -848,6 +878,9 @@ class Item extends DataClass implements Insertable<Item> {
       imageContent: imageContent == null && nullToAbsent
           ? const Value.absent()
           : Value(imageContent),
+      imageCopyright: imageCopyright == null && nullToAbsent
+          ? const Value.absent()
+          : Value(imageCopyright),
     );
   }
 
@@ -869,6 +902,7 @@ class Item extends DataClass implements Insertable<Item> {
       position: serializer.fromJson<int>(json['position']),
       imageType: serializer.fromJson<String?>(json['imageType']),
       imageContent: serializer.fromJson<String?>(json['imageContent']),
+      imageCopyright: serializer.fromJson<String?>(json['imageCopyright']),
     );
   }
   @override
@@ -887,6 +921,7 @@ class Item extends DataClass implements Insertable<Item> {
       'position': serializer.toJson<int>(position),
       'imageType': serializer.toJson<String?>(imageType),
       'imageContent': serializer.toJson<String?>(imageContent),
+      'imageCopyright': serializer.toJson<String?>(imageCopyright),
     };
   }
 
@@ -903,6 +938,7 @@ class Item extends DataClass implements Insertable<Item> {
     int? position,
     Value<String?> imageType = const Value.absent(),
     Value<String?> imageContent = const Value.absent(),
+    Value<String?> imageCopyright = const Value.absent(),
   }) => Item(
     id: id ?? this.id,
     setId: setId ?? this.setId,
@@ -916,6 +952,9 @@ class Item extends DataClass implements Insertable<Item> {
     position: position ?? this.position,
     imageType: imageType.present ? imageType.value : this.imageType,
     imageContent: imageContent.present ? imageContent.value : this.imageContent,
+    imageCopyright: imageCopyright.present
+        ? imageCopyright.value
+        : this.imageCopyright,
   );
   Item copyWithCompanion(ItemsCompanion data) {
     return Item(
@@ -937,6 +976,9 @@ class Item extends DataClass implements Insertable<Item> {
       imageContent: data.imageContent.present
           ? data.imageContent.value
           : this.imageContent,
+      imageCopyright: data.imageCopyright.present
+          ? data.imageCopyright.value
+          : this.imageCopyright,
     );
   }
 
@@ -954,7 +996,8 @@ class Item extends DataClass implements Insertable<Item> {
           ..write('hint: $hint, ')
           ..write('position: $position, ')
           ..write('imageType: $imageType, ')
-          ..write('imageContent: $imageContent')
+          ..write('imageContent: $imageContent, ')
+          ..write('imageCopyright: $imageCopyright')
           ..write(')'))
         .toString();
   }
@@ -973,6 +1016,7 @@ class Item extends DataClass implements Insertable<Item> {
     position,
     imageType,
     imageContent,
+    imageCopyright,
   );
   @override
   bool operator ==(Object other) =>
@@ -989,7 +1033,8 @@ class Item extends DataClass implements Insertable<Item> {
           other.hint == this.hint &&
           other.position == this.position &&
           other.imageType == this.imageType &&
-          other.imageContent == this.imageContent);
+          other.imageContent == this.imageContent &&
+          other.imageCopyright == this.imageCopyright);
 }
 
 class ItemsCompanion extends UpdateCompanion<Item> {
@@ -1005,6 +1050,7 @@ class ItemsCompanion extends UpdateCompanion<Item> {
   final Value<int> position;
   final Value<String?> imageType;
   final Value<String?> imageContent;
+  final Value<String?> imageCopyright;
   const ItemsCompanion({
     this.id = const Value.absent(),
     this.setId = const Value.absent(),
@@ -1018,6 +1064,7 @@ class ItemsCompanion extends UpdateCompanion<Item> {
     this.position = const Value.absent(),
     this.imageType = const Value.absent(),
     this.imageContent = const Value.absent(),
+    this.imageCopyright = const Value.absent(),
   });
   ItemsCompanion.insert({
     this.id = const Value.absent(),
@@ -1032,6 +1079,7 @@ class ItemsCompanion extends UpdateCompanion<Item> {
     required int position,
     this.imageType = const Value.absent(),
     this.imageContent = const Value.absent(),
+    this.imageCopyright = const Value.absent(),
   }) : setId = Value(setId),
        type = Value(type),
        prompt = Value(prompt),
@@ -1050,6 +1098,7 @@ class ItemsCompanion extends UpdateCompanion<Item> {
     Expression<int>? position,
     Expression<String>? imageType,
     Expression<String>? imageContent,
+    Expression<String>? imageCopyright,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1064,6 +1113,7 @@ class ItemsCompanion extends UpdateCompanion<Item> {
       if (position != null) 'position': position,
       if (imageType != null) 'image_type': imageType,
       if (imageContent != null) 'image_content': imageContent,
+      if (imageCopyright != null) 'image_copyright': imageCopyright,
     });
   }
 
@@ -1080,6 +1130,7 @@ class ItemsCompanion extends UpdateCompanion<Item> {
     Value<int>? position,
     Value<String?>? imageType,
     Value<String?>? imageContent,
+    Value<String?>? imageCopyright,
   }) {
     return ItemsCompanion(
       id: id ?? this.id,
@@ -1094,6 +1145,7 @@ class ItemsCompanion extends UpdateCompanion<Item> {
       position: position ?? this.position,
       imageType: imageType ?? this.imageType,
       imageContent: imageContent ?? this.imageContent,
+      imageCopyright: imageCopyright ?? this.imageCopyright,
     );
   }
 
@@ -1136,6 +1188,9 @@ class ItemsCompanion extends UpdateCompanion<Item> {
     if (imageContent.present) {
       map['image_content'] = Variable<String>(imageContent.value);
     }
+    if (imageCopyright.present) {
+      map['image_copyright'] = Variable<String>(imageCopyright.value);
+    }
     return map;
   }
 
@@ -1153,7 +1208,8 @@ class ItemsCompanion extends UpdateCompanion<Item> {
           ..write('hint: $hint, ')
           ..write('position: $position, ')
           ..write('imageType: $imageType, ')
-          ..write('imageContent: $imageContent')
+          ..write('imageContent: $imageContent, ')
+          ..write('imageCopyright: $imageCopyright')
           ..write(')'))
         .toString();
   }
@@ -3371,6 +3427,7 @@ typedef $$ItemsTableCreateCompanionBuilder = ItemsCompanion Function({
   required int position,
   Value<String?> imageType,
   Value<String?> imageContent,
+  Value<String?> imageCopyright,
 });
 typedef $$ItemsTableUpdateCompanionBuilder = ItemsCompanion Function({
   Value<int> id,
@@ -3385,6 +3442,7 @@ typedef $$ItemsTableUpdateCompanionBuilder = ItemsCompanion Function({
   Value<int> position,
   Value<String?> imageType,
   Value<String?> imageContent,
+  Value<String?> imageCopyright,
 });
 
 final class $$ItemsTableReferences
@@ -3488,6 +3546,11 @@ class $$ItemsTableFilterComposer extends Composer<_$AppDatabase, $ItemsTable> {
 
   ColumnFilters<String> get imageContent => $composableBuilder(
     column: $table.imageContent,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get imageCopyright => $composableBuilder(
+    column: $table.imageCopyright,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3604,6 +3667,11 @@ class $$ItemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get imageCopyright => $composableBuilder(
+    column: $table.imageCopyright,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$QuestionSetsTableOrderingComposer get setId {
     final $$QuestionSetsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -3673,6 +3741,11 @@ class $$ItemsTableAnnotationComposer
 
   GeneratedColumn<String> get imageContent => $composableBuilder(
     column: $table.imageContent,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get imageCopyright => $composableBuilder(
+    column: $table.imageCopyright,
     builder: (column) => column,
   );
 
@@ -3765,6 +3838,7 @@ class $$ItemsTableTableManager
                 Value<int> position = const Value.absent(),
                 Value<String?> imageType = const Value.absent(),
                 Value<String?> imageContent = const Value.absent(),
+                Value<String?> imageCopyright = const Value.absent(),
               }) => ItemsCompanion(
                 id: id,
                 setId: setId,
@@ -3778,6 +3852,7 @@ class $$ItemsTableTableManager
                 position: position,
                 imageType: imageType,
                 imageContent: imageContent,
+                imageCopyright: imageCopyright,
               ),
           createCompanionCallback:
               ({
@@ -3793,6 +3868,7 @@ class $$ItemsTableTableManager
                 required int position,
                 Value<String?> imageType = const Value.absent(),
                 Value<String?> imageContent = const Value.absent(),
+                Value<String?> imageCopyright = const Value.absent(),
               }) => ItemsCompanion.insert(
                 id: id,
                 setId: setId,
@@ -3806,6 +3882,7 @@ class $$ItemsTableTableManager
                 position: position,
                 imageType: imageType,
                 imageContent: imageContent,
+                imageCopyright: imageCopyright,
               ),
           withReferenceMapper: (p0) => p0
               .map(

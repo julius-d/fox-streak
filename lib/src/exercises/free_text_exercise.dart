@@ -118,7 +118,7 @@ class _FreeTextExerciseState extends State<FreeTextExercise> {
       widget.item.answerLang,
       widget.l10n,
     );
-    final image = buildItemImage(widget.item);
+    final image = buildItemImage(widget.item, l10n: widget.l10n);
 
     // Anchored to the top of the content area (#092), not vertically
     // centered: stays in the same place whether the keyboard is open or
