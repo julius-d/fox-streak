@@ -1,6 +1,6 @@
 # Issue 098: LootboxScreen's new PopScope(canPop: false) has no escape if the opening Lottie never loads
 
-Status: open | Priority: P3 | Type: tech-debt
+Status: done | Priority: P3 | Type: tech-debt | Completed-at: 2026-11-01
 
 ## Context
 
@@ -38,3 +38,22 @@ re-enables `canPop` so the user isn't trapped.
 
 Changing the reveal animation/content itself, or #082's `PopScope` additions
 to `StreakSavedScreen`/`XpUpScreen` (neither has this risk).
+
+## Summary
+
+Decided worth fixing: `_open()` now starts an `_openStallTimer`
+(`LootboxScreen.openStallTimeout`, `@visibleForTesting`, default 5s) that
+forces `_phase` to `revealed` if the real animation hasn't completed in
+time, keeping Continue reachable. `_handleAnimationStatus` guards against
+double-handling if the real animation finishes late after a forced reveal.
+New `test/pet/lootbox_screen_test.dart` (4 tests) drives the stall path via
+`openStallTimeout: Duration.zero`, since a real decode failure isn't
+reproducible from a bundled, always-valid test asset. No UI changed
+visually, so no screenshots.
+
+## Code review
+
+Reviewed via subagent (code-review skill, medium effort): no findings.
+Double-handling guards, dispose()'s timer cancellation, and the
+already-disposed-controller race (real `onLoaded` firing after a forced
+reveal) were all specifically traced and confirmed safe — n/a, not fixed.

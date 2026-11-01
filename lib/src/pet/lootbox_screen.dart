@@ -15,7 +15,13 @@
 // so callers just `await Navigator.push(...)` it like `FoxConfirmDialog`.
 // `PopScope(canPop: false)` (issue #082) blocks system back/swipe mid-reveal
 // — without it, swiping away while still closed would permanently hide a
-// reward `PetService.recordLessonCompletion()` already persisted.
+// reward `PetService.recordLessonCompletion()` already persisted. That
+// `PopScope` has no escape of its own if the opening Lottie never reaches
+// `AnimationStatus.completed` (composition failed to decode, decode stalls,
+// a future asset-pipeline regression) — `_openStallTimer` (issue #098) is
+// the fallback: if `_open()` hasn't reached `revealed` on its own well
+// within the real composition's duration, the stall is treated as a failed
+// open and the reveal is forced, keeping Continue reachable either way.
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -48,7 +54,21 @@ class LootboxScreen extends StatefulWidget {
   final LootboxReward reward;
   final AppLocalizations l10n;
 
-  const LootboxScreen({super.key, required this.reward, required this.l10n});
+  /// How long [_LootboxScreenState._open] waits for the opening Lottie to
+  /// reach `revealed` on its own before treating it as stalled (#098) and
+  /// forcing the reveal. Defaults to a few seconds, safely above the real
+  /// composition's own duration so it never fires on a normal open; tests
+  /// override it to exercise the stall fallback without depending on real
+  /// asset-decode timing.
+  @visibleForTesting
+  final Duration openStallTimeout;
+
+  const LootboxScreen({
+    super.key,
+    required this.reward,
+    required this.l10n,
+    @visibleForTesting this.openStallTimeout = const Duration(seconds: 5),
+  });
 
   @override
   State<LootboxScreen> createState() => _LootboxScreenState();
@@ -105,6 +125,11 @@ class _LootboxScreenState extends State<LootboxScreen>
   ).animate(CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut));
   Timer? _pulsePauseTimer;
 
+  // Started by [_open], cancelled once [_handleAnimationStatus] reaches
+  // `completed` on its own — the #098 stall fallback, see this file's
+  // header doc for why.
+  Timer? _openStallTimer;
+
   @override
   void initState() {
     super.initState();
@@ -138,13 +163,30 @@ class _LootboxScreenState extends State<LootboxScreen>
   @override
   void dispose() {
     _animationController.dispose();
+    _openStallTimer?.cancel();
     _pulsePauseTimer?.cancel();
     _pulseController.dispose();
     super.dispose();
   }
 
   void _handleAnimationStatus(AnimationStatus status) {
-    if (status == AnimationStatus.completed) {
+    if (status == AnimationStatus.completed &&
+        _phase != _LootboxPhase.revealed) {
+      _openStallTimer?.cancel();
+      _openStallTimer = null;
+      setState(() => _phase = _LootboxPhase.revealed);
+    }
+  }
+
+  /// Fallback for issue #098: fires if [_open] hasn't reached `revealed` on
+  /// its own within [LootboxScreen.openStallTimeout] — the opening Lottie
+  /// never called [_handleCompositionLoaded], or never fired
+  /// [_handleAnimationStatus]'s `completed` status. Forcing the reveal
+  /// (rather than e.g. re-enabling `canPop`) keeps the reward itself
+  /// visible and Continue reachable, matching the normal completion path
+  /// in everything but skipping the animation that got stuck.
+  void _handleOpenStalled() {
+    if (_phase == _LootboxPhase.opening) {
       setState(() => _phase = _LootboxPhase.revealed);
     }
   }
@@ -200,6 +242,7 @@ class _LootboxScreenState extends State<LootboxScreen>
     }
     _stopPulse();
     setState(() => _phase = _LootboxPhase.opening);
+    _openStallTimer = Timer(widget.openStallTimeout, _handleOpenStalled);
     if (_compositionLoaded) {
       _animationController.forward();
     } else {
