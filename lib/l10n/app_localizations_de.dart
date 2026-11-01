@@ -803,4 +803,39 @@ class AppLocalizationsDe extends AppLocalizations {
   String streakCalendarCellStreakOnIceLabel(String day) {
     return '$day: Streak-Freeze genutzt';
   }
+
+  @override
+  String get coinShopTitle => 'Münzladen';
+
+  @override
+  String coinShopBuyButtonLabel(int price) {
+    return 'Für $price Münzen kaufen';
+  }
+
+  @override
+  String get coinShopConfirmTitle => 'Streak-Freeze kaufen?';
+
+  @override
+  String coinShopConfirmMessage(int price) {
+    return '$price Münzen für einen Streak-Freeze ausgeben?';
+  }
+
+  @override
+  String get coinShopPurchaseSuccessMessage =>
+      'Du hast einen Streak-Freeze gekauft! ❄️';
+
+  @override
+  String coinShopStreakOnIceCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Streak-Freezes',
+      one: '1 Streak-Freeze',
+      zero: 'Noch keine Streak-Freezes',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get homeCoinShopSemanticLabel => 'Münzladen öffnen';
 }

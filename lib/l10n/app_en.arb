@@ -936,5 +936,46 @@
       "day": {"type": "String"}
     }
   },
-  "streakCalendarCellStreakOnIceLabel": "{day}: streak freeze used"
+  "streakCalendarCellStreakOnIceLabel": "{day}: streak freeze used",
+  "@coinShopTitle": {
+    "description": "AppBar title for the coin shop screen, reached by tapping Home's CoinBadge (issue #091)",
+    "placeholders": {}
+  },
+  "coinShopTitle": "Coin shop",
+  "@coinShopBuyButtonLabel": {
+    "description": "Buy button label on the coin shop screen, interpolating the fixed streak-on-ice price; also reused as the confirm-dialog's confirm button label (issue #091)",
+    "placeholders": {
+      "price": {"type": "int"}
+    }
+  },
+  "coinShopBuyButtonLabel": "Buy for {price} coins",
+  "@coinShopConfirmTitle": {
+    "description": "Title of the FoxConfirmDialog shown when tapping the coin shop's buy button (issue #091)",
+    "placeholders": {}
+  },
+  "coinShopConfirmTitle": "Buy streak on ice?",
+  "@coinShopConfirmMessage": {
+    "description": "Message of the FoxConfirmDialog shown when tapping the coin shop's buy button, interpolating the fixed price (issue #091)",
+    "placeholders": {
+      "price": {"type": "int"}
+    }
+  },
+  "coinShopConfirmMessage": "Spend {price} coins for one streak on ice?",
+  "@coinShopPurchaseSuccessMessage": {
+    "description": "Success banner message shown on the coin shop screen after a completed purchase (issue #091)",
+    "placeholders": {}
+  },
+  "coinShopPurchaseSuccessMessage": "You bought a streak on ice! ❄️",
+  "@coinShopStreakOnIceCountLabel": {
+    "description": "Coin shop screen label showing the current streakFreezesAvailable balance (issue #091)",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "coinShopStreakOnIceCountLabel": "{count, plural, =0{No streak on ice yet} =1{1 streak on ice} other{{count} streak on ice}}",
+  "@homeCoinShopSemanticLabel": {
+    "description": "A11y label for Home's tap-to-open coin shop button (issue #091)",
+    "placeholders": {}
+  },
+  "homeCoinShopSemanticLabel": "Open the coin shop"
 }

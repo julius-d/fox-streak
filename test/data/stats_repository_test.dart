@@ -267,6 +267,40 @@ void main() {
     });
   });
 
+  group('spendCoins', () {
+    test('deducts amount from coinsTotal and returns true when the balance '
+        'covers it', () async {
+      await repo.addCoins(3000);
+      expect(await repo.spendCoins(2500), isTrue);
+      expect((await repo.getProfile()).coinsTotal, 500);
+    });
+
+    test('a later call can spend the remaining balance down to 0', () async {
+      await repo.addCoins(2500);
+      await repo.spendCoins(2500);
+      expect((await repo.getProfile()).coinsTotal, 0);
+    });
+
+    test('no-ops rather than going negative, and returns false, when '
+        'amount exceeds the balance', () async {
+      await repo.addCoins(100);
+      expect(await repo.spendCoins(2500), isFalse);
+      expect((await repo.getProfile()).coinsTotal, 100);
+    });
+
+    test(
+      'never touches streakFreezesAvailable or other profile fields',
+      () async {
+        await repo.addCoins(3000);
+        await repo.addXp(10, now: kTestToday);
+        await repo.spendCoins(2500);
+        final profile = await repo.getProfile();
+        expect(profile.streakFreezesAvailable, 0);
+        expect(profile.xpTotal, 10);
+      },
+    );
+  });
+
   group('addStreakFreezes', () {
     test('a positive delta increments the lifetime balance', () async {
       await repo.addStreakFreezes(1);

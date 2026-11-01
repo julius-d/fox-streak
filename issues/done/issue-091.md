@@ -1,6 +1,6 @@
 # Issue 091: Coin shop — buy streak on ice with coins
 
-Status: open | Priority: P3 | Type: feature | Refined-at: 2026-10-31
+Status: done | Priority: P3 | Type: feature | Refined-at: 2026-10-31 | Completed-at: 2026-11-01
 
 ## Context
 
@@ -93,28 +93,28 @@ streak on ice at a fixed price of 2500 coins.
 
 ## Acceptance criteria
 
-- [ ] `StatsRepository.spendCoins(int amount)` deducts from `coinsTotal`;
+- [x] `StatsRepository.spendCoins(int amount)` deducts from `coinsTotal`;
   doc comment on `coinsTotal` updated to list both callers (add/spend).
-- [ ] `CoinBadge` on Home is wrapped in an `InkWell`
+- [x] `CoinBadge` on Home is wrapped in an `InkWell`
   (`Key('coinBadgeButton')`) that pushes `CoinShopScreen`; visibility
   stays gated on `profile.coinsTotal > 0`, unchanged from today.
-- [ ] `CoinShopScreen` displays the current coin balance and current
+- [x] `CoinShopScreen` displays the current coin balance and current
   `streakFreezesAvailable` count, both live (via the watched profile
   provider, updating immediately after a purchase).
-- [ ] A "Buy" button, labelled with the 2500-coin price, is disabled when
+- [x] A "Buy" button, labelled with the 2500-coin price, is disabled when
   `coinsTotal < 2500` and enabled otherwise.
-- [ ] Tapping "Buy" while enabled shows a `FoxConfirmDialog`; confirming
+- [x] Tapping "Buy" while enabled shows a `FoxConfirmDialog`; confirming
   calls `spendCoins(2500)` and #087's increment method (+1), and shows a
   success banner + haptic. Cancelling/dismissing the dialog does nothing.
-- [ ] After a successful buy, the user can immediately buy again if
+- [x] After a successful buy, the user can immediately buy again if
   `coinsTotal` is still ≥ 2500 — no one-buy-per-visit limit, no stockpile
   cap.
-- [ ] New DE+EN l10n strings added for all new user-visible copy; no
+- [x] New DE+EN l10n strings added for all new user-visible copy; no
   hardcoded strings in `CoinShopScreen` or the confirm dialog.
-- [ ] Tests: a `StatsRepository` test for `spendCoins` (including the
+- [x] Tests: a `StatsRepository` test for `spendCoins` (including the
   insufficient-balance guard), and a widget test covering the Home →
   CoinShopScreen navigation and the disabled/enabled buy-button states.
-- [ ] `flutter analyze` and `dart format` clean; `flutter test` green.
+- [x] `flutter analyze` and `dart format` clean; `flutter test` green.
 
 ## Out of scope
 
@@ -123,3 +123,26 @@ streak on ice at a fixed price of 2500 coins.
 - Bulk pricing, discounts, or any price other than the fixed 2500.
 - Any other shop item besides streak on ice (a single-item shop screen
   for now).
+
+## Summary
+
+Added `StatsRepository.spendCoins` (returns whether it deducted; no-ops
+rather than going negative) + new `lib/src/shop/coin_shop_screen.dart`,
+reached via Home's `CoinBadge` now wrapped in a 48dp `InkWell`/`Semantics`
+button (`coinBadgeButton`). The screen shows the live coin balance, an
+icy-blue streak-on-ice count (`FoxSemanticColors.ice`), and a
+`FoxPrimaryButton` gated on affordability; confirming via
+`FoxConfirmDialog` spends 2500 coins and calls #087's `addStreakFreezes(1)`
+in one transaction — only if the spend actually succeeded — then shows a
+success banner + haptic. New DE/EN l10n strings throughout. Covered by a
+repository test, a widget test, and a new
+`integration_test/issue091_coin_shop_test.dart`.
+
+## Code review
+
+A medium-effort review of the full worktree diff found one issue:
+`addStreakFreezes(1)` ran unconditionally after `spendCoins`, so a future
+no-op spend (insufficient balance) would still grant a free streak freeze.
+Fixed: `spendCoins` now returns a `bool`; the freeze is only granted when
+the spend actually succeeded, with a repository test asserting the return
+value on both paths.

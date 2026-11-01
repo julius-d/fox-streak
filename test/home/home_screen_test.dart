@@ -520,6 +520,23 @@ void main() {
     },
   );
 
+  testWidgets('tapping the coin badge opens CoinShopScreen (issue #091)', (
+    tester,
+  ) async {
+    final clock = FakeClock(kTestToday);
+    await pumpOnboardedHome(
+      tester,
+      clock,
+      seed: (stats, sets) => stats.addCoins(42),
+    );
+
+    await tester.tap(find.byKey(const Key('coinBadgeButton')));
+    await settle(tester);
+
+    expect(find.byKey(const Key('coinShopScreen')), findsOneWidget);
+    await unmount(tester);
+  });
+
   testWidgets(
     'goal ring shows 0 / dailyGoalXp, not a stale prior-day full value, '
     'when lastActiveDay is before today (issue #036)',

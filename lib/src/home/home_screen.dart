@@ -26,6 +26,7 @@ import '../pet/pet_collection_screen.dart';
 import '../pet/pet_providers.dart';
 import '../settings/settings_providers.dart';
 import '../settings/settings_screen.dart';
+import '../shop/coin_shop_screen.dart';
 import '../stats/stats_providers.dart';
 import '../stats/streak_details_screen.dart';
 import '../stats/streak_freeze_service.dart';
@@ -221,13 +222,35 @@ class _HomeDashboard extends ConsumerWidget {
                   ),
                   if (profile.coinsTotal > 0) ...[
                     const SizedBox(width: FoxSpacing.sm),
-                    CoinBadge(
-                      key: const Key('coinBadge'),
-                      coinsCountLabel: l10n.homeCoinsCountLabel(
-                        profile.coinsTotal,
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        minHeight: FoxButtonMetrics.minSize,
                       ),
-                      semanticsLabel: l10n.coinsSemanticLabel(
-                        profile.coinsTotal,
+                      child: InkWell(
+                        key: const Key('coinBadgeButton'),
+                        borderRadius: const BorderRadius.all(
+                          Radius.circular(FoxRadius.pill),
+                        ),
+                        onTap: () => Navigator.of(context).push<void>(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const CoinShopScreen(),
+                          ),
+                        ),
+                        child: MergeSemantics(
+                          child: Semantics(
+                            button: true,
+                            label: l10n.homeCoinShopSemanticLabel,
+                            child: CoinBadge(
+                              key: const Key('coinBadge'),
+                              coinsCountLabel: l10n.homeCoinsCountLabel(
+                                profile.coinsTotal,
+                              ),
+                              semanticsLabel: l10n.coinsSemanticLabel(
+                                profile.coinsTotal,
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ],

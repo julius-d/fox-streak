@@ -800,4 +800,38 @@ class AppLocalizationsEn extends AppLocalizations {
   String streakCalendarCellStreakOnIceLabel(String day) {
     return '$day: streak freeze used';
   }
+
+  @override
+  String get coinShopTitle => 'Coin shop';
+
+  @override
+  String coinShopBuyButtonLabel(int price) {
+    return 'Buy for $price coins';
+  }
+
+  @override
+  String get coinShopConfirmTitle => 'Buy streak on ice?';
+
+  @override
+  String coinShopConfirmMessage(int price) {
+    return 'Spend $price coins for one streak on ice?';
+  }
+
+  @override
+  String get coinShopPurchaseSuccessMessage => 'You bought a streak on ice! ❄️';
+
+  @override
+  String coinShopStreakOnIceCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count streak on ice',
+      one: '1 streak on ice',
+      zero: 'No streak on ice yet',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get homeCoinShopSemanticLabel => 'Open the coin shop';
 }

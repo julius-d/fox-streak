@@ -1403,6 +1403,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{day}: streak freeze used'**
   String streakCalendarCellStreakOnIceLabel(String day);
+
+  /// AppBar title for the coin shop screen, reached by tapping Home's CoinBadge (issue #091)
+  ///
+  /// In en, this message translates to:
+  /// **'Coin shop'**
+  String get coinShopTitle;
+
+  /// Buy button label on the coin shop screen, interpolating the fixed streak-on-ice price; also reused as the confirm-dialog's confirm button label (issue #091)
+  ///
+  /// In en, this message translates to:
+  /// **'Buy for {price} coins'**
+  String coinShopBuyButtonLabel(int price);
+
+  /// Title of the FoxConfirmDialog shown when tapping the coin shop's buy button (issue #091)
+  ///
+  /// In en, this message translates to:
+  /// **'Buy streak on ice?'**
+  String get coinShopConfirmTitle;
+
+  /// Message of the FoxConfirmDialog shown when tapping the coin shop's buy button, interpolating the fixed price (issue #091)
+  ///
+  /// In en, this message translates to:
+  /// **'Spend {price} coins for one streak on ice?'**
+  String coinShopConfirmMessage(int price);
+
+  /// Success banner message shown on the coin shop screen after a completed purchase (issue #091)
+  ///
+  /// In en, this message translates to:
+  /// **'You bought a streak on ice! ❄️'**
+  String get coinShopPurchaseSuccessMessage;
+
+  /// Coin shop screen label showing the current streakFreezesAvailable balance (issue #091)
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No streak on ice yet} =1{1 streak on ice} other{{count} streak on ice}}'**
+  String coinShopStreakOnIceCountLabel(int count);
+
+  /// A11y label for Home's tap-to-open coin shop button (issue #091)
+  ///
+  /// In en, this message translates to:
+  /// **'Open the coin shop'**
+  String get homeCoinShopSemanticLabel;
 }
 
 class _AppLocalizationsDelegate

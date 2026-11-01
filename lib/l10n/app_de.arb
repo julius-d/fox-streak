@@ -845,5 +845,46 @@
       "day": {"type": "String"}
     }
   },
-  "streakCalendarCellStreakOnIceLabel": "{day}: Streak-Freeze genutzt"
+  "streakCalendarCellStreakOnIceLabel": "{day}: Streak-Freeze genutzt",
+  "@coinShopTitle": {
+    "description": "AppBar title for the coin shop screen, reached by tapping Home's CoinBadge (issue #091)",
+    "placeholders": {}
+  },
+  "coinShopTitle": "Münzladen",
+  "@coinShopBuyButtonLabel": {
+    "description": "Buy button label on the coin shop screen, interpolating the fixed streak-on-ice price; also reused as the confirm-dialog's confirm button label (issue #091)",
+    "placeholders": {
+      "price": {"type": "int"}
+    }
+  },
+  "coinShopBuyButtonLabel": "Für {price} Münzen kaufen",
+  "@coinShopConfirmTitle": {
+    "description": "Title of the FoxConfirmDialog shown when tapping the coin shop's buy button (issue #091)",
+    "placeholders": {}
+  },
+  "coinShopConfirmTitle": "Streak-Freeze kaufen?",
+  "@coinShopConfirmMessage": {
+    "description": "Message of the FoxConfirmDialog shown when tapping the coin shop's buy button, interpolating the fixed price (issue #091)",
+    "placeholders": {
+      "price": {"type": "int"}
+    }
+  },
+  "coinShopConfirmMessage": "{price} Münzen für einen Streak-Freeze ausgeben?",
+  "@coinShopPurchaseSuccessMessage": {
+    "description": "Success banner message shown on the coin shop screen after a completed purchase (issue #091)",
+    "placeholders": {}
+  },
+  "coinShopPurchaseSuccessMessage": "Du hast einen Streak-Freeze gekauft! ❄️",
+  "@coinShopStreakOnIceCountLabel": {
+    "description": "Coin shop screen label showing the current streakFreezesAvailable balance (issue #091)",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "coinShopStreakOnIceCountLabel": "{count, plural, =0{Noch keine Streak-Freezes} =1{1 Streak-Freeze} other{{count} Streak-Freezes}}",
+  "@homeCoinShopSemanticLabel": {
+    "description": "A11y label for Home's tap-to-open coin shop button (issue #091)",
+    "placeholders": {}
+  },
+  "homeCoinShopSemanticLabel": "Münzladen öffnen"
 }

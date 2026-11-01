@@ -36,11 +36,13 @@ enum DailyActivitySource { lessonCompleted, streakOnIce }
 /// - `equippedPetId`/`lessonsCompletedToday`/`lessonsCompletedDay` are
 ///   written exclusively by #059 `PetService`, via
 ///   [setEquippedPet]/[setPetLessonCounter].
-/// - `coinsTotal` is written exclusively by #065 `PetService`'s
-///   coin-reward branch, via [addCoins].
+/// - `coinsTotal` is written by #065 `PetService`'s coin-reward branch
+///   (adds, via [addCoins]) and, since #091, `CoinShopScreen`'s buy flow
+///   (spends, via [spendCoins]).
 /// - `streakFreezesAvailable` is written via [addStreakFreezes] (issue
-///   #087): #059 `PetService`'s wheel-of-fortune branch (+1 on a win) and
-///   `StreakFreezeService`'s app-launch auto-apply (-1 on consumption).
+///   #087): #059 `PetService`'s wheel-of-fortune branch (+1 on a win),
+///   `StreakFreezeService`'s app-launch auto-apply (-1 on consumption),
+///   and, since #091, `CoinShopScreen`'s buy flow (+1 on a purchase).
 /// - `daily_activity` (issue #084) is not a single-feature sole-writer
 ///   column like the rest of this class — [recordDailyActivity] is called
 ///   by #010 `XpService.applyLessonResult` and, since #087, by
@@ -222,8 +224,7 @@ class StatsRepository {
   }
 
   /// Adds [amount] coins to the lifetime `coinsTotal` balance (issue #065).
-  /// Sole caller: #065 `PetService.recordLessonCompletion`'s coin-reward
-  /// branch.
+  /// Caller: #065 `PetService.recordLessonCompletion`'s coin-reward branch.
   Future<void> addCoins(int amount) async {
     final profile = await getProfile();
     await (_db.update(
@@ -231,6 +232,25 @@ class StatsRepository {
     )..where((t) => t.id.equals(kProfileId))).write(
       ProfileStatsCompanion(coinsTotal: Value(profile.coinsTotal + amount)),
     );
+  }
+
+  /// Deducts [amount] coins from the lifetime `coinsTotal` balance (issue
+  /// #091), returning whether the deduction happened. Kept separate from
+  /// [addCoins] (not a negative-amount call) for clearer intent. No-ops —
+  /// leaves `coinsTotal` untouched, returns `false` — if [amount] exceeds
+  /// the current balance, rather than going negative; this is a defensive
+  /// guard (the sole caller, `CoinShopScreen`, already disables its buy
+  /// button once the balance is insufficient) that callers granting a
+  /// reward for the spend MUST check before doing so.
+  Future<bool> spendCoins(int amount) async {
+    final profile = await getProfile();
+    if (amount > profile.coinsTotal) return false;
+    await (_db.update(
+      _db.profileStats,
+    )..where((t) => t.id.equals(kProfileId))).write(
+      ProfileStatsCompanion(coinsTotal: Value(profile.coinsTotal - amount)),
+    );
+    return true;
   }
 
   /// Adds [delta] to the lifetime `streakFreezesAvailable` balance (issue

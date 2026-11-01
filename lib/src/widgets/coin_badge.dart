@@ -1,8 +1,9 @@
 // Coin balance badge, composed on the #015 kit (issue #080).
 //
-// Dumb/display-only, same shape as StreakBadge: a pill of icon + number,
-// tinted via FoxSemanticColors.coin. Display-only — no tap target, no
-// `Semantics(button: true)`, since there's no spending mechanic yet.
+// Dumb/display, same shape as StreakBadge: a pill of icon + number, tinted
+// via FoxSemanticColors.coin. Stays `Semantics(button: true)`-free itself —
+// same as StreakBadge — since Home (#091) wraps it in its own tappable
+// InkWell + button semantics to open CoinShopScreen.
 import 'package:flutter/material.dart';
 
 import '../theme/fox_streak_theme.dart';
