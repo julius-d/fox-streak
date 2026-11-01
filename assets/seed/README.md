@@ -57,3 +57,17 @@ explicit `choices` — distractors come entirely from the same-set fallback
 `demo_animals.foxstreak.json`'s "Hund"/"dog" item (#014) carries
 `"imageType": "emoji"` / `"imageContent": "🐶"` as the end-to-end example of
 the prompt-side image field.
+
+`demo_bundeslaender_shapes.foxstreak.json` is the `base64` counterpart to
+the above: all 16 Bundesländer again, but the prompt is the same fixed
+question ("Welches Bundesland ist das?") for every item — the map outline
+in `imageContent` is the actual content being tested, and the answer is the
+state name, so the prompt text alone must never give it away. No
+`promptLang`/`answerLang`/explicit `choices` either, for the same same-set
+distractor fallback as the capitals quiz. Images are downsized (max 300px)
+PNGs, not the source SVGs — `FoxItemImage`'s `base64` path renders via
+`Image.memory`, which cannot decode SVG.
+
+Both Bundesländer seeds' map images are boundary polygons sourced from
+OpenStreetMap (via Nominatim), licensed ODbL — every item carries
+`"imageCopyright": "© OpenStreetMap contributors"` (#094) accordingly.

@@ -103,7 +103,7 @@ void main() {
         );
         expect(id, isPositive);
       }
-      expect(await sets.getAllSets(), hasLength(4));
+      expect(await sets.getAllSets(), hasLength(5));
     });
 
     test(
@@ -123,9 +123,49 @@ void main() {
           expect(item.promptLang, isNull);
           expect(item.answerLang, isNull);
           expect(item.choices, isNull);
+          // OSM/Nominatim boundary data requires visible attribution
+          // wherever these maps are shipped (ODbL).
+          expect(item.imageCopyright, '© OpenStreetMap contributors');
         }
       },
     );
+
+    test('demo_bundeslaender_shapes seed is 16 base64-image choice items whose '
+        'prompt never leaks the answer', () async {
+      final raw = await File(
+        'assets/seed/demo_bundeslaender_shapes.foxstreak.json',
+      ).readAsString();
+      final decoded = jsonDecode(raw) as Map<String, dynamic>;
+      expect(decoded['category'], 'geography');
+      final id = await sets.importSetFromJson(
+        Map<dynamic, dynamic>.from(decoded),
+        today: kTestToday,
+      );
+      final items = await sets.getItemsForSet(id);
+      expect(items, hasLength(16));
+      final answers = <String>{};
+      for (final item in items) {
+        expect(item.type, 'choice');
+        expect(item.promptLang, isNull);
+        expect(item.answerLang, isNull);
+        expect(item.choices, isNull);
+        expect(item.imageType, 'base64');
+        expect(item.imageContent, isNotNull);
+        expect(base64Decode(item.imageContent!), isNotEmpty);
+        // OSM/Nominatim boundary data requires visible attribution
+        // wherever these maps are shipped (ODbL).
+        expect(item.imageCopyright, '© OpenStreetMap contributors');
+        // The map image is the actual content being tested — the prompt
+        // text must stay generic so it never gives away the answer.
+        expect(
+          item.prompt.toLowerCase(),
+          isNot(contains(item.answer.toLowerCase())),
+        );
+        answers.add(item.answer);
+      }
+      // All 16 Bundesländer, no duplicates.
+      expect(answers, hasLength(16));
+    });
 
     test('demo_times_tables seed is 78 unique math choice facts, category '
         '"math" (#045)', () async {
