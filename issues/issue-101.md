@@ -58,21 +58,38 @@ user:
   existing `imageType: "url"` share format, #094) so a marketplace can host
   images alongside its JSON on the same static site — no new image pipeline
   needed.
-- **Item identity (format change):** the share format gains a new **optional**
-  per-item `id` field (any non-empty string, publisher-assigned, unique
-  within the set). It's what lets the app tell "the same item" apart across
-  two versions of a marketplace set, so an update can keep progress for
-  items that didn't change and only reset progress for items that are new
-  or genuinely edited. Absent on hand-created/legacy sets (backward
-  compatible, same opt-in pattern as `imageType`/`imageCopyright`); a
-  marketplace Set is expected to always set it so updates work as intended.
-  Matching an item across versions without this field falls back to "no
-  match" (treated as a new item) — the app does not try to guess sameness
-  from content. **This needs `docs/question-set-format.md` and
-  `docs/question-set.schema.json` updated as part of this issue.**
+- **Item & Set identity (format change):** the share format gains two new
+  **optional** UUID fields:
+  - a top-level `id` on the Set itself — identifies "this set", independent
+    of where it's hosted or which pack lists it.
+  - a per-item `id` — identifies "this item" within its set, so an update
+    can tell which items are unchanged.
+
+  Both must be a valid UUID when present (RFC 4122 shape — the standard
+  8-4-4-4-12 hex-with-hyphens grouping, case-insensitive; version/variant
+  nibbles aren't checked, so v4/v5/etc. all work). Both are absent on
+  hand-created/legacy sets (backward compatible, same opt-in pattern as
+  `imageType`/`imageCopyright`); a marketplace Set is expected to always
+  set both so updates work as intended, and its pack listing's `sets[].id`
+  (see Marketplace API below) is expected to equal the Set file's own
+  top-level `id` — the app doesn't cross-validate this in v1 (see
+  Out of scope). Matching an item across versions without the per-item `id`
+  falls back to "no match" (treated as a new item) — the app does not try
+  to guess sameness from content. **This needs `docs/question-set-format.md`
+  and `docs/question-set.schema.json` updated as part of this issue.**
 - **Managing sources:** "add a marketplace" (enter a URL) and removing a
   previously-added one both live directly on the Marketplace browse screen
   — no separate Settings section.
+- **Adding a source — URL shorthand:** the URL field accepts either the
+  full manifest URL (anything ending in `.json`, e.g.
+  `https://example.github.io/my-marketplace/marketplace.json`) or a bare
+  base URL (anything not ending in `.json`, e.g. `https://example.github.io`
+  or `https://example.github.io/my-marketplace`) — for a base URL, the app
+  appends `/marketplace.json` (inserting the `/` only if the input doesn't
+  already end with one) before fetching. This is a single, deterministic
+  rule applied before any network call, not a try-then-fallback — a
+  mistyped `.json` filename still surfaces as one normal fetch error (see
+  Error handling above), not a confusing double request.
 - **Set preview action:** a single contextual primary button: "Add to
   Library" (never imported before), "Update" (imported before and the
   marketplace copy changed), or a disabled "Already up to date" state
@@ -86,15 +103,30 @@ user:
 ## Marketplace API (v1)
 
 Three plain `GET`s, each returning JSON, each resource pointing at the next
-via an explicit `url` (absolute, or relative to the URL it was fetched
-from) — so a publisher is free to lay files out however they like (one
-flat folder or a nested structure) and the app never has to guess a path.
-No auth, no query params, no pagination in v1 — catalogs are expected to
-be small/hand-maintained. A non-200 response or invalid JSON at any step is
-a fetch error (see "Error handling" above).
+via an explicit `url`, **relative to the URL it was fetched from** — so a
+publisher is free to lay files out however they like (one flat folder or a
+nested structure) and the app never has to guess a path. No auth, no query
+params, no pagination in v1 — catalogs are expected to be small/
+hand-maintained. A non-200 response, invalid JSON, or a `url` that isn't
+relative to the fetched document at any step is a fetch error (see "Error
+handling" above).
 
-**1. Marketplace manifest** — the URL the user types in when adding a
-source, e.g. `https://example.github.io/my-marketplace/marketplace.json`:
+**Relative-only `url`, for security:** `packs[].url` and `sets[].url` must
+be relative (resolved against the document they were fetched from using
+standard relative-URL resolution) — an absolute URL (has a scheme, e.g.
+`https://`) or a protocol-relative one (starts with `//`) is rejected as a
+fetch error, not followed. The marketplace manifest URL the user explicitly
+types in when adding a source is the only trust anchor; relative-only
+resolution keeps every subsequent fetch on that same origin
+(scheme+host+port), so a manifest can never silently redirect the app to
+fetch from a different, unapproved host. This doesn't affect the
+pre-existing `imageType: "url"` image field inside a Set (#094) — that's a
+separate, already-absolute-URL mechanism, unchanged by this issue.
+
+**1. Marketplace manifest** — fetched from the URL the user types in when
+adding a source, or from that URL + `/marketplace.json` if it doesn't
+already end in `.json` (see "Adding a source — URL shorthand" above), e.g.
+`https://example.github.io/my-marketplace/marketplace.json`:
 
 ```json
 {
@@ -104,7 +136,7 @@ source, e.g. `https://example.github.io/my-marketplace/marketplace.json`:
   "description": "Language packs for German-speaking families",
   "packs": [
     {
-      "id": "english-for-germans",
+      "id": "c56a4180-65aa-42ec-a945-5fd21dec0538",
       "title": "English for Germans",
       "description": "Vocabulary packs for German speakers learning English",
       "url": "packs/english-for-germans.json"
@@ -113,17 +145,22 @@ source, e.g. `https://example.github.io/my-marketplace/marketplace.json`:
 }
 ```
 
-**2. Pack listing** — fetched from a pack's `url`:
+**2. Pack listing** — fetched from a pack's `url`. Its top-level `id` is
+**required** (not optional like the Set/item ids — this document type is
+new in this issue, so there's no legacy-file backward-compatibility
+concern) and is expected to equal the manifest's `packs[].id` entry for
+this pack:
 
 ```json
 {
   "format": "foxstreak-pack",
   "version": 1,
+  "id": "c56a4180-65aa-42ec-a945-5fd21dec0538",
   "title": "English for Germans",
   "description": "Vocabulary packs for German speakers learning English",
   "sets": [
     {
-      "id": "level-1-animals",
+      "id": "3f2504e0-4f89-41d3-9a0c-0305e82c3301",
       "title": "Animals",
       "description": "Basic animal vocabulary",
       "category": "vocab",
@@ -136,16 +173,18 @@ source, e.g. `https://example.github.io/my-marketplace/marketplace.json`:
 ```
 
 **3. Set** — fetched from a set's `url`: exactly today's existing
-`.foxstreak.json` v1 payload (#002/#094), unchanged except items may now
-carry the new optional `id` field (see Decisions above). Images referenced
-inside it with `imageType: "url"` are expected to live on the same static
-host.
+`.foxstreak.json` v1 payload (#002/#094), unchanged except it may now carry
+a top-level `id` and items may now carry a per-item `id` (both new optional
+UUID fields, see Decisions above). Images referenced inside it with
+`imageType: "url"` are expected to live on the same static host.
 
-**Identity:** `packs[].id` is unique within a manifest; `sets[].id` is
-unique within a pack. The app's "already imported" / "update available" /
-"already up to date" check (Decisions above) is keyed on
-`(marketplace URL, pack id, set id)`, comparing the listing's `updatedAt`
-against the value stored at the set's last import/update.
+**Identity:** `packs[].id` is unique within a manifest and is a UUID,
+expected to equal the Pack listing's own top-level `id` once downloaded.
+`sets[].id` is unique within a pack and is a UUID, expected to equal the
+Set file's own top-level `id` once downloaded (Decisions above). The app's
+"already imported" / "update available" / "already up to date" check is
+keyed on `(marketplace URL, pack id, set id)`, comparing the listing's
+`updatedAt` against the value stored at the set's last import/update.
 
 **`format`/`version` envelopes** on the manifest and pack listing mirror
 the existing Set format's self-describing convention — lets the app reject
@@ -162,6 +201,11 @@ v1 publishers.
 - Authentication/paid content/monetization.
 - A merged "all sources" view — sources are browsed one at a time.
 - Any proactive "update available" notification on the Library screen.
+- Cross-validating that a manifest's `packs[].id` matches the fetched Pack
+  listing's own top-level `id`, or that a pack listing's `sets[].id`
+  matches the fetched Set's own top-level `id` — the listing-provided id
+  (from the manifest or pack listing, respectively) is treated as
+  authoritative for identity/update matching in v1.
 
 ## Acceptance criteria
 
@@ -170,6 +214,9 @@ v1 publishers.
 - [ ] Tapping it opens a Marketplace screen listing the user's added
       sources (empty state + "add a marketplace" action when there are
       none yet); adding/removing a source happens on this screen.
+- [ ] "Add a marketplace" accepts either a full manifest URL (ends in
+      `.json`) or a bare base URL, appending `/marketplace.json` to the
+      latter before the first fetch.
 - [ ] Picking a source shows its list of Packs; picking a Pack shows its
       list of Sets (title, description, item count, category per Set).
 - [ ] Picking a Set opens a preview (title, description, creator, category,
@@ -179,6 +226,11 @@ v1 publishers.
       validation as today's file import, #008) and creates a new local
       set; a validation/network failure shows an error message, no partial
       import.
+- [ ] `packs[].url` and `sets[].url` are resolved only as relative to the
+      document they were fetched from; an absolute (has a scheme) or
+      protocol-relative (`//...`) `url` is rejected as a fetch error, not
+      followed — no cross-origin fetches beyond the marketplace URL the
+      user explicitly added.
 - [ ] "Update" on a locally-edited set shows a confirmation warning before
       overwriting; on confirm, items matching by the new `id` field keep
       their attempt/progress history, items without a match start fresh.
@@ -187,9 +239,10 @@ v1 publishers.
       updated at, so a later visit can tell new / update-available /
       already-up-to-date apart per the Marketplace API section above.
 - [ ] `docs/question-set-format.md` and `docs/question-set.schema.json` are
-      updated to document the new optional per-item `id` field (including
-      that it's absent-by-default/backward-compatible, same pattern as
-      `imageCopyright`).
+      updated to document two new optional fields — a top-level Set `id`
+      and a per-item `id` — both UUID strings (RFC 4122 shape, case-
+      insensitive, version/variant not checked) when present, absent-by-
+      default/backward-compatible, same pattern as `imageCopyright`.
 - [ ] A new `docs/marketplace-api.md` documents the Marketplace API (v1)
       section above (manifest/pack/set shapes, the `url`-linking and
       identity/update rules), in the same style as
