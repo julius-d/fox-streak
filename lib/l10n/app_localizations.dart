@@ -548,6 +548,18 @@ abstract class AppLocalizations {
   /// **'Opens a full-screen view'**
   String get fullScreenImageViewHint;
 
+  /// Message shown in place of a question-card/full-screen url image after automatic retries are exhausted (issue #102)
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load this image'**
+  String get questionImageLoadFailed;
+
+  /// Tappable retry button shown alongside questionImageLoadFailed, re-running the load (issue #102)
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get questionImageRetryButton;
+
   /// No description provided for @itemDayLabel.
   ///
   /// In en, this message translates to:

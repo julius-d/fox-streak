@@ -16,9 +16,14 @@
 // isn't worth zooming into. Kit widgets never resolve l10n themselves (see
 // `fox_confirm_dialog.dart`), so [expandHint] is a plain string the caller
 // resolves from `AppLocalizations` once and passes in.
+//
+// `url` images auto-retry on load failure, then fall back to a manual-retry
+// placeholder (issue #102) — see `_RetryingNetworkImage` below. `base64`
+// never needs this: it has no network round-trip to retry.
 
 import 'package:flutter/material.dart';
 
+import 'fox_buttons.dart';
 import 'fox_item_image.dart' show decodeImageBase64;
 import '../theme/fox_streak_theme.dart';
 
@@ -31,6 +36,12 @@ class FoxQuestionImage extends StatelessWidget {
   final String semanticLabel;
   final String? imageCopyright;
   final String expandHint;
+
+  /// "Couldn't load this image" / retry-button copy shown once automatic
+  /// retries on a `url` image are exhausted (#102) — resolved by the caller
+  /// from `AppLocalizations`, same convention as [expandHint].
+  final String imageLoadFailedMessage;
+  final String retryButtonLabel;
 
   /// Emoji glyph box height — emoji doesn't need the extra room real
   /// images get below.
@@ -47,6 +58,8 @@ class FoxQuestionImage extends StatelessWidget {
     required this.imageContent,
     required this.semanticLabel,
     required this.expandHint,
+    required this.imageLoadFailedMessage,
+    required this.retryButtonLabel,
     this.imageCopyright,
     this.emojiSize = 96,
     this.maxImageHeight = 240,
@@ -105,6 +118,8 @@ class FoxQuestionImage extends StatelessWidget {
           imageType: imageType,
           imageContent: imageContent,
           imageCopyright: imageCopyright,
+          imageLoadFailedMessage: imageLoadFailedMessage,
+          retryButtonLabel: retryButtonLabel,
         ),
       ),
     );
@@ -160,15 +175,18 @@ class FoxQuestionImage extends StatelessWidget {
       child: SizedBox(
         width: double.infinity,
         height: maxImageHeight,
-        child: Image.network(
-          imageContent,
+        child: _RetryingNetworkImage(
+          url: imageContent,
           fit: BoxFit.contain,
-          loadingBuilder: (context, child, progress) {
-            if (progress == null) return child;
-            return _buildLoading(context);
-          },
-          errorBuilder: (context, error, stackTrace) =>
-              _buildPlaceholder(context),
+          loadingBuilder: _buildLoading,
+          failedBuilder: (context, onRetry) =>
+              buildFoxImageLoadFailedPlaceholder(
+                context,
+                key: const Key('foxQuestionImageLoadFailed'),
+                message: imageLoadFailedMessage,
+                retryLabel: retryButtonLabel,
+                onRetry: onRetry,
+              ),
         ),
       ),
     );
@@ -232,6 +250,160 @@ Widget buildFoxImageCaptionBar(
   );
 }
 
+/// The manual-retry failure placeholder shown in place of a `url` image's
+/// normal space once automatic retries are exhausted (#102) — scoped to
+/// just the image area, not the full-screen `FoxEmptyState` kit widget, so
+/// the rest of the question (or the full-screen viewer's caption) renders
+/// normally around it. Shared by [FoxQuestionImage] and
+/// [FoxFullScreenImageViewer].
+Widget buildFoxImageLoadFailedPlaceholder(
+  BuildContext context, {
+  required Key key,
+  required String message,
+  required String retryLabel,
+  required VoidCallback onRetry,
+}) {
+  final scheme = Theme.of(context).colorScheme;
+  return Container(
+    key: key,
+    decoration: BoxDecoration(
+      color: scheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(FoxRadius.md),
+    ),
+    alignment: Alignment.center,
+    padding: const EdgeInsets.all(FoxSpacing.md),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.cloud_off_outlined, color: scheme.onSurfaceVariant),
+        const SizedBox(height: FoxSpacing.xs),
+        Text(
+          message,
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.bodySmall
+              ?.copyWith(color: scheme.onSurfaceVariant),
+        ),
+        const SizedBox(height: FoxSpacing.sm),
+        FoxSecondaryButton(label: retryLabel, onPressed: onRetry),
+      ],
+    ),
+  );
+}
+
+/// Automatic-retry delays for a failed `url` image load (#102 Decisions:
+/// "e.g. 3 attempts total" — the initial attempt plus one delay per entry
+/// here — "short, increasing delays ... under a few seconds"). Once these
+/// are exhausted, [_RetryingNetworkImage] hands off to its manual-retry
+/// placeholder.
+const List<Duration> _kAutoRetryDelays = [
+  Duration(milliseconds: 300),
+  Duration(milliseconds: 700),
+];
+
+/// Resolves a `url` image via [Image.network], automatically retrying a
+/// few times on failure before falling back to a manual-retry placeholder
+/// (#102). Automatic retries look identical to a first-time load — the
+/// same [loadingBuilder] throughout, no "retrying…" indicator (#102
+/// Decisions) — only [failedBuilder] differs, and only once automatic
+/// retries are exhausted. The manual retry it hands to [failedBuilder] can
+/// be tapped indefinitely, re-running the same cycle.
+///
+/// A failed [Image.network] load leaves its [ImageCache] entry in place
+/// (Flutter never auto-evicts a failed load), so simply rebuilding with
+/// the same URL would keep replaying the same failure — each retry here
+/// explicitly evicts the image's cache entry first, then forces a fresh
+/// [Image] element (via a new `key`) so it resolves from scratch rather
+/// than treating an unchanged `NetworkImage(url)` as already resolved.
+class _RetryingNetworkImage extends StatefulWidget {
+  final String url;
+  final BoxFit fit;
+  final Widget Function(BuildContext context) loadingBuilder;
+  final Widget Function(BuildContext context, VoidCallback onRetry)
+  failedBuilder;
+
+  const _RetryingNetworkImage({
+    required this.url,
+    required this.fit,
+    required this.loadingBuilder,
+    required this.failedBuilder,
+  });
+
+  @override
+  State<_RetryingNetworkImage> createState() => _RetryingNetworkImageState();
+}
+
+class _RetryingNetworkImageState extends State<_RetryingNetworkImage> {
+  /// Forces a fresh [Image] element (new resolve) on every attempt, auto or
+  /// manual — never reused, so there's no risk of colliding with a
+  /// still-live earlier attempt's element.
+  int _generation = 0;
+
+  /// How many automatic attempts have failed in the current cycle; reset
+  /// to 0 whenever the user taps manual retry.
+  int _autoAttempt = 0;
+  bool _failed = false;
+
+  /// Guards against scheduling a retry more than once per attempt —
+  /// `errorBuilder` re-runs on every rebuild while an `Image` is still in
+  /// its error state, not just the first time.
+  int? _scheduledForGeneration;
+
+  void _handleError() {
+    if (_scheduledForGeneration == _generation) return;
+    _scheduledForGeneration = _generation;
+    if (_autoAttempt < _kAutoRetryDelays.length) {
+      final delay = _kAutoRetryDelays[_autoAttempt];
+      Future<void>.delayed(delay, () async {
+        await NetworkImage(widget.url).evict();
+        if (!mounted) return;
+        setState(() {
+          _autoAttempt++;
+          _generation++;
+        });
+      });
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() => _failed = true);
+      });
+    }
+  }
+
+  void _retry() {
+    NetworkImage(widget.url).evict().then((_) {
+      if (!mounted) return;
+      setState(() {
+        _autoAttempt = 0;
+        _generation++;
+        _scheduledForGeneration = null;
+        _failed = false;
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_failed) {
+      return widget.failedBuilder(context, _retry);
+    }
+    return Image.network(
+      widget.url,
+      key: ValueKey(_generation),
+      fit: widget.fit,
+      loadingBuilder: (context, child, progress) {
+        if (progress == null) return child;
+        return widget.loadingBuilder(context);
+      },
+      errorBuilder: (context, error, stackTrace) {
+        _handleError();
+        return widget.loadingBuilder(context);
+      },
+    );
+  }
+}
+
 /// Full-screen, standard-page-push view of a single `base64`/`url` image
 /// (#094) — a bigger static image, not an interactive pinch-to-zoom/pan
 /// viewer (out of scope). Tapping the image or the platform back
@@ -241,10 +413,18 @@ class FoxFullScreenImageViewer extends StatelessWidget {
   final String imageContent;
   final String? imageCopyright;
 
+  /// "Couldn't load this image" / retry-button copy for a `url` image
+  /// (#102) — see `FoxQuestionImage.imageLoadFailedMessage`. This viewer
+  /// fetches independently of the inline image, so it retries on its own.
+  final String imageLoadFailedMessage;
+  final String retryButtonLabel;
+
   const FoxFullScreenImageViewer({
     super.key,
     required this.imageType,
     required this.imageContent,
+    required this.imageLoadFailedMessage,
+    required this.retryButtonLabel,
     this.imageCopyright,
   });
 
@@ -290,15 +470,18 @@ class FoxFullScreenImageViewer extends StatelessWidget {
               _buildPlaceholder(context),
         );
       case 'url':
-        return Image.network(
-          imageContent,
+        return _RetryingNetworkImage(
+          url: imageContent,
           fit: BoxFit.contain,
-          loadingBuilder: (context, child, progress) {
-            if (progress == null) return child;
-            return _buildLoading(context);
-          },
-          errorBuilder: (context, error, stackTrace) =>
-              _buildPlaceholder(context),
+          loadingBuilder: _buildLoading,
+          failedBuilder: (context, onRetry) =>
+              buildFoxImageLoadFailedPlaceholder(
+                context,
+                key: const Key('fullScreenImageViewLoadFailed'),
+                message: imageLoadFailedMessage,
+                retryLabel: retryButtonLabel,
+                onRetry: onRetry,
+              ),
         );
       default:
         return _buildPlaceholder(context);

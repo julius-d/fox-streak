@@ -184,6 +184,16 @@
     "placeholders": {}
   },
   "fullScreenImageViewHint": "Opens a full-screen view",
+  "@questionImageLoadFailed": {
+    "description": "Message shown in place of a question-card/full-screen url image after automatic retries are exhausted (issue #102)",
+    "placeholders": {}
+  },
+  "questionImageLoadFailed": "Couldn't load this image",
+  "@questionImageRetryButton": {
+    "description": "Tappable retry button shown alongside questionImageLoadFailed, re-running the load (issue #102)",
+    "placeholders": {}
+  },
+  "questionImageRetryButton": "Retry",
   "itemDayLabel": "Day",
   "itemMonthLabel": "Month",
   "itemYearLabel": "Year",

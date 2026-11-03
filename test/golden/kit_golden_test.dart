@@ -269,6 +269,8 @@ void main() {
             semanticLabel: 'A sticker',
             imageCopyright: '© Jane Doe',
             expandHint: 'Opens a full-screen view',
+            imageLoadFailedMessage: "Couldn't load this image",
+            retryButtonLabel: 'Retry',
             maxImageHeight: 120,
           ),
           theme: theme,

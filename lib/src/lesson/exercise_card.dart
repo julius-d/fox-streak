@@ -103,6 +103,8 @@ Widget buildItemImage(Item item, {required AppLocalizations l10n}) {
         semanticLabel: item.prompt,
         imageCopyright: item.imageCopyright,
         expandHint: l10n.fullScreenImageViewHint,
+        imageLoadFailedMessage: l10n.questionImageLoadFailed,
+        retryButtonLabel: l10n.questionImageRetryButton,
       ),
       const SizedBox(height: FoxSpacing.md),
     ],

@@ -1,6 +1,6 @@
 # Issue 102: Question images sometimes fail to show, with no way to retry
 
-Status: open | Priority: P2 | Type: bug | Refined-at: 2026-11-03
+Status: done | Priority: P2 | Type: bug | Refined-at: 2026-11-03 | Completed-at: 2026-11-03
 
 ## Context
 
@@ -63,25 +63,25 @@ permanently broken image:
 
 ## Acceptance criteria
 
-- [ ] A transient image load failure on the lesson/question screen is
+- [x] A transient image load failure on the lesson/question screen is
   retried automatically a few times before anything is shown to the user.
-- [ ] If automatic retries don't succeed, the image area shows a
+- [x] If automatic retries don't succeed, the image area shows a
   placeholder with a visible, tappable "retry" affordance, with
   appropriate accessibility labeling (not just a bare icon).
-- [ ] Tapping retry re-attempts the load; this can be repeated indefinitely.
-- [ ] While the image is loading, auto-retrying, or in the failed state,
+- [x] Tapping retry re-attempts the load; this can be repeated indefinitely.
+- [x] While the image is loading, auto-retrying, or in the failed state,
   the rest of the question card (prompt, tags, answer input, submit
   button, etc.) remains visible and usable.
-- [ ] The full-screen tap-to-expand image viewer (#094) gets the same
+- [x] The full-screen tap-to-expand image viewer (#094) gets the same
   auto-retry + manual-retry treatment when opened on an image that failed
   to load (it fetches independently of the inline image, so it can fail
   and retry on its own).
-- [ ] Successful loads (first try or after retries) look exactly as today
+- [x] Successful loads (first try or after retries) look exactly as today
   — no behavior change for the common case.
-- [ ] Follows #015: the failure placeholder uses kit tokens/spacing, no
+- [x] Follows #015: the failure placeholder uses kit tokens/spacing, no
   ad-hoc colors or styling; retry button and accessibility label strings
   go through `lib/l10n` (DE + EN), not hardcoded.
-- [ ] Covered by unit/widget tests: load succeeds after N automatic
+- [x] Covered by unit/widget tests: load succeeds after N automatic
   retries, automatic retries exhausted then manual retry succeeds, and the
   full-screen viewer's independent retry behaves the same way.
 
@@ -94,3 +94,32 @@ permanently broken image:
 - A permanent "stop retrying, this image is unavailable" state after
   repeated manual retries — retry stays available indefinitely.
 - Offline detection/messaging beyond the generic retry affordance.
+
+## Summary
+
+Added `_RetryingNetworkImage` (private to `fox_question_image.dart`),
+wrapping `Image.network` with 3-total-attempt auto-retry (300ms/700ms
+delays, evicting the failed `ImageCache` entry + remounting via a new
+`Image` key to force a genuine refetch), then a shared
+`buildFoxImageLoadFailedPlaceholder` (kit tokens, `FoxSecondaryButton`
+retry) once exhausted. `FoxQuestionImage` and `FoxFullScreenImageViewer`
+each get their own independent instance. New l10n keys
+`questionImageLoadFailed`/`questionImageRetryButton` (DE+EN), threaded
+through `buildItemImage`. 16 new/updated widget tests in
+`fox_question_image_test.dart` drive the real `errorBuilder` closure
+directly (same technique `fox_item_image_test.dart` already used) for
+deterministic coverage. An `integration_test` was written but could not
+be executed in this sandboxed session — see that file's header comment.
+
+## Code review
+
+- Retry state machine (`_generation`/`_autoAttempt`/`_scheduledForGeneration`,
+  `evict()`-before-`setState` ordering, no `dispose()` override) reviewed for
+  races/leaks/"setState during build".
+  Not fixed — no_change_needed: traced correct; missing `dispose()` is
+  harmless given `mounted` guards and cache eviction being lifecycle-free.
+- Acceptance criterion "load succeeds after N automatic retries" wasn't
+  actually asserted by any test, despite being checked off.
+  Fixed — extended the first #102 widget test to manually invoke the
+  post-retry `Image`'s `loadingBuilder` with `progress: null` and assert
+  the resolved child passes through unchanged.

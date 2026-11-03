@@ -253,6 +253,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fullScreenImageViewHint => 'Opens a full-screen view';
 
   @override
+  String get questionImageLoadFailed => 'Couldn\'t load this image';
+
+  @override
+  String get questionImageRetryButton => 'Retry';
+
+  @override
   String get itemDayLabel => 'Day';
 
   @override
