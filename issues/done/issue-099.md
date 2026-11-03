@@ -1,6 +1,6 @@
 # Issue 099: LootboxScreen can restart the open animation in the background after a forced (stalled) reveal
 
-Status: open | Priority: P3 | Type: tech-debt | Refined-at: 2026-11-01
+Status: done | Priority: P3 | Type: tech-debt | Refined-at: 2026-11-01 | Completed-at: 2026-11-03
 
 ## Context
 
@@ -45,3 +45,23 @@ and apply it if so.
 The `openStallTimeout` default's robustness against a future, longer
 opening asset — not a correctness bug today, just a note for whoever
 changes that asset.
+
+## Summary
+
+Fixed in `_handleCompositionLoaded` (`lib/src/pet/lootbox_screen.dart`):
+only calls `_animationController.forward()` when `_openRequested` is true
+*and* `_phase == opening`, so a late composition load after
+`_handleOpenStalled` already forced `revealed` is a no-op.
+
+No widget test added for this exact guard: the bundled test asset's
+`Lottie` composition finishes decoding during `pumpWidget` itself, before
+any tap can run, so `_openRequested` never becomes `true` in a widget test
+— confirmed via a throwaway scratch test, same kind of gap already
+documented in `lootbox_screen_test.dart`'s own header comment for the
+sibling "composition never decodes" case. `flutter analyze`, `dart
+format`, and `flutter test` (781 tests) are all green.
+
+## Code review
+
+Production code changed with no automated test exercising the new guard, conflicting with the "always add tests" rule.
+Not fixed: verified the branch is genuinely unreachable in this widget-test harness (synchronous test-asset decode); the test file documents why, mirroring an existing precedent for the sibling untestable branch.

@@ -197,7 +197,12 @@ class _LootboxScreenState extends State<LootboxScreen>
   void _handleCompositionLoaded(LottieComposition composition) {
     _animationController.duration = composition.duration;
     _compositionLoaded = true;
-    if (_openRequested) {
+    // `_phase` only guards here, not on `_openRequested` alone: if
+    // `_handleOpenStalled` (#098) already forced `revealed` while decode was
+    // still in flight, `forward()` would have nothing left to animate for —
+    // `_LootboxAnimation` isn't even in the tree by then — so it'd just tick
+    // an orphaned controller in the background for no visible effect (#099).
+    if (_openRequested && _phase == _LootboxPhase.opening) {
       _animationController.forward();
     }
   }

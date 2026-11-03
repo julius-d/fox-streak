@@ -133,4 +133,16 @@ void main() {
       expect(find.text(_l10n.lootboxCoinsRevealedTitle(30)), findsOneWidget);
     },
   );
+
+  // No widget test for #099's fix (the `_phase == opening` guard added to
+  // `_handleCompositionLoaded` in lootbox_screen.dart): that guard only
+  // matters when `_handleOpenStalled` forces `revealed` *before* the real
+  // composition finishes decoding, i.e. with `_openRequested` still true.
+  // Confirmed (scratch-tested, not committed) that this harness's bundled
+  // test asset finishes decoding during `pumpWidget` itself, before any
+  // tap can run — so `_compositionLoaded` is always already `true` by the
+  // time `_open()` runs, `_openRequested` is never set, and that branch is
+  // unreachable from a widget test here. Same kind of gap this file's own
+  // header comment already documents for the sibling "composition never
+  // decodes" case.
 }
