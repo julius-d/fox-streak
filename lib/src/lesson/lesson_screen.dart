@@ -25,6 +25,7 @@ import '../library/set_detail_screen.dart';
 import '../pet/lootbox_screen.dart';
 import '../pet/pet_catalog.dart';
 import '../pet/pet_providers.dart';
+import '../stats/streak_service.dart';
 import '../stats/xp_service.dart';
 import '../theme/fox_streak_theme.dart';
 import '../widgets/widgets.dart';
@@ -479,6 +480,22 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
     if (result == null) return;
     final l10n = AppLocalizations.of(context)!;
 
+    // Gated on `streakIsNewDayAfterLesson`, not just the count being a
+    // milestone value: a same-day repeat completion's `recordActivity`
+    // call (`StreakService.computeNext`'s same-day branch) returns the
+    // unchanged `streakCount` with `isNewDay: false` — without this gate,
+    // sitting at a milestone count would wrongly re-show the pet on every
+    // later lesson that same day, not just the one that actually hit it.
+    //
+    // See `_buildResultScreen`/`_resolveEquippedPet` — same pet resolution,
+    // but via `ref.read` since this runs outside build (a post-frame
+    // callback).
+    final isMilestone =
+        state.streakIsNewDayAfterLesson == true &&
+        StreakService.isMilestone(state.streakCountAfterLesson ?? 0);
+    final catalog = ref.read(petCatalogProvider).asData?.value;
+    final pet = _resolveEquippedPet(catalog, state.equippedPetId);
+
     // From here on, the summary screen underneath is safe to actually
     // build: the very next statement pushes the first completion-sequence
     // screen on top of it, so both changes land in the same frame — no
@@ -505,6 +522,8 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
       if (!await _pushAndWait(
         (_) => StreakSavedScreen(
           streakCount: state.streakCountAfterLesson ?? 0,
+          isMilestone: isMilestone,
+          pet: pet,
           l10n: l10n,
         ),
       )) {
@@ -517,6 +536,8 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
         bonus: XpService.lessonBonus(result),
         xpTotal: state.xpTotalAfterLesson ?? 0,
         xpTotalBefore: state.xpTotalBeforeLesson,
+        isMilestone: isMilestone,
+        pet: pet,
         l10n: l10n,
       ),
     );
@@ -559,6 +580,24 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
     );
   }
 
+  /// Resolves [equippedPetId] against [catalog] (the asset-backed catalog's
+  /// loaded value, or null while still loading) to the equipped
+  /// [PetEntry] — [PetCatalog.defaultEntry] on a miss, so this never returns
+  /// null. See `LessonState.equippedPetId` for why callers resolve against
+  /// `petCatalogProvider` instead of the live `equippedPetProvider` (which
+  /// would watch the drift-backed `profileProvider` stream).
+  static PetEntry _resolveEquippedPet(
+    List<PetEntry>? catalog,
+    String? equippedPetId,
+  ) {
+    return catalog == null
+        ? PetCatalog.defaultEntry
+        : catalog.firstWhere(
+            (entry) => entry.id == equippedPetId,
+            orElse: () => PetCatalog.defaultEntry,
+          );
+  }
+
   Widget _buildResultScreen(
     BuildContext context,
     AppLocalizations l10n,
@@ -566,16 +605,8 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
     LessonController controller,
     LessonResult result,
   ) {
-    // Resolved against the asset-backed catalog (not drift) — see
-    // `LessonState.equippedPetId` for why this avoids `equippedPetProvider`
-    // (which would watch the live, drift-backed `profileProvider` stream).
     final catalog = ref.watch(petCatalogProvider).asData?.value;
-    final pet = catalog == null
-        ? PetCatalog.defaultEntry
-        : catalog.firstWhere(
-            (entry) => entry.id == state.equippedPetId,
-            orElse: () => PetCatalog.defaultEntry,
-          );
+    final pet = _resolveEquippedPet(catalog, state.equippedPetId);
     final missedItems = controller.missedItems();
 
     return LessonResultScreen(

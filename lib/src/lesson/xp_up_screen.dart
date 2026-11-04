@@ -6,6 +6,10 @@
 // confetti + chime, unchanged. Pops itself on Continue, same shape as
 // `LootboxScreen`/`StreakSavedScreen`. `PopScope(canPop: false)` (#082)
 // blocks system back/swipe mid-sequence, matching those two screens.
+//
+// On a streak-milestone completion (`StreakService.isMilestone`, issue
+// #081), also shows the equipped pet before the XP count-up — independent
+// of `leveledUp`, which keeps gating `_LevelUpEffects`'s own confetti/chime.
 
 import 'dart:async';
 
@@ -14,6 +18,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../pet/pet_catalog.dart';
 import '../stats/xp_service.dart';
 import '../theme/fox_streak_theme.dart';
 import '../widgets/widgets.dart';
@@ -24,6 +29,8 @@ class XpUpScreen extends StatelessWidget {
   final int bonus;
   final int xpTotal;
   final int? xpTotalBefore;
+  final bool isMilestone;
+  final PetEntry pet;
   final AppLocalizations l10n;
 
   const XpUpScreen({
@@ -32,6 +39,8 @@ class XpUpScreen extends StatelessWidget {
     required this.bonus,
     required this.xpTotal,
     required this.xpTotalBefore,
+    required this.isMilestone,
+    required this.pet,
     required this.l10n,
   });
 
@@ -61,6 +70,10 @@ class XpUpScreen extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      if (isMilestone) ...[
+                        FoxPet(pet: pet, size: 96, semanticLabel: null),
+                        const SizedBox(height: FoxSpacing.md),
+                      ],
                       FoxCelebration(
                         child: _XpCountUp(xp: xpEarned, l10n: l10n),
                       ),

@@ -14,6 +14,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fox_streak_app/l10n/app_localizations.dart';
 import 'package:fox_streak_app/l10n/app_localizations_en.dart';
 import 'package:fox_streak_app/src/lesson/streak_saved_screen.dart';
+import 'package:fox_streak_app/src/pet/pet_catalog.dart';
 import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
 
 final _l10n = AppLocalizationsEn();
@@ -52,13 +53,18 @@ class _RebuildHarnessState extends State<_RebuildHarness> {
   }
 }
 
-Widget _harness(int streakCount) {
+Widget _harness(int streakCount, {bool isMilestone = false}) {
   return MaterialApp(
     theme: FoxStreakTheme.light(),
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     home: _RebuildHarness(
-      child: StreakSavedScreen(streakCount: streakCount, l10n: _l10n),
+      child: StreakSavedScreen(
+        streakCount: streakCount,
+        isMilestone: isMilestone,
+        pet: PetCatalog.defaultEntry,
+        l10n: _l10n,
+      ),
     ),
   );
 }
@@ -106,4 +112,63 @@ void main() {
     expect(identical(controllerBefore, controllerAfter), isTrue);
     expect(controllerAfter.state, ConfettiControllerState.playing);
   });
+
+  testWidgets('shows the equipped pet on a milestone streak (issue #081)', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_harness(3, isMilestone: true));
+    await tester.pump();
+
+    expect(
+      find.byKey(Key('foxPet-${PetCatalog.defaultEntry.id}')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('shows no pet on a non-milestone streak', (tester) async {
+    await tester.pumpWidget(_harness(4, isMilestone: false));
+    await tester.pump();
+
+    expect(
+      find.byKey(Key('foxPet-${PetCatalog.defaultEntry.id}')),
+      findsNothing,
+    );
+  });
+
+  testWidgets(
+    'a plain (non-milestone) streak fires the default confetti burst',
+    (tester) async {
+      await tester.pumpWidget(_harness(3, isMilestone: false));
+      await tester.pump();
+
+      final confetti = tester.widget<ConfettiWidget>(
+        find.byKey(const Key('streakSavedConfetti')),
+      );
+      expect(confetti.numberOfParticles, kStreakConfettiParticles);
+      expect(confetti.confettiController.duration, kStreakConfettiDuration);
+    },
+  );
+
+  testWidgets(
+    'a milestone streak fires a denser, longer confetti burst than the '
+    'default (issue #081)',
+    (tester) async {
+      await tester.pumpWidget(_harness(3, isMilestone: true));
+      await tester.pump();
+
+      final confetti = tester.widget<ConfettiWidget>(
+        find.byKey(const Key('streakSavedConfetti')),
+      );
+      expect(confetti.numberOfParticles, kStreakMilestoneConfettiParticles);
+      expect(
+        confetti.confettiController.duration,
+        kStreakMilestoneConfettiDuration,
+      );
+      expect(confetti.numberOfParticles, greaterThan(kStreakConfettiParticles));
+      expect(
+        confetti.confettiController.duration,
+        greaterThan(kStreakConfettiDuration),
+      );
+    },
+  );
 }

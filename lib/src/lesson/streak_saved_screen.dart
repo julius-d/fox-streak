@@ -11,11 +11,17 @@
 // sound — see that screen's doc for why. `PopScope(canPop: false)` (#082)
 // blocks system back/swipe mid-sequence, matching `LootboxScreen`/
 // `XpUpScreen`.
+//
+// On a streak-milestone completion (`StreakService.isMilestone`, issue
+// #081), also shows the equipped pet between the heading and the streak
+// result text, and fires a denser/longer confetti burst than the plain
+// streak-saved default.
 
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../pet/pet_catalog.dart';
 import '../theme/fox_streak_theme.dart';
 import '../widgets/widgets.dart';
 
@@ -23,11 +29,15 @@ import '../widgets/widgets.dart';
 /// advanced today's streak.
 class StreakSavedScreen extends StatelessWidget {
   final int streakCount;
+  final bool isMilestone;
+  final PetEntry pet;
   final AppLocalizations l10n;
 
   const StreakSavedScreen({
     super.key,
     required this.streakCount,
+    required this.isMilestone,
+    required this.pet,
     required this.l10n,
   });
 
@@ -51,6 +61,10 @@ class StreakSavedScreen extends StatelessWidget {
                         style: Theme.of(context).textTheme.headlineSmall,
                         textAlign: TextAlign.center,
                       ),
+                      if (isMilestone) ...[
+                        const SizedBox(height: FoxSpacing.xl),
+                        FoxPet(pet: pet, size: 96, semanticLabel: null),
+                      ],
                       const SizedBox(height: FoxSpacing.xl),
                       FoxCelebration(
                         child: Text(
@@ -96,12 +110,20 @@ class StreakSavedScreen extends StatelessWidget {
               ),
             ),
           ),
-          const _StreakConfettiEffects(),
+          _StreakConfettiEffects(isMilestone: isMilestone),
         ],
       ),
     );
   }
 }
+
+/// Non-milestone confetti burst: particle count/duration unchanged since
+/// #083. A milestone burst (issue #081) is clearly, visibly bigger — roughly
+/// 3x the particles and more than 2x the duration — not just a tweak.
+const int kStreakConfettiParticles = 60;
+const Duration kStreakConfettiDuration = Duration(milliseconds: 500);
+const int kStreakMilestoneConfettiParticles = 180;
+const Duration kStreakMilestoneConfettiDuration = Duration(milliseconds: 1200);
 
 /// Confetti burst, triggered exactly once per `StreakSavedScreen` instance
 /// (issue #083). A dedicated [State] — rather than inline logic in the
@@ -110,8 +132,13 @@ class StreakSavedScreen extends StatelessWidget {
 /// `XpUpScreen`'s `_LevelUpEffects` exactly, minus the `active` gate (this
 /// screen is only ever shown when the streak genuinely advanced) and minus
 /// any sound (no streak-specific chime exists — see this file's doc).
+///
+/// [isMilestone] (issue #081) swaps in a denser, longer burst for a
+/// streak-milestone completion — same confetti mechanism, just bigger.
 class _StreakConfettiEffects extends StatefulWidget {
-  const _StreakConfettiEffects();
+  final bool isMilestone;
+
+  const _StreakConfettiEffects({required this.isMilestone});
 
   @override
   State<_StreakConfettiEffects> createState() => _StreakConfettiEffectsState();
@@ -124,7 +151,9 @@ class _StreakConfettiEffectsState extends State<_StreakConfettiEffects> {
   void initState() {
     super.initState();
     _confettiController = ConfettiController(
-      duration: const Duration(milliseconds: 500),
+      duration: widget.isMilestone
+          ? kStreakMilestoneConfettiDuration
+          : kStreakConfettiDuration,
     )..play();
   }
 
@@ -144,7 +173,9 @@ class _StreakConfettiEffectsState extends State<_StreakConfettiEffects> {
           confettiController: _confettiController,
           blastDirectionality: BlastDirectionality.explosive,
           shouldLoop: false,
-          numberOfParticles: 60,
+          numberOfParticles: widget.isMilestone
+              ? kStreakMilestoneConfettiParticles
+              : kStreakConfettiParticles,
         ),
       ),
     );

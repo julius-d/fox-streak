@@ -1,6 +1,6 @@
 # Issue 081: Streak milestones have no distinct pet visual (on-fire painter was retired without a replacement)
 
-Status: open | Priority: P3 | Type: tech-debt | Refined-at: 2026-11-04
+Status: done | Priority: P3 | Type: tech-debt | Refined-at: 2026-11-04 | Completed-at: 2026-11-04
 
 ## Goal
 
@@ -84,3 +84,50 @@ intended"). Same treatment for every milestone size — no escalation by
   odds) tied to hitting a milestone.
 - Hero-animating the pet between `StreakSavedScreen`/`XpUpScreen`/the
   summary screen/Home — tracked separately as issue #109.
+
+## Summary
+
+`LessonScreen._runCompletionSequence` computes `isMilestone` (gated on
+`streakIsNewDayAfterLesson`, not just the count, so a same-day repeat
+lesson sitting at a milestone count doesn't re-trigger it) and resolves
+the equipped pet once, passing both into `StreakSavedScreen` and
+`XpUpScreen`. Each shows a size-96 `FoxPet` (semanticLabel: null) only on
+`isMilestone`; `StreakSavedScreen`'s confetti burst triples particles
+(60 -> 180) and more than doubles duration (500ms -> 1200ms) on a
+milestone, `XpUpScreen`'s level-up confetti/chime stays untouched.
+Screenshots: `issue-081-streak-saved-milestone.png`,
+`issue-081-xp-up-milestone.png`.
+
+## Code review
+
+- `isMilestone` was derived from the streak count alone, not gated on
+  `streakIsNewDayAfterLesson` — a same-day repeat lesson sitting at an
+  already-hit milestone count would wrongly re-show the pet on `XpUpScreen`.
+  Fixed: gated on `streakIsNewDayAfterLesson == true` too; added a
+  same-day-repeat regression case to the `lesson_shell_test.dart` milestone
+  test.
+- `XpUpScreen`'s milestone pet uses `semanticLabel: null`, but (unlike
+  `StreakSavedScreen`) that screen has no heading/streak text to justify
+  the kit's "decorative repeat next to a labelled heading" allowance —
+  a screen-reader user gets no announcement of the milestone there.
+  Not fixed here (needs a new l10n string, which this issue's acceptance
+  criteria explicitly scoped out); filed as issue #111.
+- The equipped pet is resolved once via `ref.read` in
+  `_runCompletionSequence` and passed down, while `_buildResultScreen`
+  independently re-resolves it via `ref.watch` for the same completion —
+  two reads that could in theory diverge. Not fixed: both read the same
+  already-completed `state.equippedPetId` from a static, near-instantly-
+  loaded catalog, so the divergence window is theoretical; `ref.watch`
+  isn't usable in `_runCompletionSequence`'s post-frame-callback context
+  anyway.
+- The new `_resolveEquippedPet` duplicates `equippedPetProvider`'s
+  catalog-fallback matching logic. Not fixed: this is the same
+  resolution `_buildResultScreen` already did pre-#081 (just extracted
+  into a shared helper) — the issue's own acceptance criteria call for
+  reusing exactly that resolution, not `equippedPetProvider`, so it's
+  pre-existing, not new debt.
+- The new `kStreakConfettiParticles`/`kStreakConfettiDuration` constants
+  duplicate magic numbers (60 / 500ms) still inlined in `xp_up_screen.dart`'s
+  level-up confetti. Not fixed: that confetti is a deliberately separate,
+  milestone-unaffected burst per this issue's acceptance criteria: sharing
+  constants across the two would be unrelated-scope cleanup.

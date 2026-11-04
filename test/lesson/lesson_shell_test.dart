@@ -906,6 +906,101 @@ void main() {
     });
 
     testWidgets(
+      'a milestone streak count (issue #081) pushes both the streak-saved '
+      'and XP-up screens with isMilestone: true and the equipped pet',
+      (WidgetTester tester) async {
+        // Seeds the profile so today's completion advances the streak from
+        // 2 -> 3 — the first milestone in `kStreakMilestones`.
+        await statsRepo.setStreak(
+          streakCount: 2,
+          lastActiveDay: toLocalDayString(DateTime(2026, 10, 10, 12)),
+        );
+        final items = await setupTestItems(
+          db,
+          1,
+          1,
+          choicesJson: distractorsJson,
+        );
+
+        await pumpLessonShell(
+          tester,
+          buildTestLessonScreen(
+            setId: 1,
+            items: items,
+            l10n: AppLocalizationsEn(),
+          ),
+          database: db,
+          clock: fakeClock,
+        );
+        await tester.pump();
+        // Extra pump to process the microtask from PlaceholderExerciseCard's
+        // auto-answer (see the attempts-written-and-xp-and-streak-applied
+        // test above) — without it, the first CHECK tap below hits a still-
+        // disabled button.
+        await tester.pump();
+
+        await tester.tap(find.byKey(const Key('checkButton')));
+        await tester.pump();
+        await tester.tap(find.byKey(const Key('checkButton')));
+        await confettiAwareSettle(tester);
+
+        expect(find.byKey(const Key('streakSavedScreen')), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byKey(const Key('streakSavedScreen')),
+            matching: find.byKey(const Key('foxPet-$kDefaultPetId')),
+          ),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.byKey(const Key('streakSavedContinueButton')));
+        await confettiAwareSettle(tester);
+
+        expect(find.byKey(const Key('xpUpScreen')), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byKey(const Key('xpUpScreen')),
+            matching: find.byKey(const Key('foxPet-$kDefaultPetId')),
+          ),
+          findsOneWidget,
+        );
+
+        var profile = await statsRepo.getProfile();
+        expect(profile.streakCount, 3);
+
+        // A same-day repeat completion (issue #081 regression): sitting at
+        // the same milestone count again, but `streakIsNewDayAfterLesson`
+        // is now false (`StreakService.computeNext`'s same-day branch) —
+        // the pet must not re-appear on `XpUpScreen` for this one, and
+        // `StreakSavedScreen` must not be pushed at all.
+        await tester.tap(find.byKey(const Key('xpUpContinueButton')));
+        await confettiAwareSettle(tester);
+        await tester.tap(find.byKey(const Key('redoWholeSetButton')));
+        await tester.pump();
+        await tester.pump();
+        await tester.pump();
+
+        await tester.tap(find.byKey(const Key('checkButton')));
+        await tester.pump();
+        await tester.tap(find.byKey(const Key('checkButton')));
+        await confettiAwareSettle(tester);
+
+        expect(find.byKey(const Key('streakSavedScreen')), findsNothing);
+        expect(find.byKey(const Key('xpUpScreen')), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byKey(const Key('xpUpScreen')),
+            matching: find.byKey(const Key('foxPet-$kDefaultPetId')),
+          ),
+          findsNothing,
+        );
+
+        profile = await statsRepo.getProfile();
+        expect(profile.streakCount, 3);
+      },
+    );
+
+    testWidgets(
       'result screen stays put until the user taps a button when pushed '
       'onto a real navigator stack (regression: result screen must not '
       'auto-pop itself)',

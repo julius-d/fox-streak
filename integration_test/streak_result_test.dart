@@ -6,11 +6,10 @@
 // test card builder) through a lesson that lands on a streak milestone,
 // proving the streak headline and `StreakBadge` genuinely render with the
 // right numbers — and that the underlying `streak_count`/`last_active_day`
-// columns were actually written exactly once. (Not covered here: issue
-// #078 found that `StreakSavedScreen`/the summary screen's pet celebration
-// has no milestone-specific visual — #059 retired the old on-fire/lit/
-// empty state painter without replacing it with anything streak-aware;
-// see issues/issue-081.md for that gap, tracked separately.)
+// columns were actually written exactly once. Also proves the equipped
+// pet now appears on both `StreakSavedScreen` and `XpUpScreen` for this
+// milestone completion (issue #081 — #059 had retired the old on-fire/lit/
+// empty-state painter without replacing it with anything streak-aware).
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
@@ -24,6 +23,7 @@ import 'package:fox_streak_app/src/data/database.dart';
 import 'package:fox_streak_app/src/data/providers.dart';
 import 'package:fox_streak_app/src/data/stats_repository.dart';
 import 'package:fox_streak_app/src/lesson/lesson_screen.dart';
+import 'package:fox_streak_app/src/pet/pet_catalog.dart';
 import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
 
 import 'helpers.dart';
@@ -118,11 +118,9 @@ void main() {
         // wall-clock time rather than this binding's fake clock, so
         // `pumpAndSettle()` would spin until it times out (see
         // `level_up_result_test.dart`'s file doc for the same issue with
-        // `XpUpScreen`'s own confetti). A bounded pump loop is enough to
-        // settle the screen's own (ordinary, finite) animations.
-        for (var j = 0; j < 15; j++) {
-          await tester.pump(const Duration(milliseconds: 100));
-        }
+        // `XpUpScreen`'s own confetti) — `settle()` (`helpers.dart`)
+        // absorbs that.
+        await settle(tester);
       } else {
         await tester.pumpAndSettle();
       }
@@ -131,12 +129,34 @@ void main() {
     // This fresh profile's completion also advances the streak, so the
     // streak-saved screen appears automatically (the loop above's final
     // CONTINUE tap already settled its push): milestone hit -> streak
-    // headline and the StreakBadge both showing "3".
+    // headline and the StreakBadge both showing "3", plus the equipped
+    // pet (issue #081) and a denser/longer confetti burst than a plain
+    // streak-saved screen's.
     expect(find.byKey(const Key('streakSavedScreen')), findsOneWidget);
     expect(find.text('3-day streak!'), findsOneWidget);
     expect(find.byKey(const Key('streakBadge')), findsOneWidget);
     expect(find.byKey(const Key('streakCountLabel')), findsOneWidget);
     expect(find.text('3'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('streakSavedScreen')),
+        matching: find.byKey(const Key('foxPet-$kDefaultPetId')),
+      ),
+      findsOneWidget,
+    );
+
+    // Continue through to XP-up (#081: the pet shows there too).
+    await tester.tap(find.byKey(const Key('streakSavedContinueButton')));
+    await settle(tester);
+
+    expect(find.byKey(const Key('xpUpScreen')), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('xpUpScreen')),
+        matching: find.byKey(const Key('foxPet-$kDefaultPetId')),
+      ),
+      findsOneWidget,
+    );
 
     // The write actually landed exactly once (no double-apply).
     final profile = await statsRepo.getProfile();
