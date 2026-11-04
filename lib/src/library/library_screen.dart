@@ -152,6 +152,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               data: (sets) {
                 if (sets.isEmpty) return _buildEmpty(context, l10n);
                 return ListView.builder(
+                  padding: fabListBottomPadding(context),
                   itemCount: sets.length,
                   itemBuilder: (context, index) {
                     final set = sets[index];

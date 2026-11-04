@@ -75,6 +75,7 @@ class MarketplaceSourcesScreen extends ConsumerWidget {
             );
           }
           return ListView.builder(
+            padding: fabListBottomPadding(context),
             itemCount: sources.length,
             itemBuilder: (context, index) {
               final source = sources[index];

@@ -130,6 +130,7 @@ class SetDetailScreen extends ConsumerWidget {
             );
           }
           return ListView.builder(
+            padding: fabListBottomPadding(context),
             itemCount: loadedItems.length,
             itemBuilder: (context, index) {
               final item = loadedItems[index];

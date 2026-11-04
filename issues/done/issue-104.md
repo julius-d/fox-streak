@@ -1,6 +1,6 @@
 # Issue 104: Floating FAB and system UI insets can overlap the last row's tap targets in scrollable lists
 
-Status: open | Priority: P2 | Type: bug | Refined-at: 2026-11-03
+Status: done | Priority: P2 | Type: bug | Refined-at: 2026-11-03 | Completed-at: 2026-11-04
 
 ## Context
 
@@ -91,3 +91,25 @@ FAB nor system chrome may ever obscure a tappable row action.
   testing surfaces a real problem.
 - No question/data format or schema changes are involved, so no `docs`
   updates are needed for this issue.
+
+## Summary
+
+Added `fabListBottomPadding(context)` (`lib/src/widgets/fox_fab_list_padding.dart`):
+a shared `kFabListClearance` (160dp, generous enough for Set Detail's
+tallest stacked-FAB case) plus `MediaQuery.paddingOf(context).bottom`,
+applied as each `ListView.builder`'s `padding` on Library, Set Detail,
+and Marketplace Sources. One constant reused across all three screens —
+short lists just get a bit of harmless extra space below the last row.
+Covered by three new `integration_test` specs (one file per screen,
+since running all three `testWidgets` in one process reliably hung
+before the third — unrelated macOS device-mode flakiness, not a code
+defect) that scroll to the end and tap the last row's action, asserting
+it reaches the row and not the FAB.
+
+## Code review
+
+- Reviewed by a background subagent (medium effort) covering the padding
+  math, `FloatingActionButton`/`Scaffold` sizing, all three call sites,
+  and the new integration tests.
+- No findings — fix judged minimal, additive, and numerically safe; no
+  changes made as a result.
