@@ -28,6 +28,7 @@ import '../pet/pet_providers.dart';
 import '../settings/settings_providers.dart';
 import '../settings/settings_screen.dart';
 import '../shop/coin_shop_screen.dart';
+import '../stats/activity_calendar.dart';
 import '../stats/stats_providers.dart';
 import '../stats/streak_details_screen.dart';
 import '../stats/streak_freeze_service.dart';
@@ -148,6 +149,30 @@ class _HomeDashboard extends ConsumerWidget {
     // the resolved result without blocking Home's own loading gate on it.
     final bool streakFreezeApplied =
         ref.watch(streakFreezeAutoApplyProvider).asData?.value ?? false;
+    // Issue #108: reuses the same windowed `daily_activity` data #084's
+    // Streak Details calendar already reads — no new query — filtered down
+    // to just the current streak's days (oldest -> newest, matching
+    // `ActivityCalendarData.days`' own ordering) for the badge's per-day
+    // icon row. A streak longer than the ~6-month window (see
+    // `buildWindowDays`) only shows icons for the days inside it — the same
+    // accepted v1 edge case `ActivityCalendarData.build`'s own doc already
+    // calls out for `isCurrentStreak`; the numeric count next to the row
+    // stays exact regardless. Reads `.value` (not `.maybeWhen`'s `orElse`)
+    // on purpose: this provider recomputes on every profile write (lesson,
+    // streak, coins, ...), and without `skipLoadingOnReload` each of those
+    // briefly re-enters `AsyncLoading` — `maybeWhen`'s `orElse` would flash
+    // the icon row to empty on every such write, where `.value` just keeps
+    // returning the last-known data through that reload.
+    final ActivityCalendarData? activityData = ref
+        .watch(activityCalendarProvider)
+        .value;
+    final List<StreakDayIcon> streakDayIcons = activityData == null
+        ? const <StreakDayIcon>[]
+        : [
+            for (final ActivityDay day in activityData.days)
+              if (day.isCurrentStreak)
+                day.isStreakOnIce ? StreakDayIcon.ice : StreakDayIcon.flame,
+          ];
 
     return Scaffold(
       key: const Key('homeScreen'),
@@ -286,56 +311,62 @@ class _HomeDashboard extends ConsumerWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: FoxSpacing.lg),
-              ConstrainedBox(
-                constraints: const BoxConstraints(
-                  minHeight: FoxButtonMetrics.minSize,
-                ),
-                child: InkWell(
-                  key: const Key('streakBadgeButton'),
-                  borderRadius: const BorderRadius.all(
-                    Radius.circular(FoxRadius.pill),
+              // Issue #108: hidden entirely (not a bare "0") while there's
+              // no active streak to show, mirroring the coin badge's own
+              // `coinsTotal > 0` gate above.
+              if (profile.streakCount > 0) ...[
+                const SizedBox(height: FoxSpacing.lg),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minHeight: FoxButtonMetrics.minSize,
                   ),
-                  onTap: () => Navigator.of(context).push<void>(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const StreakDetailsScreen(),
+                  child: InkWell(
+                    key: const Key('streakBadgeButton'),
+                    borderRadius: const BorderRadius.all(
+                      Radius.circular(FoxRadius.pill),
                     ),
-                  ),
-                  // `constrainedAxis: horizontal` keeps the badge's existing
-                  // full-width stretch (from the Column's
-                  // crossAxisAlignment.stretch) untouched while leaving its
-                  // height unconstrained, so the outer ConstrainedBox grows
-                  // only the invisible tap area to 48dp and StreakBadge
-                  // itself still renders at its own natural (40dp) height,
-                  // centered within it (#088).
-                  child: UnconstrainedBox(
-                    constrainedAxis: Axis.horizontal,
-                    // StreakBadge already wraps itself in its own Semantics
-                    // label; MergeSemantics folds that together with the
-                    // button-role label below into one screen-reader stop
-                    // instead of two.
-                    child: MergeSemantics(
-                      child: Semantics(
-                        button: true,
-                        label: l10n.homeStreakDetailsSemanticLabel,
-                        child: StreakBadge(
-                          key: const Key('streakBadge'),
-                          streakCount: profile.streakCount,
-                          todayDone: todayDone,
-                          streakCountLabel: l10n.streakCountLabel(
-                            profile.streakCount,
+                    onTap: () => Navigator.of(context).push<void>(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const StreakDetailsScreen(),
+                      ),
+                    ),
+                    // `constrainedAxis: horizontal` keeps the badge's
+                    // existing full-width stretch (from the Column's
+                    // crossAxisAlignment.stretch) untouched while leaving
+                    // its height unconstrained, so the outer ConstrainedBox
+                    // grows only the invisible tap area to 48dp and
+                    // StreakBadge itself still renders at its own natural
+                    // (40dp) height, centered within it (#088).
+                    child: UnconstrainedBox(
+                      constrainedAxis: Axis.horizontal,
+                      // StreakBadge already wraps itself in its own
+                      // Semantics label; MergeSemantics folds that together
+                      // with the button-role label below into one
+                      // screen-reader stop instead of two.
+                      child: MergeSemantics(
+                        child: Semantics(
+                          button: true,
+                          label: l10n.homeStreakDetailsSemanticLabel,
+                          child: StreakBadge(
+                            key: const Key('streakBadge'),
+                            streakCount: profile.streakCount,
+                            todayDone: todayDone,
+                            dayIcons: streakDayIcons,
+                            streakCountLabel: l10n.streakCountLabel(
+                              profile.streakCount,
+                            ),
+                            todayDoneLabel: l10n.streakTodayDoneLabel,
+                            semanticsLabel: todayDone
+                                ? '${l10n.streakCountLabel(profile.streakCount)} '
+                                      '${l10n.streakTodayDoneLabel}'
+                                : l10n.streakCountLabel(profile.streakCount),
                           ),
-                          todayDoneLabel: l10n.streakTodayDoneLabel,
-                          semanticsLabel: todayDone
-                              ? '${l10n.streakCountLabel(profile.streakCount)} '
-                                    '${l10n.streakTodayDoneLabel}'
-                              : l10n.streakCountLabel(profile.streakCount),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
+              ],
               const SizedBox(height: FoxSpacing.xl),
               FoxLevelProgressBar(
                 key: const Key('levelProgressBar'),

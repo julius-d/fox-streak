@@ -98,7 +98,7 @@ class _CoinShopScreenState extends ConsumerState<CoinShopScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
-                        Icon(Icons.ac_unit, color: foxSemantics(context).ice),
+                        FoxIceCubeIcon(color: foxSemantics(context).ice),
                         const SizedBox(width: FoxSpacing.sm),
                         Text(
                           l10n.coinShopStreakOnIceCountLabel(

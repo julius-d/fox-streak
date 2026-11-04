@@ -535,6 +535,57 @@ void main() {
     });
   });
 
+  group('visibleStreakDayIconCount (issue #108)', () {
+    test('shows every day when they all fit the available width', () {
+      final int visible = visibleStreakDayIconCount(
+        totalDays: 5,
+        availableWidth: 200,
+      );
+      expect(visible, 5);
+    });
+
+    test('crops to however many whole icons fit', () {
+      // 5 icons need 5*16 + 4*4 = 96; 60 fits 3: 3*16 + 2*4 = 56 <= 60.
+      final int visible = visibleStreakDayIconCount(
+        totalDays: 5,
+        availableWidth: 60,
+      );
+      expect(visible, 3);
+    });
+
+    test('never shows fewer than 1 icon once there is at least 1 day', () {
+      final int visible = visibleStreakDayIconCount(
+        totalDays: 10,
+        availableWidth: -50,
+      );
+      expect(visible, 1);
+    });
+
+    test('never shows more icons than there are days', () {
+      final int visible = visibleStreakDayIconCount(
+        totalDays: 2,
+        availableWidth: 1000,
+      );
+      expect(visible, 2);
+    });
+
+    test('shows every day for an unbounded (infinite) available width', () {
+      final int visible = visibleStreakDayIconCount(
+        totalDays: 12,
+        availableWidth: double.infinity,
+      );
+      expect(visible, 12);
+    });
+
+    test('returns 0 for a zero-day streak', () {
+      final int visible = visibleStreakDayIconCount(
+        totalDays: 0,
+        availableWidth: 200,
+      );
+      expect(visible, 0);
+    });
+  });
+
   testWidgets('streak badge shows flame, count, and the done check '
       '(issue #011)', (WidgetTester tester) async {
     await pumpKit(
@@ -542,6 +593,7 @@ void main() {
       const StreakBadge(
         streakCount: 7,
         todayDone: true,
+        dayIcons: [StreakDayIcon.flame],
         streakCountLabel: '7',
         todayDoneLabel: "Today's lesson counted",
         semanticsLabel: "7-day streak, today's lesson counted",
@@ -565,15 +617,81 @@ void main() {
       const StreakBadge(
         streakCount: 2,
         todayDone: false,
+        dayIcons: [StreakDayIcon.flame, StreakDayIcon.flame],
         streakCountLabel: '2',
         semanticsLabel: '2-day streak',
       ),
     );
 
     expect(find.text('2'), findsOneWidget);
-    expect(find.byIcon(Icons.local_fire_department), findsOneWidget);
+    expect(find.byIcon(Icons.local_fire_department), findsNWidgets(2));
     expect(find.byIcon(Icons.check_circle), findsNothing);
   });
+
+  testWidgets('streak badge renders one icon per day, flame or ice cube per '
+      "day's DailyActivitySource, oldest to newest (issue #108)", (
+    WidgetTester tester,
+  ) async {
+    await pumpKit(
+      tester,
+      const StreakBadge(
+        streakCount: 3,
+        todayDone: false,
+        dayIcons: [StreakDayIcon.flame, StreakDayIcon.ice, StreakDayIcon.flame],
+        streakCountLabel: '3',
+        semanticsLabel: '3-day streak',
+      ),
+    );
+
+    expect(find.text('3'), findsOneWidget);
+    expect(find.byIcon(Icons.local_fire_department), findsNWidgets(2));
+    expect(find.byType(FoxIceCubeIcon), findsOneWidget);
+
+    final double firstFlameX = tester
+        .getTopLeft(find.byIcon(Icons.local_fire_department).at(0))
+        .dx;
+    final double iceX = tester.getTopLeft(find.byType(FoxIceCubeIcon)).dx;
+    final double secondFlameX = tester
+        .getTopLeft(find.byIcon(Icons.local_fire_department).at(1))
+        .dx;
+    expect(firstFlameX, lessThan(iceX));
+    expect(iceX, lessThan(secondFlameX));
+  });
+
+  testWidgets(
+    'streak badge crops the oldest icons first, keeping the row inside its '
+    'available width, but never crops below 1 icon (issue #108)',
+    (WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(200, 200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await pumpKit(
+        tester,
+        StreakBadge(
+          streakCount: 30,
+          todayDone: false,
+          // Only the newest (last/rightmost) day is ice; every older day
+          // is flame — so if cropping ever dropped from the wrong end
+          // (newest-first instead of oldest-first), the sole ice icon
+          // would disappear and this test would catch it.
+          dayIcons: [
+            ...List.filled(29, StreakDayIcon.flame),
+            StreakDayIcon.ice,
+          ],
+          streakCountLabel: '30',
+          semanticsLabel: '30-day streak',
+        ),
+      );
+
+      expect(find.text('30'), findsOneWidget);
+      final int shownFlames = find
+          .byIcon(Icons.local_fire_department)
+          .evaluate()
+          .length;
+      expect(shownFlames, greaterThanOrEqualTo(0));
+      expect(shownFlames, lessThan(29));
+      expect(find.byType(FoxIceCubeIcon), findsOneWidget);
+    },
+  );
 
   testWidgets('coin badge shows the coin icon, count, and a11y label, with '
       'no tap target (issue #080)', (WidgetTester tester) async {

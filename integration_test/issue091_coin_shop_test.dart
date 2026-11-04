@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
+import 'package:fox_streak_app/src/data/clock.dart';
 import 'package:fox_streak_app/src/data/stats_repository.dart';
 import 'package:fox_streak_app/src/shop/coin_shop_screen.dart';
 import 'package:fox_streak_app/src/widgets/widgets.dart';
@@ -53,6 +54,14 @@ void main() {
       final statsRepo = StatsRepository(db, clock);
       await statsRepo.setOnboarded();
       await statsRepo.addCoins(kStreakOnIcePriceCoins);
+      // Issue #108 hides Home's streak badge entirely at streakCount == 0,
+      // and this test navigates to Streak Details via that badge below —
+      // give it an active streak so there's a badge to tap (the streak
+      // count itself is incidental to this purchase-flow test).
+      await statsRepo.setStreak(
+        streakCount: 1,
+        lastActiveDay: toLocalDayString(clock.now()),
+      );
 
       await pumpFoxStreakApp(tester, db: db, clock: clock);
 

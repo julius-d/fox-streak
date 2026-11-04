@@ -472,10 +472,68 @@ void main() {
     expect(find.byKey(const Key('streakBadge')), findsOneWidget);
     expect(find.text('5'), findsOneWidget);
     expect(find.byIcon(Icons.check_circle), findsOneWidget); // today done
+    // No daily_activity rows seeded, so every one of the 5 streak days
+    // defaults to a flame (issue #108).
+    expect(find.byIcon(Icons.local_fire_department), findsNWidgets(5));
     expect(find.byKey(const Key('levelProgressBar')), findsOneWidget);
     expect(find.byKey(const Key('goalRing')), findsOneWidget);
     await unmount(tester);
   });
+
+  testWidgets(
+    'streak badge is absent on Home when streakCount is 0 (issue #108)',
+    (tester) async {
+      final clock = FakeClock(kTestToday);
+      await pumpOnboardedHome(tester, clock);
+
+      expect(find.byKey(const Key('streakBadge')), findsNothing);
+      expect(find.byKey(const Key('streakBadgeButton')), findsNothing);
+      await unmount(tester);
+    },
+  );
+
+  testWidgets(
+    "the streak badge's per-day icon row renders a flame for a day with "
+    'normal practice and an ice cube for a day saved by a streak-on-ice '
+    '(issue #108)',
+    (tester) async {
+      final clock = FakeClock(kTestToday);
+      await pumpOnboardedHome(
+        tester,
+        clock,
+        seed: (stats, sets) async {
+          final today = clock.todayDayString();
+          final yesterday = toLocalDayString(
+            kTestToday.subtract(const Duration(days: 1)),
+          );
+          final twoDaysAgo = toLocalDayString(
+            kTestToday.subtract(const Duration(days: 2)),
+          );
+          await stats.recordDailyActivity(
+            day: twoDaysAgo,
+            xpDelta: 10,
+            source: DailyActivitySource.lessonCompleted,
+          );
+          await stats.recordDailyActivity(
+            day: yesterday,
+            xpDelta: 0,
+            source: DailyActivitySource.streakOnIce,
+          );
+          await stats.recordDailyActivity(
+            day: today,
+            xpDelta: 10,
+            source: DailyActivitySource.lessonCompleted,
+          );
+          await stats.setStreak(streakCount: 3, lastActiveDay: today);
+        },
+      );
+
+      expect(find.text('3'), findsOneWidget);
+      expect(find.byIcon(Icons.local_fire_department), findsNWidgets(2));
+      expect(find.byType(FoxIceCubeIcon), findsOneWidget);
+      await unmount(tester);
+    },
+  );
 
   testWidgets(
     'tapping the streak badge opens StreakDetailsScreen (issue #084)',
@@ -505,7 +563,18 @@ void main() {
     'growing StreakBadge itself (issue #088)',
     (tester) async {
       final clock = FakeClock(kTestToday);
-      await pumpOnboardedHome(tester, clock);
+      await pumpOnboardedHome(
+        tester,
+        clock,
+        // Issue #108 hides the badge entirely at streakCount == 0, so this
+        // a11y check needs an active streak to have a badge to measure.
+        seed: (stats, sets) async {
+          await stats.setStreak(
+            streakCount: 3,
+            lastActiveDay: clock.todayDayString(),
+          );
+        },
+      );
 
       final tapTargetHeight = tester
           .getSize(find.byKey(const Key('streakBadgeButton')))

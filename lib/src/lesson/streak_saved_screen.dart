@@ -68,6 +68,15 @@ class StreakSavedScreen extends StatelessWidget {
                         key: const Key('streakBadge'),
                         streakCount: streakCount,
                         todayDone: true,
+                        // This screen only ever shows right after a normal
+                        // lesson completion advanced the streak (never a
+                        // #087 streak-on-ice auto-apply, and it has no
+                        // per-day history to draw from) — issue #108's
+                        // per-day row is out of scope here (see that
+                        // issue's "Home's streak badge only" decision), so
+                        // this is just today's single flame, matching this
+                        // screen's pre-#108 single-icon look.
+                        dayIcons: const [StreakDayIcon.flame],
                         streakCountLabel: l10n.streakCountLabel(streakCount),
                         todayDoneLabel: l10n.streakTodayDoneLabel,
                         semanticsLabel:

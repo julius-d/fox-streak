@@ -1,6 +1,6 @@
 # Issue 108: Streak bar shows one flame per streak day
 
-Status: open | Priority: P2 | Type: feature | Refined-at: 2026-11-04
+Status: done | Priority: P2 | Type: feature | Refined-at: 2026-11-04 | Completed-at: 2026-11-04
 
 ## Context
 
@@ -128,3 +128,43 @@ active streak to show.
   per-day `DailyActivitySource` data.
 - Builds on #084's per-day activity history (already used by the Streak
   Details calendar) as the source of which past days were flame vs. ice.
+
+## Code review
+
+- Home's icon row used `.maybeWhen(..., orElse: () => [])` on a provider
+  that reloads on every profile write, flashing the row empty on each one.
+  Fixed — switched to reading `.value` (sticky across reload) instead.
+- `FoxIceCubeIcon`'s shine hardcoded `Colors.white`, nearly invisible
+  against dark theme's already-light-pastel ice token.
+  Fixed — the overlay now picks black/white via
+  `ThemeData.estimateBrightnessForColor(color)`.
+- The "crops oldest first" kit test used all-flame icons, so a
+  crop-direction regression (newest-first instead of oldest-first) would
+  still pass.
+  Fixed — rewrote it with the newest day as the sole ice icon in the list.
+- `_IceCubePainter` allocated two new `Paint` objects on every `paint()`
+  call.
+  Fixed — hoisted them to fields computed once per painter instance.
+- A streak longer than `activityCalendarProvider`'s ~6-month window only
+  gets icons for the days inside that window, while the numeric count
+  stays exact.
+  Not fixed — matches the same accepted v1 edge case
+  `ActivityCalendarData.build`'s own doc already calls out for
+  `isCurrentStreak`; documented inline in `home_screen.dart` instead.
+- Neither `StreakBadge` nor `FoxIceCubeIcon` has golden-test (#019) pixel
+  coverage, so a future visual regression wouldn't be caught.
+  Not fixed — pre-existing gap for `StreakBadge`, and adding baselines
+  across all 3 platforms is bigger than a small in-issue fix; tracked as
+  #110 instead.
+
+## Summary
+
+Home's `StreakBadge` now renders a fit-to-width row of small flame/ice
+icons (oldest → newest, crops oldest first, always ≥1 icon) next to the
+unchanged numeric count, sourced from the existing `activityCalendarProvider`
+data (no new query) and hidden entirely at `streakCount == 0` (mirrors
+`CoinBadge`'s `coinsTotal > 0` gate). Added `FoxIceCubeIcon` (a custom-painted
+icon — Flutter's bundled icon font has no ice-cube glyph) and swapped it in
+everywhere the old `Icons.ac_unit` snowflake appeared (coin shop + the new
+row). Follow-up: #110 (golden-test coverage for the two new/changed
+widgets).

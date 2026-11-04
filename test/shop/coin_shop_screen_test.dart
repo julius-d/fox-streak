@@ -78,6 +78,19 @@ void main() {
   );
 
   testWidgets(
+    'the streak-on-ice row shows the shared ice-cube icon, not a snowflake '
+    '(issue #108)',
+    (tester) async {
+      final clock = FakeClock(kTestToday);
+      await pumpCoinShop(tester, clock);
+
+      expect(find.byType(FoxIceCubeIcon), findsOneWidget);
+      expect(find.byIcon(Icons.ac_unit), findsNothing);
+      await unmount(tester);
+    },
+  );
+
+  testWidgets(
     'buy button is enabled once coinsTotal reaches the price (issue #091)',
     (tester) async {
       final clock = FakeClock(kTestToday);
