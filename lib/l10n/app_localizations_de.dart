@@ -314,11 +314,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get exerciseFreeTextRevealHintAria =>
-      'Ersten Buchstaben anzeigen (kostet Hinweis-Bonus)';
+      'Antwort anzeigen (kostet Hinweis-Bonus)';
 
   @override
-  String exerciseFreeTextHintLabel(String letter) {
-    return 'Beginnt mit: $letter';
+  String exerciseFreeTextHintLabel(String answer) {
+    return '$answer';
   }
 
   @override

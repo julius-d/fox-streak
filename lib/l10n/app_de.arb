@@ -149,14 +149,14 @@
     "description": "Accessibility label/tooltip for the free-text reveal hint button",
     "placeholders": {}
   },
-  "exerciseFreeTextRevealHintAria": "Ersten Buchstaben anzeigen (kostet Hinweis-Bonus)",
+  "exerciseFreeTextRevealHintAria": "Antwort anzeigen (kostet Hinweis-Bonus)",
   "@exerciseFreeTextHintLabel": {
-    "description": "Hint shown after reveal-hint is used, with the expected answer's first letter",
+    "description": "Hint shown after reveal-hint is used, with the full expected answer",
     "placeholders": {
-      "letter": {"type": "String"}
+      "answer": {"type": "String"}
     }
   },
-  "exerciseFreeTextHintLabel": "Beginnt mit: {letter}",
+  "exerciseFreeTextHintLabel": "{answer}",
   "@exerciseChoicePlaceholderOption": {
     "description": "Placeholder distractor label used when there are not enough real distractors (#006)",
     "placeholders": {

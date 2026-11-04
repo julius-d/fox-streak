@@ -180,17 +180,16 @@ void main() {
         await tester.tap(find.byKey(const Key('freeTextRevealHintButton')));
         await tester.pump();
 
-        expect(draft!.hintLabel, isNotNull);
-        expect(draft!.hintLabel, contains('H'));
+        expect(draft!.hintLabel, 'Hund');
         expect(draft!.hintUsed, isTrue);
         expect(find.byKey(const Key('freeTextHintLabel')), findsOneWidget);
+        expect(find.text('Hund'), findsWidgets);
       },
     );
 
     testWidgets(
-      'reveal-hint uses a full Unicode code point, not a UTF-16 code unit',
+      'reveal-hint shows the full answer verbatim, including multi-byte unicode',
       (tester) async {
-        // '😀' is a surrogate pair in UTF-16; answer[0] would split it.
         ExerciseDraft? draft;
         await tester.pumpWidget(
           _Harness(
@@ -203,7 +202,7 @@ void main() {
         await tester.tap(find.byKey(const Key('freeTextRevealHintButton')));
         await tester.pump();
 
-        expect(draft!.hintLabel, contains('😀'));
+        expect(draft!.hintLabel, '😀 Hallo');
       },
     );
 

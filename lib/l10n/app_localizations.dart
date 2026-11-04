@@ -659,14 +659,14 @@ abstract class AppLocalizations {
   /// Accessibility label/tooltip for the free-text reveal hint button
   ///
   /// In en, this message translates to:
-  /// **'Reveal the first letter (costs hint bonus)'**
+  /// **'Reveal the answer (costs hint bonus)'**
   String get exerciseFreeTextRevealHintAria;
 
-  /// Hint shown after reveal-hint is used, with the expected answer's first letter
+  /// Hint shown after reveal-hint is used, with the full expected answer
   ///
   /// In en, this message translates to:
-  /// **'Starts with: {letter}'**
-  String exerciseFreeTextHintLabel(String letter);
+  /// **'{answer}'**
+  String exerciseFreeTextHintLabel(String answer);
 
   /// Placeholder distractor label used when there are not enough real distractors (#006)
   ///

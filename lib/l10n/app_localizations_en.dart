@@ -311,11 +311,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get exerciseFreeTextRevealHintAria =>
-      'Reveal the first letter (costs hint bonus)';
+      'Reveal the answer (costs hint bonus)';
 
   @override
-  String exerciseFreeTextHintLabel(String letter) {
-    return 'Starts with: $letter';
+  String exerciseFreeTextHintLabel(String answer) {
+    return '$answer';
   }
 
   @override

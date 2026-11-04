@@ -87,13 +87,10 @@ class _FreeTextExerciseState extends State<FreeTextExercise> {
     _reportDraft();
   }
 
-  String? _firstLetterHint() {
+  String? _answerHint() {
     final answer = widget.item.answer.trim();
     if (answer.isEmpty) return null;
-    // `runes.first` (a Unicode code point), not `answer[0]` (a UTF-16 code
-    // unit) — the latter splits surrogate pairs for astral-plane characters.
-    final firstChar = String.fromCharCode(answer.runes.first);
-    return widget.l10n.exerciseFreeTextHintLabel(firstChar);
+    return widget.l10n.exerciseFreeTextHintLabel(answer);
   }
 
   void _reportDraft() {
@@ -103,7 +100,7 @@ class _FreeTextExerciseState extends State<FreeTextExercise> {
         hasAnswer: typed.trim().isNotEmpty,
         grade: () => gradeText(widget.item.answer, typed),
         correctAnswerLabel: widget.item.answer,
-        hintLabel: _hintUsed ? _firstLetterHint() : null,
+        hintLabel: _hintUsed ? _answerHint() : null,
         hintUsed: _hintUsed,
       ),
     );
@@ -174,7 +171,7 @@ class _FreeTextExerciseState extends State<FreeTextExercise> {
             Padding(
               padding: const EdgeInsets.only(top: FoxSpacing.sm),
               child: Text(
-                _firstLetterHint() ?? '',
+                _answerHint() ?? '',
                 key: const Key('freeTextHintLabel'),
                 style: text.bodyMedium?.copyWith(color: scheme.primary),
                 textAlign: TextAlign.center,

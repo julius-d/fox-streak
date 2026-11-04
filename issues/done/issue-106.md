@@ -1,6 +1,6 @@
 # Issue 106: Free-text hint reveals the full answer
 
-Status: open | Priority: P2 | Type: feature | Refined-at: 2026-11-04
+Status: done | Priority: P2 | Type: feature | Refined-at: 2026-11-04 | Completed-at: 2026-11-04
 
 ## Context
 
@@ -58,3 +58,17 @@ auto-fill the text field.
   part of the answer.
 - Any change to the XP penalty math (#010) or the one-shot button behavior.
 - Auto-filling the answer field with the revealed answer.
+
+## Summary
+
+Hint label now shows the full answer (`exerciseFreeTextHintLabel` arb param
+renamed `letter` -> `answer`); `_firstLetterHint()` renamed `_answerHint()`
+and the `runes.first` logic dropped. Tooltip strings updated EN/DE.
+No golden baselines existed for the free-text exercise widget (criterion 7
+N/A — nothing to regenerate). Screenshot: `issues/done/issue-106-free-text-
+hint-full-answer.png`.
+
+## Code review
+
+No findings. Removed-behavior audit confirmed dropping `runes.first` is
+safe (new code passes the whole trimmed answer through, no indexing left).
