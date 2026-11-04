@@ -17,7 +17,7 @@ import '../widgets/widgets.dart';
 
 /// Fixed price of one streak on ice, in coins — no bulk pricing/discounts
 /// in scope (issue #091).
-const int kStreakOnIcePriceCoins = 2500;
+const int kStreakOnIcePriceCoins = 400;
 
 class CoinShopScreen extends ConsumerStatefulWidget {
   const CoinShopScreen({super.key});

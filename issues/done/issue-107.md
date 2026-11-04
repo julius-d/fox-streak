@@ -1,6 +1,6 @@
 # Issue 107: Lower streak-on-ice price to 400 coins
 
-Status: open | Priority: P2 | Type: feature | Refined-at: 2026-11-04
+Status: done | Priority: P2 | Type: feature | Refined-at: 2026-11-04 | Completed-at: 2026-11-04
 
 ## Context
 
@@ -54,3 +54,21 @@ banner/haptic — is unchanged; only the price constant moves.
   (#087).
 - Bulk pricing, discounts, or any price other than the fixed 400.
 - Any other shop item besides streak on ice.
+
+## Summary
+
+Changed `kStreakOnIcePriceCoins` from `2500` to `400` in
+`lib/src/shop/coin_shop_screen.dart`. All widget/integration tests for the
+coin shop already referenced this constant rather than a hardcoded number,
+so they now exercise the new price without edits. The `spendCoins(2500)`
+calls in `test/data/stats_repository_test.dart` were left as-is — they're
+generic repository tests using an arbitrary amount, not tied to the shop
+price (criterion 5 turned out not to apply there). Verified end-to-end via
+the existing `integration_test/issue091_coin_shop_test.dart` on macOS.
+
+## Code review
+
+A medium-effort review of the diff (production code, tests, and issue doc)
+found no issues — the change is exactly one constant edit with no logic,
+control-flow, or test impact.
+No findings; nothing to fix.
