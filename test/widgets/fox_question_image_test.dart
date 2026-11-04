@@ -241,6 +241,220 @@ void main() {
     });
   });
 
+  group('Hero flight (#103)', () {
+    /// Pumps [child] under a `MediaQuery` with reduce-motion forced on,
+    /// mirroring `issue100_pet_hero_test.dart`'s approach for the pet Hero.
+    Future<void> pumpReduceMotionKit(WidgetTester tester, Widget child) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: FoxStreakTheme.light(),
+          builder: (context, app) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(disableAnimations: true),
+            child: app!,
+          ),
+          home: Scaffold(body: child),
+        ),
+      );
+    }
+
+    testWidgets('the card wraps the tappable image box (not the caption '
+        'bar) in a Hero', (WidgetTester tester) async {
+      await pumpKit(
+        tester,
+        FoxQuestionImage(
+          imageType: 'base64',
+          imageContent: base64Encode(kTinyPng),
+          semanticLabel: 'A sticker',
+          imageCopyright: '© Jane Doe',
+          expandHint: kExpandHint,
+          imageLoadFailedMessage: kLoadFailedMessage,
+          retryButtonLabel: kRetryLabel,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.ancestor(of: find.byType(Image), matching: find.byType(Hero)),
+        findsOneWidget,
+      );
+      expect(
+        find.ancestor(
+          of: find.byKey(const Key('foxItemImageCaption')),
+          matching: find.byType(Hero),
+        ),
+        findsNothing,
+      );
+    });
+
+    testWidgets('an emoji (not expandable) is never wrapped in a Hero', (
+      WidgetTester tester,
+    ) async {
+      await pumpKit(
+        tester,
+        const FoxQuestionImage(
+          imageType: 'emoji',
+          imageContent: '🐶',
+          semanticLabel: 'Hund',
+          expandHint: kExpandHint,
+          imageLoadFailedMessage: kLoadFailedMessage,
+          retryButtonLabel: kRetryLabel,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(Hero), findsNothing);
+    });
+
+    /// The card's Hero tag, read off a loaded base64 image — shared by
+    /// every assertion below that the full-screen viewer's Hero (whatever
+    /// load state it's in) uses the same tag.
+    Future<Object> cardHeroTag(WidgetTester tester) async {
+      await pumpKit(
+        tester,
+        FoxQuestionImage(
+          imageType: 'base64',
+          imageContent: base64Encode(kTinyPng),
+          semanticLabel: 'A sticker',
+          expandHint: kExpandHint,
+          imageLoadFailedMessage: kLoadFailedMessage,
+          retryButtonLabel: kRetryLabel,
+        ),
+      );
+      await tester.pumpAndSettle();
+      return tester
+          .widget<Hero>(
+            find.ancestor(of: find.byType(Image), matching: find.byType(Hero)),
+          )
+          .tag;
+    }
+
+    testWidgets('the full-screen viewer wraps a loaded image in a Hero '
+        "sharing the card's tag", (WidgetTester tester) async {
+      final tag = await cardHeroTag(tester);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: FoxStreakTheme.light(),
+          home: FoxFullScreenImageViewer(
+            imageType: 'base64',
+            imageContent: base64Encode(kTinyPng),
+            imageLoadFailedMessage: kLoadFailedMessage,
+            retryButtonLabel: kRetryLabel,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<Hero>(
+              find.ancestor(
+                of: find.byType(Image),
+                matching: find.byType(Hero),
+              ),
+            )
+            .tag,
+        tag,
+      );
+    });
+
+    testWidgets('the full-screen viewer wraps a failed-placeholder image '
+        "in a Hero sharing the card's tag", (WidgetTester tester) async {
+      final tag = await cardHeroTag(tester);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: FoxStreakTheme.light(),
+          home: const FoxFullScreenImageViewer(
+            imageType: 'base64',
+            imageContent: 'not-base64!!',
+            imageLoadFailedMessage: kLoadFailedMessage,
+            retryButtonLabel: kRetryLabel,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<Hero>(
+              find.ancestor(
+                of: find.byKey(const Key('fullScreenImageViewPlaceholder')),
+                matching: find.byType(Hero),
+              ),
+            )
+            .tag,
+        tag,
+      );
+    });
+
+    testWidgets('the full-screen viewer wraps a still-loading url image '
+        "in a Hero sharing the card's tag", (WidgetTester tester) async {
+      final tag = await cardHeroTag(tester);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: FoxStreakTheme.light(),
+          home: const FoxFullScreenImageViewer(
+            imageType: 'url',
+            imageContent: 'https://example.com/i.png',
+            imageLoadFailedMessage: kLoadFailedMessage,
+            retryButtonLabel: kRetryLabel,
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(
+        tester
+            .widget<Hero>(
+              find.ancestor(
+                of: find.byKey(const Key('fullScreenImageViewLoading')),
+                matching: find.byType(Hero),
+              ),
+            )
+            .tag,
+        tag,
+      );
+      // Drains the real (fake-400) network response's auto-retry timers
+      // (#102) so none are left pending when the test ends.
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('with OS reduce motion on, neither the card nor the '
+        'full-screen viewer wraps its image in a Hero', (
+      WidgetTester tester,
+    ) async {
+      await pumpReduceMotionKit(
+        tester,
+        FoxQuestionImage(
+          imageType: 'base64',
+          imageContent: base64Encode(kTinyPng),
+          semanticLabel: 'A sticker',
+          expandHint: kExpandHint,
+          imageLoadFailedMessage: kLoadFailedMessage,
+          retryButtonLabel: kRetryLabel,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(Hero), findsNothing);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: FoxStreakTheme.light(),
+          builder: (context, app) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(disableAnimations: true),
+            child: app!,
+          ),
+          home: FoxFullScreenImageViewer(
+            imageType: 'base64',
+            imageContent: base64Encode(kTinyPng),
+            imageLoadFailedMessage: kLoadFailedMessage,
+            retryButtonLabel: kRetryLabel,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(Hero), findsNothing);
+    });
+  });
+
   group('FoxFullScreenImageViewer (#094)', () {
     testWidgets('shows the image and caption; tapping the image pops', (
       WidgetTester tester,

@@ -1,6 +1,6 @@
 # Issue 103: Hero animation for question images expanding to full screen
 
-Status: open | Priority: P3 | Type: enhancement | Refined-at: 2026-11-03
+Status: done | Priority: P3 | Type: enhancement | Refined-at: 2026-11-03 | Completed-at: 2026-11-04
 
 ## Context
 
@@ -76,3 +76,28 @@ appearing/disappearing in place.
   #094, unchanged here.
 - Changing what counts as an expandable image (still `base64`/`url` only,
   per #094).
+
+## Summary
+
+Added a shared, constant Hero tag in `fox_question_image.dart`, wrapping
+the card's tappable image box and the full-screen viewer's image in it
+(bypassed via `MediaQuery.disableAnimationsOf`, mirroring #100's
+convention) — a single match on each side of the push/pop, since only
+one `FoxQuestionImage` is ever mounted at a time. Both Hero endpoints
+also got a matching `ClipRRect(FoxRadius.md)` so Flutter's default
+flight shuttle (always the destination's child) doesn't visibly snap
+corners square/round at the start of the flight. No screenshots: this is
+purely an animated transition, no new static visuals (goldens
+unchanged).
+
+## Code review
+
+- Hero endpoints had mismatched decoration (card: `ClipRRect` + fixed
+  box; full-screen: bare image) — Flutter's default flight shuttle
+  always renders the destination's child, so corners would visibly snap
+  square/round at the start of the flight.
+  Fixed: full-screen viewer's image now gets the same `ClipRRect(FoxRadius.md)`.
+- `_wrapQuestionImageHero`'s reduce-motion-bypass logic duplicates
+  `pet_hero.dart`'s `wrapEquippedPetHero` (#100) 3-line pattern verbatim.
+  Not fixed here: spans two already-shipped, unrelated files; split out
+  as issue #105 instead.

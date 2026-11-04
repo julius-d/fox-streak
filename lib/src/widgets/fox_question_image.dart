@@ -20,12 +20,35 @@
 // `url` images auto-retry on load failure, then fall back to a manual-retry
 // placeholder (issue #102) — see `_RetryingNetworkImage` below. `base64`
 // never needs this: it has no network round-trip to retry.
+//
+// The tap-to-expand flies the image into its full-screen position/size via
+// a `Hero` (issue #103), mirroring `pet_hero.dart`'s convention (#100): a
+// constant tag, bypassed when OS reduce-motion is on. A constant tag is
+// safe here for the same reason it is there — only one `FoxQuestionImage`
+// is ever mounted at a time (the lesson screen swaps a single exercise card
+// in place, not a kept-alive `PageView`), so there's exactly one match on
+// each side of the push/pop. Only the image box itself is wrapped, not the
+// caption bar below it — that appears on the full-screen view as a normal
+// fading-in element, not part of the flight.
 
 import 'package:flutter/material.dart';
 
 import 'fox_buttons.dart';
 import 'fox_item_image.dart' show decodeImageBase64;
 import '../theme/fox_streak_theme.dart';
+
+/// Hero tag shared by [FoxQuestionImage]'s tappable image box and
+/// [FoxFullScreenImageViewer]'s image — see the file-level comment above.
+const Object _questionImageHeroTag = 'questionImageHero';
+
+/// Wraps [child] in a `Hero` sharing [_questionImageHeroTag], unless OS
+/// reduce-motion is on — then [child] is returned bare, so the full-screen
+/// view opens/closes instantly with no flight, matching `pet_hero.dart`'s
+/// convention (#100).
+Widget _wrapQuestionImageHero(BuildContext context, Widget child) {
+  if (MediaQuery.disableAnimationsOf(context)) return child;
+  return Hero(tag: _questionImageHeroTag, child: child);
+}
 
 /// Renders [item]'s prompt-side image for the lesson/question context,
 /// given its validated `imageType`/`imageContent` pair (see
@@ -90,7 +113,7 @@ class FoxQuestionImage extends StatelessWidget {
             ? InkWell(
                 key: const Key('foxQuestionImageTapTarget'),
                 onTap: () => _openFullScreen(context),
-                child: image,
+                child: _wrapQuestionImageHero(context, image),
               )
             : image,
         if (imageCopyright != null)
@@ -443,7 +466,21 @@ class FoxFullScreenImageViewer extends StatelessWidget {
                 key: const Key('fullScreenImageViewTapTarget'),
                 behavior: HitTestBehavior.opaque,
                 onTap: () => Navigator.of(context).pop(),
-                child: Center(child: _buildImage(context)),
+                child: Center(
+                  child: _wrapQuestionImageHero(
+                    context,
+                    // Flutter's default Hero flight shuttle shows this
+                    // (the "to" Hero's) child for the whole flight, in
+                    // both directions — without matching the card's own
+                    // `ClipRRect` (see `_buildBase64`/`_buildUrl` above),
+                    // the corners would visibly snap from rounded to
+                    // square (or back) right as the flight starts.
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(FoxRadius.md),
+                      child: _buildImage(context),
+                    ),
+                  ),
+                ),
               ),
             ),
             if (imageCopyright != null)
