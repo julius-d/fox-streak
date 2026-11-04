@@ -2,6 +2,8 @@
 // PetCollectionScreen (issue #100).
 import 'package:flutter/material.dart';
 
+import '../widgets/fox_hero.dart';
+
 /// Hero tag shared by Home's pet avatar and `PetCollectionScreen`'s
 /// equipped tile — constant, not keyed by pet id. Each screen renders at
 /// most one `FoxPet` wrapped with this tag at a time: Home always shows the
@@ -15,8 +17,8 @@ const Object equippedPetHeroTag = 'equippedPetHero';
 /// reduce-motion is on — then [child] is returned bare, so Home <->
 /// PetCollectionScreen navigation swaps it instantly with no flight,
 /// matching `FoxPet`'s own reduce-motion convention
-/// (`MediaQuery.disableAnimationsOf`, see fox_pet.dart).
+/// (`MediaQuery.disableAnimationsOf`, see fox_pet.dart). Delegates to the
+/// shared "wrap unless reduce-motion" helper in `fox_hero.dart` (#105).
 Widget wrapEquippedPetHero(BuildContext context, Widget child) {
-  if (MediaQuery.disableAnimationsOf(context)) return child;
-  return Hero(tag: equippedPetHeroTag, child: child);
+  return wrapInReducedMotionHero(context, equippedPetHeroTag, child);
 }

@@ -1,6 +1,6 @@
 # Issue 105: De-duplicate the reduce-motion Hero-wrap helper
 
-Status: open | Priority: P4 | Type: tech-debt | Refined-at: 2026-11-04
+Status: done | Priority: P4 | Type: tech-debt | Refined-at: 2026-11-04 | Completed-at: 2026-11-04
 
 ## Context
 
@@ -46,3 +46,20 @@ delegate to it instead of each keeping their own copy.
 
 - Any change to what triggers reduce-motion, or to either feature's own
   Hero tag/scope.
+
+## Summary
+
+Added `lib/src/widgets/fox_hero.dart` with `wrapInReducedMotionHero(context,
+tag, child)`, the shared "Hero unless OS reduce-motion is on" logic. Both
+`wrapEquippedPetHero` (#100) and `_wrapQuestionImageHero` (#103) now
+delegate to it — no behavior change. Not added to the `widgets.dart`
+barrel: it's a bare helper function, not a widget, matching how
+`pet_hero.dart` is also imported directly rather than via the barrel.
+
+## Code review
+
+- No new dedicated unit test for `wrapInReducedMotionHero` itself.
+  Not fixed: existing behavioral tests at both call sites
+  (`fox_question_image_test.dart`, `pet_screens_test.dart`,
+  `home_screen_test.dart`) already exercise the reduce-motion on/off
+  paths end-to-end, so a regression would still be caught.

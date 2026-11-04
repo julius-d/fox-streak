@@ -23,17 +23,19 @@
 //
 // The tap-to-expand flies the image into its full-screen position/size via
 // a `Hero` (issue #103), mirroring `pet_hero.dart`'s convention (#100): a
-// constant tag, bypassed when OS reduce-motion is on. A constant tag is
-// safe here for the same reason it is there — only one `FoxQuestionImage`
-// is ever mounted at a time (the lesson screen swaps a single exercise card
-// in place, not a kept-alive `PageView`), so there's exactly one match on
-// each side of the push/pop. Only the image box itself is wrapped, not the
+// constant tag, bypassed when OS reduce-motion is on (both delegate to the
+// shared helper in `fox_hero.dart`, see #105). A constant tag is safe here
+// for the same reason it is there — only one `FoxQuestionImage` is ever
+// mounted at a time (the lesson screen swaps a single exercise card in
+// place, not a kept-alive `PageView`), so there's exactly one match on each
+// side of the push/pop. Only the image box itself is wrapped, not the
 // caption bar below it — that appears on the full-screen view as a normal
 // fading-in element, not part of the flight.
 
 import 'package:flutter/material.dart';
 
 import 'fox_buttons.dart';
+import 'fox_hero.dart';
 import 'fox_item_image.dart' show decodeImageBase64;
 import '../theme/fox_streak_theme.dart';
 
@@ -46,8 +48,7 @@ const Object _questionImageHeroTag = 'questionImageHero';
 /// view opens/closes instantly with no flight, matching `pet_hero.dart`'s
 /// convention (#100).
 Widget _wrapQuestionImageHero(BuildContext context, Widget child) {
-  if (MediaQuery.disableAnimationsOf(context)) return child;
-  return Hero(tag: _questionImageHeroTag, child: child);
+  return wrapInReducedMotionHero(context, _questionImageHeroTag, child);
 }
 
 /// Renders [item]'s prompt-side image for the lesson/question context,
