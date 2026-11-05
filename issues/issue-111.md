@@ -1,6 +1,6 @@
 # Issue 111: XpUpScreen's milestone pet (#081) has no a11y announcement
 
-Status: open | Priority: P3 | Type: tech-debt
+Status: open | Priority: P3 | Type: tech-debt | Refined-at: 2026-11-05
 
 ## Goal
 
@@ -30,13 +30,40 @@ params"), which #081's acceptance criteria explicitly scoped out ("No new
 l10n strings needed") — doing it right is a small but real product/copy
 decision, not a one-line fix.
 
+## Decision
+
+A standalone "milestone streak" announcement, not a repeat of the exact
+streak-day count. `StreakSavedScreen` (shown immediately before
+`XpUpScreen` in the same completion sequence, whenever `isMilestone` is
+true — see `LessonScreen._runCompletionSequence`) already announces the
+exact `{streakCount}-day streak!` via its heading/streak text; `XpUpScreen`
+only needs to flag that the pet showing up here is the same milestone
+moment, not restate the number. This also avoids threading a new
+`streakCount` param through `XpUpScreen`/`lesson_screen.dart` for a value
+the user already heard seconds earlier.
+
 ## Acceptance Criteria
 
-- Add an l10n string (DE + EN) announcing the milestone on `XpUpScreen`'s
-  pet (e.g. reusing/mirroring `StreakSavedScreen`'s streak-count phrasing,
-  or a standalone "milestone streak" announcement — wording is an
-  implementation call).
-- `XpUpScreen`'s milestone `FoxPet` passes that string as `semanticLabel`
-  instead of `null`.
+- New l10n string key `xpUpMilestonePetSemanticLabel` (DE + EN, no
+  placeholders), added to both `lib/l10n/app_en.arb` and
+  `lib/l10n/app_de.arb` with an `@xpUpMilestonePetSemanticLabel`
+  description block (matching the existing `.arb` convention):
+  - EN: "Streak milestone!"
+  - DE: "Streak-Meilenstein!"
+- `XpUpScreen`'s milestone `FoxPet` (xp_up_screen.dart) passes
+  `l10n.xpUpMilestonePetSemanticLabel` as `semanticLabel` instead of `null`.
 - `StreakSavedScreen`'s milestone `FoxPet` is unaffected (its `null` is
-  already justified by its own heading/streak text).
+  already justified by its own heading/streak text) — no change to
+  streak_saved_screen.dart.
+- Test coverage: the `XpUpScreen` milestone test (added by #081, likely
+  `test/lesson/xp_up_screen_test.dart`) asserts the `FoxPet`'s
+  `semanticLabel` equals `l10n.xpUpMilestonePetSemanticLabel` on the
+  milestone case, instead of (or in addition to) just asserting the
+  `foxPet-<id>` key is present.
+
+## Out of scope
+
+- Any change to `StreakSavedScreen`, its confetti, or its existing
+  streak-count text.
+- Threading `streakCount` into `XpUpScreen` — the chosen wording doesn't
+  need it (see Decision above).
