@@ -254,6 +254,11 @@
     }
   },
   "lessonScoreSummary": "{correct} von {total} richtig ({pct}%)",
+  "@xpUpMilestonePetSemanticLabel": {
+    "description": "A11y label for XpUpScreen's milestone-only pet (issue #111) — StreakSavedScreen already announces the exact streak count just before this screen, so this only needs to flag the same milestone moment, not restate the number",
+    "placeholders": {}
+  },
+  "xpUpMilestonePetSemanticLabel": "Streak-Meilenstein!",
   "@xpEarnedLabel": {
     "description": "XP-earned count-up label on the lesson result screen (issue #010)",
     "placeholders": {

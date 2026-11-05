@@ -64,17 +64,23 @@ void main() {
     expect(tester.widget<PopScope>(find.byType(PopScope)).canPop, isFalse);
   });
 
-  testWidgets('shows the equipped pet on a milestone streak (issue #081)', (
-    tester,
-  ) async {
-    await tester.pumpWidget(_harness(isMilestone: true));
-    await tester.pump();
+  testWidgets(
+    'shows the equipped pet with a milestone a11y label on a milestone '
+    'streak (issue #081, label issue #111)',
+    (tester) async {
+      await tester.pumpWidget(_harness(isMilestone: true));
+      await tester.pump();
 
-    expect(
-      find.byKey(Key('foxPet-${PetCatalog.defaultEntry.id}')),
-      findsOneWidget,
-    );
-  });
+      expect(
+        find.byKey(Key('foxPet-${PetCatalog.defaultEntry.id}')),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel(_l10n.xpUpMilestonePetSemanticLabel),
+        findsOneWidget,
+      );
+    },
+  );
 
   testWidgets('shows no pet on a non-milestone streak', (tester) async {
     await tester.pumpWidget(_harness(isMilestone: false));

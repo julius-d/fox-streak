@@ -774,6 +774,12 @@ abstract class AppLocalizations {
   /// **'{correct} of {total} correct ({pct}%)'**
   String lessonScoreSummary(int correct, int total, int pct);
 
+  /// A11y label for XpUpScreen's milestone-only pet (issue #111) — StreakSavedScreen already announces the exact streak count just before this screen, so this only needs to flag the same milestone moment, not restate the number
+  ///
+  /// In en, this message translates to:
+  /// **'Streak milestone!'**
+  String get xpUpMilestonePetSemanticLabel;
+
   /// XP-earned count-up label on the lesson result screen (issue #010)
   ///
   /// In en, this message translates to:

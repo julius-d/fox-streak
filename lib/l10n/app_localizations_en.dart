@@ -383,6 +383,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get xpUpMilestonePetSemanticLabel => 'Streak milestone!';
+
+  @override
   String xpEarnedLabel(int xp) {
     return '+$xp XP';
   }

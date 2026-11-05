@@ -1,6 +1,6 @@
 # Issue 111: XpUpScreen's milestone pet (#081) has no a11y announcement
 
-Status: open | Priority: P3 | Type: tech-debt | Refined-at: 2026-11-05
+Status: done | Priority: P3 | Type: tech-debt | Refined-at: 2026-11-05 | Completed-at: 2026-11-05
 
 ## Goal
 
@@ -67,3 +67,17 @@ the user already heard seconds earlier.
   streak-count text.
 - Threading `streakCount` into `XpUpScreen` — the chosen wording doesn't
   need it (see Decision above).
+
+## Summary
+
+Added `xpUpMilestonePetSemanticLabel` ("Streak milestone!" / "Streak-
+Meilenstein!") to both `.arb` files and regenerated l10n; `XpUpScreen`'s
+milestone `FoxPet` now passes it as `semanticLabel` instead of `null`.
+`StreakSavedScreen` untouched. Extended `test/lesson/xp_up_screen_test.dart`
+and the existing end-to-end `integration_test/streak_result_test.dart` to
+assert the label via `find.bySemanticsLabel`.
+
+## Code review
+
+- No findings from the `code-review` skill (medium effort) on the full diff.
+  Nothing to fix.

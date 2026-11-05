@@ -10,6 +10,11 @@
 // On a streak-milestone completion (`StreakService.isMilestone`, issue
 // #081), also shows the equipped pet before the XP count-up — independent
 // of `leveledUp`, which keeps gating `_LevelUpEffects`'s own confetti/chime.
+// Unlike `StreakSavedScreen`'s milestone pet, this screen has no heading
+// to make a decorative `semanticLabel: null` valid, so it carries its own
+// `xpUpMilestonePetSemanticLabel` (issue #111) — a standalone "milestone"
+// flag, not a repeat of the exact streak count `StreakSavedScreen` already
+// announced moments earlier in the same completion sequence.
 
 import 'dart:async';
 
@@ -71,7 +76,11 @@ class XpUpScreen extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (isMilestone) ...[
-                        FoxPet(pet: pet, size: 96, semanticLabel: null),
+                        FoxPet(
+                          pet: pet,
+                          size: 96,
+                          semanticLabel: l10n.xpUpMilestonePetSemanticLabel,
+                        ),
                         const SizedBox(height: FoxSpacing.md),
                       ],
                       FoxCelebration(

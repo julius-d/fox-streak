@@ -157,6 +157,10 @@ void main() {
       ),
       findsOneWidget,
     );
+    // Unlike `StreakSavedScreen`'s decorative pet (justified by its own
+    // heading/streak text), `XpUpScreen` has no such text, so its pet
+    // carries its own milestone a11y announcement (issue #111).
+    expect(find.bySemanticsLabel('Streak milestone!'), findsOneWidget);
 
     // The write actually landed exactly once (no double-apply).
     final profile = await statsRepo.getProfile();
