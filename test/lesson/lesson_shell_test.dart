@@ -12,6 +12,8 @@
 // Uses NativeDatabase.memory() + FakeClock overrides via ProviderScope.
 // Bounded pumps per #003 harness learning — never pumpAndSettle on watch() streams.
 
+import 'dart:math';
+
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -35,6 +37,27 @@ import 'package:fox_streak_app/test/data/test_helpers.dart';
 import 'package:fox_streak_app/test/lesson/confetti_settle.dart';
 import 'package:fox_streak_app/test/lesson/helpers/placeholder_exercise_card.dart';
 
+/// A fixed, non-random "random" for [petRandomProvider] — always picks the
+/// coin flip's pet branch (`nextBool() => false`), which combined with
+/// [pumpLessonShell]'s already-empty [petCatalogLoaderProvider] override
+/// keeps `PetService.recordLessonCompletion`'s lootbox reward `null` on any
+/// 2nd-same-day completion a test drives through. Without this, that
+/// unseeded coin flip (issue #065) would land on `CoinsReward` roughly half
+/// the time, pushing an unhandled `LootboxScreen` in front of the very
+/// screens (`StreakSavedScreen`/`XpUpScreen`) a test is asserting on —
+/// exactly the flakiness `petRandomProvider`'s own doc warns an unseeded
+/// test would hit.
+class _ZeroRandom implements Random {
+  @override
+  bool nextBool() => false;
+
+  @override
+  int nextInt(int max) => 0;
+
+  @override
+  double nextDouble() => 0;
+}
+
 /// Pumps a widget under the FoxStreak theme + Riverpod scope with test overrides.
 ///
 /// Always stubs [foxSoundPlayerProvider] with a no-op fake (issue #054):
@@ -57,6 +80,7 @@ Future<void> pumpLessonShell(
         petCatalogLoaderProvider.overrideWithValue(
           () async => const <PetEntry>[],
         ),
+        petRandomProvider.overrideWithValue(() => _ZeroRandom()),
         foxSoundPlayerProvider.overrideWithValue(_FakeSoundPlayer()),
       ],
       child: MaterialApp(
