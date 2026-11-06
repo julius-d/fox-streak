@@ -73,6 +73,8 @@ class MultipleChoiceCard extends StatefulWidget {
 class _MultipleChoiceCardState extends State<MultipleChoiceCard> {
   late final List<ChoiceOption> _options;
   ChoiceOption? _selected;
+  double? _stableViewportHeight;
+  double? _stableViewportWidth;
 
   @override
   void initState() {
@@ -115,49 +117,114 @@ class _MultipleChoiceCardState extends State<MultipleChoiceCard> {
       widget.item.answerLang,
       l10n,
     );
-    final image = buildItemImage(widget.item, l10n: l10n);
+    final photo = hasPhotoImage(widget.item);
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(vertical: FoxSpacing.md),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(minHeight: exerciseCardMinHeight(context)),
-        child: IntrinsicHeight(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              image,
-              if (directionLabel != null) ...[
-                Text(
-                  directionLabel,
-                  style: textTheme.labelLarge?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: FoxSpacing.sm),
-              ],
-              Semantics(
-                label: l10n.itemPromptLabel,
-                child: Text(
-                  widget.item.prompt,
-                  style: textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              const SizedBox(height: FoxSpacing.xl),
-              for (var i = 0; i < _options.length; i++)
-                Padding(
-                  key: Key('choiceOption$i'),
-                  padding: const EdgeInsets.symmetric(vertical: FoxSpacing.sm),
-                  child: _buildOptionCard(context, _options[i], i),
-                ),
-            ],
+    final promptBlock = <Widget>[
+      if (directionLabel != null) ...[
+        Text(
+          directionLabel,
+          style: textTheme.labelLarge?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
           ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: FoxSpacing.sm),
+      ],
+      Semantics(
+        label: l10n.itemPromptLabel,
+        child: Text(
+          widget.item.prompt,
+          style: textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+          textAlign: TextAlign.center,
         ),
       ),
+      const SizedBox(height: FoxSpacing.lg),
+    ];
+    final optionBlock = <Widget>[
+      for (var i = 0; i < _options.length; i++)
+        Padding(
+          key: Key('choiceOption$i'),
+          // Gaps between options only: no dead space above the first or
+          // below the last, which would eat into the 360x800 budget.
+          padding: EdgeInsets.only(
+            top: i == 0 ? 0 : FoxSpacing.sm,
+            bottom: i == _options.length - 1 ? 0 : FoxSpacing.sm,
+          ),
+          child: _buildOptionCard(context, _options[i], i),
+        ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Frozen once the answer is revealed: the feedback banner then eats
+        // into the viewport, but the layout (image size, options position)
+        // must not move — the overflow scrolls instead (#112).
+        // A width change (rotation, window resize) is a new layout, not
+        // the banner, so it re-bases the frozen height.
+        if (!widget.revealed ||
+            _stableViewportHeight == null ||
+            _stableViewportWidth != constraints.maxWidth) {
+          _stableViewportHeight = constraints.maxHeight;
+          _stableViewportWidth = constraints.maxWidth;
+        }
+        final minHeight = _stableViewportHeight!;
+        final wide = photo && constraints.maxWidth > minHeight;
+
+        final Widget content;
+        if (wide) {
+          // Image beside the question + options.
+          content = Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: buildItemImage(
+                  widget.item,
+                  l10n: l10n,
+                  expandToFill: true,
+                ),
+              ),
+              const SizedBox(width: FoxSpacing.lg),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [...promptBlock, ...optionBlock],
+                ),
+              ),
+            ],
+          );
+        } else {
+          // Top-anchored with a growing image when there is a photo;
+          // otherwise (no image / emoji) centered while it fits.
+          content = Column(
+            mainAxisAlignment: photo
+                ? MainAxisAlignment.start
+                : MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (photo)
+                Expanded(
+                  child: buildItemImage(
+                    widget.item,
+                    l10n: l10n,
+                    expandToFill: true,
+                  ),
+                )
+              else
+                buildItemImage(widget.item, l10n: l10n),
+              ...promptBlock,
+              ...optionBlock,
+            ],
+          );
+        }
+
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: minHeight),
+            child: IntrinsicHeight(child: content),
+          ),
+        );
+      },
     );
   }
 
@@ -191,6 +258,8 @@ class _MultipleChoiceCardState extends State<MultipleChoiceCard> {
       borderColor = theme.colorScheme.primary;
     }
 
+    final borderWidth = (showFeedback || isSelected) ? 3.0 : 1.5;
+
     return Semantics(
       button: true,
       selected: isSelected,
@@ -209,13 +278,15 @@ class _MultipleChoiceCardState extends State<MultipleChoiceCard> {
           constraints: const BoxConstraints(
             minHeight: FoxButtonMetrics.minSize,
           ),
-          padding: const EdgeInsets.all(FoxSpacing.md),
+          // Border + padding always add up to the same size, so selecting
+          // or revealing never shifts the options block (#112).
+          padding: EdgeInsets.all(FoxSpacing.md + (3 - borderWidth)),
           decoration: BoxDecoration(
             color: backgroundColor ?? theme.colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(FoxRadius.lg),
             border: Border.all(
               color: borderColor ?? theme.colorScheme.outlineVariant,
-              width: (showFeedback || isSelected) ? 3 : 1.5,
+              width: borderWidth,
             ),
           ),
           alignment: Alignment.center,

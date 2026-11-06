@@ -76,6 +76,16 @@ class FoxQuestionImage extends StatelessWidget {
   /// may be smaller.
   final double maxImageHeight;
 
+  /// Grow the `base64`/`url` image box into whatever height the parent
+  /// gives it (#112), with [maxImageHeight] as the floor instead of the
+  /// fixed height. Requires a bounded-height parent (e.g. an `Expanded`) and, to keep the
+  /// floor, an enclosing `IntrinsicHeight` (an `Expanded` squeezed below
+  /// [maxImageHeight] would otherwise shrink the image under it).
+  /// The floor is also what an enclosing `IntrinsicHeight` sees, so the
+  /// image is never smaller than the non-growing variant. No effect on
+  /// `emoji`/unknown types, which keep their fixed [emojiSize] box.
+  final bool expandToFill;
+
   const FoxQuestionImage({
     super.key,
     required this.imageType,
@@ -87,11 +97,18 @@ class FoxQuestionImage extends StatelessWidget {
     this.imageCopyright,
     this.emojiSize = 96,
     this.maxImageHeight = 240,
+    this.expandToFill = false,
   });
 
   /// `base64`/`url` only (#094 Decisions) — `emoji` and malformed types
   /// never expand.
   bool get _isExpandable => imageType == 'base64' || imageType == 'url';
+
+  /// Height of the `base64`/`url` image box: fixed, or `null` (take the
+  /// parent's tight height) in [expandToFill] mode.
+  double? get _boxHeight => _fills ? null : maxImageHeight;
+
+  bool get _fills => expandToFill && _isExpandable;
 
   @override
   Widget build(BuildContext context) {
@@ -106,17 +123,31 @@ class FoxQuestionImage extends StatelessWidget {
       ),
     };
     final expandable = _isExpandable;
+    final Widget tappable = expandable
+        ? InkWell(
+            key: const Key('foxQuestionImageTapTarget'),
+            onTap: () => _openFullScreen(context),
+            child: _wrapQuestionImageHero(context, image),
+          )
+        : image;
     final body = Column(
-      mainAxisSize: MainAxisSize.min,
+      mainAxisSize: _fills ? MainAxisSize.max : MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        expandable
-            ? InkWell(
-                key: const Key('foxQuestionImageTapTarget'),
-                onTap: () => _openFullScreen(context),
-                child: _wrapQuestionImageHero(context, image),
-              )
-            : image,
+        // `IntrinsicHeight` ancestors ignore positioned Stack children, so
+        // the fixed-height sizer is what they measure (the floor) while
+        // the image itself fills whatever the Expanded actually gets.
+        if (_fills)
+          Expanded(
+            child: Stack(
+              children: [
+                SizedBox(height: maxImageHeight, width: double.infinity),
+                Positioned.fill(child: tappable),
+              ],
+            ),
+          )
+        else
+          tappable,
         if (imageCopyright != null)
           buildFoxImageCaptionBar(context, imageCopyright!, double.infinity),
       ],
@@ -166,7 +197,7 @@ class FoxQuestionImage extends StatelessWidget {
     if (bytes == null) {
       return SizedBox(
         width: double.infinity,
-        height: maxImageHeight,
+        height: _boxHeight,
         child: _buildPlaceholder(context),
       );
     }
@@ -182,7 +213,7 @@ class FoxQuestionImage extends StatelessWidget {
       // than cropping, so a non-square image's aspect ratio is preserved.
       child: SizedBox(
         width: double.infinity,
-        height: maxImageHeight,
+        height: _boxHeight,
         child: Image.memory(
           bytes,
           fit: BoxFit.contain,
@@ -198,7 +229,7 @@ class FoxQuestionImage extends StatelessWidget {
       borderRadius: BorderRadius.circular(FoxRadius.md),
       child: SizedBox(
         width: double.infinity,
-        height: maxImageHeight,
+        height: _boxHeight,
         child: _RetryingNetworkImage(
           url: imageContent,
           fit: BoxFit.contain,

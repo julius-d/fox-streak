@@ -78,6 +78,12 @@ double exerciseCardMinHeight(BuildContext context) {
       FoxSpacing.xxl * 2;
 }
 
+/// Whether [item] has a `base64`/`url` image — the kinds that can grow
+/// into spare space (#112); an `emoji` keeps its small fixed box.
+bool hasPhotoImage(Item item) =>
+    item.imageContent != null &&
+    (item.imageType == 'base64' || item.imageType == 'url');
+
 /// Builds [item]'s shared prompt-side image block (issue #014; copyright
 /// caption + tap-to-expand added by #094), already including its own
 /// trailing spacer — or an empty, zero-size [SizedBox.shrink] when [item]
@@ -90,22 +96,33 @@ double exerciseCardMinHeight(BuildContext context) {
 /// context gets more room and shows the image at its natural aspect ratio.
 /// [l10n] resolves the tap-to-expand a11y hint (#094) — kit widgets never
 /// resolve l10n themselves.
-Widget buildItemImage(Item item, {required AppLocalizations l10n}) {
+///
+/// With [expandToFill] (#112) a `base64`/`url` image instead fills the
+/// bounded height its parent gives it (floor: the usual 240dp) — see
+/// [hasPhotoImage]; callers place the result in an `Expanded`.
+Widget buildItemImage(
+  Item item, {
+  required AppLocalizations l10n,
+  bool expandToFill = false,
+}) {
   final type = item.imageType;
   final content = item.imageContent;
   if (type == null || content == null) return const SizedBox.shrink();
+  final fills = expandToFill && hasPhotoImage(item);
+  final image = FoxQuestionImage(
+    imageType: type,
+    imageContent: content,
+    semanticLabel: item.prompt,
+    imageCopyright: item.imageCopyright,
+    expandHint: l10n.fullScreenImageViewHint,
+    imageLoadFailedMessage: l10n.questionImageLoadFailed,
+    retryButtonLabel: l10n.questionImageRetryButton,
+    expandToFill: fills,
+  );
   return Column(
-    mainAxisSize: MainAxisSize.min,
+    mainAxisSize: fills ? MainAxisSize.max : MainAxisSize.min,
     children: [
-      FoxQuestionImage(
-        imageType: type,
-        imageContent: content,
-        semanticLabel: item.prompt,
-        imageCopyright: item.imageCopyright,
-        expandHint: l10n.fullScreenImageViewHint,
-        imageLoadFailedMessage: l10n.questionImageLoadFailed,
-        retryButtonLabel: l10n.questionImageRetryButton,
-      ),
+      if (fills) Expanded(child: image) else image,
       const SizedBox(height: FoxSpacing.md),
     ],
   );

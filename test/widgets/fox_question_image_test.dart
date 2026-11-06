@@ -748,4 +748,36 @@ void main() {
       await tester.pumpAndSettle();
     });
   });
+
+  group('expandToFill (#112)', () {
+    FoxQuestionImage image({bool fill = true, String type = 'base64'}) =>
+        FoxQuestionImage(
+          imageType: type,
+          imageContent: type == 'base64' ? base64Encode(kTinyPng) : '🐶',
+          semanticLabel: 'x',
+          expandHint: kExpandHint,
+          imageLoadFailedMessage: kLoadFailedMessage,
+          retryButtonLabel: kRetryLabel,
+          expandToFill: fill,
+        );
+
+    Finder tap() => find.byKey(const Key('foxQuestionImageTapTarget'));
+
+    testWidgets('grows to the height its parent gives it', (tester) async {
+      await pumpKit(tester, SizedBox(height: 500, child: image()));
+      expect(tester.getSize(tap()).height, 500);
+    });
+
+    testWidgets('keeps the 240dp floor inside an IntrinsicHeight', (
+      tester,
+    ) async {
+      await pumpKit(tester, IntrinsicHeight(child: image()));
+      expect(tester.getSize(tap()).height, 240);
+    });
+
+    testWidgets('emoji keeps its fixed box', (tester) async {
+      await pumpKit(tester, SizedBox(height: 500, child: image(type: 'emoji')));
+      expect(tester.getSize(find.text('🐶')).height, lessThan(120));
+    });
+  });
 }

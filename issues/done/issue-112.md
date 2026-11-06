@@ -1,6 +1,6 @@
 # Issue 112: Multiple-choice card — all four options visible with an image
 
-Status: open | Priority: P2 | Type: bug | Refined-at: 2026-11-06
+Status: done | Priority: P2 | Type: bug | Refined-at: 2026-11-06 | Completed-at: 2026-11-06
 
 ## Goal
 
@@ -67,3 +67,23 @@ layout should make better use of the space instead.
 - 2x2 option grid or tighter/smaller option buttons.
 - Making 360x640 phones fit without scrolling (would need compact
   spacing).
+
+## Summary
+
+- `MultipleChoiceCard` measures its real viewport (LayoutBuilder). With a base64/url image: top-aligned, image grows into spare height (floor 240dp via `FoxQuestionImage(expandToFill)`); landscape/wide (width > height) puts image beside prompt + options. Emoji/no image: centered while it fits.
+- No jump: viewport height is frozen after reveal (re-based on width change); option border+padding now sum to a constant size; trimmed first/last option padding and the prompt gap so 360x800 fits exactly.
+- Known trade-off: on 360x800 the feedback banner covers the bottom of the options until scrolled.
+- Tests: `test/exercises/multiple_choice_layout_test.dart`, kit test, `integration_test/issue112_choice_image_layout_test.dart`. Screenshots: `issue-112-*.png`.
+
+## Code review
+
+- Frozen viewport height went stale on rotation/resize after reveal.
+  Fixed: width change re-bases it; test added.
+- Bottom option can be covered by the feedback banner on 360x800.
+  Not fixed: inherent to "options must not move"; scrolling is the fallback.
+- Claimed reveal test doesn't shrink the viewport.
+  Not valid: the test shell adds a 72dp banner on reveal.
+- Trailing 12dp spacer under the image in wide mode (cosmetic).
+  Not fixed: negligible.
+- `expandToFill` floor relies on an enclosing `IntrinsicHeight`.
+  Fixed: documented on the parameter.
