@@ -1,11 +1,13 @@
 // Shared Hero wiring for the equipped pet's flight between Home and
-// PetCollectionScreen (issue #100).
+// PetCollectionScreen (issue #100), and across the post-lesson completion
+// screens (summary, streak saved, XP up; issue #109).
 import 'package:flutter/material.dart';
 
 import '../widgets/fox_hero.dart';
 
-/// Hero tag shared by Home's pet avatar and `PetCollectionScreen`'s
-/// equipped tile — constant, not keyed by pet id. Each screen renders at
+/// Hero tag shared by Home's pet avatar, `PetCollectionScreen`'s equipped
+/// tile, and the pet on `LessonResultScreen`/`StreakSavedScreen`/
+/// `XpUpScreen` — constant, not keyed by pet id. Each screen renders at
 /// most one `FoxPet` wrapped with this tag at a time: Home always shows the
 /// equipped pet, and on the collection grid only the equipped tile is
 /// wrapped (`_PetTile`'s `isEquipped` branch) even though every owned tile

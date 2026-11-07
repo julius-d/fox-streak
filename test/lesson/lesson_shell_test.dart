@@ -30,6 +30,7 @@ import 'package:fox_streak_app/src/data/stats_repository.dart';
 import 'package:fox_streak_app/src/lesson/lesson_screen.dart';
 import 'package:fox_streak_app/src/lesson/exercise_card.dart';
 import 'package:fox_streak_app/src/pet/pet_catalog.dart';
+import 'package:fox_streak_app/src/pet/pet_hero.dart';
 import 'package:fox_streak_app/src/stats/pet_service.dart';
 import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
 import 'package:fox_streak_app/src/widgets/widgets.dart';
@@ -969,6 +970,9 @@ void main() {
         await confettiAwareSettle(tester);
 
         expect(find.byKey(const Key('streakSavedScreen')), findsOneWidget);
+        // Let the pet's Hero flight (issue #109) land: `confettiAwareSettle`
+        // returns as soon as the confetti plays, possibly mid-flight.
+        await tester.pump(const Duration(seconds: 1));
         expect(
           find.descendant(
             of: find.byKey(const Key('streakSavedScreen')),
@@ -999,6 +1003,18 @@ void main() {
         // `StreakSavedScreen` must not be pushed at all.
         await tester.tap(find.byKey(const Key('xpUpContinueButton')));
         await confettiAwareSettle(tester);
+        // Issue #109: the summary's always-shown pet carries the Hero tag.
+        expect(
+          tester
+              .widget<Hero>(
+                find.ancestor(
+                  of: find.byKey(const Key('foxPet-$kDefaultPetId')),
+                  matching: find.byType(Hero),
+                ),
+              )
+              .tag,
+          equippedPetHeroTag,
+        );
         await tester.tap(find.byKey(const Key('redoWholeSetButton')));
         await tester.pump();
         await tester.pump();

@@ -15,6 +15,7 @@ import 'package:fox_streak_app/l10n/app_localizations.dart';
 import 'package:fox_streak_app/l10n/app_localizations_en.dart';
 import 'package:fox_streak_app/src/lesson/streak_saved_screen.dart';
 import 'package:fox_streak_app/src/pet/pet_catalog.dart';
+import 'package:fox_streak_app/src/pet/pet_hero.dart';
 import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
 
 final _l10n = AppLocalizationsEn();
@@ -122,6 +123,18 @@ void main() {
     expect(
       find.byKey(Key('foxPet-${PetCatalog.defaultEntry.id}')),
       findsOneWidget,
+    );
+    // Issue #109: the milestone pet carries the shared Hero tag.
+    expect(
+      tester
+          .widget<Hero>(
+            find.ancestor(
+              of: find.byKey(Key('foxPet-${PetCatalog.defaultEntry.id}')),
+              matching: find.byType(Hero),
+            ),
+          )
+          .tag,
+      equippedPetHeroTag,
     );
   });
 

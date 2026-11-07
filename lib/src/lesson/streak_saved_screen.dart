@@ -22,6 +22,7 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../pet/pet_catalog.dart';
+import '../pet/pet_hero.dart';
 import '../theme/fox_streak_theme.dart';
 import '../widgets/widgets.dart';
 
@@ -63,7 +64,10 @@ class StreakSavedScreen extends StatelessWidget {
                       ),
                       if (isMilestone) ...[
                         const SizedBox(height: FoxSpacing.xl),
-                        FoxPet(pet: pet, size: 96, semanticLabel: null),
+                        wrapEquippedPetHero(
+                          context,
+                          FoxPet(pet: pet, size: 96, semanticLabel: null),
+                        ),
                       ],
                       const SizedBox(height: FoxSpacing.xl),
                       FoxCelebration(

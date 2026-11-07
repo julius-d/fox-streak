@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../pet/pet_catalog.dart';
+import '../pet/pet_hero.dart';
 import '../theme/fox_streak_theme.dart';
 import '../widgets/widgets.dart';
 import 'exercise_card.dart';
@@ -51,10 +52,13 @@ class LessonResultScreen extends StatelessWidget {
             children: [
               // Celebration wrapper for the micro-moment
               FoxCelebration(
-                child: FoxPet(
-                  pet: pet,
-                  size: 120,
-                  semanticLabel: l10n.petSemanticLabel(pet.emoji),
+                child: wrapEquippedPetHero(
+                  context,
+                  FoxPet(
+                    pet: pet,
+                    size: 120,
+                    semanticLabel: l10n.petSemanticLabel(pet.emoji),
+                  ),
                 ),
               ),
               const SizedBox(height: FoxSpacing.xl),

@@ -1,6 +1,7 @@
 # Issue 109: Hero-animate the equipped pet across the post-lesson completion sequence
 
-Status: open | Priority: P3 | Type: enhancement
+Status: done | Priority: P3 | Type: enhancement
+Completed-at: 2026-11-07
 
 ## Goal
 
@@ -78,3 +79,26 @@ shape `FoxPet`/`wrapEquippedPetHero` already use for OS reduce-motion.
   `XpUpScreen` — that's #081's milestone gate, assumed already shipped.
 - Guaranteeing the Home leg works for every entry point — best-effort per
   the Decision above.
+
+## Summary
+
+- `LessonResultScreen`, `StreakSavedScreen` and `XpUpScreen` (milestone only) now wrap their pet with `wrapEquippedPetHero`; reduce-motion fallback and the "one wrapped pet per screen" invariant are unchanged.
+- Home leg: verified by integration test (`issue109_pet_hero_completion_test.dart`) that the Hero flies Summary -> Home for the direct Home-entry case (single-route `popUntil`). Deeper entry points (Library / Set detail) are not tested; they may fall back to an instant swap.
+- Gotcha: `confettiAwareSettle` can return mid-flight, so a widget test asserting on the destination pet needs an extra `pump` for the flight to land.
+
+## Code review
+
+- Summary Hero had no `flutter test` coverage (only integration).
+  Fixed: added Hero-tag assertion in `lesson_shell_test.dart`.
+- Misplaced `// Issue #109` comment in `xp_up_screen_test.dart`.
+  Fixed.
+- Hero sits inside `FoxCelebration` (possible scale jump at flight start).
+  Not fixed: speculative; the integration test shows clean flights.
+- StreakSaved pet has `semanticLabel: null` while others are labelled.
+  Not fixed: pre-existing from #081, out of scope.
+- Fixed 1s pump in the shell test could be flaky.
+  Not fixed: fake clock makes it deterministic.
+- Missing reduce-motion / non-milestone negative Hero tests, duplicated lookup helper.
+  Not fixed: reduce-motion covered by #100 tests; non-milestone already asserts no pet.
+- `_isFlying` heuristic is loose and timing-based.
+  Not fixed: acceptable for a best-effort motion check.

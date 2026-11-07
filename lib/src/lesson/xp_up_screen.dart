@@ -24,6 +24,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../pet/pet_catalog.dart';
+import '../pet/pet_hero.dart';
 import '../stats/xp_service.dart';
 import '../theme/fox_streak_theme.dart';
 import '../widgets/widgets.dart';
@@ -76,10 +77,13 @@ class XpUpScreen extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (isMilestone) ...[
-                        FoxPet(
-                          pet: pet,
-                          size: 96,
-                          semanticLabel: l10n.xpUpMilestonePetSemanticLabel,
+                        wrapEquippedPetHero(
+                          context,
+                          FoxPet(
+                            pet: pet,
+                            size: 96,
+                            semanticLabel: l10n.xpUpMilestonePetSemanticLabel,
+                          ),
                         ),
                         const SizedBox(height: FoxSpacing.md),
                       ],
