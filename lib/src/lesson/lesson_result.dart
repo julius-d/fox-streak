@@ -2,11 +2,9 @@
 // issue #078 — XP/streak/loot box each moved to their own focused screen
 // in the completion sequence, this is the last one, shown always).
 //
-// Shows the pet celebration (#059) and score % + correct/total, then four
-// next-step buttons: Home, Set overview, Redo whole set, Redo missed items
-// (omitted on a perfect score). "Redo missed items" is primary when
-// present (most learning-relevant next action); otherwise "Redo whole set"
-// is. Button order is fixed regardless of which one is primary.
+// Shows the pet celebration (#059) and score % + correct/total, then the
+// next-step buttons (issue #114): with missed items, primary "Redo missed
+// items" above secondary "Home"; on a perfect score only a primary "Home".
 
 import 'package:flutter/material.dart';
 
@@ -23,8 +21,6 @@ class LessonResultScreen extends StatelessWidget {
   final AppLocalizations l10n;
   final PetEntry pet;
   final VoidCallback onHome;
-  final VoidCallback onSetOverview;
-  final VoidCallback onRedoWholeSet;
   // Null omits the "Redo missed items" button entirely (perfect score —
   // nothing to redo); its presence alone decides both whether the button
   // shows and which button is primary, so the two can never disagree.
@@ -36,8 +32,6 @@ class LessonResultScreen extends StatelessWidget {
     required this.l10n,
     required this.pet,
     required this.onHome,
-    required this.onSetOverview,
-    required this.onRedoWholeSet,
     this.onRedoMissedItems,
   });
 
@@ -79,35 +73,21 @@ class LessonResultScreen extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: FoxSpacing.xxl),
-              _summaryButton(
-                key: 'homeButton',
-                label: l10n.lessonHome,
-                primary: false,
-                onPressed: onHome,
-              ),
-              const SizedBox(height: FoxSpacing.md),
-              _summaryButton(
-                key: 'setOverviewButton',
-                label: l10n.lessonSetOverview,
-                primary: false,
-                onPressed: onSetOverview,
-              ),
-              const SizedBox(height: FoxSpacing.md),
-              _summaryButton(
-                key: 'redoWholeSetButton',
-                label: l10n.lessonRedoWholeSet,
-                primary: onRedoMissedItems == null,
-                onPressed: onRedoWholeSet,
-              ),
               if (onRedoMissedItems != null) ...[
-                const SizedBox(height: FoxSpacing.md),
                 _summaryButton(
                   key: 'redoMissedItemsButton',
                   label: l10n.lessonRedoMissedItems,
                   primary: true,
                   onPressed: onRedoMissedItems!,
                 ),
+                const SizedBox(height: FoxSpacing.md),
               ],
+              _summaryButton(
+                key: 'homeButton',
+                label: l10n.lessonHome,
+                primary: onRedoMissedItems == null,
+                onPressed: onHome,
+              ),
             ],
           ),
         ),

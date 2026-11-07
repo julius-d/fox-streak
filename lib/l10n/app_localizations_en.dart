@@ -436,12 +436,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lessonHome => 'Home';
 
   @override
-  String get lessonSetOverview => 'Set overview';
-
-  @override
-  String get lessonRedoWholeSet => 'Redo whole set';
-
-  @override
   String get lessonRedoMissedItems => 'Redo missed items';
 
   @override

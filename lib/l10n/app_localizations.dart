@@ -852,18 +852,6 @@ abstract class AppLocalizations {
   /// **'Home'**
   String get lessonHome;
 
-  /// Summary screen button label opening the practiced set's detail screen (issue #078)
-  ///
-  /// In en, this message translates to:
-  /// **'Set overview'**
-  String get lessonSetOverview;
-
-  /// Summary screen button label restarting the full set just practiced (issue #078)
-  ///
-  /// In en, this message translates to:
-  /// **'Redo whole set'**
-  String get lessonRedoWholeSet;
-
   /// Summary screen button label restarting with only this session's wrong/skipped items; omitted on a perfect score (issue #078)
   ///
   /// In en, this message translates to:

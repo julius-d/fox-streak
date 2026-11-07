@@ -21,7 +21,7 @@ import 'exercise_card.dart';
 
 /// Internal state held by the lesson controller.
 ///
-/// [sourceItems] is kept so Practice-again can reshuffle the same set.
+/// [sourceItems] is kept as the distractor pool for choice cards.
 /// [queue] is the shuffled & capped (max 20) list for this session.
 /// [index] is the current position in [queue].
 /// [outcomes] accumulates one outcome per answered item.
@@ -73,7 +73,7 @@ import 'exercise_card.dart';
 ///   Skip tap landing while CHECK's write is still in flight would be
 ///   silently dropped by the guard with no visible affordance.
 /// [attempt] is bumped on every [LessonController.start] call (so also on
-///   every `restart()`, since `restart()` calls `start()`). `lesson_screen`
+///   every `restartWithItems()`, since it calls `start()`). `lesson_screen`
 ///   keys `lessonProgressBar` on this so a new attempt forces a remount
 ///   instead of tweening the `1.0 -> 0.0` drop on "Practice again" (#072).
 class LessonState {
@@ -239,7 +239,7 @@ class LessonState {
 ///
 /// Not autoDispose so state survives config changes (rotation).
 /// Call [start] with the set's items to begin a session.
-/// Use [submitGrade], [skip], [next], [restart] to drive the flow.
+/// Use [submitGrade], [skip], [next], [restartWithItems] to drive the flow.
 class LessonController extends Notifier<LessonState> {
   late final StatsRepository _statsRepo;
   late final Clock _clock;
@@ -310,7 +310,7 @@ class LessonController extends Notifier<LessonState> {
   /// Starts a new lesson session with the given items.
   ///
   /// Shuffles once using [_random] (or a fresh Random), caps at 20 items.
-  /// Keeps a copy of [items] as [sourceItems] so [restart] can reshuffle.
+  /// Keeps a copy of [items] as [sourceItems] as the distractor pool for choice cards.
   /// Resets index, outcomes, phase, and draft.
   ///
   /// Bumps [_generation] and clears [_actionInFlight] so a `submitGrade`/
@@ -341,16 +341,10 @@ class LessonController extends Notifier<LessonState> {
     );
   }
 
-  /// Restarts the lesson by reshuffling [sourceItems] (same cap of 20).
-  void restart({Random? random}) {
-    if (state.sourceItems.isEmpty) return;
-    start(state.sourceItems, random: random);
-  }
-
   /// Restarts with only [items] instead of reshuffling the full
   /// [LessonState.sourceItems] — used by the summary screen's "Redo missed
   /// items" button (issue #078). A no-op on an empty list rather than
-  /// clearing the session, mirroring [restart]'s empty-sourceItems guard.
+  /// clearing the session, so a stray call can't wipe the session.
   void restartWithItems(List<Item> items, {Random? random}) {
     if (items.isEmpty) return;
     start(items, random: random);

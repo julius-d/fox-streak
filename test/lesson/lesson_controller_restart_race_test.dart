@@ -99,7 +99,7 @@ void main() {
     });
   });
 
-  test('restart() mid-flight does not get clobbered by the stale next() once '
+  test('restartWithItems() mid-flight does not get clobbered by the stale next() once '
       'its paused XP write resolves', () async {
     final item = await insertTestItem(db, 1);
     final controller = container.read(lessonControllerProvider.notifier);
@@ -118,9 +118,9 @@ void main() {
     // then suspends.
     final staleNext = controller.next();
 
-    // restart() while that await is still pending — this is the race
+    // restartWithItems() while that await is still pending — this is the race
     // from issue #033.
-    controller.restart();
+    controller.restartWithItems([item]);
 
     final freshState = container.read(lessonControllerProvider);
     expect(freshState.phase, LessonPhase.answering);
@@ -143,7 +143,7 @@ void main() {
     expect(afterStale.busy, isFalse);
   });
 
-  test('restart() mid-flight clears the in-flight guard so the next action on '
+  test('restartWithItems() mid-flight clears the in-flight guard so the next action on '
       'the fresh session is not silently dropped', () async {
     final item = await insertTestItem(db, 1);
     final controller = container.read(lessonControllerProvider.notifier);
@@ -158,7 +158,7 @@ void main() {
     await controller.submitGrade(); // -> feedback
 
     final staleNext = controller.next();
-    controller.restart();
+    controller.restartWithItems([item]);
 
     // A legitimate action on the fresh session, fired while the stale
     // next() is still suspended, must not be dropped by the guard.

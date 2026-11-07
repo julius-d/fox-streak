@@ -4,11 +4,11 @@
 // Covers what `level_up_result_test.dart`/`xp_level_result_test.dart`/
 // `streak_result_test.dart` don't: the sequencing itself (which screen
 // shows first, that an earlier screen is actually gone once its own
-// Continue is tapped) and the summary screen's own behavior (4-vs-3
-// buttons depending on missed items, Redo whole set vs. Redo missed items
-// actually restarting the right item set, and Home/Set overview landing
-// in the right place regardless of which entry point launched the
-// lesson).
+// Continue is tapped) and the summary screen's own behavior (2-vs-1
+// buttons depending on missed items — trimmed by #114 to Redo missed items
+// + Home, or just Home on a perfect score — Redo missed items actually
+// restarting the right item set, and Home landing in the right place
+// regardless of which entry point launched the lesson).
 //
 // Loot box's trigger (the day's 2nd completion, then every 3rd after —
 // #067) and the streak's `isNewDay` flag (only true on a day's *first*
@@ -112,7 +112,7 @@ void main() {
 
   testWidgets(
     "a fresh profile's first-ever lesson shows streak saved then XP up, in "
-    'that order, landing on a perfect-score 3-button summary',
+    'that order, landing on a perfect-score summary with only Home',
     (tester) async {
       final db = makeIntegrationTestDb();
       addTearDown(db.close);
@@ -149,23 +149,21 @@ void main() {
       await tester.tap(find.byKey(const Key('xpUpContinueButton')));
       await settle(tester);
 
-      // Summary last — perfect score, so only 3 buttons (no Redo missed
-      // items) and Redo whole set is the primary one.
+      // Summary last — perfect score, so only a primary Home button (#114).
       expect(find.byKey(const Key('lessonResultScreen')), findsOneWidget);
       expect(find.byKey(const Key('xpUpScreen')), findsNothing);
       expect(find.text('2 of 2 correct (100%)'), findsOneWidget);
       expect(find.byKey(const Key('homeButton')), findsOneWidget);
-      expect(find.byKey(const Key('setOverviewButton')), findsOneWidget);
-      expect(find.byKey(const Key('redoWholeSetButton')), findsOneWidget);
       expect(find.byKey(const Key('redoMissedItemsButton')), findsNothing);
-      expect(_isPrimaryButton(tester, 'redoWholeSetButton'), isTrue);
-      expect(_isPrimaryButton(tester, 'homeButton'), isFalse);
+      expect(find.byKey(const Key('setOverviewButton')), findsNothing);
+      expect(find.byKey(const Key('redoWholeSetButton')), findsNothing);
+      expect(_isPrimaryButton(tester, 'homeButton'), isTrue);
     },
   );
 
   testWidgets(
     "the day's 2nd lesson completion shows the loot box then XP up (no "
-    'streak screen, already advanced today), landing on a 4-button summary '
+    'streak screen, already advanced today), landing on a 2-button summary '
     'whose Redo missed items restarts with only the wrong item',
     (tester) async {
       final db = makeIntegrationTestDb();
@@ -228,12 +226,15 @@ void main() {
       await tester.tap(find.byKey(const Key('xpUpContinueButton')));
       await settle(tester);
 
-      // Summary: one wrong -> 4 buttons, Redo missed items is primary.
+      // Summary: one wrong -> Redo missed items (primary) above Home
+      // (secondary); the removed buttons are gone (#114).
       expect(find.byKey(const Key('lessonResultScreen')), findsOneWidget);
       expect(find.text('1 of 2 correct (50%)'), findsOneWidget);
       expect(find.byKey(const Key('redoMissedItemsButton')), findsOneWidget);
       expect(_isPrimaryButton(tester, 'redoMissedItemsButton'), isTrue);
-      expect(_isPrimaryButton(tester, 'redoWholeSetButton'), isFalse);
+      expect(_isPrimaryButton(tester, 'homeButton'), isFalse);
+      expect(find.byKey(const Key('setOverviewButton')), findsNothing);
+      expect(find.byKey(const Key('redoWholeSetButton')), findsNothing);
 
       // Redo missed items restarts with only the one wrong item.
       await tester.ensureVisible(
@@ -247,58 +248,51 @@ void main() {
     },
   );
 
-  testWidgets(
-    'Home and Set overview both land correctly regardless of entry point '
-    "(Library row's play icon, which skips SetDetailScreen — #042)",
-    (tester) async {
-      final db = makeIntegrationTestDb();
-      addTearDown(db.close);
-      final clock = FakeClock(DateTime(2026, 10, 20, 9));
-      await _insertTwoItemSet(db);
+  testWidgets('Home lands correctly regardless of entry point '
+      "(Library row's play icon, which skips SetDetailScreen — #042)", (
+    tester,
+  ) async {
+    final db = makeIntegrationTestDb();
+    addTearDown(db.close);
+    final clock = FakeClock(DateTime(2026, 10, 20, 9));
+    await _insertTwoItemSet(db);
 
-      await pumpFoxStreakApp(
-        tester,
-        db: db,
-        clock: clock,
-        petCatalogLoader: () async => const <PetEntry>[],
-      );
-      await skipOnboardingAndOpenLibrary(tester);
+    await pumpFoxStreakApp(
+      tester,
+      db: db,
+      clock: clock,
+      petCatalogLoader: () async => const <PetEntry>[],
+    );
+    await skipOnboardingAndOpenLibrary(tester);
 
-      await tester.tap(playSetButton('Animals'));
-      await settle(tester);
-      expect(find.byKey(const Key('lessonProgressBar')), findsOneWidget);
+    await tester.tap(playSetButton('Animals'));
+    await settle(tester);
+    expect(find.byKey(const Key('lessonProgressBar')), findsOneWidget);
 
-      await _answerCurrentItem(tester);
-      await _answerCurrentItem(tester);
-      await dismissCompletionScreens(tester);
-      expect(find.byKey(const Key('lessonResultScreen')), findsOneWidget);
+    await _answerCurrentItem(tester);
+    await _answerCurrentItem(tester);
+    await dismissCompletionScreens(tester);
+    expect(find.byKey(const Key('lessonResultScreen')), findsOneWidget);
 
-      // Set overview — pops straight to Home, then pushes SetDetailScreen
-      // for "Animals", bypassing Library entirely (not just visually).
-      await tester.ensureVisible(find.byKey(const Key('setOverviewButton')));
-      await tester.tap(find.byKey(const Key('setOverviewButton')));
-      await settle(tester);
-      expect(find.byKey(const Key('startLessonFab')), findsOneWidget);
-      expect(find.byKey(const Key('homeScreen')), findsNothing);
+    // Home — pops straight to Home, bypassing Library entirely.
+    await tester.ensureVisible(find.byKey(const Key('homeButton')));
+    await tester.tap(find.byKey(const Key('homeButton')));
+    await settle(tester);
+    expect(find.byKey(const Key('homeScreen')), findsOneWidget);
 
-      await tester.pageBack();
-      await settle(tester);
-      expect(find.byKey(const Key('homeScreen')), findsOneWidget);
-
-      // Home — same set, a different entry point this time (Home's own
-      // Continue button, now resuming "Animals" from the attempts just
-      // written), via the summary's Home button.
-      await tester.tap(find.byKey(const Key('homeContinueButton')));
-      await settle(tester);
-      await _answerCurrentItem(tester);
-      await _answerCurrentItem(tester);
-      await dismissCompletionScreens(tester);
-      await tester.ensureVisible(find.byKey(const Key('homeButton')));
-      await tester.tap(find.byKey(const Key('homeButton')));
-      await settle(tester);
-      expect(find.byKey(const Key('homeScreen')), findsOneWidget);
-    },
-  );
+    // Home — same set, a different entry point this time (Home's own
+    // Continue button, now resuming "Animals" from the attempts just
+    // written), via the summary's Home button.
+    await tester.tap(find.byKey(const Key('homeContinueButton')));
+    await settle(tester);
+    await _answerCurrentItem(tester);
+    await _answerCurrentItem(tester);
+    await dismissCompletionScreens(tester);
+    await tester.ensureVisible(find.byKey(const Key('homeButton')));
+    await tester.tap(find.byKey(const Key('homeButton')));
+    await settle(tester);
+    expect(find.byKey(const Key('homeScreen')), findsOneWidget);
+  });
 
   testWidgets('completing a lesson never flashes the summary screen or its pet '
       'before the streak-saved screen covers it (issue #083 regression)', (

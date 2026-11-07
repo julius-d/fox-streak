@@ -334,16 +334,6 @@
     "placeholders": {}
   },
   "lessonHome": "Startseite",
-  "@lessonSetOverview": {
-    "description": "Summary screen button label opening the practiced set's detail screen (issue #078)",
-    "placeholders": {}
-  },
-  "lessonSetOverview": "Set-Übersicht",
-  "@lessonRedoWholeSet": {
-    "description": "Summary screen button label restarting the full set just practiced (issue #078)",
-    "placeholders": {}
-  },
-  "lessonRedoWholeSet": "Ganzes Set wiederholen",
   "@lessonRedoMissedItems": {
     "description": "Summary screen button label restarting with only this session's wrong/skipped items; omitted on a perfect score (issue #078)",
     "placeholders": {}

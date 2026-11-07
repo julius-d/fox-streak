@@ -113,10 +113,10 @@ void main() {
         closeTo(1.0, 1e-9),
       );
 
-      // Tap Practice again, then pump for far less than the #066 300ms
+      // Tap Redo missed items, then pump for far less than the #066 300ms
       // tween duration — long enough for a backward-draining bar to still
       // read well above empty, too short for it to have resolved on its own.
-      await tester.tap(find.byKey(const Key('redoWholeSetButton')));
+      await tester.tap(find.byKey(const Key('redoMissedItemsButton')));
       await tester.pump(const Duration(milliseconds: 50));
       expect(
         tester.widget<LinearProgressIndicator>(progressFill()).value,

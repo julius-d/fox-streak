@@ -11,7 +11,7 @@
 // exclusive with the loot box by cadence, same sequence slot) -> streak
 // saved (#011, if it advanced today's streak) -> XP up (#010/#053,
 // always) -> summary (LessonResultScreen, always: pet celebration, score,
-// Home/Set overview/Redo whole set/Redo missed items).
+// Redo missed items (if any)/Home).
 //
 // All strings via AppLocalizations (DE + EN). Follows #015 kit reuse only.
 
@@ -21,7 +21,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../l10n/app_localizations.dart';
 import '../data/database.dart';
 import '../library/library_providers.dart';
-import '../library/set_detail_screen.dart';
 import '../pet/lootbox_screen.dart';
 import '../pet/pet_catalog.dart';
 import '../pet/pet_providers.dart';
@@ -105,8 +104,8 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
   // Which `state.attempt` the completion sequence (loot box -> streak saved
   // -> XP up, each a full-screen push) has already been kicked off for —
   // null before the first completion. Keyed on `attempt` (bumped by every
-  // `start`/`restart`, issue #072) rather than a plain bool so "Redo whole
-  // set"/"Redo missed items" correctly re-triggers the sequence for the new
+  // `start`, issue #072) rather than a plain bool so
+  // "Redo missed items" correctly re-triggers the sequence for the new
   // session's own completion instead of treating it as already shown.
   int? _sequenceStartedForAttempt;
   // Which `state.attempt` it's safe to actually render the summary screen
@@ -560,15 +559,6 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
     Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
-  /// Pops back to Home, then pushes `SetDetailScreen` for [setId] on top —
-  /// same "regardless of entry point" guarantee as [_goHome].
-  void _goToSetOverview(BuildContext context, int setId) {
-    Navigator.of(context).popUntil((route) => route.isFirst);
-    Navigator.of(context).push<void>(
-      MaterialPageRoute<void>(builder: (_) => SetDetailScreen(setId: setId)),
-    );
-  }
-
   Future<bool?> _showQuitDialog(BuildContext context, AppLocalizations l10n) {
     return FoxConfirmDialog.show(
       context: context,
@@ -615,8 +605,6 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
       l10n: l10n,
       pet: pet,
       onHome: () => _goHome(context),
-      onSetOverview: () => _goToSetOverview(context, result.setId),
-      onRedoWholeSet: () => controller.restart(),
       onRedoMissedItems: missedItems.isEmpty
           ? null
           : () => controller.restartWithItems(missedItems),

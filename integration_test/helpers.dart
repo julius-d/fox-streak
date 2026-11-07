@@ -30,7 +30,7 @@
 //   (`streakSavedScreen`, `streakSavedContinueButton`, only when the
 //   completion advanced today's streak), XP up (`xpUpScreen`,
 //   `xpUpContinueButton`, always), summary (`lessonResultScreen`, always:
-//   `homeButton`/`setOverviewButton`/`redoWholeSetButton`/
+//   `homeButton`/
 //   `redoMissedItemsButton`) — see `dismissCompletionScreens` below.
 // - Exercise cards: `choiceOption0`..`3`, `freeTextAnswerField`,
 //   `dialPadKey<digit|backspace>`, `dateExerciseDayField`/`...MonthField`/

@@ -439,12 +439,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get lessonHome => 'Startseite';
 
   @override
-  String get lessonSetOverview => 'Set-Übersicht';
-
-  @override
-  String get lessonRedoWholeSet => 'Ganzes Set wiederholen';
-
-  @override
   String get lessonRedoMissedItems => 'Falsche Einträge wiederholen';
 
   @override

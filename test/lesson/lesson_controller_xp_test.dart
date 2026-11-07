@@ -3,7 +3,7 @@
 // Covers: XpService.applyLessonResult is called exactly once per completed
 // lesson (via CONTINUE/next() and via SKIP), the LessonState.xpApplied guard
 // prevents re-applying on repeated completion-triggering calls, and
-// restart() correctly starts a fresh, re-appliable session.
+// restartWithItems() correctly starts a fresh, re-appliable session.
 
 import 'package:drift/drift.dart' hide isNotNull;
 import 'package:drift/native.dart';
@@ -250,27 +250,30 @@ void main() {
     expect(rowsAfterReplay.single.xpEarned, 15);
   });
 
-  test('restart() starts a fresh session that can apply XP again', () async {
-    final items = await insertTestItems(db, 1, 1);
-    final controller = container.read(lessonControllerProvider.notifier);
-    controller.start([items.first]);
-    await controller.skip(); // 0 XP, done
-    expect(container.read(lessonControllerProvider).xpApplied, isTrue);
+  test(
+    'restartWithItems() starts a fresh session that can apply XP again',
+    () async {
+      final items = await insertTestItems(db, 1, 1);
+      final controller = container.read(lessonControllerProvider.notifier);
+      controller.start([items.first]);
+      await controller.skip(); // 0 XP, done
+      expect(container.read(lessonControllerProvider).xpApplied, isTrue);
 
-    controller.restart();
-    expect(container.read(lessonControllerProvider).xpApplied, isFalse);
+      controller.restartWithItems([items.first]);
+      expect(container.read(lessonControllerProvider).xpApplied, isFalse);
 
-    controller.updateDraft(
-      ExerciseDraft(
-        hasAnswer: true,
-        grade: () => true,
-        correctAnswerLabel: '05/14/1985',
-      ),
-    );
-    await controller.submitGrade();
-    await controller.next();
+      controller.updateDraft(
+        ExerciseDraft(
+          hasAnswer: true,
+          grade: () => true,
+          correctAnswerLabel: '05/14/1985',
+        ),
+      );
+      await controller.submitGrade();
+      await controller.next();
 
-    final profile = await statsRepo.getProfile();
-    expect(profile.xpTotal, 15); // the restarted session's own 10 + 5 bonus
-  });
+      final profile = await statsRepo.getProfile();
+      expect(profile.xpTotal, 15); // the restarted session's own 10 + 5 bonus
+    },
+  );
 }

@@ -3,7 +3,7 @@
 // Covers: StreakService.recordActivity is called exactly once per completed
 // lesson (via CONTINUE/next() and via SKIP), reusing #010's xpApplied guard
 // (no second guard), a lesson with 0 correct answers still extends the
-// streak, and restart() correctly starts a fresh, re-appliable session.
+// streak, and restartWithItems() correctly starts a fresh, re-appliable session.
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
@@ -172,27 +172,21 @@ void main() {
     expect(profile.streakCount, 1);
   });
 
-  test(
-    'restart() starts a fresh session that advances the streak on a new day',
-    () async {
-      final items = await insertTestItems(db, 1, 1);
-      final controller = container.read(lessonControllerProvider.notifier);
-      controller.start([items.first]);
-      await controller.skip();
-      expect(container.read(lessonControllerProvider).xpApplied, isTrue);
+  test('restartWithItems() starts a fresh session that advances the streak on a new day', () async {
+    final items = await insertTestItems(db, 1, 1);
+    final controller = container.read(lessonControllerProvider.notifier);
+    controller.start([items.first]);
+    await controller.skip();
+    expect(container.read(lessonControllerProvider).xpApplied, isTrue);
 
-      clock.setNow(kTestToday.add(const Duration(days: 1)));
-      controller.restart();
-      expect(container.read(lessonControllerProvider).xpApplied, isFalse);
+    clock.setNow(kTestToday.add(const Duration(days: 1)));
+    controller.restartWithItems([items.first]);
+    expect(container.read(lessonControllerProvider).xpApplied, isFalse);
 
-      await controller.skip();
+    await controller.skip();
 
-      final profile = await statsRepo.getProfile();
-      expect(profile.streakCount, 2);
-      expect(
-        container.read(lessonControllerProvider).streakCountAfterLesson,
-        2,
-      );
-    },
-  );
+    final profile = await statsRepo.getProfile();
+    expect(profile.streakCount, 2);
+    expect(container.read(lessonControllerProvider).streakCountAfterLesson, 2);
+  });
 }

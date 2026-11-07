@@ -708,8 +708,8 @@ void main() {
       await dismissCompletionScreens(tester);
       expect(find.byKey(const Key('lessonResultScreen')), findsOneWidget);
 
-      // Then Redo whole set.
-      await tester.tap(find.byKey(const Key('redoWholeSetButton')));
+      // Then Redo missed items (everything was skipped).
+      await tester.tap(find.byKey(const Key('redoMissedItemsButton')));
       await tester.pump();
 
       // Should be back at question 1 with reshuffled queue
@@ -759,13 +759,13 @@ void main() {
         await tester.pump();
       }
 
-      // Tap through the completion sequence, then Redo whole set, then
+      // Tap through the completion sequence, then Redo missed items, then
       // pump for far less than the #066 300ms tween duration — long
       // enough for a backward-draining bar to still be visibly short of
       // empty, too short for it to have resolved on its own.
       await dismissCompletionScreens(tester);
       expect(find.byKey(const Key('lessonResultScreen')), findsOneWidget);
-      await tester.tap(find.byKey(const Key('redoWholeSetButton')));
+      await tester.tap(find.byKey(const Key('redoMissedItemsButton')));
       await tester.pump(const Duration(milliseconds: 50));
 
       final double value = tester
@@ -964,9 +964,10 @@ void main() {
         // disabled button.
         await tester.pump();
 
-        await tester.tap(find.byKey(const Key('checkButton')));
-        await tester.pump();
-        await tester.tap(find.byKey(const Key('checkButton')));
+        // Skip the item so the summary offers "Redo missed items" (#114) —
+        // a perfect score has no redo, and this test needs a second run.
+        await openLessonMenu(tester);
+        await tester.tap(find.byKey(const Key('skipItemMenuItem')));
         await confettiAwareSettle(tester);
 
         expect(find.byKey(const Key('streakSavedScreen')), findsOneWidget);
@@ -1015,7 +1016,7 @@ void main() {
               .tag,
           equippedPetHeroTag,
         );
-        await tester.tap(find.byKey(const Key('redoWholeSetButton')));
+        await tester.tap(find.byKey(const Key('redoMissedItemsButton')));
         await tester.pump();
         await tester.pump();
         await tester.pump();
@@ -1125,7 +1126,7 @@ void main() {
         // The summary screen must now be showing — it must not have
         // auto-popped itself before the user did anything.
         expect(find.byKey(const Key('lessonResultScreen')), findsOneWidget);
-        expect(find.byKey(const Key('redoWholeSetButton')), findsOneWidget);
+        expect(find.byKey(const Key('homeButton')), findsOneWidget);
 
         // Only an explicit tap pops it back to the caller.
         await tester.tap(find.byKey(const Key('homeButton')));
