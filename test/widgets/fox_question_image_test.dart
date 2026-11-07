@@ -20,18 +20,35 @@ import 'package:fox_streak_app/src/widgets/widgets.dart';
 
 /// A minimal valid 1x1 transparent PNG, decodable by `Image.memory`.
 final Uint8List kTinyPng = base64Decode(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+A8AAQUAAdafFaMAAAAASUVORK5CYII=',
+  'iVBORw0KGgoAAAANSUhEUgAAACgAAAAUCAYAAAD/Rn+7AAAAMElEQVR4nO3OsQ0AAAjDsJ7P1+UKFIYM3p1O+lnogEGDdMCgQTpg0CAdMGiQDhi8ttSp4yqPxYvYAAAAAElFTkSuQmCC',
 );
 
 /// Literal test string for the tap-to-expand a11y hint (#094) — kit widgets
 /// never resolve l10n themselves, so real callers pass an
 /// `AppLocalizations`-resolved string; tests pass a plain literal.
 const String kExpandHint = 'Opens a full-screen view';
+const String kCloseLabel = 'Close image';
 
 /// Literal test strings for the #102 load-failed placeholder — same
 /// convention as [kExpandHint].
 const String kLoadFailedMessage = "Couldn't load this image";
 const String kRetryLabel = 'Retry';
+
+/// A valid 20x40 (portrait) PNG, for the narrower-than-the-box layout (#113).
+final Uint8List kPortraitPng = base64Decode(
+  'iVBORw0KGgoAAAANSUhEUgAAABQAAAAoCAYAAAD+MdrbAAAAJ0lEQVR4nO3MoQEAAAgDoJ3v1/MIjQQq6aSfIhQKhUKhUCgUCoU3C7Te4yrqtI2QAAAAAElFTkSuQmCC',
+);
+
+/// Lets real image decoding finish (it runs outside the fake-async zone),
+/// so the intrinsic size the caption layout depends on (#113) is known.
+Future<void> settleImageDecode(WidgetTester tester) async {
+  await tester.runAsync(
+    () => Future<void>.delayed(const Duration(milliseconds: 600)),
+  );
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 100));
+  await tester.pumpAndSettle();
+}
 
 /// Pumps [child] under the canonical light theme.
 Future<void> pumpKit(WidgetTester tester, Widget child) async {
@@ -54,6 +71,7 @@ void main() {
           imageContent: '🐶',
           semanticLabel: 'Hund',
           expandHint: kExpandHint,
+          closeLabel: kCloseLabel,
           imageLoadFailedMessage: kLoadFailedMessage,
           retryButtonLabel: kRetryLabel,
         ),
@@ -73,6 +91,7 @@ void main() {
           imageContent: '🐶',
           semanticLabel: 'Hund',
           expandHint: kExpandHint,
+          closeLabel: kCloseLabel,
           imageLoadFailedMessage: kLoadFailedMessage,
           retryButtonLabel: kRetryLabel,
         ),
@@ -93,6 +112,7 @@ void main() {
           imageContent: base64Encode(kTinyPng),
           semanticLabel: 'A sticker',
           expandHint: kExpandHint,
+          closeLabel: kCloseLabel,
           imageLoadFailedMessage: kLoadFailedMessage,
           retryButtonLabel: kRetryLabel,
         ),
@@ -117,6 +137,7 @@ void main() {
           imageContent: 'not-base64!!',
           semanticLabel: 'A sticker',
           expandHint: kExpandHint,
+          closeLabel: kCloseLabel,
           imageLoadFailedMessage: kLoadFailedMessage,
           retryButtonLabel: kRetryLabel,
         ),
@@ -140,6 +161,7 @@ void main() {
           semanticLabel: 'A sticker',
           imageCopyright: '© Jane Doe',
           expandHint: kExpandHint,
+          closeLabel: kCloseLabel,
           imageLoadFailedMessage: kLoadFailedMessage,
           retryButtonLabel: kRetryLabel,
         ),
@@ -153,7 +175,7 @@ void main() {
         ),
       );
       expect(text.data, '© Jane Doe');
-      expect(text.textAlign, TextAlign.right);
+      expect(text.textAlign, TextAlign.end);
     });
 
     testWidgets('no caption bar at all when imageCopyright is unset (not '
@@ -165,6 +187,7 @@ void main() {
           imageContent: base64Encode(kTinyPng),
           semanticLabel: 'A sticker',
           expandHint: kExpandHint,
+          closeLabel: kCloseLabel,
           imageLoadFailedMessage: kLoadFailedMessage,
           retryButtonLabel: kRetryLabel,
         ),
@@ -183,6 +206,7 @@ void main() {
           semanticLabel: 'Hund',
           imageCopyright: '© Jane Doe',
           expandHint: kExpandHint,
+          closeLabel: kCloseLabel,
           imageLoadFailedMessage: kLoadFailedMessage,
           retryButtonLabel: kRetryLabel,
         ),
@@ -203,6 +227,7 @@ void main() {
           imageContent: base64Encode(kTinyPng),
           semanticLabel: 'A sticker',
           expandHint: kExpandHint,
+          closeLabel: kCloseLabel,
           imageLoadFailedMessage: kLoadFailedMessage,
           retryButtonLabel: kRetryLabel,
         ),
@@ -227,6 +252,7 @@ void main() {
           semanticLabel: 'A sticker',
           imageCopyright: '© Jane Doe',
           expandHint: kExpandHint,
+          closeLabel: kCloseLabel,
           imageLoadFailedMessage: kLoadFailedMessage,
           retryButtonLabel: kRetryLabel,
         ),
@@ -234,6 +260,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('foxQuestionImageTapTarget')));
       await tester.pumpAndSettle();
+      await settleImageDecode(tester);
 
       expect(find.byType(FoxFullScreenImageViewer), findsOneWidget);
       expect(find.byKey(const Key('fullScreenImageView')), findsOneWidget);
@@ -267,6 +294,7 @@ void main() {
           semanticLabel: 'A sticker',
           imageCopyright: '© Jane Doe',
           expandHint: kExpandHint,
+          closeLabel: kCloseLabel,
           imageLoadFailedMessage: kLoadFailedMessage,
           retryButtonLabel: kRetryLabel,
         ),
@@ -296,6 +324,7 @@ void main() {
           imageContent: '🐶',
           semanticLabel: 'Hund',
           expandHint: kExpandHint,
+          closeLabel: kCloseLabel,
           imageLoadFailedMessage: kLoadFailedMessage,
           retryButtonLabel: kRetryLabel,
         ),
@@ -315,6 +344,7 @@ void main() {
           imageContent: base64Encode(kTinyPng),
           semanticLabel: 'A sticker',
           expandHint: kExpandHint,
+          closeLabel: kCloseLabel,
           imageLoadFailedMessage: kLoadFailedMessage,
           retryButtonLabel: kRetryLabel,
         ),
@@ -335,6 +365,8 @@ void main() {
         MaterialApp(
           theme: FoxStreakTheme.light(),
           home: FoxFullScreenImageViewer(
+            question: 'Question?',
+            closeLabel: kCloseLabel,
             imageType: 'base64',
             imageContent: base64Encode(kTinyPng),
             imageLoadFailedMessage: kLoadFailedMessage,
@@ -364,6 +396,8 @@ void main() {
         MaterialApp(
           theme: FoxStreakTheme.light(),
           home: const FoxFullScreenImageViewer(
+            question: 'Question?',
+            closeLabel: kCloseLabel,
             imageType: 'base64',
             imageContent: 'not-base64!!',
             imageLoadFailedMessage: kLoadFailedMessage,
@@ -393,6 +427,8 @@ void main() {
         MaterialApp(
           theme: FoxStreakTheme.light(),
           home: const FoxFullScreenImageViewer(
+            question: 'Question?',
+            closeLabel: kCloseLabel,
             imageType: 'url',
             imageContent: 'https://example.com/i.png',
             imageLoadFailedMessage: kLoadFailedMessage,
@@ -428,6 +464,7 @@ void main() {
           imageContent: base64Encode(kTinyPng),
           semanticLabel: 'A sticker',
           expandHint: kExpandHint,
+          closeLabel: kCloseLabel,
           imageLoadFailedMessage: kLoadFailedMessage,
           retryButtonLabel: kRetryLabel,
         ),
@@ -443,6 +480,8 @@ void main() {
             child: app!,
           ),
           home: FoxFullScreenImageViewer(
+            question: 'Question?',
+            closeLabel: kCloseLabel,
             imageType: 'base64',
             imageContent: base64Encode(kTinyPng),
             imageLoadFailedMessage: kLoadFailedMessage,
@@ -468,6 +507,8 @@ void main() {
                 onPressed: () => Navigator.of(context).push<void>(
                   MaterialPageRoute<void>(
                     builder: (_) => FoxFullScreenImageViewer(
+                      question: 'Question?',
+                      closeLabel: kCloseLabel,
                       imageType: 'base64',
                       imageContent: base64Encode(kTinyPng),
                       imageCopyright: '© Jane Doe',
@@ -484,6 +525,7 @@ void main() {
       );
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
+      await settleImageDecode(tester);
 
       expect(find.byKey(const Key('fullScreenImageView')), findsOneWidget);
       final text = tester.widget<Text>(
@@ -507,6 +549,8 @@ void main() {
         MaterialApp(
           theme: FoxStreakTheme.light(),
           home: FoxFullScreenImageViewer(
+            question: 'Question?',
+            closeLabel: kCloseLabel,
             imageType: 'base64',
             imageContent: base64Encode(kTinyPng),
             imageLoadFailedMessage: kLoadFailedMessage,
@@ -530,8 +574,10 @@ void main() {
                 onPressed: () => Navigator.of(context).push<void>(
                   MaterialPageRoute<void>(
                     builder: (_) => const FoxFullScreenImageViewer(
+                      question: 'Question?',
+                      closeLabel: kCloseLabel,
                       imageType: 'base64',
-                      imageContent: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+A8AAQUAAdafFaMAAAAASUVORK5CYII=',
+                      imageContent: 'iVBORw0KGgoAAAANSUhEUgAAACgAAAAUCAYAAAD/Rn+7AAAAMElEQVR4nO3OsQ0AAAjDsJ7P1+UKFIYM3p1O+lnogEGDdMCgQTpg0CAdMGiQDhi8ttSp4yqPxYvYAAAAAElFTkSuQmCC',
                       imageLoadFailedMessage: kLoadFailedMessage,
                       retryButtonLabel: kRetryLabel,
                     ),
@@ -560,6 +606,8 @@ void main() {
         MaterialApp(
           theme: FoxStreakTheme.light(),
           home: const FoxFullScreenImageViewer(
+            question: 'Question?',
+            closeLabel: kCloseLabel,
             imageType: 'base64',
             imageContent: 'not-base64!!',
             imageLoadFailedMessage: kLoadFailedMessage,
@@ -634,6 +682,7 @@ void main() {
           imageContent: 'https://example.com/i.png',
           semanticLabel: 'A sticker',
           expandHint: kExpandHint,
+          closeLabel: kCloseLabel,
           imageLoadFailedMessage: kLoadFailedMessage,
           retryButtonLabel: kRetryLabel,
         ),
@@ -678,6 +727,7 @@ void main() {
           imageContent: 'https://example.com/i.png',
           semanticLabel: 'A sticker',
           expandHint: kExpandHint,
+          closeLabel: kCloseLabel,
           imageLoadFailedMessage: kLoadFailedMessage,
           retryButtonLabel: kRetryLabel,
         ),
@@ -719,6 +769,8 @@ void main() {
         MaterialApp(
           theme: FoxStreakTheme.light(),
           home: const FoxFullScreenImageViewer(
+            question: 'Question?',
+            closeLabel: kCloseLabel,
             imageType: 'url',
             imageContent: 'https://example.com/i.png',
             imageLoadFailedMessage: kLoadFailedMessage,
@@ -756,6 +808,7 @@ void main() {
           imageContent: type == 'base64' ? base64Encode(kTinyPng) : '🐶',
           semanticLabel: 'x',
           expandHint: kExpandHint,
+          closeLabel: kCloseLabel,
           imageLoadFailedMessage: kLoadFailedMessage,
           retryButtonLabel: kRetryLabel,
           expandToFill: fill,
@@ -778,6 +831,253 @@ void main() {
     testWidgets('emoji keeps its fixed box', (tester) async {
       await pumpKit(tester, SizedBox(height: 500, child: image(type: 'emoji')));
       expect(tester.getSize(find.text('🐶')).height, lessThan(120));
+    });
+  });
+
+  group('copyright caption and full-screen restyle (#113)', () {
+    Widget viewer({
+      String type = 'base64',
+      String? content,
+      String? copyright = '© Jane Doe',
+    }) => FoxFullScreenImageViewer(
+      imageType: type,
+      imageContent: content ?? base64Encode(kPortraitPng),
+      imageCopyright: copyright,
+      question: 'What is shown here?',
+      closeLabel: kCloseLabel,
+      imageLoadFailedMessage: kLoadFailedMessage,
+      retryButtonLabel: kRetryLabel,
+    );
+
+    Future<void> pumpViewer(WidgetTester tester, Widget child) async {
+      await tester.pumpWidget(
+        MaterialApp(theme: FoxStreakTheme.light(), home: child),
+      );
+      await settleImageDecode(tester);
+    }
+
+    testWidgets('card: plain tiny muted caption, right-aligned to the '
+        "rendered image's right edge and no wider than it", (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: FoxStreakTheme.light(),
+          home: Scaffold(
+            body: Center(
+              child: SizedBox(
+                width: 300,
+                child: FoxQuestionImage(
+                  imageType: 'base64',
+                  imageContent: base64Encode(kPortraitPng),
+                  semanticLabel: 'Sticker',
+                  imageCopyright: '© Jane Doe with a rather long note',
+                  expandHint: kExpandHint,
+                  closeLabel: kCloseLabel,
+                  imageLoadFailedMessage: kLoadFailedMessage,
+                  retryButtonLabel: kRetryLabel,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await settleImageDecode(tester);
+
+      final image = tester.getRect(find.byType(Image));
+      final caption = tester.getRect(
+        find.byKey(const Key('foxItemImageCaption')),
+      );
+      // Portrait 20x40 in a 300-wide box: narrower than the box.
+      expect(image.width, lessThan(300));
+      expect(caption.right, closeTo(image.right, 0.01));
+      expect(caption.width, closeTo(image.width, 0.01));
+      expect(caption.top, closeTo(image.bottom, 0.01 + FoxSpacing.xs));
+
+      final text = tester.widget<Text>(
+        find.descendant(
+          of: find.byKey(const Key('foxItemImageCaption')),
+          matching: find.byType(Text),
+        ),
+      );
+      expect(text.maxLines, 2);
+      expect(text.overflow, TextOverflow.ellipsis);
+      expect(text.style!.fontSize, 11);
+      expect(
+        text.style!.color,
+        FoxStreakTheme.light().colorScheme.onSurfaceVariant,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('foxItemImageCaption')),
+          matching: find.byType(ColoredBox),
+        ),
+        findsNothing,
+      );
+    });
+
+    testWidgets('card: caption stays within bounds at a large text scale', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: FoxStreakTheme.light(),
+          builder: (context, app) => MediaQuery(
+            data: MediaQuery.of(context)
+                .copyWith(textScaler: const TextScaler.linear(2.5)),
+            child: app!,
+          ),
+          home: Scaffold(
+            body: SizedBox(
+              width: 200,
+              child: FoxQuestionImage(
+                imageType: 'base64',
+                imageContent: base64Encode(kTinyPng),
+                semanticLabel: 'Sticker',
+                imageCopyright: 'A long credit line that needs to wrap ' * 3,
+                expandHint: kExpandHint,
+                closeLabel: kCloseLabel,
+                imageLoadFailedMessage: kLoadFailedMessage,
+                retryButtonLabel: kRetryLabel,
+              ),
+            ),
+          ),
+        ),
+      );
+      await settleImageDecode(tester);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('full screen: black background, white close button and '
+        'white question above the image', (tester) async {
+      await pumpViewer(tester, viewer());
+
+      expect(
+        tester
+            .widget<Scaffold>(find.byKey(const Key('fullScreenImageView')))
+            .backgroundColor,
+        Colors.black,
+      );
+      final close = find.byKey(const Key('fullScreenImageViewClose'));
+      expect(tester.getSize(close).width, greaterThanOrEqualTo(48));
+      expect(tester.getSize(close).height, greaterThanOrEqualTo(48));
+      expect(find.byTooltip(kCloseLabel), findsOneWidget);
+      expect(tester.widget<IconButton>(close).color, Colors.white);
+
+      final question = find.byKey(const Key('fullScreenImageViewQuestion'));
+      final text = tester.widget<Text>(question);
+      expect(text.data, 'What is shown here?');
+      expect(text.maxLines, 3);
+      expect(text.style!.color, Colors.white);
+      expect(
+        tester.getTopLeft(question).dy,
+        greaterThanOrEqualTo(tester.getBottomLeft(close).dy),
+      );
+      expect(
+        tester.getBottomLeft(question).dy,
+        lessThanOrEqualTo(tester.getTopLeft(find.byType(Image)).dy),
+      );
+    });
+
+    testWidgets('full screen: black in dark theme too', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(theme: FoxStreakTheme.dark(), home: viewer()),
+      );
+      await settleImageDecode(tester);
+      expect(
+        tester
+            .widget<Scaffold>(find.byKey(const Key('fullScreenImageView')))
+            .backgroundColor,
+        Colors.black,
+      );
+    });
+
+    testWidgets('full screen: close button pops the route', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: FoxStreakTheme.light(),
+          home: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () => Navigator.of(
+                context,
+              ).push<void>(MaterialPageRoute<void>(builder: (_) => viewer())),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('fullScreenImageViewClose')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('fullScreenImageView')), findsNothing);
+    });
+
+    for (final (String name, Uint8List png) in [
+      ('portrait', kPortraitPng),
+      ('landscape', kTinyPng),
+    ]) {
+      testWidgets('full screen: dimmed-white caption directly under a $name '
+          'image, aligned to its real right edge', (tester) async {
+        await pumpViewer(tester, viewer(content: base64Encode(png)));
+
+        final image = tester.getRect(find.byType(Image));
+        final caption = tester.getRect(
+          find.byKey(const Key('foxItemImageCaption')),
+        );
+        expect(caption.right, closeTo(image.right, 0.01));
+        expect(caption.width, closeTo(image.width, 0.01));
+        expect(caption.top, closeTo(image.bottom, 0.01));
+        final text = tester.widget<Text>(
+          find.descendant(
+            of: find.byKey(const Key('foxItemImageCaption')),
+            matching: find.byType(Text),
+          ),
+        );
+        expect(text.maxLines, 2);
+        expect(text.style!.color, Colors.white.withValues(alpha: 0.7));
+      });
+    }
+
+    testWidgets('full screen: no caption while loading, on the placeholder '
+        'or without a copyright; question + close always shown', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: FoxStreakTheme.light(),
+          home: viewer(type: 'url', content: 'https://example.invalid/a.png'),
+        ),
+      );
+      await tester.pump();
+      expect(
+        find.byKey(const Key('fullScreenImageViewLoading')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('foxItemImageCaption')), findsNothing);
+      expect(
+        find.byKey(const Key('fullScreenImageViewQuestion')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('fullScreenImageViewClose')), findsOneWidget);
+
+      // Automatic retries exhausted -> load-failed placeholder, still no
+      // caption.
+      await tester.pumpAndSettle(const Duration(seconds: 3));
+      expect(
+        find.byKey(const Key('fullScreenImageViewLoadFailed')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('foxItemImageCaption')), findsNothing);
+
+      await pumpViewer(tester, viewer(content: 'not-base64!!'));
+      expect(
+        find.byKey(const Key('fullScreenImageViewPlaceholder')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('foxItemImageCaption')), findsNothing);
+
+      await pumpViewer(tester, viewer(copyright: null));
+      expect(find.byType(Image), findsOneWidget);
+      expect(find.byKey(const Key('foxItemImageCaption')), findsNothing);
     });
   });
 }

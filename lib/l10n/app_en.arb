@@ -184,6 +184,11 @@
     "placeholders": {}
   },
   "fullScreenImageViewHint": "Opens a full-screen view",
+  "@fullScreenImageCloseLabel": {
+    "description": "Screen-reader/tooltip label of the close (X) button in the full-screen image view (issue #113)",
+    "placeholders": {}
+  },
+  "fullScreenImageCloseLabel": "Close image",
   "@questionImageLoadFailed": {
     "description": "Message shown in place of a question-card/full-screen url image after automatic retries are exhausted (issue #102)",
     "placeholders": {}

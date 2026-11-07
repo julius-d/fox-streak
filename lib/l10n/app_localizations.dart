@@ -548,6 +548,12 @@ abstract class AppLocalizations {
   /// **'Opens a full-screen view'**
   String get fullScreenImageViewHint;
 
+  /// Screen-reader/tooltip label of the close (X) button in the full-screen image view (issue #113)
+  ///
+  /// In en, this message translates to:
+  /// **'Close image'**
+  String get fullScreenImageCloseLabel;
+
   /// Message shown in place of a question-card/full-screen url image after automatic retries are exhausted (issue #102)
   ///
   /// In en, this message translates to:

@@ -253,6 +253,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fullScreenImageViewHint => 'Opens a full-screen view';
 
   @override
+  String get fullScreenImageCloseLabel => 'Close image';
+
+  @override
   String get questionImageLoadFailed => 'Couldn\'t load this image';
 
   @override

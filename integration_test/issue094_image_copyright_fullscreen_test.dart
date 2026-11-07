@@ -18,7 +18,7 @@ import 'package:integration_test/integration_test.dart';
 import 'helpers.dart';
 
 const String _kTinyPngBase64 =
-    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+A8AAQUAAdafFaMAAAAASUVORK5CYII=';
+    'iVBORw0KGgoAAAANSUhEUgAAACgAAAAUCAYAAAD/Rn+7AAAAMElEQVR4nO3OsQ0AAAjDsJ7P1+UKFIYM3p1O+lnogEGDdMCgQTpg0CAdMGiQDhi8ttSp4yqPxYvYAAAAAElFTkSuQmCC';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -83,6 +83,31 @@ void main() {
       expect(find.byKey(const Key('fullScreenImageView')), findsOneWidget);
       expect(find.text('© Jane Doe'), findsOneWidget);
 
+      // #113: gallery-style full screen — question above the image, the
+      // note directly under it, white close button top-left.
+      expect(
+        tester
+            .widget<Scaffold>(find.byKey(const Key('fullScreenImageView')))
+            .backgroundColor,
+        Colors.black,
+      );
+      expect(
+        find.byKey(const Key('fullScreenImageViewQuestion')),
+        findsOneWidget,
+      );
+      final image = tester.getRect(find.byType(Image));
+      final caption = tester.getRect(
+        find.byKey(const Key('foxItemImageCaption')),
+      );
+      expect(caption.right, closeTo(image.right, 0.5));
+      expect(caption.top, closeTo(image.bottom, 0.5));
+
+      await tester.tap(find.byKey(const Key('fullScreenImageViewClose')));
+      await settle(tester);
+      expect(find.byKey(const Key('fullScreenImageView')), findsNothing);
+
+      await tester.tap(find.byKey(const Key('foxQuestionImageTapTarget')));
+      await settle(tester);
       await tester.tap(find.byKey(const Key('fullScreenImageViewTapTarget')));
       await settle(tester);
       expect(find.byKey(const Key('fullScreenImageView')), findsNothing);

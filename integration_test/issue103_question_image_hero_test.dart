@@ -26,7 +26,7 @@ import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
 import 'helpers.dart';
 
 const String _kTinyPngBase64 =
-    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+A8AAQUAAdafFaMAAAAASUVORK5CYII=';
+    'iVBORw0KGgoAAAANSUhEUgAAACgAAAAUCAYAAAD/Rn+7AAAAMElEQVR4nO3OsQ0AAAjDsJ7P1+UKFIYM3p1O+lnogEGDdMCgQTpg0CAdMGiQDhi8ttSp4yqPxYvYAAAAAElFTkSuQmCC';
 
 /// Inserts a one-item choice set whose item has a base64 image, and returns
 /// its (real, DB-assigned) setId.

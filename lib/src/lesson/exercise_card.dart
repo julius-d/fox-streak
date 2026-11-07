@@ -115,6 +115,7 @@ Widget buildItemImage(
     semanticLabel: item.prompt,
     imageCopyright: item.imageCopyright,
     expandHint: l10n.fullScreenImageViewHint,
+    closeLabel: l10n.fullScreenImageCloseLabel,
     imageLoadFailedMessage: l10n.questionImageLoadFailed,
     retryButtonLabel: l10n.questionImageRetryButton,
     expandToFill: fills,

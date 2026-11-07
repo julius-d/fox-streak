@@ -93,6 +93,7 @@
   "itemImageCopyrightFieldLabel": "Bildnachweis (optional)",
   "errorInvalidImageCopyright": "Gib eine einzelne Zeile mit bis zu 120 Zeichen ein",
   "fullScreenImageViewHint": "Öffnet eine Vollbildansicht",
+  "fullScreenImageCloseLabel": "Bild schließen",
   "questionImageLoadFailed": "Bild konnte nicht geladen werden",
   "questionImageRetryButton": "Erneut versuchen",
   "itemDayLabel": "Tag",

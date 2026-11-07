@@ -25,7 +25,7 @@ import 'package:fox_streak_app/src/widgets/widgets.dart';
 /// A minimal valid 1x1 transparent PNG, decodable by `Image.memory` (#094
 /// caption-bar golden).
 final _kTinyPng = base64Decode(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+A8AAQUAAdafFaMAAAAASUVORK5CYII=',
+  'iVBORw0KGgoAAAANSUhEUgAAACgAAAAUCAYAAAD/Rn+7AAAAMElEQVR4nO3OsQ0AAAjDsJ7P1+UKFIYM3p1O+lnogEGDdMCgQTpg0CAdMGiQDhi8ttSp4yqPxYvYAAAAAElFTkSuQmCC',
 );
 
 /// Baseline subfolder for the OS this test run is executing on.
@@ -269,6 +269,7 @@ void main() {
             semanticLabel: 'A sticker',
             imageCopyright: '© Jane Doe',
             expandHint: 'Opens a full-screen view',
+            closeLabel: 'Close image',
             imageLoadFailedMessage: "Couldn't load this image",
             retryButtonLabel: 'Retry',
             maxImageHeight: 120,

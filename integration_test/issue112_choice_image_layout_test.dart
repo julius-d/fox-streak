@@ -62,6 +62,7 @@ void main() {
             position: 0,
             imageType: const Value('base64'),
             imageContent: const Value(_tinyPng),
+            imageCopyright: const Value('© Jane Doe'),
           ),
         );
     final items = await db.select(db.items).get();
