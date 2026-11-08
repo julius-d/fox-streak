@@ -1751,6 +1751,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Practice today to keep your streak!'**
   String get widgetAtRiskText;
+
+  /// Home banner: one downloaded pack has new content (issue #125)
+  ///
+  /// In en, this message translates to:
+  /// **'New content in {title}'**
+  String packUpdateBannerOne(String title);
+
+  /// Home banner: several downloaded packs have updates (issue #125)
+  ///
+  /// In en, this message translates to:
+  /// **'Updates available for {count} packs'**
+  String packUpdateBannerMany(int count);
+
+  /// Home pack-update banner action button (issue #125)
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get packUpdateAction;
+
+  /// Screen-reader label of the pack-update banner close button (issue #125)
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get packUpdateDismiss;
+
+  /// Pack-update banner text while updating (issue #125)
+  ///
+  /// In en, this message translates to:
+  /// **'Updating packs… {done} of {total} sets'**
+  String packUpdateProgress(int done, int total);
+
+  /// Pack-update banner success confirmation (issue #125)
+  ///
+  /// In en, this message translates to:
+  /// **'Packs updated'**
+  String get packUpdateSuccess;
+
+  /// Pack-update banner failure text (issue #125)
+  ///
+  /// In en, this message translates to:
+  /// **'The update did not finish. Check your connection and try again.'**
+  String get packUpdateFailed;
+
+  /// Pack-update banner failure text when some packs already updated (issue #125)
+  ///
+  /// In en, this message translates to:
+  /// **'Some packs are updated. The rest did not finish – check your connection and try again.'**
+  String get packUpdateFailedPartial;
+
+  /// Pack-update banner retry button (issue #125)
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get packUpdateRetry;
 }
 
 class _AppLocalizationsDelegate

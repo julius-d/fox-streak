@@ -1047,4 +1047,39 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get widgetAtRiskText => 'Übe heute, um deine Streak zu halten!';
+
+  @override
+  String packUpdateBannerOne(String title) {
+    return 'Neue Inhalte in $title';
+  }
+
+  @override
+  String packUpdateBannerMany(int count) {
+    return 'Updates für $count Packs verfügbar';
+  }
+
+  @override
+  String get packUpdateAction => 'Aktualisieren';
+
+  @override
+  String get packUpdateDismiss => 'Schließen';
+
+  @override
+  String packUpdateProgress(int done, int total) {
+    return 'Packs werden aktualisiert … $done von $total Sets';
+  }
+
+  @override
+  String get packUpdateSuccess => 'Packs aktualisiert';
+
+  @override
+  String get packUpdateFailed =>
+      'Das Update wurde nicht fertig. Prüfe deine Verbindung und versuch es noch einmal.';
+
+  @override
+  String get packUpdateFailedPartial =>
+      'Einige Packs sind aktuell. Der Rest wurde nicht fertig – prüfe deine Verbindung und versuch es noch einmal.';
+
+  @override
+  String get packUpdateRetry => 'Erneut versuchen';
 }

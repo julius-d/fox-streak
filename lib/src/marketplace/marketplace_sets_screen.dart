@@ -21,6 +21,7 @@ import 'marketplace_client.dart';
 import 'marketplace_fetch_view.dart';
 import 'marketplace_providers.dart';
 import 'marketplace_set_preview_screen.dart';
+import 'pack_update_controller.dart';
 
 class _PackData {
   final MarketplacePackListing listing;
@@ -147,6 +148,9 @@ class _MarketplaceSetsScreenState extends ConsumerState<MarketplaceSetsScreen> {
     }
 
     if (isUpdate && toFetch.isEmpty) return; // everything skipped
+    // Already being updated from the Home banner (#125): never twice.
+    final locks = ref.read(packUpdateLocksProvider);
+    if (!locks.tryAcquire(widget.sourceUrl, widget.pack.id)) return;
     setState(() {
       _busy = true;
       _failed = false;
@@ -180,10 +184,14 @@ class _MarketplaceSetsScreenState extends ConsumerState<MarketplaceSetsScreen> {
           ),
         ),
       );
+      ref
+          .read(packUpdateControllerProvider.notifier)
+          .packChanged(widget.sourceUrl, widget.pack.id);
       setState(() => _reloadToken++);
     } catch (_) {
       if (mounted) setState(() => _failed = true);
     } finally {
+      locks.release(widget.sourceUrl, widget.pack.id);
       if (mounted) setState(() => _busy = false);
     }
   }

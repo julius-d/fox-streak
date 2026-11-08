@@ -169,6 +169,31 @@ void main() {
     }
   });
 
+  group('feedback banner with action and close (#125)', () {
+    for (final (String themeName, ThemeData theme) in themes) {
+      testWidgets('info banner with action ($themeName)', (
+        WidgetTester tester,
+      ) async {
+        await _expectGolden(
+          tester,
+          'fox_feedback_banner_action_$themeName',
+          Padding(
+            padding: const EdgeInsets.all(FoxSpacing.md),
+            child: FoxFeedbackBanner.info(
+              message: 'New content in Animals pack',
+              actionLabel: 'Update',
+              onAction: () {},
+              onClose: () {},
+              closeLabel: 'Dismiss',
+            ),
+          ),
+          theme: theme,
+          surfaceSize: const Size(320, 200),
+        );
+      });
+    }
+  });
+
   group('progress bar', () {
     for (final (String themeName, ThemeData theme) in themes) {
       testWidgets('progress bar ($themeName)', (WidgetTester tester) async {

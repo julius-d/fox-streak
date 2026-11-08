@@ -1256,5 +1256,57 @@
     "description": "Encouraging line on the Android home-screen widget when the streak is at risk (streak > 0, no activity yet today) (issue #115)",
     "placeholders": {}
   },
-  "widgetAtRiskText": "Practice today to keep your streak!"
+  "widgetAtRiskText": "Practice today to keep your streak!",
+  "@packUpdateBannerOne": {
+    "description": "Home banner: one downloaded pack has new content (issue #125)",
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "packUpdateBannerOne": "New content in {title}",
+  "@packUpdateBannerMany": {
+    "description": "Home banner: several downloaded packs have updates (issue #125)",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "packUpdateBannerMany": "Updates available for {count} packs",
+  "@packUpdateAction": {
+    "description": "Home pack-update banner action button (issue #125)",
+    "placeholders": {}
+  },
+  "packUpdateAction": "Update",
+  "@packUpdateDismiss": {
+    "description": "Screen-reader label of the pack-update banner close button (issue #125)",
+    "placeholders": {}
+  },
+  "packUpdateDismiss": "Dismiss",
+  "@packUpdateProgress": {
+    "description": "Pack-update banner text while updating (issue #125)",
+    "placeholders": {
+      "done": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "packUpdateProgress": "Updating packs… {done} of {total} sets",
+  "@packUpdateSuccess": {
+    "description": "Pack-update banner success confirmation (issue #125)",
+    "placeholders": {}
+  },
+  "packUpdateSuccess": "Packs updated",
+  "@packUpdateFailed": {
+    "description": "Pack-update banner failure text (issue #125)",
+    "placeholders": {}
+  },
+  "packUpdateFailed": "The update did not finish. Check your connection and try again.",
+  "@packUpdateFailedPartial": {
+    "description": "Pack-update banner failure text when some packs already updated (issue #125)",
+    "placeholders": {}
+  },
+  "packUpdateFailedPartial": "Some packs are updated. The rest did not finish – check your connection and try again.",
+  "@packUpdateRetry": {
+    "description": "Pack-update banner retry button (issue #125)",
+    "placeholders": {}
+  },
+  "packUpdateRetry": "Retry"
 }

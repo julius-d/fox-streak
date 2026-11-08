@@ -158,6 +158,93 @@ void main() {
     expect(fills.contains(FoxSemanticColors.light.gold), isTrue);
   });
 
+  group('feedback banner action + close (#125)', () {
+    Widget banner({VoidCallback? onAction, VoidCallback? onClose}) =>
+        FoxFeedbackBanner.info(
+          message: 'New content in a pack with a rather long title',
+          actionLabel: 'Update',
+          onAction: onAction ?? () {},
+          onClose: onClose ?? () {},
+          closeLabel: 'Dismiss',
+        );
+
+    testWidgets('action and close fire, have 48dp targets and a label', (
+      WidgetTester tester,
+    ) async {
+      var acted = 0;
+      var closed = 0;
+      await pumpKit(
+        tester,
+        banner(onAction: () => acted++, onClose: () => closed++),
+      );
+      final Finder action = find.byKey(const Key('foxFeedbackBannerAction'));
+      final Finder close = find.byKey(const Key('foxFeedbackBannerClose'));
+      await tester.tap(action);
+      await tester.tap(close);
+      expect(acted, 1);
+      expect(closed, 1);
+      expect(tester.getSize(action).height, greaterThanOrEqualTo(48));
+      expect(tester.getSize(close).shortestSide, greaterThanOrEqualTo(48));
+      expect(find.byTooltip('Dismiss'), findsOneWidget);
+    });
+
+    testWidgets('action sits beside the message on wide screens', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await pumpKit(tester, banner());
+      final Rect action = tester.getRect(
+        find.byKey(const Key('foxFeedbackBannerAction')),
+      );
+      final Rect text = tester.getRect(find.textContaining('New content'));
+      expect(action.left, greaterThanOrEqualTo(text.right));
+    });
+
+    testWidgets('action stacks below the message on narrow screens, '
+        'nothing clipped', (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(300, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await pumpKit(tester, banner());
+      final Rect text = tester.getRect(find.textContaining('New content'));
+      final Rect action = tester.getRect(
+        find.byKey(const Key('foxFeedbackBannerAction')),
+      );
+      expect(action.top, greaterThanOrEqualTo(text.bottom));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('action stacks below the message under large fonts', (
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            theme: FoxStreakTheme.light(),
+            builder: (BuildContext context, Widget? child) => MediaQuery(
+              data: MediaQuery.of(context)
+                  .copyWith(textScaler: const TextScaler.linear(2)),
+              child: child!,
+            ),
+            home: Scaffold(body: banner()),
+          ),
+        ),
+      );
+      await tester.pump();
+      final Rect text = tester.getRect(find.textContaining('New content'));
+      final Rect action = tester.getRect(
+        find.byKey(const Key('foxFeedbackBannerAction')),
+      );
+      expect(action.top, greaterThanOrEqualTo(text.bottom));
+      expect(tester.takeException(), isNull);
+    });
+  });
+
   testWidgets('progress bar clamps and announces', (WidgetTester tester) async {
     await pumpKit(
       tester,

@@ -22,6 +22,8 @@ import '../data/database.dart';
 import '../data/providers.dart';
 import '../library/library_screen.dart';
 import '../lesson/lesson_screen.dart';
+import '../marketplace/pack_update_banner.dart';
+import '../marketplace/pack_update_controller.dart';
 import '../pet/pet_collection_screen.dart';
 import '../pet/pet_hero.dart';
 import '../pet/pet_providers.dart';
@@ -149,6 +151,9 @@ class _HomeDashboard extends ConsumerWidget {
     // the resolved result without blocking Home's own loading gate on it.
     final bool streakFreezeApplied =
         ref.watch(streakFreezeAutoApplyProvider).asData?.value ?? false;
+    final bool packUpdateBannerVisible = ref.watch(
+      packUpdateControllerProvider.select((s) => s.visible),
+    );
     // Issue #108: reuses the same windowed `daily_activity` data #084's
     // Streak Details calendar already reads — no new query — filtered down
     // to just the current streak's days (oldest -> newest, matching
@@ -288,6 +293,11 @@ class _HomeDashboard extends ConsumerWidget {
                   key: const Key('streakFreezeAppliedBanner'),
                   message: l10n.streakFreezeAppliedBannerText,
                 ),
+              ],
+              // Issue #125: at most one banner — the streak-freeze one wins.
+              if (!streakFreezeApplied && packUpdateBannerVisible) ...[
+                const SizedBox(height: FoxSpacing.lg),
+                const PackUpdateBanner(),
               ],
               const SizedBox(height: FoxSpacing.lg),
               Center(

@@ -1013,5 +1013,14 @@
     "description": "Encouraging line on the Android home-screen widget when the streak is at risk (streak > 0, no activity yet today) (issue #115)",
     "placeholders": {}
   },
-  "widgetAtRiskText": "Übe heute, um deine Streak zu halten!"
+  "widgetAtRiskText": "Übe heute, um deine Streak zu halten!",
+  "packUpdateBannerOne": "Neue Inhalte in {title}",
+  "packUpdateBannerMany": "Updates für {count} Packs verfügbar",
+  "packUpdateAction": "Aktualisieren",
+  "packUpdateDismiss": "Schließen",
+  "packUpdateProgress": "Packs werden aktualisiert … {done} von {total} Sets",
+  "packUpdateSuccess": "Packs aktualisiert",
+  "packUpdateFailed": "Das Update wurde nicht fertig. Prüfe deine Verbindung und versuch es noch einmal.",
+  "packUpdateFailedPartial": "Einige Packs sind aktuell. Der Rest wurde nicht fertig – prüfe deine Verbindung und versuch es noch einmal.",
+  "packUpdateRetry": "Erneut versuchen"
 }
