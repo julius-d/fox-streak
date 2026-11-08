@@ -322,15 +322,24 @@ class LessonController extends Notifier<LessonState> {
   /// Also bumps `state.attempt` so `lesson_screen` can key
   /// `lessonProgressBar` on it, forcing a remount instead of tweening the
   /// progress bar backward on "Practice again" (issue #072).
-  void start(List<Item> items, {Random? random}) {
+  void start(List<Item> items, {Random? random}) =>
+      _startSession(queueItems: items, poolItems: items, random: random);
+
+  /// Shared session start: [queueItems] are shuffled into the queue, while
+  /// [poolItems] become [LessonState.sourceItems] (the distractor pool).
+  void _startSession({
+    required List<Item> queueItems,
+    required List<Item> poolItems,
+    Random? random,
+  }) {
     _generation++;
     _actionInFlight = false;
     _random = random;
     final rng = _random ?? Random();
-    final shuffled = [...items]..shuffle(rng);
+    final shuffled = [...queueItems]..shuffle(rng);
     final queue = shuffled.take(20).toList();
     state = LessonState(
-      sourceItems: items,
+      sourceItems: poolItems,
       queue: queue,
       index: 0,
       outcomes: [],
@@ -341,13 +350,19 @@ class LessonController extends Notifier<LessonState> {
     );
   }
 
-  /// Restarts with only [items] instead of reshuffling the full
+  /// Restarts with only [items] queued instead of reshuffling the full
   /// [LessonState.sourceItems] — used by the summary screen's "Redo missed
-  /// items" button (issue #078). A no-op on an empty list rather than
-  /// clearing the session, so a stray call can't wipe the session.
+  /// items" button (issue #078). The existing [LessonState.sourceItems] stay
+  /// the distractor pool so choice cards keep enough distractors (#116). A
+  /// no-op on an empty list rather than clearing the session, so a stray
+  /// call can't wipe the session.
   void restartWithItems(List<Item> items, {Random? random}) {
     if (items.isEmpty) return;
-    start(items, random: random);
+    _startSession(
+      queueItems: items,
+      poolItems: state.sourceItems,
+      random: random,
+    );
   }
 
   /// This session's items whose outcome wasn't correct — skipping counts as

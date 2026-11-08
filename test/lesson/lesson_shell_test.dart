@@ -716,6 +716,49 @@ void main() {
       expect(find.byKey(const Key('checkButton')), findsOneWidget);
     });
 
+    testWidgets('redo of a single missed item still offers distractors from '
+        'the full set (issue #116)', (WidgetTester tester) async {
+      // No stored distractors: the card must draw them from the pool.
+      final items = await setupTestItems(db, 1, 5);
+
+      await pumpLessonShell(
+        tester,
+        LessonScreen(setId: 1, items: items),
+        database: db,
+        clock: fakeClock,
+      );
+      await tester.pump();
+
+      // Skip 'Question 0', answer every other item correctly.
+      for (var i = 0; i < 5; i++) {
+        if (find.text('Question 0').evaluate().isNotEmpty) {
+          await openLessonMenu(tester);
+          await tester.tap(find.byKey(const Key('skipItemMenuItem')));
+          await tester.pump();
+          continue;
+        }
+        final answer = items
+            .firstWhere((item) => find.text(item.prompt).evaluate().isNotEmpty)
+            .answer;
+        await tester.tap(find.text(answer));
+        await tester.pump();
+        await tester.tap(find.byKey(const Key('checkButton')));
+        await tester.pump();
+        await tester.tap(find.byKey(const Key('checkButton')));
+        await tester.pump();
+      }
+
+      await dismissCompletionScreens(tester);
+      await tester.tap(find.byKey(const Key('redoMissedItemsButton')));
+      await tester.pump();
+
+      expect(find.text('Question 0'), findsOneWidget);
+      // Correct answer + 3 real distractors from the other items, no
+      // placeholder options.
+      expect(find.textContaining('answer'), findsNWidgets(4));
+      expect(find.byKey(const Key('choiceOption3')), findsOneWidget);
+    });
+
     testWidgets('practice-again resets lessonProgressBar to 0.0 instantly, no '
         'backward tween (issue #072)', (WidgetTester tester) async {
       final items = await setupTestItems(

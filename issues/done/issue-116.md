@@ -1,6 +1,6 @@
 # Issue 116: Redo missed items shrinks the multiple-choice distractor pool
 
-Status: open | Priority: P3 | Type: bug | Refined-at: 2026-11-07
+Status: done | Priority: P3 | Type: bug | Refined-at: 2026-11-07 | Completed-at: 2026-11-08
 
 ## Goal
 "Redo missed items" queues only the missed items but keeps the full original
@@ -38,3 +38,21 @@ uses the missed items as the queue and keeps the existing
 ## Out of scope
 Fallback behaviour of choice cards when the whole set is too small to supply
 enough distractors.
+
+## Summary
+
+`LessonController.start()` now delegates to a private `_startSession(queueItems, poolItems)`.
+`restartWithItems` queues the missed items but keeps `state.sourceItems` as the pool, so
+repeated redo rounds keep the full distractor pool. Public API unchanged. Controller and
+shell widget tests added. No new UI, so no integration test or screenshots.
+
+## Code review
+
+- No correctness bugs; behaviour matches the acceptance criteria.
+  Nothing to fix.
+- `_startSession` lacked a doc comment explaining the queue/pool split.
+  Fixed.
+- `makeItems` in the controller test duplicates item-building from the shell test helper.
+  Not fixed: the two files already carry separate local helpers; sharing is out of scope.
+- `poolItems: state.sourceItems` aliases the same list instance.
+  Not fixed: nothing mutates it, and `LessonState` treats it as immutable.

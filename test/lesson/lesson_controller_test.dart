@@ -151,4 +151,84 @@ void main() {
       isFalse,
     );
   });
+
+  group('distractor pool (issue #116)', () {
+    Future<List<Item>> makeItems(int count) async {
+      final items = <Item>[await insertTestItem(db, 1)];
+      for (var i = 1; i < count; i++) {
+        final id = await db
+            .into(db.items)
+            .insert(
+              ItemsCompanion.insert(
+                setId: 1,
+                type: 'date',
+                prompt: 'Birthday $i',
+                answer: '1985-05-1$i',
+                position: i,
+              ),
+            );
+        items.add(
+          Item(
+            id: id,
+            setId: 1,
+            type: 'date',
+            prompt: 'Birthday $i',
+            answer: '1985-05-1$i',
+            position: i,
+          ),
+        );
+      }
+      return items;
+    }
+
+    test('redo with a single missed item keeps the full pool', () async {
+      final items = await makeItems(4);
+      final controller = container.read(lessonControllerProvider.notifier);
+      controller.start(items);
+
+      controller.restartWithItems([items.first]);
+
+      final state = container.read(lessonControllerProvider);
+      expect(state.queue, [items.first]);
+      expect(state.sourceItems, items);
+    });
+
+    test('consecutive redo rounds keep the original full pool', () async {
+      final items = await makeItems(4);
+      final controller = container.read(lessonControllerProvider.notifier);
+      controller.start(items);
+
+      controller.restartWithItems([items[0], items[1]]);
+      controller.restartWithItems([items[1]]);
+
+      final state = container.read(lessonControllerProvider);
+      expect(state.queue, [items[1]]);
+      expect(state.sourceItems, items);
+    });
+
+    test('start() sets the pool to the given items again', () async {
+      final items = await makeItems(4);
+      final controller = container.read(lessonControllerProvider.notifier);
+      controller.start(items);
+      controller.restartWithItems([items.first]);
+
+      controller.start(items.take(2).toList());
+
+      final state = container.read(lessonControllerProvider);
+      expect(state.sourceItems, items.take(2).toList());
+    });
+
+    test('restartWithItems([]) is a no-op and leaves the pool', () async {
+      final items = await makeItems(4);
+      final controller = container.read(lessonControllerProvider.notifier);
+      controller.start(items);
+      final before = container.read(lessonControllerProvider);
+
+      controller.restartWithItems([]);
+
+      final after = container.read(lessonControllerProvider);
+      expect(after.sourceItems, items);
+      expect(after.attempt, before.attempt);
+    });
+  });
 }
