@@ -410,12 +410,19 @@ class LessonController extends Notifier<LessonState> {
   /// Calls the stored grade function once, records the outcome immediately
   /// via StatsRepository.recordAttempt, updates phase to feedback, and
   /// remembers the result for the button tint.
-  Future<void> submitGrade() => _guarded((generation) async {
+  ///
+  /// [onGraded] fires synchronously as soon as correctness is known — before
+  /// the attempt write — so time-critical feedback (the correct-answer chime,
+  /// issue #122) doesn't wait on persistence.
+  Future<void> submitGrade({
+    void Function({required bool correct})? onGraded,
+  }) => _guarded((generation) async {
     final draft = state.currentDraft;
     final item = state.currentItem;
     if (draft == null || item == null) return;
 
     final correct = draft.grade();
+    onGraded?.call(correct: correct);
     final outcome = LessonItemOutcome(
       itemId: item.id,
       correct: correct,

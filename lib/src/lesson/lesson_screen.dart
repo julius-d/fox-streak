@@ -124,6 +124,9 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
   void initState() {
     super.initState();
     _pageController = PageController();
+    // Constructing the player preloads the chime, so the first correct answer
+    // isn't slower than later ones (issue #122).
+    ref.read(foxSoundPlayerProvider);
   }
 
   @override
@@ -348,20 +351,25 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
     );
   }
 
-  /// Grades the current answer, then fires the correct/wrong haptic moment
-  /// (behind [foxHapticsEnabledProvider]) plus, on a correct answer, the
+  /// Grades the current answer and fires the correct/wrong haptic moment
+  /// (behind [foxHapticsEnabledProvider]). On a correct answer the
   /// congratulation chime (behind [foxSoundEnabledProvider], issue #054)
-  /// once the result is known.
+  /// starts the instant grading is known, before the attempt is saved and
+  /// independent of the haptic (issue #122).
   Future<void> _submitAndBuzz(
     BuildContext context,
     WidgetRef ref,
     LessonController controller,
   ) async {
-    await controller.submitGrade();
+    await controller.submitGrade(
+      onGraded: ({required correct}) {
+        if (correct) FoxFeedback.correctChime(ref);
+      },
+    );
     final correct = ref.read(lessonControllerProvider).lastCorrect;
     if (correct == null || !context.mounted) return;
     if (correct) {
-      await FoxFeedback.correctAnswer(context, ref);
+      await FoxFeedback.success(context, ref);
     } else {
       await FoxFeedback.error(context, ref);
     }

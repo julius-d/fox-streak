@@ -1397,20 +1397,6 @@ void main() {
       final correctAnswer = items.first.answer;
       final fakeSoundPlayer = _FakeSoundPlayer();
 
-      // FoxFeedback.success awaits the haptic buzz before playing the
-      // chime — without a mock handler the platform channel call never
-      // resolves, so the chime call is never reached.
-      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-        SystemChannels.platform,
-        (MethodCall call) async => null,
-      );
-      addTearDown(() {
-        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-          SystemChannels.platform,
-          null,
-        );
-      });
-
       await tester.pumpWidget(
         ProviderScope(
           overrides: [

@@ -5,6 +5,8 @@
 // Playback itself goes through [foxSoundPlayerProvider] rather than calling
 // `audioplayers` directly from widgets, so tests can override it with a
 // no-op fake instead of hitting a real platform audio channel.
+import 'dart:async';
+
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -49,10 +51,41 @@ AudioContext foxDuckingAudioContext() => AudioContext(
 
 /// Production implementation backed by `audioplayers`.
 class AudioPlayersSoundPlayer implements FoxSoundPlayer {
+  static const String _correctAsset = 'sfx/koiroylers-correct-356013.mp3';
+
   // Separate players per sound so a correct-answer chime mid-lesson can't
   // be cut off by (or cut off) the level-up chime on the result screen.
   final AudioPlayer _levelUpPlayer = AudioPlayer();
   final AudioPlayer _correctPlayer = AudioPlayer();
+
+  // The correct-answer chime is latency-critical (issue #122): configure the
+  // player and load the asset once, at construction, so even the first chime
+  // after app start only has to resume an already-buffered source. A failed
+  // preparation is dropped (see [_ensureCorrectReady]) so the next play retries.
+  Future<void>? _correctReady;
+
+  AudioPlayersSoundPlayer() {
+    unawaited(_ensureCorrectReady().catchError((_) {}));
+  }
+
+  Future<void> _ensureCorrectReady() {
+    return _correctReady ??= _prepareCorrect().catchError((Object e) {
+      _correctReady = null;
+      throw e;
+    });
+  }
+
+  void dispose() {
+    unawaited(_levelUpPlayer.dispose());
+    unawaited(_correctPlayer.dispose());
+  }
+
+  Future<void> _prepareCorrect() async {
+    await _correctPlayer.setPlayerMode(PlayerMode.lowLatency);
+    await _correctPlayer.setReleaseMode(ReleaseMode.stop);
+    await _correctPlayer.setAudioContext(foxDuckingAudioContext());
+    await _correctPlayer.setSource(AssetSource(_correctAsset));
+  }
 
   // `play(ctx:)` awaits `setAudioContext` internally before resuming
   // playback (see audioplayers' `AudioPlayer.play`), so passing it here
@@ -65,12 +98,19 @@ class AudioPlayersSoundPlayer implements FoxSoundPlayer {
     ctx: foxDuckingAudioContext(),
   );
 
+  // Restarts the preloaded source from the top, so rapid consecutive correct
+  // answers each play their chime from the start.
   @override
-  Future<void> playCorrect() => _correctPlayer.play(
-    AssetSource('sfx/koiroylers-correct-356013.mp3'),
-    ctx: foxDuckingAudioContext(),
-  );
+  Future<void> playCorrect() async {
+    await _ensureCorrectReady();
+    await _correctPlayer.seek(Duration.zero);
+    await _correctPlayer.resume();
+  }
 }
 
 final Provider<FoxSoundPlayer> foxSoundPlayerProvider =
-    Provider<FoxSoundPlayer>((ref) => AudioPlayersSoundPlayer());
+    Provider<FoxSoundPlayer>((ref) {
+      final player = AudioPlayersSoundPlayer();
+      ref.onDispose(player.dispose);
+      return player;
+    });

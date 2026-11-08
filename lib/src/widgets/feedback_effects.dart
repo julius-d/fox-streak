@@ -56,21 +56,22 @@ abstract final class FoxFeedback {
     return _buzz(ref, HapticFeedback.mediumImpact);
   }
 
-  /// Correct-answer feedback for a *graded question*: the same light haptic
-  /// buzz as [success], plus the congratulation chime (issue #054), gated
-  /// independently by [foxSoundEnabledProvider]. Call this only from the
-  /// once-per-graded-question site (`LessonScreen._submitAndBuzz`) — plain
-  /// [success] stays haptic-only because it's also reused for per-keystroke
-  /// dial-pad taps and hint-reveal buttons
-  /// (`dial_pad_exercise.dart`/`date_exercise.dart`), none of which are a
-  /// correct answer and shouldn't play the chime.
-  static Future<void> correctAnswer(BuildContext context, WidgetRef ref) async {
-    await success(context, ref);
-    // Re-check after the haptic's platform-channel round trip: the widget
-    // may have been disposed (e.g. user navigated away) while awaiting it.
-    if (!context.mounted) return;
-    if (ref.read(foxSoundEnabledProvider)) {
-      unawaited(ref.read(foxSoundPlayerProvider).playCorrect());
+  /// Correct-answer chime (issue #054), gated independently by
+  /// [foxSoundEnabledProvider]. Synchronous and fire-and-forget so it can run
+  /// the moment correctness is known (issue #122), in parallel with the
+  /// haptic from [success]. Call this only from the once-per-graded-question
+  /// site (`LessonScreen._submitAndBuzz`) — [success] is also reused for
+  /// per-keystroke dial-pad taps and hint-reveal buttons, which must not play
+  /// the chime.
+  static void correctChime(WidgetRef ref) {
+    if (!ref.read(foxSoundEnabledProvider)) return;
+    // A chime that can't load or play must never disturb the lesson.
+    try {
+      unawaited(
+        ref.read(foxSoundPlayerProvider).playCorrect().catchError((_) {}),
+      );
+    } on Object {
+      // Synchronous failure from the player: same policy, stay silent.
     }
   }
 

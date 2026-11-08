@@ -74,6 +74,34 @@ void main() {
     });
   });
 
+  test('submitGrade reports correctness via onGraded before the state '
+      'reaches feedback (issue #122)', () async {
+    final item = await insertTestItem(db, 1);
+    final controller = container.read(lessonControllerProvider.notifier);
+    controller.start([item]);
+    controller.updateDraft(
+      ExerciseDraft(
+        hasAnswer: true,
+        grade: () => true,
+        correctAnswerLabel: '05/14/1985',
+      ),
+    );
+    final seen = <(bool, LessonPhase)>[];
+
+    await controller.submitGrade(
+      onGraded: ({required correct}) =>
+          seen.add((correct, container.read(lessonControllerProvider).phase)),
+    );
+
+    expect(seen, hasLength(1));
+    expect(seen.single.$1, isTrue);
+    expect(seen.single.$2, isNot(LessonPhase.feedback));
+    expect(
+      container.read(lessonControllerProvider).phase,
+      LessonPhase.feedback,
+    );
+  });
+
   test('submitGrade copies draft.hintUsed onto the outcome', () async {
     final item = await insertTestItem(db, 1);
     final controller = container.read(lessonControllerProvider.notifier);
