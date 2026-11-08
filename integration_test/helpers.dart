@@ -307,6 +307,24 @@ Future<void> skipOnboardingAndOpenLibrary(WidgetTester tester) async {
   await settle(tester);
 }
 
+/// Starts a lesson for the set titled [title] from Home: opens the set
+/// overview via "Browse sets" (issue #124 removed Home's direct "Continue
+/// practicing" shortcut), then taps the row's play button.
+Future<void> startLessonFromHome(
+  WidgetTester tester, {
+  String title = 'Animals',
+}) async {
+  await tester.tap(find.byKey(const Key('homeBrowseSetsButton')));
+  await settle(tester);
+  final play = find.descendant(
+    of: listTileWithText(title),
+    matching: find.byIcon(Icons.play_arrow),
+  );
+  await tester.ensureVisible(play);
+  await tester.tap(play);
+  await settle(tester);
+}
+
 /// Pumps in small steps until [finder] matches something, instead of
 /// trusting a single `pumpAndSettle()`/bounded settle call to have already
 /// reached that state — used right before a time-sensitive assertion on a

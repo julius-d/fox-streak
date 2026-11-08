@@ -523,9 +523,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get homeEditNameHint => 'Gib deinen Namen ein (optional)';
 
   @override
-  String get homeContinueButton => 'Weiter üben';
-
-  @override
   String get homeBrowseSetsButton => 'Sets durchsuchen';
 
   @override

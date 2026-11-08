@@ -1,6 +1,6 @@
 # Issue 124: Remove "Continue practicing" from Home
 
-Status: open | Priority: P2 | Type: change | Refined-at: 2026-11-08
+Status: done | Priority: P2 | Type: change | Refined-at: 2026-11-08 | Completed-at: 2026-11-08
 
 ## Goal
 
@@ -52,3 +52,25 @@ single primary action.
 - [ ] Home is not part of the kit goldens, so no baseline update is
       expected; verify `flutter test` stays green.
 - [ ] Follows #015 (kit buttons, strings via arb DE + EN).
+
+## Summary
+
+- Home now has one primary "Browse sets" button (grid icon, key
+  `homeBrowseSetsButton`); the Continue button and its strings are gone.
+- Removed `lastPracticedSetIdProvider` and the then-unused
+  `StatsRepository.getLastPracticedSetId` (+ its tests).
+- Integration tests now start lessons via the new `startLessonFromHome`
+  helper (Browse sets -> play button).
+
+![Home](issue-124-home-browse-sets.png)
+
+## Code review
+
+- Stale "Home's Continue button resumes the set" comments in the migrated integration tests.
+  Fixed: reworded to Browse sets.
+- `startLessonFromHome` taps the play icon without scrolling and assumes a unique title.
+  Fixed (partly): added `ensureVisible`; duplicate titles are not used by any caller, so left as is.
+- Open #043 (Continue/Browse duplicate on fresh install) is now obsolete.
+  Not fixed: left for the backlog owner to close; out of scope here.
+- Returning-learner integration test only asserts Continue is absent.
+  Not fixed: it still asserts the Home screen after the lesson and the unit test covers the single CTA.

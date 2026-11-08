@@ -78,14 +78,13 @@ Future<({int setId, int itemId})> _insertSingleItemSet(AppDatabase db) async {
   return (setId: setId, itemId: itemId);
 }
 
-/// Resumes the (only) set via Home's Continue button and completes its
+/// Starts the (only) set via Home's Browse sets and completes its
 /// single item correctly, settling right after CONTINUE — leaving the
 /// caller to decide what's showing next: the #078 completion sequence's
 /// loot box (if this completion won one) is automatic now, no longer
 /// something a "Back to home" tap inserts.
 Future<void> _completeOneLessonFromHome(WidgetTester tester) async {
-  await tester.tap(find.byKey(const Key('homeContinueButton')));
-  await settle(tester);
+  await startLessonFromHome(tester);
   await tester.tap(find.text('dog'));
   await tester.pump();
   await tester.tap(find.byKey(const Key('checkButton'))); // CHECK

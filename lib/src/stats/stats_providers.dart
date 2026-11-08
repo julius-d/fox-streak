@@ -15,14 +15,6 @@ final profileProvider = StreamProvider<ProfileStat>((ref) {
   return ref.watch(statsRepositoryProvider).watchProfile();
 });
 
-/// The most recently practiced set's id, or `null` if none exists yet
-/// (#012's Home "Continue" button). Not a stream (no cheap single-row
-/// watch over a derived `attempts` ⋈ `items` query); callers invalidate
-/// this provider after navigating back from a lesson/library trip.
-final lastPracticedSetIdProvider = FutureProvider.autoDispose<int?>((ref) {
-  return ref.watch(statsRepositoryProvider).getLastPracticedSetId();
-});
-
 /// The #084 Streak Details screen's calendar data: the live profile's
 /// streak/goal fields combined with the `daily_activity` rows covering the
 /// ~6-month window, re-derived whenever [profileProvider] emits.

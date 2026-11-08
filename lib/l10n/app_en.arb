@@ -566,11 +566,6 @@
     "placeholders": {}
   },
   "homeEditNameHint": "Enter your name (optional)",
-  "@homeContinueButton": {
-    "description": "Home's Continue button label, resuming the last practiced set (issue #012)",
-    "placeholders": {}
-  },
-  "homeContinueButton": "Continue practicing",
   "@homeBrowseSetsButton": {
     "description": "Home's Browse sets button label, navigating to the library (issue #012)",
     "placeholders": {}

@@ -271,23 +271,6 @@ class StatsRepository {
     );
   }
 
-  /// The `setId` of the most recently attempted item, or `null` if no
-  /// lesson has ever been completed (#012's Home "Continue" button).
-  ///
-  /// Derived from `attempts` (latest by [Attempts.at]) joined to `items` —
-  /// no dedicated column. Deleting a set/item cascades its attempts away,
-  /// so this never points at stale data.
-  Future<int?> getLastPracticedSetId() async {
-    final query =
-        _db.select(_db.attempts).join([
-            innerJoin(_db.items, _db.items.id.equalsExp(_db.attempts.itemId)),
-          ])
-          ..orderBy([OrderingTerm.desc(_db.attempts.at)])
-          ..limit(1);
-    final row = await query.getSingleOrNull();
-    return row?.readTable(_db.items).setId;
-  }
-
   /// Records a graded answer.
   ///
   /// Writes exactly one `attempts` row and ensures the profile row exists.

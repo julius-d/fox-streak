@@ -21,7 +21,6 @@ import '../data/clock.dart';
 import '../data/database.dart';
 import '../data/providers.dart';
 import '../library/library_screen.dart';
-import '../lesson/lesson_screen.dart';
 import '../marketplace/pack_update_banner.dart';
 import '../marketplace/pack_update_controller.dart';
 import '../pet/pet_collection_screen.dart';
@@ -105,26 +104,10 @@ class _HomeDashboard extends ConsumerWidget {
     await ref.read(statsRepositoryProvider).setDisplayName(result);
   }
 
-  Future<void> _openLibrary(BuildContext context, WidgetRef ref) async {
+  Future<void> _openLibrary(BuildContext context) async {
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(builder: (_) => const LibraryScreen()),
     );
-    ref.invalidate(lastPracticedSetIdProvider);
-  }
-
-  Future<void> _onContinue(
-    BuildContext context,
-    WidgetRef ref,
-    int? setId,
-  ) async {
-    if (setId == null) {
-      await _openLibrary(context, ref);
-      return;
-    }
-    await Navigator.of(context).push<void>(
-      MaterialPageRoute<void>(builder: (_) => LessonScreen(setId: setId)),
-    );
-    ref.invalidate(lastPracticedSetIdProvider);
   }
 
   @override
@@ -143,9 +126,6 @@ class _HomeDashboard extends ConsumerWidget {
     final double goalProgress = profile.dailyGoalXp <= 0
         ? 1.0
         : todayXp / profile.dailyGoalXp;
-    final AsyncValue<int?> lastSetIdAsync = ref.watch(
-      lastPracticedSetIdProvider,
-    );
     // Issue #087: checked once on app launch (not re-watched on every
     // profile write — see the provider's own doc). `asData?.value` reads
     // the resolved result without blocking Home's own loading gate on it.
@@ -404,24 +384,12 @@ class _HomeDashboard extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: FoxSpacing.xxl),
-              // Loading and error both fall back to the safe "Browse sets"
-              // action (no dead button) rather than hiding the primary CTA.
               FoxPrimaryButton(
-                key: const Key('homeContinueButton'),
-                label: lastSetIdAsync.asData?.value == null
-                    ? l10n.homeBrowseSetsButton
-                    : l10n.homeContinueButton,
-                expanded: true,
-                icon: Icons.play_arrow,
-                onPressed: () =>
-                    _onContinue(context, ref, lastSetIdAsync.asData?.value),
-              ),
-              const SizedBox(height: FoxSpacing.md),
-              FoxSecondaryButton(
                 key: const Key('homeBrowseSetsButton'),
                 label: l10n.homeBrowseSetsButton,
                 expanded: true,
-                onPressed: () => _openLibrary(context, ref),
+                icon: Icons.grid_view_rounded,
+                onPressed: () => _openLibrary(context),
               ),
             ],
           ),

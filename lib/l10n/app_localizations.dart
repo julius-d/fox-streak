@@ -1002,12 +1002,6 @@ abstract class AppLocalizations {
   /// **'Enter your name (optional)'**
   String get homeEditNameHint;
 
-  /// Home's Continue button label, resuming the last practiced set (issue #012)
-  ///
-  /// In en, this message translates to:
-  /// **'Continue practicing'**
-  String get homeContinueButton;
-
   /// Home's Browse sets button label, navigating to the library (issue #012)
   ///
   /// In en, this message translates to:

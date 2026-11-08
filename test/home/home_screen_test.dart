@@ -272,18 +272,23 @@ void main() {
   );
 
   testWidgets(
-    'with no attempts yet, the Continue slot shows a Browse-sets CTA that '
-    'opens the library (no dead button)',
+    'new learner: Browse sets is the only CTA, primary-styled, and opens the '
+    'library (no Continue button)',
     (tester) async {
       final clock = FakeClock(kTestToday);
       await pumpOnboardedHome(tester, clock);
 
+      expect(find.byKey(const Key('homeContinueButton')), findsNothing);
+      expect(find.text('Continue practicing'), findsNothing);
+      expect(find.byType(FoxPrimaryButton), findsOneWidget);
+      expect(find.byType(FoxSecondaryButton), findsNothing);
       final button = tester.widget<FoxPrimaryButton>(
-        find.byKey(const Key('homeContinueButton')),
+        find.byKey(const Key('homeBrowseSetsButton')),
       );
       expect(button.label, 'Browse sets');
 
-      await tester.tap(find.byKey(const Key('homeContinueButton')));
+      await tester.ensureVisible(find.byKey(const Key('homeBrowseSetsButton')));
+      await tester.tap(find.byKey(const Key('homeBrowseSetsButton')));
       await settle(tester);
       expect(find.text('My Sets'), findsOneWidget);
       await unmount(tester);
@@ -422,16 +427,18 @@ void main() {
   );
 
   testWidgets(
-    'with a prior attempt, the Continue button resumes the last practiced '
-    'set',
+    'returning learner with a prior attempt still sees only Browse sets, '
+    'which opens the library instead of a lesson',
     (tester) async {
       final clock = FakeClock(kTestToday);
-      late int setId;
       await pumpOnboardedHome(
         tester,
         clock,
         seed: (stats, sets) async {
-          setId = await sets.createSet(title: 'Animals', createdBy: 'Mama');
+          final setId = await sets.createSet(
+            title: 'Animals',
+            createdBy: 'Mama',
+          );
           final itemId = await sets.addItem(
             setId: setId,
             type: 'phone',
@@ -442,14 +449,15 @@ void main() {
         },
       );
 
-      final button = tester.widget<FoxPrimaryButton>(
-        find.byKey(const Key('homeContinueButton')),
-      );
-      expect(button.label, 'Continue practicing');
+      expect(find.byKey(const Key('homeContinueButton')), findsNothing);
+      expect(find.text('Continue practicing'), findsNothing);
+      expect(find.byType(FoxPrimaryButton), findsOneWidget);
 
-      await tester.tap(find.byKey(const Key('homeContinueButton')));
+      await tester.ensureVisible(find.byKey(const Key('homeBrowseSetsButton')));
+      await tester.tap(find.byKey(const Key('homeBrowseSetsButton')));
       await settle(tester);
-      expect(find.byKey(const Key('lessonProgressBar')), findsOneWidget);
+      expect(find.text('My Sets'), findsOneWidget);
+      expect(find.byKey(const Key('lessonProgressBar')), findsNothing);
       await unmount(tester);
     },
   );

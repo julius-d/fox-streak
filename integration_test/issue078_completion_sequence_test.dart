@@ -174,8 +174,8 @@ void main() {
       await statsRepo.setOnboarded();
 
       final seed = await _insertTwoItemSet(db);
-      // Home's Continue button derives its set from the latest `attempts`
-      // row — seed one so Home resumes "Animals" straight away.
+      // A prior attempt makes this a returning learner (Home itself no longer
+      // resumes sets, #124).
       await statsRepo.recordAttempt(
         itemId: seed.dogId,
         ok: true,
@@ -192,8 +192,7 @@ void main() {
 
       // 1st completion of the day (perfect score): advances the streak,
       // no loot box yet.
-      await tester.tap(find.byKey(const Key('homeContinueButton')));
-      await settle(tester);
+      await startLessonFromHome(tester);
       await _answerCurrentItem(tester);
       await _answerCurrentItem(tester);
       expect(find.byKey(const Key('streakSavedScreen')), findsOneWidget);
@@ -205,8 +204,7 @@ void main() {
 
       // 2nd completion of the day (one wrong this time): triggers the loot
       // box automatically, same day so no streak screen this time.
-      await tester.tap(find.byKey(const Key('homeContinueButton')));
-      await settle(tester);
+      await startLessonFromHome(tester);
       await _answerCurrentItem(tester);
       await _answerCurrentItem(tester, wrong: true);
 
@@ -281,11 +279,10 @@ void main() {
     await settle(tester);
     expect(find.byKey(const Key('homeScreen')), findsOneWidget);
 
-    // Home — same set, a different entry point this time (Home's own
-    // Continue button, now resuming "Animals" from the attempts just
-    // written), via the summary's Home button.
-    await tester.tap(find.byKey(const Key('homeContinueButton')));
-    await settle(tester);
+    // Home — same set, a different entry point this time (started via
+    // Home's Browse sets, now with attempts already written), via the
+    // summary's Home button.
+    await startLessonFromHome(tester);
     await _answerCurrentItem(tester);
     await _answerCurrentItem(tester);
     await dismissCompletionScreens(tester);
@@ -364,8 +361,7 @@ void main() {
       );
 
       // 1st completion of the day: advances the streak, no loot box yet.
-      await tester.tap(find.byKey(const Key('homeContinueButton')));
-      await settle(tester);
+      await startLessonFromHome(tester);
       await _answerCurrentItem(tester);
       await _answerCurrentItem(tester);
       await dismissCompletionScreens(tester);
@@ -374,8 +370,7 @@ void main() {
 
       // 2nd completion of the day: triggers the loot box automatically,
       // no streak screen this time (already advanced today).
-      await tester.tap(find.byKey(const Key('homeContinueButton')));
-      await settle(tester);
+      await startLessonFromHome(tester);
       await _answerCurrentItem(tester);
 
       // Answer the last item, then drive its own CONTINUE with a single,

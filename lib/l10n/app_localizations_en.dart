@@ -520,9 +520,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeEditNameHint => 'Enter your name (optional)';
 
   @override
-  String get homeContinueButton => 'Continue practicing';
-
-  @override
   String get homeBrowseSetsButton => 'Browse sets';
 
   @override

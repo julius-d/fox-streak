@@ -92,7 +92,7 @@ void main() {
               position: 0,
             ),
           );
-      // Home's Continue button derives its set from the latest attempt.
+      // A prior attempt makes this a returning learner.
       await statsRepo.recordAttempt(
         itemId: itemId,
         ok: true,
@@ -105,8 +105,7 @@ void main() {
         clock: clock,
         petCatalogLoader: () async => const <PetEntry>[],
       );
-      await tester.tap(find.byKey(const Key('homeContinueButton')));
-      await settle(tester);
+      await startLessonFromHome(tester);
       await tester.tap(find.text('dog'));
       await tester.pump();
       await tester.tap(find.byKey(const Key('checkButton'))); // CHECK

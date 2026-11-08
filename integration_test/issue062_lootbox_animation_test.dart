@@ -47,8 +47,7 @@ Future<({int setId, int itemId})> _insertSingleItemSet(AppDatabase db) async {
 }
 
 Future<void> _completeOneLessonFromHome(WidgetTester tester) async {
-  await tester.tap(find.byKey(const Key('homeContinueButton')));
-  await settle(tester);
+  await startLessonFromHome(tester);
   await tester.tap(find.text('dog'));
   await tester.pump();
   await tester.tap(find.byKey(const Key('checkButton'))); // CHECK

@@ -1,7 +1,7 @@
 // Issue #059 — Collectible pets via daily lootbox.
 //
 // Drives the real app end-to-end: a profile with one prior attempt (so
-// Home's Continue button resumes a real set) completes that set's lesson
+// a lesson is started from Home via Browse sets) completes that set's lesson
 // twice on the same local day. The 1st completion's "Back to home" returns
 // straight to Home (no lootbox yet); the 2nd completion's "Back to home"
 // inserts a tap-to-open lootbox first, which reveals a newly-won pet
@@ -87,14 +87,13 @@ Future<({int setId, int itemId})> _insertSingleItemSet(AppDatabase db) async {
   return (setId: setId, itemId: itemId);
 }
 
-/// Resumes the (only) set via Home's Continue button and completes its
+/// Starts the (only) set via Home's Browse sets and completes its
 /// single item correctly, settling right after CONTINUE — leaving the
 /// caller to decide what's showing next: the #078 completion sequence's
 /// loot box (if this completion won one) is automatic now, no longer
 /// something a "Back to home" tap inserts.
 Future<void> _completeOneLessonFromHome(WidgetTester tester) async {
-  await tester.tap(find.byKey(const Key('homeContinueButton')));
-  await settle(tester);
+  await startLessonFromHome(tester);
   await tester.tap(find.text('dog'));
   await tester.pump();
   await tester.tap(find.byKey(const Key('checkButton'))); // CHECK
@@ -119,8 +118,8 @@ void main() {
       await statsRepo.setOnboarded();
 
       final seed = await _insertSingleItemSet(db);
-      // Home's Continue button derives its set from the latest `attempts`
-      // row — seed one so Home resumes "Animals" straight away.
+      // A prior attempt makes this a returning learner (Home itself no longer
+      // resumes sets, #124).
       await statsRepo.recordAttempt(
         itemId: seed.itemId,
         ok: true,

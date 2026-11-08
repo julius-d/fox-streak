@@ -4,14 +4,13 @@
 // Drives the real `FoxStreakApp` (the actual `main.dart` wiring, not a
 // bare `HomeScreen` pump) through two end-to-end flows:
 // 1. Fresh install: onboarding gates Home; skipping it reveals the
-//    dashboard, whose Continue slot is a "Browse sets" CTA (no attempts
-//    yet) that genuinely opens the real `LibraryScreen`.
-// 2. A profile with one prior attempt: Home's Continue button resumes the
-//    real `LessonScreen` for that set; completing the lesson (through the
+//    dashboard, whose single "Browse sets" CTA genuinely opens the real
+//    `LibraryScreen` (issue #124 removed the Continue shortcut).
+// 2. A profile with one prior attempt: a lesson is started from the
+//    library; completing the lesson (through the
 //    #078 completion sequence) and tapping the summary screen's "Home"
 //    button returns to Home, whose goal ring/streak badge/level-progress
-//    bar now reflect the just-written XP/streak, and whose Continue
-//    button still points at the same set.
+//    bar now reflect the just-written XP/streak.
 
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
@@ -38,7 +37,7 @@ void main() {
 
   testWidgets(
     'fresh install: onboarding gates Home; skip reveals the dashboard, '
-    'whose Continue CTA opens the real library',
+    'whose Browse sets CTA opens the real library',
     (tester) async {
       final db = AppDatabase.forTesting(NativeDatabase.memory());
       addTearDown(db.close);
@@ -61,10 +60,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('homeScreen')), findsOneWidget);
-      expect(
-        find.text('Browse sets'),
-        findsNWidgets(2),
-      ); // Continue CTA + the dedicated button
+      expect(find.text('Browse sets'), findsOneWidget);
+      expect(find.byKey(const Key('homeContinueButton')), findsNothing);
 
       await tester.ensureVisible(find.byKey(const Key('homeBrowseSetsButton')));
       await tester.tap(find.byKey(const Key('homeBrowseSetsButton')));
@@ -77,9 +74,8 @@ void main() {
   );
 
   testWidgets(
-    'with a prior attempt: Continue resumes the real lesson; completing it '
-    'and returning to Home shows the updated XP/streak and still points '
-    'Continue at the same set',
+    'with a prior attempt: a lesson started via Browse sets can be completed; '
+    'returning to Home shows the updated XP/streak and no Continue button',
     (tester) async {
       final db = AppDatabase.forTesting(NativeDatabase.memory());
       addTearDown(db.close);
@@ -110,8 +106,7 @@ void main() {
               position: 0,
             ),
           );
-      // A prior attempt (e.g. yesterday) is what Home's Continue button
-      // derives the set from — no dedicated column.
+      // A prior attempt (e.g. yesterday), so this is a returning learner.
       await statsRepo.recordAttempt(
         itemId: itemId,
         ok: true,
@@ -132,10 +127,10 @@ void main() {
 
       expect(find.byKey(const Key('onboardingScreen')), findsNothing);
       expect(find.byKey(const Key('homeScreen')), findsOneWidget);
-      expect(find.text('Continue practicing'), findsOneWidget);
+      expect(find.byKey(const Key('homeContinueButton')), findsNothing);
+      expect(find.text('Browse sets'), findsOneWidget);
 
-      await tester.tap(find.byKey(const Key('homeContinueButton')));
-      await tester.pumpAndSettle();
+      await startLessonFromHome(tester);
 
       // The real LessonScreen for the "Animals" set — not a placeholder.
       expect(find.byKey(const Key('lessonProgressBar')), findsOneWidget);
@@ -163,10 +158,9 @@ void main() {
       await tester.tap(find.byKey(const Key('homeButton')));
       await tester.pumpAndSettle();
 
-      // Back on Home: the just-completed lesson's XP/streak show up, and
-      // Continue still resumes the same ("Animals") set.
+      // Back on Home: the just-completed lesson's XP/streak show up.
       expect(find.byKey(const Key('homeScreen')), findsOneWidget);
-      expect(find.text('Continue practicing'), findsOneWidget);
+      expect(find.byKey(const Key('homeContinueButton')), findsNothing);
 
       final profile = await statsRepo.getProfile();
       expect(profile.todayXp, greaterThan(0));
