@@ -287,11 +287,6 @@
     "placeholders": {}
   },
   "lessonStart": "Practice",
-  "@lessonTitle": {
-    "description": "App bar title for the lesson screen",
-    "placeholders": {}
-  },
-  "lessonTitle": "Lesson",
   "@lessonActions": {
     "description": "Tooltip for the lesson overflow menu button",
     "placeholders": {}

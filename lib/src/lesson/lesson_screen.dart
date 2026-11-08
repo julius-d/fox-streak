@@ -1,7 +1,7 @@
 // Lesson shell UI (issue #005).
 //
-// Top: FoxProgressBar + overflow menu (Quit via FoxConfirmDialog, Skip
-// pre-check only — issue #024).
+// Top: one slim, title-less row (#119): FoxProgressBar + overflow menu
+// (Quit via FoxConfirmDialog, Skip pre-check only — issue #024).
 // Middle: ExerciseCard slot (dispatched by item.type).
 // Feedback: FoxFeedbackBanner (success/error with correct answer).
 // Bottom: FoxCheckButton (CHECK→CONTINUE, same key, tinted by correctState).
@@ -100,6 +100,9 @@ class LessonScreen extends ConsumerStatefulWidget {
 
 class _LessonScreenState extends ConsumerState<LessonScreen>
     with TickerProviderStateMixin {
+  /// Height of the slim top row: the 48dp menu tap target (issue #119).
+  static const double _topRowHeight = 48;
+
   late final PageController _pageController;
   bool _lessonStarted = false;
   // Which `state.attempt` the completion sequence (loot box -> streak saved
@@ -188,68 +191,85 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
         await handleBack();
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: Text(l10n.lessonTitle),
-          automaticallyImplyLeading: false,
-          actions: [
-            PopupMenuButton<String>(
-              key: const Key('lessonOverflowMenu'),
-              tooltip: l10n.lessonActions,
-              onSelected: (value) {
-                if (value == 'quit') {
-                  handleBack();
-                } else if (value == 'skip') {
-                  controller.skip();
-                }
-              },
-              itemBuilder: (context) => [
-                PopupMenuItem(
-                  value: 'quit',
-                  key: const Key('quitLessonMenuItem'),
-                  child: Text(l10n.lessonQuit),
-                ),
-                // Hidden while busy too: Skip would otherwise be a live UI
-                // target during a still-in-flight CHECK, and the shared
-                // in-flight guard (#031) silently drops it rather than
-                // risking a double outcome for the same item.
-                if (state.phase == LessonPhase.answering && !state.busy)
-                  PopupMenuItem(
-                    value: 'skip',
-                    key: const Key('skipItemMenuItem'),
-                    child: Text(l10n.lessonSkip),
-                  ),
-              ],
-            ),
-          ],
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(8),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: FoxSpacing.lg),
-              // Keyed on state.attempt (issue #072): a new attempt forces a
-              // fresh FoxProgressBar/TweenAnimationBuilder subtree instead of
-              // tweening the 1.0 -> 0.0 drop that "Practice again" causes.
-              // The inner Key('lessonProgressBar') stays stable for widget
-              // lookups (home_screen_test.dart, lesson_shell_test.dart).
-              child: KeyedSubtree(
-                key: ValueKey(state.attempt),
-                child: FoxProgressBar(
-                  key: const Key('lessonProgressBar'),
-                  value: state.progress,
-                  animated: true,
-                  semanticsLabel: l10n.lessonProgressLabel,
-                  semanticsValue: '${(state.progress * 100).round()}%',
+        // One slim row (progress bar + menu) with no title, identical in
+        // every lesson state and on the result summary (issue #119).
+        body: SafeArea(
+          child: Column(
+            children: [
+              SizedBox(
+                height: _topRowHeight,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: FoxSpacing.lg),
+                        child: KeyedSubtree(
+                          key: ValueKey(state.attempt),
+                          // Keyed on state.attempt (issue #072): a new attempt forces a
+                          // fresh FoxProgressBar/TweenAnimationBuilder subtree instead of
+                          // tweening the 1.0 -> 0.0 drop that "Practice again" causes.
+                          // The inner Key('lessonProgressBar') stays stable for widget
+                          // lookups (home_screen_test.dart, lesson_shell_test.dart).
+                          child: FoxProgressBar(
+                            key: const Key('lessonProgressBar'),
+                            value: state.progress,
+                            animated: true,
+                            semanticsLabel: l10n.lessonProgressLabel,
+                            semanticsValue:
+                                '${(state.progress * 100).round()}%',
+                          ),
+                        ),
+                      ),
+                    ),
+                    PopupMenuButton<String>(
+                      key: const Key('lessonOverflowMenu'),
+                      tooltip: l10n.lessonActions,
+                      onSelected: (value) {
+                        if (value == 'quit') {
+                          handleBack();
+                        } else if (value == 'skip') {
+                          controller.skip();
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'quit',
+                          key: const Key('quitLessonMenuItem'),
+                          child: Text(l10n.lessonQuit),
+                        ),
+                        // Hidden while busy too: Skip would otherwise be a live UI
+                        // target during a still-in-flight CHECK, and the shared
+                        // in-flight guard (#031) silently drops it rather than
+                        // risking a double outcome for the same item.
+                        if (state.phase == LessonPhase.answering && !state.busy)
+                          PopupMenuItem(
+                            value: 'skip',
+                            key: const Key('skipItemMenuItem'),
+                            child: Text(l10n.lessonSkip),
+                          ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-            ),
+              Expanded(
+                child: items.isEmpty
+                    ? Center(child: Text(l10n.libraryLoading))
+                    : result != null
+                    ? (_revealResultForAttempt == state.attempt
+                          ? _buildResultScreen(
+                              context,
+                              l10n,
+                              state,
+                              controller,
+                              result,
+                            )
+                          : const SizedBox.shrink())
+                    : _buildLessonBody(context, ref, l10n, state, controller),
+              ),
+            ],
           ),
         ),
-        body: items.isEmpty
-            ? Center(child: Text(l10n.libraryLoading))
-            : result != null
-            ? (_revealResultForAttempt == state.attempt
-                  ? _buildResultScreen(context, l10n, state, controller, result)
-                  : const SizedBox.shrink())
-            : _buildLessonBody(context, ref, l10n, state, controller),
       ),
     );
   }
@@ -269,67 +289,62 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
     final isFeedback = state.phase == LessonPhase.feedback;
     final hasAnswer = state.currentDraft?.hasAnswer ?? false;
 
-    return SafeArea(
-      child: Column(
-        children: [
-          // Card slot — dispatched by item.type
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(FoxSpacing.lg),
-              child: _buildExerciseCard(
-                item,
-                controller,
-                l10n,
-                state.sourceItems,
-                isFeedback,
-                state.sessionOutcomes,
-              ),
-            ),
-          ),
-          // Feedback banner (shown in feedback phase)
-          if (isFeedback && state.lastCorrect != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: FoxSpacing.lg,
-                vertical: FoxSpacing.sm,
-              ),
-              child: FoxFeedbackBanner(
-                key: const Key('lessonFeedbackBanner'),
-                variant: state.lastCorrect!
-                    ? FoxFeedbackVariant.success
-                    : FoxFeedbackVariant.error,
-                message: state.lastCorrect!
-                    ? l10n.lessonCorrect
-                    : l10n.lessonWrongAnswer(
-                        state.lastCorrectAnswerLabel ?? '',
-                      ),
-              ),
-            ),
-          // Bottom buttons
-          Padding(
+    return Column(
+      children: [
+        // Card slot — dispatched by item.type
+        Expanded(
+          child: Padding(
             padding: const EdgeInsets.all(FoxSpacing.lg),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // CHECK / CONTINUE button (same key, label flips)
-                FoxCheckButton(
-                  key: const Key('checkButton'),
-                  label: isFeedback ? l10n.lessonContinue : l10n.lessonCheck,
-                  onPressed: state.busy
-                      ? null
-                      : (isFeedback
-                            ? () => controller.next()
-                            : (hasAnswer
-                                  ? () =>
-                                        _submitAndBuzz(context, ref, controller)
-                                  : null)),
-                  correctState: isFeedback ? state.lastCorrect : null,
-                ),
-              ],
+            child: _buildExerciseCard(
+              item,
+              controller,
+              l10n,
+              state.sourceItems,
+              isFeedback,
+              state.sessionOutcomes,
             ),
           ),
-        ],
-      ),
+        ),
+        // Feedback banner (shown in feedback phase)
+        if (isFeedback && state.lastCorrect != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: FoxSpacing.lg,
+              vertical: FoxSpacing.sm,
+            ),
+            child: FoxFeedbackBanner(
+              key: const Key('lessonFeedbackBanner'),
+              variant: state.lastCorrect!
+                  ? FoxFeedbackVariant.success
+                  : FoxFeedbackVariant.error,
+              message: state.lastCorrect!
+                  ? l10n.lessonCorrect
+                  : l10n.lessonWrongAnswer(state.lastCorrectAnswerLabel ?? ''),
+            ),
+          ),
+        // Bottom buttons
+        Padding(
+          padding: const EdgeInsets.all(FoxSpacing.lg),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // CHECK / CONTINUE button (same key, label flips)
+              FoxCheckButton(
+                key: const Key('checkButton'),
+                label: isFeedback ? l10n.lessonContinue : l10n.lessonCheck,
+                onPressed: state.busy
+                    ? null
+                    : (isFeedback
+                          ? () => controller.next()
+                          : (hasAnswer
+                                ? () => _submitAndBuzz(context, ref, controller)
+                                : null)),
+                correctState: isFeedback ? state.lastCorrect : null,
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

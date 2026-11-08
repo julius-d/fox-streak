@@ -342,9 +342,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lessonStart => 'Practice';
 
   @override
-  String get lessonTitle => 'Lesson';
-
-  @override
   String get lessonActions => 'Lesson actions';
 
   @override

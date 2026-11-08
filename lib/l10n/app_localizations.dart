@@ -702,12 +702,6 @@ abstract class AppLocalizations {
   /// **'Practice'**
   String get lessonStart;
 
-  /// App bar title for the lesson screen
-  ///
-  /// In en, this message translates to:
-  /// **'Lesson'**
-  String get lessonTitle;
-
   /// Tooltip for the lesson overflow menu button
   ///
   /// In en, this message translates to:

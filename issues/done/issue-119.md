@@ -1,6 +1,6 @@
 # Issue 119: Lesson screen — progress bar and menu in one slim top row
 
-Status: open | Priority: P2 | Type: enhancement | Refined-at: 2026-11-08
+Status: done | Priority: P2 | Type: enhancement | Refined-at: 2026-11-08 | Completed-at: 2026-11-08
 
 ## Goal
 
@@ -50,3 +50,18 @@ menu in the same line, so the freed pixels go to the question content
       regenerated if affected.
 - [ ] Follows #015 (kit, no ad-hoc styling; a11y floor: 48dp targets).
 - [ ] No question-format change, so no `docs`/schema update needed.
+
+## Summary
+
+- Removed the lesson `AppBar`; the lesson screen body is now a `SafeArea` with a 48dp row (progress bar + overflow menu) above the content, shared by all states and the result summary.
+- `lessonTitle` removed from both arb files; l10n regenerated. Keys/semantics unchanged.
+- Tests: new `slim top row` group in `lesson_shell_test.dart`; `integration_test/issue119_slim_top_row_test.dart` (macOS, passes). Screenshots: `issue-119-lesson-*.png`.
+
+## Code review
+
+- No test sets a large text scale / dark theme for the new row.
+  Not fixed: the row is a fixed 48dp box holding a progress bar and an icon, neither of which is text-scale dependent.
+- Free-text parity test is indirect (two pumps compared).
+  Not fixed: it works reliably and the row does not depend on the question type.
+- Header comment ran past 80 columns.
+  Fixed.

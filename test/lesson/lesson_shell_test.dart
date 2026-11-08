@@ -7,7 +7,8 @@
 // preserved), attempts-written-but-xp/streak-untouched, correct/wrong haptic
 // buzz, and the correct-answer chime behind its own independent toggle
 // (issue #054, via the fake `FoxSoundPlayer` seam).
-// Quit/Skip are reached via the lesson AppBar overflow menu (issue #024).
+// Quit/Skip are reached via the lesson's top-row overflow menu (issue #024,
+// slim title-less row: #119).
 //
 // Uses NativeDatabase.memory() + FakeClock overrides via ProviderScope.
 // Bounded pumps per #003 harness learning — never pumpAndSettle on watch() streams.
@@ -124,7 +125,7 @@ Widget buildTestLessonScreen({
   );
 }
 
-/// Opens the lesson AppBar's overflow menu (issue #024).
+/// Opens the lesson's top-row overflow menu (issue #024).
 Future<void> openLessonMenu(WidgetTester tester) async {
   await tester.tap(find.byKey(const Key('lessonOverflowMenu')));
   await tester.pumpAndSettle();
@@ -1645,5 +1646,182 @@ void main() {
         expect(find.text(shownFirst), findsNothing);
       },
     );
+
+    group('slim top row (issue #119)', () {
+      Rect barRect(WidgetTester t) =>
+          t.getRect(find.byKey(const Key('lessonProgressBar')));
+      Rect menuRect(WidgetTester t) =>
+          t.getRect(find.byKey(const Key('lessonOverflowMenu')));
+
+      testWidgets('has no title and no app bar', (tester) async {
+        final items = await setupTestItems(
+          db,
+          1,
+          1,
+          choicesJson: distractorsJson,
+        );
+        await pumpLessonShell(
+          tester,
+          buildTestLessonScreen(
+            setId: 1,
+            items: items,
+            l10n: AppLocalizationsEn(),
+          ),
+          database: db,
+          clock: fakeClock,
+        );
+        await tester.pump();
+
+        expect(find.text('Lesson'), findsNothing);
+        expect(find.byType(AppBar), findsNothing);
+      });
+
+      testWidgets('progress bar and menu share one row of at most 48dp', (
+        tester,
+      ) async {
+        final items = await setupTestItems(
+          db,
+          1,
+          1,
+          choicesJson: distractorsJson,
+        );
+        await pumpLessonShell(
+          tester,
+          buildTestLessonScreen(
+            setId: 1,
+            items: items,
+            l10n: AppLocalizationsEn(),
+          ),
+          database: db,
+          clock: fakeClock,
+        );
+        await tester.pump();
+
+        final bar = barRect(tester);
+        final menu = menuRect(tester);
+        expect(menu.height, greaterThanOrEqualTo(48));
+        expect(menu.width, greaterThanOrEqualTo(48));
+        expect(bar.center.dy, closeTo(menu.center.dy, 0.5));
+        expect(bar.right, lessThanOrEqualTo(menu.left));
+        // The bar fills the width left of the menu.
+        expect(bar.width, greaterThan(menu.left - 2 * FoxSpacing.lg - 1));
+        // Row sits flush at the top of the (test) screen: no title above it.
+        expect(menu.top, lessThanOrEqualTo(0.5));
+        expect(menu.height, lessThanOrEqualTo(48));
+      });
+
+      testWidgets(
+        'row is identical while answering, in feedback and on the summary',
+        (tester) async {
+          final items = await setupTestItems(
+            db,
+            1,
+            1,
+            choicesJson: distractorsJson,
+          );
+          await pumpLessonShell(
+            tester,
+            buildTestLessonScreen(
+              setId: 1,
+              items: items,
+              l10n: AppLocalizationsEn(),
+            ),
+            database: db,
+            clock: fakeClock,
+          );
+          await tester.pump();
+          final answeringBar = barRect(tester);
+          final answeringMenu = menuRect(tester);
+
+          await tester.tap(find.byKey(const Key('choice-distractor1')));
+          await tester.pump();
+          await tester.tap(find.byKey(const Key('checkButton')));
+          await tester.pump();
+          expect(find.byKey(const Key('lessonFeedbackBanner')), findsOneWidget);
+          expect(menuRect(tester), answeringMenu);
+          expect(barRect(tester).topLeft, answeringBar.topLeft);
+          expect(barRect(tester).height, answeringBar.height);
+
+          await tester.tap(find.byKey(const Key('checkButton')));
+          await tester.pump();
+          await dismissCompletionScreens(tester);
+          expect(find.byKey(const Key('lessonResultScreen')), findsOneWidget);
+          expect(menuRect(tester), answeringMenu);
+          expect(barRect(tester).topLeft, answeringBar.topLeft);
+          expect(barRect(tester).height, answeringBar.height);
+        },
+      );
+
+      testWidgets('same row for a free-text question', (tester) async {
+        final items = await setupTestItems(db, 1, 1, type: 'freeText');
+        await pumpLessonShell(
+          tester,
+          LessonScreen(setId: 1, items: items),
+          database: db,
+          clock: fakeClock,
+        );
+        await tester.pump();
+        await tester.pump();
+
+        final choiceItems = await setupTestItems(
+          db,
+          2,
+          1,
+          choicesJson: distractorsJson,
+        );
+        final freeTextMenu = menuRect(tester);
+        final freeTextBar = barRect(tester);
+
+        await pumpLessonShell(
+          tester,
+          buildTestLessonScreen(
+            setId: 2,
+            items: choiceItems,
+            l10n: AppLocalizationsEn(),
+          ),
+          database: db,
+          clock: fakeClock,
+        );
+        await tester.pump();
+        await tester.pump();
+
+        expect(menuRect(tester), freeTextMenu);
+        expect(barRect(tester), freeTextBar);
+      });
+
+      testWidgets('menu keeps its tooltip and Quit still works', (
+        tester,
+      ) async {
+        final items = await setupTestItems(
+          db,
+          1,
+          1,
+          choicesJson: distractorsJson,
+        );
+        await pumpLessonShell(
+          tester,
+          buildTestLessonScreen(
+            setId: 1,
+            items: items,
+            l10n: AppLocalizationsEn(),
+          ),
+          database: db,
+          clock: fakeClock,
+        );
+        await tester.pump();
+
+        expect(
+          find.byTooltip(AppLocalizationsEn().lessonActions),
+          findsOneWidget,
+        );
+        await openLessonMenu(tester);
+        await tester.tap(find.byKey(const Key('quitLessonMenuItem')));
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(const Key('confirmQuitLessonButton')),
+          findsOneWidget,
+        );
+      });
+    });
   });
 }

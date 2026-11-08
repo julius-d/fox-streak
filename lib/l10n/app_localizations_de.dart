@@ -345,9 +345,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get lessonStart => 'Üben';
 
   @override
-  String get lessonTitle => 'Lektion';
-
-  @override
   String get lessonActions => 'Lektionsaktionen';
 
   @override
