@@ -25,6 +25,10 @@ import 'exercise_card.dart';
 /// [queue] is the shuffled & capped (max 20) list for this session.
 /// [index] is the current position in [queue].
 /// [outcomes] accumulates one outcome per answered item.
+/// [previousOutcomes] are the outcomes of earlier rounds of this session
+///   (before "Redo missed items", issue #078), so distractor selection can
+///   still tell what the learner got right or wrong (issue #120). Empty in
+///   a fresh session.
 /// [phase] tracks the current question phase.
 /// [currentDraft] holds the latest ExerciseDraft from the active card
 ///   so the shell can call grade() on CHECK.
@@ -81,6 +85,7 @@ class LessonState {
   final List<Item> queue;
   final int index;
   final List<LessonItemOutcome> outcomes;
+  final List<LessonItemOutcome> previousOutcomes;
   final LessonPhase phase;
   final ExerciseDraft? currentDraft;
   final bool? lastCorrect;
@@ -104,6 +109,7 @@ class LessonState {
     this.queue = const [],
     this.index = 0,
     this.outcomes = const [],
+    this.previousOutcomes = const [],
     this.phase = LessonPhase.answering,
     this.currentDraft,
     this.lastCorrect,
@@ -147,6 +153,7 @@ class LessonState {
       queue: queue ?? this.queue,
       index: index ?? this.index,
       outcomes: outcomes ?? this.outcomes,
+      previousOutcomes: previousOutcomes,
       phase: phase ?? this.phase,
       currentDraft: clearDraft ? null : (currentDraft ?? this.currentDraft),
       lastCorrect: clearLastCorrect ? null : (lastCorrect ?? this.lastCorrect),
@@ -167,6 +174,13 @@ class LessonState {
       attempt: attempt ?? this.attempt,
     );
   }
+
+  /// Outcomes of all rounds of this session, oldest first — a later outcome
+  /// of the same item supersedes an earlier one.
+  List<LessonItemOutcome> get sessionOutcomes => [
+    ...previousOutcomes,
+    ...outcomes,
+  ];
 
   /// Current item being answered, or null if done.
   Item? get currentItem {
@@ -197,6 +211,8 @@ class LessonState {
           other.index == index &&
           other.outcomes.length == outcomes.length &&
           other.outcomes.every((e) => outcomes.contains(e)) &&
+          other.previousOutcomes.length == previousOutcomes.length &&
+          other.previousOutcomes.every((e) => previousOutcomes.contains(e)) &&
           other.phase == phase &&
           other.currentDraft == currentDraft &&
           other.lastCorrect == lastCorrect &&
@@ -218,6 +234,7 @@ class LessonState {
     queue,
     index,
     outcomes,
+    previousOutcomes,
     phase,
     currentDraft,
     lastCorrect,
@@ -330,6 +347,7 @@ class LessonController extends Notifier<LessonState> {
   void _startSession({
     required List<Item> queueItems,
     required List<Item> poolItems,
+    List<LessonItemOutcome> previousOutcomes = const [],
     Random? random,
   }) {
     _generation++;
@@ -343,6 +361,7 @@ class LessonController extends Notifier<LessonState> {
       queue: queue,
       index: 0,
       outcomes: [],
+      previousOutcomes: previousOutcomes,
       phase: queue.isEmpty ? LessonPhase.done : LessonPhase.answering,
       currentDraft: null,
       lastCorrect: null,
@@ -361,6 +380,7 @@ class LessonController extends Notifier<LessonState> {
     _startSession(
       queueItems: items,
       poolItems: state.sourceItems,
+      previousOutcomes: state.sessionOutcomes,
       random: random,
     );
   }

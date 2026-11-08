@@ -199,5 +199,135 @@ void main() {
 
       expect(a.map((o) => o.label).toList(), b.map((o) => o.label).toList());
     });
+
+    group('session-aware fallback pool (#120)', () {
+      final pool = [
+        for (var i = 0; i < 8; i++) _item(id: 10 + i, answer: 'a$i'),
+      ];
+
+      List<String> distractorsOf(
+        Set<String> correct,
+        Set<String> missed, {
+        List<Item>? others,
+        int seed = 1,
+        String? choices,
+      }) {
+        final options = buildChoiceOptions(
+          item: _item(id: 1, choices: choices),
+          otherSetItems: others ?? pool,
+          placeholderDistractor: _placeholder,
+          correctAnswers: correct,
+          missedAnswers: missed,
+          random: Random(seed),
+        );
+        return options.where((o) => !o.isCorrect).map((o) => o.label).toList();
+      }
+
+      test('never uses correctly answered answers while tier 1 suffices', () {
+        final correct = {'a0', 'a1', 'a2', 'a3'};
+        for (var seed = 0; seed < 20; seed++) {
+          final labels = distractorsOf(correct, const {}, seed: seed);
+          expect(labels, hasLength(3));
+          expect(labels.toSet().intersection(correct), isEmpty);
+        }
+      });
+
+      test('tier 2 fills the remaining slots when tier 1 is too small', () {
+        final correct = {'a0', 'a1', 'a2', 'a3', 'a4', 'a5'};
+        for (var seed = 0; seed < 20; seed++) {
+          final labels = distractorsOf(correct, const {}, seed: seed);
+          expect(labels, hasLength(3));
+          expect(labels, containsAll(['a6', 'a7']));
+          expect(labels.toSet().intersection(correct), hasLength(1));
+        }
+      });
+
+      test('missed answers come before other tier-1 answers', () {
+        for (var seed = 0; seed < 20; seed++) {
+          final labels = distractorsOf({'a0', 'a1'}, {'a2', 'a3'}, seed: seed);
+          expect(labels, containsAll(['a2', 'a3']));
+          expect(
+            labels.toSet().difference({'a2', 'a3'}).single,
+            matches('a[4-7]'),
+          );
+        }
+      });
+
+      test('missed answers still precede tier 2 when tier 1 is small', () {
+        final correct = {'a0', 'a1', 'a2', 'a3', 'a4', 'a5'};
+        final labels = distractorsOf(correct, {'a6'});
+        expect(labels, contains('a6'));
+        expect(labels, contains('a7'));
+      });
+
+      test('an answer both correct and missed counts as correct', () {
+        final labels = distractorsOf({'a0'}, {'a0'});
+        expect(labels, isNot(contains('a0')));
+      });
+
+      test('authored choices keep priority over the session ordering', () {
+        final labels = distractorsOf(
+          {'cat'},
+          const {},
+          choices: '["cat","mouse","bird"]',
+        );
+        expect(labels.toSet(), {'cat', 'mouse', 'bird'});
+      });
+
+      test('the correct answer is never a distractor', () {
+        final others = [...pool, _item(id: 99, answer: 'DOG ')];
+        for (var seed = 0; seed < 20; seed++) {
+          final labels = distractorsOf(
+            {'a0'},
+            {'dog'},
+            others: others,
+            seed: seed,
+          );
+          expect(
+            labels.map((l) => l.trim().toLowerCase()),
+            isNot(contains('dog')),
+          );
+        }
+      });
+
+      test('omitted or empty session data equals the old uniform shuffle', () {
+        // Reference: the pre-#120 algorithm (shuffle the pool, take 3, then
+        // shuffle the 4 options with the same rng).
+        List<String> legacy(int seed) {
+          final rng = Random(seed);
+          final answers = pool.map((i) => i.answer).toList()..shuffle(rng);
+          final options = <String>['dog', ...answers.take(3)]..shuffle(rng);
+          return options;
+        }
+
+        for (var seed = 0; seed < 5; seed++) {
+          final actual = buildChoiceOptions(
+            item: _item(id: 1),
+            otherSetItems: pool,
+            placeholderDistractor: _placeholder,
+            correctAnswers: const {},
+            missedAnswers: const {},
+            random: Random(seed),
+          ).map((o) => o.label).toList();
+          expect(actual, legacy(seed));
+        }
+      });
+
+      test('matches answers case- and whitespace-insensitively', () {
+        final others = [
+          _item(id: 10, answer: ' Cat '),
+          ...[for (var i = 0; i < 5; i++) _item(id: 20 + i, answer: 'b$i')],
+        ];
+        for (var seed = 0; seed < 10; seed++) {
+          final labels = distractorsOf(
+            {normalizeChoiceAnswer(' Cat ')},
+            const {},
+            others: others,
+            seed: seed,
+          );
+          expect(labels, isNot(contains('Cat')));
+        }
+      });
+    });
   });
 }

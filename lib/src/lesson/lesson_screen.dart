@@ -33,6 +33,7 @@ import '../exercises/dial_pad_exercise.dart';
 import '../exercises/free_text_exercise.dart';
 import '../exercises/multiple_choice_exercise.dart';
 import 'exercise_card.dart';
+import 'session_answers.dart';
 import 'wheel_screen.dart';
 import 'lesson_controller.dart';
 import 'lesson_result.dart';
@@ -281,6 +282,7 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
                 l10n,
                 state.sourceItems,
                 isFeedback,
+                state.sessionOutcomes,
               ),
             ),
           ),
@@ -356,6 +358,7 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
     AppLocalizations l10n,
     List<Item> otherSetItems,
     bool isFeedback,
+    List<LessonItemOutcome> sessionOutcomes,
   ) {
     // Dispatch by item.type to the appropriate exercise card.
     // #006 provides MultipleChoiceCard for 'choice', #007 the free-text
@@ -388,6 +391,10 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
     // Real card implementations.
     switch (item.type) {
       case 'choice':
+        final sessionAnswers = SessionAnswers.from(
+          items: otherSetItems,
+          outcomes: sessionOutcomes,
+        );
         return buildMultipleChoiceExercise(
           key: cardKey,
           item: item,
@@ -395,6 +402,8 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
           onStateChanged: controller.updateDraft,
           l10n: l10n,
           revealed: isFeedback,
+          correctAnswers: sessionAnswers.correct,
+          missedAnswers: sessionAnswers.missed,
         );
       case 'freeText':
         return buildFreeTextExercise(

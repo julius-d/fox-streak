@@ -231,4 +231,23 @@ void main() {
       expect(after.attempt, before.attempt);
     });
   });
+
+  test('restartWithItems carries earlier rounds into sessionOutcomes; start '
+      'resets them (#120)', () async {
+    final item = await insertTestItem(db, 1);
+    final controller = container.read(lessonControllerProvider.notifier);
+    controller.start([item]);
+    await controller.skip();
+
+    controller.restartWithItems([item]);
+    final redo = container.read(lessonControllerProvider);
+    expect(redo.outcomes, isEmpty);
+    expect(redo.previousOutcomes.single.correct, isFalse);
+    expect(redo.sessionOutcomes.single.itemId, item.id);
+
+    controller.start([item]);
+    final fresh = container.read(lessonControllerProvider);
+    expect(fresh.previousOutcomes, isEmpty);
+    expect(fresh.sessionOutcomes, isEmpty);
+  });
 }

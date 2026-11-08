@@ -22,6 +22,8 @@ import 'choice_options.dart';
 /// (free text, dial pad, date). [otherSetItems] should be the full set of
 /// items in the current lesson (the current item may be included; it is
 /// excluded by id internally) — used as the fallback distractor pool.
+/// [correctAnswers]/[missedAnswers] steer the fallback distractor order
+/// (see [buildChoiceOptions], #120).
 /// [revealed] should be true once the shell has graded the answer (CHECK
 /// pressed, feedback phase) — see [MultipleChoiceCard].
 Widget buildMultipleChoiceExercise({
@@ -31,6 +33,8 @@ Widget buildMultipleChoiceExercise({
   required void Function(ExerciseDraft draft) onStateChanged,
   required AppLocalizations l10n,
   bool revealed = false,
+  Set<String> correctAnswers = const {},
+  Set<String> missedAnswers = const {},
 }) {
   return MultipleChoiceCard(
     key: key,
@@ -39,6 +43,8 @@ Widget buildMultipleChoiceExercise({
     onStateChanged: onStateChanged,
     l10n: l10n,
     revealed: revealed,
+    correctAnswers: correctAnswers,
+    missedAnswers: missedAnswers,
   );
 }
 
@@ -56,6 +62,8 @@ class MultipleChoiceCard extends StatefulWidget {
   final void Function(ExerciseDraft) onStateChanged;
   final AppLocalizations l10n;
   final bool revealed;
+  final Set<String> correctAnswers;
+  final Set<String> missedAnswers;
 
   const MultipleChoiceCard({
     super.key,
@@ -64,6 +72,8 @@ class MultipleChoiceCard extends StatefulWidget {
     required this.onStateChanged,
     required this.l10n,
     this.revealed = false,
+    this.correctAnswers = const {},
+    this.missedAnswers = const {},
   });
 
   @override
@@ -84,6 +94,8 @@ class _MultipleChoiceCardState extends State<MultipleChoiceCard> {
     _options = buildChoiceOptions(
       item: widget.item,
       otherSetItems: widget.otherSetItems,
+      correctAnswers: widget.correctAnswers,
+      missedAnswers: widget.missedAnswers,
       placeholderDistractor: (index) =>
           widget.l10n.exerciseChoicePlaceholderOption(index),
     );

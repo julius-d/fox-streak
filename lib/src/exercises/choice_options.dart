@@ -40,28 +40,36 @@ class ChoiceOption {
 /// 1. [item.choices] (blank-tolerant JSON array from the #004 editor).
 /// 2. Other items in [otherSetItems] that share [item.type] and the same
 ///    `promptLang`/`answerLang` pair (expected to be the rest of the current
-///    lesson's set — the current item is excluded by id), picked in random
-///    order. Filtering by type too (not just language pair) keeps non-vocab
-///    `choice` items (both language fields `null`, #022's Bundesländer seed)
-///    from leaking in as distractors for a differently-typed item that also
-///    has no language pair (e.g. `phone`/`date`).
+///    lesson's set — the current item is excluded by id). Filtering by type
+///    too (not just language pair) keeps non-vocab `choice` items (both
+///    language fields `null`, #022's Bundesländer seed) from leaking in as
+///    distractors for a differently-typed item that also has no language
+///    pair (e.g. `phone`/`date`). Their answers are ordered by session
+///    knowledge (#120), each group shuffled:
+///    1. answers in [missedAnswers] (missed or skipped this session),
+///    2. all other answers not in [correctAnswers],
+///    3. answers in [correctAnswers] (already answered correctly), last.
+///    Both sets hold answers as produced by [normalizeChoiceAnswer]; omitted
+///    or empty they yield a plain uniform shuffle.
 /// 3. [placeholderDistractor] for any still-empty slot, called with a
 ///    1-based index.
 List<ChoiceOption> buildChoiceOptions({
   required Item item,
   required List<Item> otherSetItems,
   required String Function(int index) placeholderDistractor,
+  Set<String> correctAnswers = const {},
+  Set<String> missedAnswers = const {},
   Random? random,
 }) {
   final rng = random ?? Random();
   final answer = item.answer.trim();
-  final seen = <String>{answer.toLowerCase()};
+  final seen = <String>{normalizeChoiceAnswer(answer)};
   final distractors = <String>[];
 
   void addIfNew(String candidate) {
     final trimmed = candidate.trim();
     if (trimmed.isEmpty) return;
-    final lower = trimmed.toLowerCase();
+    final lower = normalizeChoiceAnswer(trimmed);
     if (seen.contains(lower)) return;
     seen.add(lower);
     distractors.add(trimmed);
@@ -73,21 +81,35 @@ List<ChoiceOption> buildChoiceOptions({
   }
 
   if (distractors.length < 3) {
-    final pool =
-        otherSetItems
-            .where(
-              (other) =>
-                  other.id != item.id &&
-                  other.type == item.type &&
-                  other.promptLang == item.promptLang &&
-                  other.answerLang == item.answerLang,
-            )
-            .map((other) => other.answer)
-            .toList()
-          ..shuffle(rng);
+    final pool = otherSetItems
+        .where(
+          (other) =>
+              other.id != item.id &&
+              other.type == item.type &&
+              other.promptLang == item.promptLang &&
+              other.answerLang == item.answerLang,
+        )
+        .map((other) => other.answer)
+        .toList();
+    final missed = <String>[];
+    final neutral = <String>[];
+    final correct = <String>[];
     for (final candidate in pool) {
-      if (distractors.length >= 3) break;
-      addIfNew(candidate);
+      final key = normalizeChoiceAnswer(candidate);
+      if (correctAnswers.contains(key)) {
+        correct.add(candidate);
+      } else if (missedAnswers.contains(key)) {
+        missed.add(candidate);
+      } else {
+        neutral.add(candidate);
+      }
+    }
+    for (final tier in [missed, neutral, correct]) {
+      tier.shuffle(rng);
+      for (final candidate in tier) {
+        if (distractors.length >= 3) break;
+        addIfNew(candidate);
+      }
     }
   }
 
@@ -109,6 +131,10 @@ List<ChoiceOption> buildChoiceOptions({
 
   return built;
 }
+
+/// Canonical form (trimmed, lowercase) of an answer for the
+/// `correctAnswers`/`missedAnswers` sets of [buildChoiceOptions].
+String normalizeChoiceAnswer(String answer) => answer.trim().toLowerCase();
 
 List<String> _parseChoices(String? choicesJson) {
   if (choicesJson == null || choicesJson.isEmpty) return const [];

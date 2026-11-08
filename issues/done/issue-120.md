@@ -1,6 +1,6 @@
-# Issue 117: Smarter multiple-choice distractor selection
+# Issue 120: Smarter multiple-choice distractor selection
 
-Status: open | Priority: P3 | Type: feature | Refined-at: 2026-11-08
+Status: done | Priority: P3 | Type: feature | Refined-at: 2026-11-08 | Completed-at: 2026-11-08
 
 ## Goal
 Choose distractors that help learning: answers the learner already got right
@@ -66,3 +66,22 @@ the round-1 correct answers are used last.
 - Lifetime history from the `attempts` table (possible follow-up).
 - Similarity-based distractors (length, first letter, etc.).
 - Fallback behaviour for sets too small to supply enough distractors.
+
+## Summary
+- `buildChoiceOptions` takes `correctAnswers`/`missedAnswers` (normalised via `normalizeChoiceAnswer`); pool order: missed, neutral, already-correct.
+- `LessonState.previousOutcomes` carries earlier rounds through "Redo missed items"; `SessionAnswers.from` derives the sets (latest outcome per item wins), `lesson_screen` passes them to the choice card.
+- Renumbered from 117 (number clash with the wheel-of-fortune issue). No new UI, so no integration test/screenshots.
+
+## Code review
+- Test imports `package:.../test/data/test_helpers.dart` (claimed uncompilable).
+  Not fixed: false positive, same import as `lesson_shell_test.dart`; tests pass.
+- "No session data" test compared the new code with itself.
+  Fixed: now compares against the pre-#120 shuffle algorithm.
+- `SessionAnswers.from` ran on every `build()`.
+  Fixed: only computed in the `choice` branch.
+- `copyWith` can't change `previousOutcomes`.
+  Not fixed: only `_startSession` sets it; no other caller needs it.
+- Outcomes of items outside `sourceItems` are ignored.
+  Not fixed: redo items are always a subset of `sourceItems`.
+- `addIfNew` duplicated the normalisation.
+  Fixed: uses `normalizeChoiceAnswer`.
