@@ -14,7 +14,7 @@ Write the `integration_test`, execute it and make sure it passes before you fini
 You are done when the issue is implemented, all tests are passing, and the code is formatted.
 Especially: `flutter analyze`, `dart format`, `flutter test`.
 After you are done, change the status of the issue to "done", add `Completed-at: <date>` and add a very short, few lines only, summary block to the end of the issue that contains important information only.
-Move the issue file into the `issues/done` folder.
+Move the issue file with `git mv issues/issue-NNN.md issues/done/issue-NNN.md` (never copy or recreate it), then run `tool/check_issues.sh` and make sure it passes.
 
 If the implementation of the issue changed UI: create screenshots that show the changed UI:
 1. Write a throwaway test file, e.g. integration_test/_scratch_issueNNN_screenshots_test.dart, with the seed data + pump/capture logic above, writing to ${Directory.systemTemp.path}/screenshots and printing that path.

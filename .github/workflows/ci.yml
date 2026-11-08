@@ -21,6 +21,9 @@ jobs:
       # versions, CodeQL) eat into that and have made the build step fail with
       # "No space left on device" (confirmed 2026-10-18, runs 39109076040 and
       # 39067060068). None of these are used by this Flutter-only repo.
+      - name: Check issue backlog
+        run: tool/check_issues.sh
+
       - name: Free disk space
         run: |
           sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup \

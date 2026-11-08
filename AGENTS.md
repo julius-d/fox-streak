@@ -36,6 +36,7 @@ machine has it.
 ```shell
 flutter analyze        # must be clean (includes riverpod_lint plugin)
 dart format --output=none --set-exit-if-changed .  # must be clean (or: dart format . then git diff --exit-code)
+tool/check_issues.sh   # issue backlog consistent (folder = status, no duplicates)
 dart fix --dry-run     # nothing auto-fixable left
 flutter test           # data-layer tests (test/data/), bootstrap widget test, golden tests (test/golden/, #019)
 ```
