@@ -68,10 +68,14 @@ abstract final class FoxFeedback {
     // A chime that can't load or play must never disturb the lesson.
     try {
       unawaited(
-        ref.read(foxSoundPlayerProvider).playCorrect().catchError((_) {}),
+        ref
+            .read(foxSoundPlayerProvider)
+            .playCorrect()
+            .catchError(logChimeFailure),
       );
-    } on Object {
-      // Synchronous failure from the player: same policy, stay silent.
+    } on Object catch (error, stackTrace) {
+      // Synchronous failure from the player: same policy, only log.
+      logChimeFailure(error, stackTrace);
     }
   }
 

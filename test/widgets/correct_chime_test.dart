@@ -63,6 +63,21 @@ Future<void> _pumpAndChime(
   await tester.pump();
 }
 
+/// Runs [body] with `debugPrint` captured. Restored before returning, as the
+/// test binding asserts that foundation debug variables are unset at the end
+/// of the test body (before tearDown callbacks run).
+Future<List<String>> _captureLogs(Future<void> Function() body) async {
+  final logs = <String>[];
+  final original = debugPrint;
+  debugPrint = (message, {wrapWidth}) => logs.add(message ?? '');
+  try {
+    await body();
+  } finally {
+    debugPrint = original;
+  }
+  return logs;
+}
+
 void main() {
   testWidgets('plays the chime synchronously when sound is on', (tester) async {
     final player = _FakeSoundPlayer();
@@ -92,15 +107,17 @@ void main() {
 
   testWidgets('swallows an asynchronous playback failure', (tester) async {
     final player = _FakeSoundPlayer(failure: StateError('async'));
-    await _pumpAndChime(tester, player);
+    final logs = await _captureLogs(() => _pumpAndChime(tester, player));
     expect(player.playCorrectCallCount, 1);
     expect(tester.takeException(), isNull);
+    expect(logs.single, contains('chime failed: Bad state: async'));
   });
 
   testWidgets('swallows a synchronous playback failure', (tester) async {
     final player = _SyncThrowingPlayer();
-    await _pumpAndChime(tester, player);
+    final logs = await _captureLogs(() => _pumpAndChime(tester, player));
     expect(player.playCorrectCallCount, 1);
     expect(tester.takeException(), isNull);
+    expect(logs.single, contains('chime failed: Bad state: sync'));
   });
 }

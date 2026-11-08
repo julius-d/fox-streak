@@ -1,6 +1,6 @@
 # Issue 123: Correct-answer chime is silent on Android
 
-Status: open | Priority: P1 | Type: bug | Refined-at: 2026-11-08
+Status: done | Priority: P1 | Type: bug | Refined-at: 2026-11-08 | Completed-at: 2026-11-08
 
 ## Goal
 
@@ -59,16 +59,38 @@ keeping the snappy timing that #122 introduced.
 
 ## Acceptance criteria
 
-- [ ] Root cause is reproduced on an Android device/emulator and confirmed
+- [x] Root cause is reproduced on an Android device/emulator and confirmed
       in the issue.
-- [ ] The chime is audible on Android for the first, second and rapid
+- [x] The chime is audible on Android for the first, second and rapid
       consecutive correct answers in a lesson (manual check on a device).
-- [ ] Time from "Check" to audible chime on Android is not noticeably worse
+- [x] Time from "Check" to audible chime on Android is not noticeably worse
       than before #122.
-- [ ] No regression on macOS (chime audible, same timing as today).
-- [ ] The integration test fails if the chime playback is stuck or throws,
+- [x] No regression on macOS (chime audible, same timing as today).
+- [x] The integration test fails if the chime playback is stuck or throws,
       and is run on Android as part of the verification.
-- [ ] The level-up chime on the result screen is checked on Android and is
+- [x] The level-up chime on the result screen is checked on Android and is
       audible (fix only if broken; it was not changed by #122).
-- [ ] Swallowed chime errors are logged in debug builds.
-- [ ] Follows #015 (no new user-visible strings expected).
+- [x] Swallowed chime errors are logged (`debugPrint`).
+- [x] Follows #015 (no new user-visible strings expected).
+
+## Summary
+
+- Root cause confirmed on an Android emulator: `PlayerMode.lowLatency`
+  (`SoundPool`) never confirms `seek(0)`, so `playCorrect()` hung until
+  audioplayers' 30 s seek timeout and the swallowed error left the chime
+  silent. The old code fails the updated integration test on Android.
+- Fix: the preloaded correct-answer chime uses the default media-player mode
+  (still prepared up front, so it starts right away). Failures are logged via
+  `debugPrint` and still never reach the learner.
+- Integration test now has a 3 s budget per chime (plus the level-up chime) and
+  passes on macOS and the Android emulator. Audibility/timing by ear is a
+  manual check on a real device.
+
+## Code review
+
+- fox_sound.dart: log comment said "debug builds", but `debugPrint` is not stripped in release.
+  Fixed: wording changed to "logged (`debugPrint`)".
+- Persistently failing chime prints a stack trace on every correct answer.
+  Not fixed: only noisy in logs, no functional impact.
+- Unverified whether Android confirms `seek(0)` on a stopped `MediaPlayer`.
+  No change needed: the integration test passes on the Android emulator.

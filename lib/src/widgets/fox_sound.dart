@@ -65,7 +65,7 @@ class AudioPlayersSoundPlayer implements FoxSoundPlayer {
   Future<void>? _correctReady;
 
   AudioPlayersSoundPlayer() {
-    unawaited(_ensureCorrectReady().catchError((_) {}));
+    unawaited(_ensureCorrectReady().catchError(logChimeFailure));
   }
 
   Future<void> _ensureCorrectReady() {
@@ -81,7 +81,11 @@ class AudioPlayersSoundPlayer implements FoxSoundPlayer {
   }
 
   Future<void> _prepareCorrect() async {
-    await _correctPlayer.setPlayerMode(PlayerMode.lowLatency);
+    // Deliberately the default media-player mode, not `PlayerMode.lowLatency`
+    // (issue #123): on Android that mode is a `SoundPool`, which never
+    // confirms the rewind in [playCorrect] (so it hung until audioplayers'
+    // 30 s seek timeout and the chime stayed silent) and never reports
+    // completion. A source prepared up front already starts within a few ms.
     await _correctPlayer.setReleaseMode(ReleaseMode.stop);
     await _correctPlayer.setAudioContext(foxDuckingAudioContext());
     await _correctPlayer.setSource(AssetSource(_correctAsset));
@@ -107,6 +111,12 @@ class AudioPlayersSoundPlayer implements FoxSoundPlayer {
     await _correctPlayer.resume();
   }
 }
+
+/// Chime failures never reach the learner (a chime that can't load or play
+/// must not disturb the lesson), but are logged (`debugPrint`) so a silent
+/// chime can be diagnosed (issue #123). Usable as a `catchError` handler.
+void logChimeFailure(Object error, StackTrace stackTrace) =>
+    debugPrint('FoxSound: chime failed: $error\n$stackTrace');
 
 final Provider<FoxSoundPlayer> foxSoundPlayerProvider =
     Provider<FoxSoundPlayer>((ref) {
