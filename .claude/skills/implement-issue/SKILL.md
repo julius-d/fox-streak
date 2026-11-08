@@ -16,6 +16,8 @@ Especially: `flutter analyze`, `dart format`, `flutter test`.
 After you are done, change the status of the issue to "done", add `Completed-at: <date>` and add a very short, few lines only, summary block to the end of the issue that contains important information only.
 Move the issue file with `git mv issues/issue-NNN.md issues/done/issue-NNN.md` (never copy or recreate it), then run `tool/check_issues.sh` and make sure it passes.
 
+If the change alters a widget covered by `test/golden/` (visuals intentionally changed): regenerate your platform's baselines (`flutter test --update-goldens test/golden`), and also the Linux ones, which CI verifies against and which only CI can generate. Do this after the branch is pushed or merged, via `gh workflow run update-goldens.yml`, then download the `linux-goldens` artifact (`gh run download <run-id> -n linux-goldens`), review the changed PNGs and commit only those that differ into `test/golden/goldens/linux/`. Otherwise main CI goes red.
+
 If the implementation of the issue changed UI: create screenshots that show the changed UI:
 1. Write a throwaway test file, e.g. integration_test/_scratch_issueNNN_screenshots_test.dart, with the seed data + pump/capture logic above, writing to ${Directory.systemTemp.path}/screenshots and printing that path.
 2. `flutter test integration_test/_scratch_issueNNN_screenshots_test.dart -d macos`
