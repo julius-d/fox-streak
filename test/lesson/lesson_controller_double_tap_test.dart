@@ -25,6 +25,7 @@ Future<Item> insertTestItem(AppDatabase db, int setId) async {
       .into(db.questionSets)
       .insert(
         QuestionSetsCompanion.insert(
+          packId: 1,
           id: Value(setId),
           title: 'Test Set',
           description: const Value(''),

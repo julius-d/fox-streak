@@ -903,25 +903,134 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get marketplaceAddToLibrary => 'Zur Bibliothek hinzufügen';
+  String packSetCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Sets',
+      one: '1 Set',
+      zero: 'Keine Sets',
+    );
+    return '$_temp0';
+  }
 
   @override
-  String get marketplaceUpdateAction => 'Aktualisieren';
+  String packHeaderExpanded(String title, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Sets',
+      one: '1 Set',
+    );
+    return '$title, $_temp0, aufgeklappt. Tippen zum Zuklappen.';
+  }
 
   @override
-  String get marketplaceAlreadyUpToDate => 'Bereits aktuell';
+  String packHeaderCollapsed(String title, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Sets',
+      one: '1 Set',
+    );
+    return '$title, $_temp0, zugeklappt. Tippen zum Aufklappen.';
+  }
 
   @override
-  String get marketplaceUpdateConfirmTitle =>
-      'Lokale Änderungen überschreiben?';
+  String get packEmptyHint => 'Dieses Pack hat noch keine Sets.';
 
   @override
-  String get marketplaceUpdateConfirmMessage =>
-      'Du hast dieses Set seit dem Import bearbeitet. Eine Aktualisierung ersetzt es durch die aktuelle Version des Marktplatzes – übereinstimmende Fragen behalten ihren Fortschritt, andere starten neu.';
+  String get packAddSet => 'Set hinzufügen';
 
   @override
-  String get marketplaceImportSuccessMessage => 'Zur Bibliothek hinzugefügt.';
+  String get packPickerLabel => 'Pack';
 
   @override
-  String get marketplaceUpdateSuccessMessage => 'Set aktualisiert.';
+  String get packPickerNewPack => 'Neues Pack…';
+
+  @override
+  String get packNewTitleLabel => 'Titel des neuen Packs';
+
+  @override
+  String get packNewCreate => 'Pack anlegen';
+
+  @override
+  String get packImportTitle => 'In welches Pack importieren?';
+
+  @override
+  String get packManageTitle => 'Packs';
+
+  @override
+  String get packDownloadedLabel => 'Heruntergeladen';
+
+  @override
+  String get packRename => 'Pack umbenennen';
+
+  @override
+  String get packDelete => 'Pack löschen';
+
+  @override
+  String get packActions => 'Pack-Aktionen';
+
+  @override
+  String get packDeleteTitle => 'Dieses Pack löschen?';
+
+  @override
+  String packDeleteMessage(String title, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'seinen $count Sets',
+      one: 'seinem 1 Set',
+      zero: 'keinen Sets',
+    );
+    return '\"$title\" zusammen mit $_temp0 löschen? Das kann nicht rückgängig gemacht werden.';
+  }
+
+  @override
+  String get moveToPack => 'In anderes Pack verschieben…';
+
+  @override
+  String get moveToPackTitle => 'In welches Pack verschieben?';
+
+  @override
+  String get marketplaceDownloadPack => 'Pack herunterladen';
+
+  @override
+  String get marketplaceUpdatePack => 'Pack aktualisieren';
+
+  @override
+  String get marketplacePackUpToDate => 'Pack ist aktuell';
+
+  @override
+  String marketplaceDownloadProgress(int done, int total) {
+    return 'Lade Set $done von $total …';
+  }
+
+  @override
+  String get marketplaceDownloadFailed =>
+      'Download fehlgeschlagen – es wurde nichts gespeichert. Prüfe deine Verbindung und versuche es erneut.';
+
+  @override
+  String get marketplacePackDownloaded => 'Pack zur Bibliothek hinzugefügt.';
+
+  @override
+  String get marketplacePackUpdated => 'Pack aktualisiert.';
+
+  @override
+  String get marketplacePackOverwriteTitle => 'Deine Änderungen überschreiben?';
+
+  @override
+  String marketplacePackOverwriteMessage(String sets) {
+    return 'Du hast diese Sets seit dem Download geändert:\n$sets\n\nÜberschreiben ersetzt sie durch die Marketplace-Version – passende Aufgaben behalten ihren Fortschritt, andere starten neu.';
+  }
+
+  @override
+  String get marketplacePackOverwriteConfirm => 'Überschreiben';
+
+  @override
+  String get marketplacePackOverwriteSkip => 'Diese Sets überspringen';
+
+  @override
+  String get marketplacePackSetsHeading => 'Sets in diesem Pack';
 }

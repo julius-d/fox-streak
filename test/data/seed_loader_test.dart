@@ -56,6 +56,19 @@ void main() {
       expect(titles, {'A', 'B'});
     });
 
+    test('seed sets land in the "My sets" own pack (#121)', () async {
+      final loader = SeedLoader(
+        sets,
+        loadString: (p) async => seedDoc(title: 'A'),
+        assetPaths: ['a.json'],
+      );
+      await loader.ensureSeeded(today: kTestToday);
+      final myPack = (await db.select(db.packs).get()).single;
+      expect(myPack.title, 'My sets');
+      expect(myPack.sourceUrl, isNull);
+      expect((await sets.getAllSets()).single.packId, myPack.id);
+    });
+
     test('does nothing when DB already has sets', () async {
       await sets.createSet(title: 'Existing', createdBy: 'teacher');
       var loads = 0;

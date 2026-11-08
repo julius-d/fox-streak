@@ -213,6 +213,7 @@ Future<List<Item>> setupTestItems(
         .into(db.questionSets)
         .insert(
           QuestionSetsCompanion.insert(
+            packId: 1,
             id: Value(setId),
             title: 'Test Set $setId',
             description: const Value(''),

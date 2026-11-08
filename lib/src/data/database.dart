@@ -11,10 +11,37 @@ import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 
 import '../pet/pet_catalog.dart' show kDefaultPetId;
+import 'pack_defaults.dart';
 
 part 'database.g.dart';
 
-/// Question sets (lesson packs).
+/// Packs (issue #121): the grouping unit above sets. Every set belongs to
+/// exactly one pack. A pack is either *own* ([sourceUrl] NULL — created by the
+/// learner, e.g. "My sets") or *downloaded* from a Marketplace source, in
+/// which case `(sourceUrl, sourcePackId)` identifies it (unique — the same
+/// Marketplace pack is never downloaded into two local packs).
+class Packs extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get title => text()();
+  TextColumn get description => text().withDefault(const Constant(''))();
+  // Epoch millis; orders own packs.
+  IntColumn get createdAt => integer()();
+  // Resolved Marketplace manifest URL + the Marketplace pack id; both NULL for
+  // own packs, both set for downloaded ones.
+  TextColumn get sourceUrl => text().nullable()();
+  TextColumn get sourcePackId => text().nullable()();
+  // Epoch millis of the first download; orders downloaded packs.
+  IntColumn get downloadedAt => integer().nullable()();
+  // Library section collapse state, persisted across restarts.
+  BoolColumn get collapsed => boolean().withDefault(const Constant(false))();
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {sourceUrl, sourcePackId},
+  ];
+}
+
+/// Question sets.
 class QuestionSets extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get title => text()();
@@ -29,6 +56,9 @@ class QuestionSets extends Table {
   // choice/freeText icon (item_type_icons.dart). NULL on pre-#045 rows and
   // treated as `vocab` everywhere category is read — no backfill.
   TextColumn get category => text().nullable()();
+  // v17 (#121): the pack the set lives in; deleting the pack deletes its sets.
+  IntColumn get packId =>
+      integer().references(Packs, #id, onDelete: KeyAction.cascade)();
 }
 
 /// Items belonging to a set, ordered by [position].
@@ -244,6 +274,7 @@ class ImportedMarketplaceSets extends Table {
 
 @DriftDatabase(
   tables: [
+    Packs,
     QuestionSets,
     Items,
     Attempts,
@@ -263,11 +294,14 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => 17;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-    onCreate: (m) async => m.createAll(),
+    onCreate: (m) async {
+      await m.createAll();
+      await _insertDefaultPack();
+    },
     onUpgrade: (m, from, to) async {
       // v2 (#026): vocab's multiple-choice half becomes `choice` (the only
       // vocab exercise ever practiced via #006's MCQ card to date);
@@ -413,6 +447,10 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(marketplaceSources);
         await m.createTable(importedMarketplaceSets);
       }
+      // v17 (#121): groups existing sets into packs by origin.
+      if (from < 17) {
+        await _migrateSetsIntoPacks(m);
+      }
     },
     beforeOpen: (details) async {
       // SQLite disables FK enforcement by default; without this,
@@ -420,6 +458,58 @@ class AppDatabase extends _$AppDatabase {
       await customStatement('PRAGMA foreign_keys = ON');
     },
   );
+
+  /// The default own pack predates every learner-created pack by definition,
+  /// hence `createdAt` 0: it always sorts first among own packs.
+  Future<int> _insertDefaultPack() => into(packs)
+      .insert(PacksCompanion.insert(title: defaultPackTitle(), createdAt: 0));
+
+  /// v17 (#121): one downloaded pack per `(source url, marketplace pack id)`
+  /// of already-imported sets (titled by the Marketplace pack id until the
+  /// pack is next viewed/updated), every other set into an own default pack.
+  /// `question_sets.pack_id` is then added with each set's pack as value.
+  Future<void> _migrateSetsIntoPacks(Migrator m) async {
+    await m.createTable(packs);
+    final groups = await customSelect(
+      'SELECT i.source_url AS source_url, i.pack_id AS pack_id, '
+      'MIN(q.created_at) AS first_at '
+      'FROM imported_marketplace_sets i '
+      'JOIN question_sets q ON q.id = i.local_set_id '
+      'GROUP BY i.source_url, i.pack_id',
+    ).get();
+    for (final group in groups) {
+      final firstAt = group.read<int>('first_at');
+      await into(packs).insert(
+        PacksCompanion.insert(
+          title: group.read<String>('pack_id'),
+          createdAt: firstAt,
+          sourceUrl: Value(group.read<String>('source_url')),
+          sourcePackId: Value(group.read<String>('pack_id')),
+          downloadedAt: Value(firstAt),
+        ),
+      );
+    }
+    final ownSets = await customSelect(
+      'SELECT COUNT(*) AS c FROM question_sets q WHERE NOT EXISTS '
+      '(SELECT 1 FROM imported_marketplace_sets i WHERE i.local_set_id = q.id)',
+    ).getSingle();
+    final needsDefault = ownSets.read<int>('c') > 0 || groups.isEmpty;
+    final defaultId = needsDefault ? await _insertDefaultPack() : 0;
+    await m.alterTable(
+      TableMigration(
+        questionSets,
+        newColumns: [questionSets.packId],
+        columnTransformer: {
+          questionSets.packId: CustomExpression<int>(
+            'COALESCE((SELECT p.id FROM packs p '
+            'JOIN imported_marketplace_sets i '
+            'ON i.source_url = p.source_url AND i.pack_id = p.source_pack_id '
+            'WHERE i.local_set_id = question_sets.id), $defaultId)',
+          ),
+        },
+      ),
+    );
+  }
 
   // v1 had no migrations; v2 (#026) added the vocab->choice rewrite above;
   // v3 (#010) added `profileStats.todayXp`; v4 (#022) replaced
@@ -437,7 +527,8 @@ class AppDatabase extends _$AppDatabase {
   // `items.imageCopyright`; v15 (#087) added
   // `profileStats.streakFreezesAvailable`; v16 (#101) added
   // `items.marketplaceItemId` plus the `marketplace_sources`/
-  // `imported_marketplace_sets` tables.
+  // `imported_marketplace_sets` tables; v17 (#121) added `packs` and
+  // `question_sets.pack_id`.
 }
 
 DatabaseConnection _openConnection() => driftDatabase(name: 'fox_streak');

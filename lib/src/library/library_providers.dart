@@ -20,3 +20,14 @@ final itemsForSetProvider = StreamProvider.family<List<Item>, int>((
 ) {
   return ref.watch(setsRepositoryProvider).watchItemsForSet(setId);
 });
+
+/// All packs in library order: own first (by creation), then downloaded (by
+/// download time) — issue #121.
+final allPacksProvider = StreamProvider<List<Pack>>((ref) {
+  return ref.watch(packsRepositoryProvider).watchAllPacks();
+});
+
+/// Own packs only: the valid targets when adding or importing a set.
+final ownPacksProvider = StreamProvider<List<Pack>>((ref) {
+  return ref.watch(packsRepositoryProvider).watchOwnPacks();
+});

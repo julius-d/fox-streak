@@ -3,6 +3,526 @@
 part of 'database.dart';
 
 // ignore_for_file: type=lint
+class $PacksTable extends Packs with TableInfo<$PacksTable, Pack> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PacksTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceUrlMeta = const VerificationMeta(
+    'sourceUrl',
+  );
+  @override
+  late final GeneratedColumn<String> sourceUrl = GeneratedColumn<String>(
+    'source_url',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sourcePackIdMeta = const VerificationMeta(
+    'sourcePackId',
+  );
+  @override
+  late final GeneratedColumn<String> sourcePackId = GeneratedColumn<String>(
+    'source_pack_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _downloadedAtMeta = const VerificationMeta(
+    'downloadedAt',
+  );
+  @override
+  late final GeneratedColumn<int> downloadedAt = GeneratedColumn<int>(
+    'downloaded_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _collapsedMeta = const VerificationMeta(
+    'collapsed',
+  );
+  @override
+  late final GeneratedColumn<bool> collapsed = GeneratedColumn<bool>(
+    'collapsed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("collapsed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    title,
+    description,
+    createdAt,
+    sourceUrl,
+    sourcePackId,
+    downloadedAt,
+    collapsed,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'packs';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Pack> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('source_url')) {
+      context.handle(
+        _sourceUrlMeta,
+        sourceUrl.isAcceptableOrUnknown(data['source_url']!, _sourceUrlMeta),
+      );
+    }
+    if (data.containsKey('source_pack_id')) {
+      context.handle(
+        _sourcePackIdMeta,
+        sourcePackId.isAcceptableOrUnknown(
+          data['source_pack_id']!,
+          _sourcePackIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('downloaded_at')) {
+      context.handle(
+        _downloadedAtMeta,
+        downloadedAt.isAcceptableOrUnknown(
+          data['downloaded_at']!,
+          _downloadedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('collapsed')) {
+      context.handle(
+        _collapsedMeta,
+        collapsed.isAcceptableOrUnknown(data['collapsed']!, _collapsedMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {sourceUrl, sourcePackId},
+  ];
+  @override
+  Pack map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Pack(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      sourceUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_url'],
+      ),
+      sourcePackId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_pack_id'],
+      ),
+      downloadedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}downloaded_at'],
+      ),
+      collapsed: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}collapsed'],
+      )!,
+    );
+  }
+
+  @override
+  $PacksTable createAlias(String alias) {
+    return $PacksTable(attachedDatabase, alias);
+  }
+}
+
+class Pack extends DataClass implements Insertable<Pack> {
+  final int id;
+  final String title;
+  final String description;
+  final int createdAt;
+  final String? sourceUrl;
+  final String? sourcePackId;
+  final int? downloadedAt;
+  final bool collapsed;
+  const Pack({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.createdAt,
+    this.sourceUrl,
+    this.sourcePackId,
+    this.downloadedAt,
+    required this.collapsed,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['title'] = Variable<String>(title);
+    map['description'] = Variable<String>(description);
+    map['created_at'] = Variable<int>(createdAt);
+    if (!nullToAbsent || sourceUrl != null) {
+      map['source_url'] = Variable<String>(sourceUrl);
+    }
+    if (!nullToAbsent || sourcePackId != null) {
+      map['source_pack_id'] = Variable<String>(sourcePackId);
+    }
+    if (!nullToAbsent || downloadedAt != null) {
+      map['downloaded_at'] = Variable<int>(downloadedAt);
+    }
+    map['collapsed'] = Variable<bool>(collapsed);
+    return map;
+  }
+
+  PacksCompanion toCompanion(bool nullToAbsent) {
+    return PacksCompanion(
+      id: Value(id),
+      title: Value(title),
+      description: Value(description),
+      createdAt: Value(createdAt),
+      sourceUrl: sourceUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceUrl),
+      sourcePackId: sourcePackId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourcePackId),
+      downloadedAt: downloadedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(downloadedAt),
+      collapsed: Value(collapsed),
+    );
+  }
+
+  factory Pack.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Pack(
+      id: serializer.fromJson<int>(json['id']),
+      title: serializer.fromJson<String>(json['title']),
+      description: serializer.fromJson<String>(json['description']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      sourceUrl: serializer.fromJson<String?>(json['sourceUrl']),
+      sourcePackId: serializer.fromJson<String?>(json['sourcePackId']),
+      downloadedAt: serializer.fromJson<int?>(json['downloadedAt']),
+      collapsed: serializer.fromJson<bool>(json['collapsed']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'title': serializer.toJson<String>(title),
+      'description': serializer.toJson<String>(description),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'sourceUrl': serializer.toJson<String?>(sourceUrl),
+      'sourcePackId': serializer.toJson<String?>(sourcePackId),
+      'downloadedAt': serializer.toJson<int?>(downloadedAt),
+      'collapsed': serializer.toJson<bool>(collapsed),
+    };
+  }
+
+  Pack copyWith({
+    int? id,
+    String? title,
+    String? description,
+    int? createdAt,
+    Value<String?> sourceUrl = const Value.absent(),
+    Value<String?> sourcePackId = const Value.absent(),
+    Value<int?> downloadedAt = const Value.absent(),
+    bool? collapsed,
+  }) => Pack(
+    id: id ?? this.id,
+    title: title ?? this.title,
+    description: description ?? this.description,
+    createdAt: createdAt ?? this.createdAt,
+    sourceUrl: sourceUrl.present ? sourceUrl.value : this.sourceUrl,
+    sourcePackId: sourcePackId.present ? sourcePackId.value : this.sourcePackId,
+    downloadedAt: downloadedAt.present ? downloadedAt.value : this.downloadedAt,
+    collapsed: collapsed ?? this.collapsed,
+  );
+  Pack copyWithCompanion(PacksCompanion data) {
+    return Pack(
+      id: data.id.present ? data.id.value : this.id,
+      title: data.title.present ? data.title.value : this.title,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      sourceUrl: data.sourceUrl.present ? data.sourceUrl.value : this.sourceUrl,
+      sourcePackId: data.sourcePackId.present
+          ? data.sourcePackId.value
+          : this.sourcePackId,
+      downloadedAt: data.downloadedAt.present
+          ? data.downloadedAt.value
+          : this.downloadedAt,
+      collapsed: data.collapsed.present ? data.collapsed.value : this.collapsed,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Pack(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('description: $description, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('sourceUrl: $sourceUrl, ')
+          ..write('sourcePackId: $sourcePackId, ')
+          ..write('downloadedAt: $downloadedAt, ')
+          ..write('collapsed: $collapsed')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    title,
+    description,
+    createdAt,
+    sourceUrl,
+    sourcePackId,
+    downloadedAt,
+    collapsed,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Pack &&
+          other.id == this.id &&
+          other.title == this.title &&
+          other.description == this.description &&
+          other.createdAt == this.createdAt &&
+          other.sourceUrl == this.sourceUrl &&
+          other.sourcePackId == this.sourcePackId &&
+          other.downloadedAt == this.downloadedAt &&
+          other.collapsed == this.collapsed);
+}
+
+class PacksCompanion extends UpdateCompanion<Pack> {
+  final Value<int> id;
+  final Value<String> title;
+  final Value<String> description;
+  final Value<int> createdAt;
+  final Value<String?> sourceUrl;
+  final Value<String?> sourcePackId;
+  final Value<int?> downloadedAt;
+  final Value<bool> collapsed;
+  const PacksCompanion({
+    this.id = const Value.absent(),
+    this.title = const Value.absent(),
+    this.description = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.sourceUrl = const Value.absent(),
+    this.sourcePackId = const Value.absent(),
+    this.downloadedAt = const Value.absent(),
+    this.collapsed = const Value.absent(),
+  });
+  PacksCompanion.insert({
+    this.id = const Value.absent(),
+    required String title,
+    this.description = const Value.absent(),
+    required int createdAt,
+    this.sourceUrl = const Value.absent(),
+    this.sourcePackId = const Value.absent(),
+    this.downloadedAt = const Value.absent(),
+    this.collapsed = const Value.absent(),
+  }) : title = Value(title),
+       createdAt = Value(createdAt);
+  static Insertable<Pack> custom({
+    Expression<int>? id,
+    Expression<String>? title,
+    Expression<String>? description,
+    Expression<int>? createdAt,
+    Expression<String>? sourceUrl,
+    Expression<String>? sourcePackId,
+    Expression<int>? downloadedAt,
+    Expression<bool>? collapsed,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (title != null) 'title': title,
+      if (description != null) 'description': description,
+      if (createdAt != null) 'created_at': createdAt,
+      if (sourceUrl != null) 'source_url': sourceUrl,
+      if (sourcePackId != null) 'source_pack_id': sourcePackId,
+      if (downloadedAt != null) 'downloaded_at': downloadedAt,
+      if (collapsed != null) 'collapsed': collapsed,
+    });
+  }
+
+  PacksCompanion copyWith({
+    Value<int>? id,
+    Value<String>? title,
+    Value<String>? description,
+    Value<int>? createdAt,
+    Value<String?>? sourceUrl,
+    Value<String?>? sourcePackId,
+    Value<int?>? downloadedAt,
+    Value<bool>? collapsed,
+  }) {
+    return PacksCompanion(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      createdAt: createdAt ?? this.createdAt,
+      sourceUrl: sourceUrl ?? this.sourceUrl,
+      sourcePackId: sourcePackId ?? this.sourcePackId,
+      downloadedAt: downloadedAt ?? this.downloadedAt,
+      collapsed: collapsed ?? this.collapsed,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (sourceUrl.present) {
+      map['source_url'] = Variable<String>(sourceUrl.value);
+    }
+    if (sourcePackId.present) {
+      map['source_pack_id'] = Variable<String>(sourcePackId.value);
+    }
+    if (downloadedAt.present) {
+      map['downloaded_at'] = Variable<int>(downloadedAt.value);
+    }
+    if (collapsed.present) {
+      map['collapsed'] = Variable<bool>(collapsed.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PacksCompanion(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('description: $description, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('sourceUrl: $sourceUrl, ')
+          ..write('sourcePackId: $sourcePackId, ')
+          ..write('downloadedAt: $downloadedAt, ')
+          ..write('collapsed: $collapsed')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $QuestionSetsTable extends QuestionSets
     with TableInfo<$QuestionSetsTable, QuestionSet> {
   @override
@@ -87,6 +607,18 @@ class $QuestionSetsTable extends QuestionSets
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _packIdMeta = const VerificationMeta('packId');
+  @override
+  late final GeneratedColumn<int> packId = GeneratedColumn<int>(
+    'pack_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES packs (id) ON DELETE CASCADE',
+    ),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -96,6 +628,7 @@ class $QuestionSetsTable extends QuestionSets
     createdAt,
     updatedAt,
     category,
+    packId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -159,6 +692,14 @@ class $QuestionSetsTable extends QuestionSets
         category.isAcceptableOrUnknown(data['category']!, _categoryMeta),
       );
     }
+    if (data.containsKey('pack_id')) {
+      context.handle(
+        _packIdMeta,
+        packId.isAcceptableOrUnknown(data['pack_id']!, _packIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_packIdMeta);
+    }
     return context;
   }
 
@@ -196,6 +737,10 @@ class $QuestionSetsTable extends QuestionSets
         DriftSqlType.string,
         data['${effectivePrefix}category'],
       ),
+      packId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}pack_id'],
+      )!,
     );
   }
 
@@ -213,6 +758,7 @@ class QuestionSet extends DataClass implements Insertable<QuestionSet> {
   final int createdAt;
   final int updatedAt;
   final String? category;
+  final int packId;
   const QuestionSet({
     required this.id,
     required this.title,
@@ -221,6 +767,7 @@ class QuestionSet extends DataClass implements Insertable<QuestionSet> {
     required this.createdAt,
     required this.updatedAt,
     this.category,
+    required this.packId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -234,6 +781,7 @@ class QuestionSet extends DataClass implements Insertable<QuestionSet> {
     if (!nullToAbsent || category != null) {
       map['category'] = Variable<String>(category);
     }
+    map['pack_id'] = Variable<int>(packId);
     return map;
   }
 
@@ -248,6 +796,7 @@ class QuestionSet extends DataClass implements Insertable<QuestionSet> {
       category: category == null && nullToAbsent
           ? const Value.absent()
           : Value(category),
+      packId: Value(packId),
     );
   }
 
@@ -264,6 +813,7 @@ class QuestionSet extends DataClass implements Insertable<QuestionSet> {
       createdAt: serializer.fromJson<int>(json['createdAt']),
       updatedAt: serializer.fromJson<int>(json['updatedAt']),
       category: serializer.fromJson<String?>(json['category']),
+      packId: serializer.fromJson<int>(json['packId']),
     );
   }
   @override
@@ -277,6 +827,7 @@ class QuestionSet extends DataClass implements Insertable<QuestionSet> {
       'createdAt': serializer.toJson<int>(createdAt),
       'updatedAt': serializer.toJson<int>(updatedAt),
       'category': serializer.toJson<String?>(category),
+      'packId': serializer.toJson<int>(packId),
     };
   }
 
@@ -288,6 +839,7 @@ class QuestionSet extends DataClass implements Insertable<QuestionSet> {
     int? createdAt,
     int? updatedAt,
     Value<String?> category = const Value.absent(),
+    int? packId,
   }) => QuestionSet(
     id: id ?? this.id,
     title: title ?? this.title,
@@ -296,6 +848,7 @@ class QuestionSet extends DataClass implements Insertable<QuestionSet> {
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     category: category.present ? category.value : this.category,
+    packId: packId ?? this.packId,
   );
   QuestionSet copyWithCompanion(QuestionSetsCompanion data) {
     return QuestionSet(
@@ -308,6 +861,7 @@ class QuestionSet extends DataClass implements Insertable<QuestionSet> {
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       category: data.category.present ? data.category.value : this.category,
+      packId: data.packId.present ? data.packId.value : this.packId,
     );
   }
 
@@ -320,7 +874,8 @@ class QuestionSet extends DataClass implements Insertable<QuestionSet> {
           ..write('createdBy: $createdBy, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
-          ..write('category: $category')
+          ..write('category: $category, ')
+          ..write('packId: $packId')
           ..write(')'))
         .toString();
   }
@@ -334,6 +889,7 @@ class QuestionSet extends DataClass implements Insertable<QuestionSet> {
     createdAt,
     updatedAt,
     category,
+    packId,
   );
   @override
   bool operator ==(Object other) =>
@@ -345,7 +901,8 @@ class QuestionSet extends DataClass implements Insertable<QuestionSet> {
           other.createdBy == this.createdBy &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
-          other.category == this.category);
+          other.category == this.category &&
+          other.packId == this.packId);
 }
 
 class QuestionSetsCompanion extends UpdateCompanion<QuestionSet> {
@@ -356,6 +913,7 @@ class QuestionSetsCompanion extends UpdateCompanion<QuestionSet> {
   final Value<int> createdAt;
   final Value<int> updatedAt;
   final Value<String?> category;
+  final Value<int> packId;
   const QuestionSetsCompanion({
     this.id = const Value.absent(),
     this.title = const Value.absent(),
@@ -364,6 +922,7 @@ class QuestionSetsCompanion extends UpdateCompanion<QuestionSet> {
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.category = const Value.absent(),
+    this.packId = const Value.absent(),
   });
   QuestionSetsCompanion.insert({
     this.id = const Value.absent(),
@@ -373,10 +932,12 @@ class QuestionSetsCompanion extends UpdateCompanion<QuestionSet> {
     required int createdAt,
     required int updatedAt,
     this.category = const Value.absent(),
+    required int packId,
   }) : title = Value(title),
        createdBy = Value(createdBy),
        createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt);
+       updatedAt = Value(updatedAt),
+       packId = Value(packId);
   static Insertable<QuestionSet> custom({
     Expression<int>? id,
     Expression<String>? title,
@@ -385,6 +946,7 @@ class QuestionSetsCompanion extends UpdateCompanion<QuestionSet> {
     Expression<int>? createdAt,
     Expression<int>? updatedAt,
     Expression<String>? category,
+    Expression<int>? packId,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -394,6 +956,7 @@ class QuestionSetsCompanion extends UpdateCompanion<QuestionSet> {
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (category != null) 'category': category,
+      if (packId != null) 'pack_id': packId,
     });
   }
 
@@ -405,6 +968,7 @@ class QuestionSetsCompanion extends UpdateCompanion<QuestionSet> {
     Value<int>? createdAt,
     Value<int>? updatedAt,
     Value<String?>? category,
+    Value<int>? packId,
   }) {
     return QuestionSetsCompanion(
       id: id ?? this.id,
@@ -414,6 +978,7 @@ class QuestionSetsCompanion extends UpdateCompanion<QuestionSet> {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       category: category ?? this.category,
+      packId: packId ?? this.packId,
     );
   }
 
@@ -441,6 +1006,9 @@ class QuestionSetsCompanion extends UpdateCompanion<QuestionSet> {
     if (category.present) {
       map['category'] = Variable<String>(category.value);
     }
+    if (packId.present) {
+      map['pack_id'] = Variable<int>(packId.value);
+    }
     return map;
   }
 
@@ -453,7 +1021,8 @@ class QuestionSetsCompanion extends UpdateCompanion<QuestionSet> {
           ..write('createdBy: $createdBy, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
-          ..write('category: $category')
+          ..write('category: $category, ')
+          ..write('packId: $packId')
           ..write(')'))
         .toString();
   }
@@ -3833,6 +4402,7 @@ class ImportedMarketplaceSetsCompanion
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
+  late final $PacksTable packs = $PacksTable(this);
   late final $QuestionSetsTable questionSets = $QuestionSetsTable(this);
   late final $ItemsTable items = $ItemsTable(this);
   late final $AttemptsTable attempts = $AttemptsTable(this);
@@ -3849,6 +4419,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
+    packs,
     questionSets,
     items,
     attempts,
@@ -3861,6 +4432,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'packs',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('question_sets', kind: UpdateKind.delete)],
+    ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
         'question_sets',
@@ -3887,6 +4465,356 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   ]);
 }
 
+typedef $$PacksTableCreateCompanionBuilder = PacksCompanion Function({
+  Value<int> id,
+  required String title,
+  Value<String> description,
+  required int createdAt,
+  Value<String?> sourceUrl,
+  Value<String?> sourcePackId,
+  Value<int?> downloadedAt,
+  Value<bool> collapsed,
+});
+typedef $$PacksTableUpdateCompanionBuilder = PacksCompanion Function({
+  Value<int> id,
+  Value<String> title,
+  Value<String> description,
+  Value<int> createdAt,
+  Value<String?> sourceUrl,
+  Value<String?> sourcePackId,
+  Value<int?> downloadedAt,
+  Value<bool> collapsed,
+});
+
+final class $$PacksTableReferences
+    extends BaseReferences<_$AppDatabase, $PacksTable, Pack> {
+  $$PacksTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$QuestionSetsTable, List<QuestionSet>>
+  _questionSetsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.questionSets,
+    aliasName: 'packs__id__question_sets__pack_id',
+  );
+
+  $$QuestionSetsTableProcessedTableManager get questionSetsRefs {
+    final manager = $$QuestionSetsTableTableManager(
+      $_db,
+      $_db.questionSets,
+    ).filter((f) => f.packId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_questionSetsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$PacksTableFilterComposer extends Composer<_$AppDatabase, $PacksTable> {
+  $$PacksTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceUrl => $composableBuilder(
+    column: $table.sourceUrl,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourcePackId => $composableBuilder(
+    column: $table.sourcePackId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get downloadedAt => $composableBuilder(
+    column: $table.downloadedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get collapsed => $composableBuilder(
+    column: $table.collapsed,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> questionSetsRefs(
+    Expression<bool> Function($$QuestionSetsTableFilterComposer f) f,
+  ) {
+    final $$QuestionSetsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.questionSets,
+      getReferencedColumn: (t) => t.packId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$QuestionSetsTableFilterComposer(
+            $db: $db,
+            $table: $db.questionSets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$PacksTableOrderingComposer
+    extends Composer<_$AppDatabase, $PacksTable> {
+  $$PacksTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceUrl => $composableBuilder(
+    column: $table.sourceUrl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourcePackId => $composableBuilder(
+    column: $table.sourcePackId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get downloadedAt => $composableBuilder(
+    column: $table.downloadedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get collapsed => $composableBuilder(
+    column: $table.collapsed,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$PacksTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PacksTable> {
+  $$PacksTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get sourceUrl =>
+      $composableBuilder(column: $table.sourceUrl, builder: (column) => column);
+
+  GeneratedColumn<String> get sourcePackId => $composableBuilder(
+    column: $table.sourcePackId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get downloadedAt => $composableBuilder(
+    column: $table.downloadedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get collapsed =>
+      $composableBuilder(column: $table.collapsed, builder: (column) => column);
+
+  Expression<T> questionSetsRefs<T extends Object>(
+    Expression<T> Function($$QuestionSetsTableAnnotationComposer a) f,
+  ) {
+    final $$QuestionSetsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.questionSets,
+      getReferencedColumn: (t) => t.packId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$QuestionSetsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.questionSets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$PacksTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PacksTable,
+          Pack,
+          $$PacksTableFilterComposer,
+          $$PacksTableOrderingComposer,
+          $$PacksTableAnnotationComposer,
+          $$PacksTableCreateCompanionBuilder,
+          $$PacksTableUpdateCompanionBuilder,
+          (Pack, $$PacksTableReferences),
+          Pack,
+          PrefetchHooks Function({bool questionSetsRefs})
+        > {
+  $$PacksTableTableManager(_$AppDatabase db, $PacksTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PacksTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PacksTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PacksTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String> description = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<String?> sourceUrl = const Value.absent(),
+                Value<String?> sourcePackId = const Value.absent(),
+                Value<int?> downloadedAt = const Value.absent(),
+                Value<bool> collapsed = const Value.absent(),
+              }) => PacksCompanion(
+                id: id,
+                title: title,
+                description: description,
+                createdAt: createdAt,
+                sourceUrl: sourceUrl,
+                sourcePackId: sourcePackId,
+                downloadedAt: downloadedAt,
+                collapsed: collapsed,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String title,
+                Value<String> description = const Value.absent(),
+                required int createdAt,
+                Value<String?> sourceUrl = const Value.absent(),
+                Value<String?> sourcePackId = const Value.absent(),
+                Value<int?> downloadedAt = const Value.absent(),
+                Value<bool> collapsed = const Value.absent(),
+              }) => PacksCompanion.insert(
+                id: id,
+                title: title,
+                description: description,
+                createdAt: createdAt,
+                sourceUrl: sourceUrl,
+                sourcePackId: sourcePackId,
+                downloadedAt: downloadedAt,
+                collapsed: collapsed,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$PacksTable, Pack>(table),
+                  $$PacksTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({questionSetsRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [if (questionSetsRefs) db.questionSets],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (questionSetsRefs)
+                    await $_getPrefetchedData<Pack, $PacksTable, QuestionSet>(
+                      currentTable: table,
+                      referencedTable: $$PacksTableReferences
+                          ._questionSetsRefsTable(db),
+                      managerFromTypedResult: (p0) => $$PacksTableReferences(
+                        db,
+                        table,
+                        p0,
+                      ).questionSetsRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where((e) => e.packId == item.id),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$PacksTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PacksTable,
+      Pack,
+      $$PacksTableFilterComposer,
+      $$PacksTableOrderingComposer,
+      $$PacksTableAnnotationComposer,
+      $$PacksTableCreateCompanionBuilder,
+      $$PacksTableUpdateCompanionBuilder,
+      (Pack, $$PacksTableReferences),
+      Pack,
+      PrefetchHooks Function({bool questionSetsRefs})
+    >;
 typedef $$QuestionSetsTableCreateCompanionBuilder =
     QuestionSetsCompanion Function({
       Value<int> id,
@@ -3896,6 +4824,7 @@ typedef $$QuestionSetsTableCreateCompanionBuilder =
       required int createdAt,
       required int updatedAt,
       Value<String?> category,
+      required int packId,
     });
 typedef $$QuestionSetsTableUpdateCompanionBuilder =
     QuestionSetsCompanion Function({
@@ -3906,11 +4835,29 @@ typedef $$QuestionSetsTableUpdateCompanionBuilder =
       Value<int> createdAt,
       Value<int> updatedAt,
       Value<String?> category,
+      Value<int> packId,
     });
 
 final class $$QuestionSetsTableReferences
     extends BaseReferences<_$AppDatabase, $QuestionSetsTable, QuestionSet> {
   $$QuestionSetsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $PacksTable _packIdTable(_$AppDatabase db) =>
+      db.packs.createAlias('question_sets__pack_id__packs__id');
+
+  $$PacksTableProcessedTableManager get packId {
+    final $_column = $_itemColumn<int>('pack_id')!;
+
+    final manager = $$PacksTableTableManager(
+      $_db,
+      $_db.packs,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_packIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
 
   static MultiTypedResultKey<$ItemsTable, List<Item>> _itemsRefsTable(
     _$AppDatabase db,
@@ -4000,6 +4947,29 @@ class $$QuestionSetsTableFilterComposer
     column: $table.category,
     builder: (column) => ColumnFilters(column),
   );
+
+  $$PacksTableFilterComposer get packId {
+    final $$PacksTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.packId,
+      referencedTable: $db.packs,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PacksTableFilterComposer(
+            $db: $db,
+            $table: $db.packs,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 
   Expression<bool> itemsRefs(
     Expression<bool> Function($$ItemsTableFilterComposer f) f,
@@ -4096,6 +5066,29 @@ class $$QuestionSetsTableOrderingComposer
     column: $table.category,
     builder: (column) => ColumnOrderings(column),
   );
+
+  $$PacksTableOrderingComposer get packId {
+    final $$PacksTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.packId,
+      referencedTable: $db.packs,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PacksTableOrderingComposer(
+            $db: $db,
+            $table: $db.packs,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$QuestionSetsTableAnnotationComposer
@@ -4129,6 +5122,29 @@ class $$QuestionSetsTableAnnotationComposer
 
   GeneratedColumn<String> get category =>
       $composableBuilder(column: $table.category, builder: (column) => column);
+
+  $$PacksTableAnnotationComposer get packId {
+    final $$PacksTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.packId,
+      referencedTable: $db.packs,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PacksTableAnnotationComposer(
+            $db: $db,
+            $table: $db.packs,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 
   Expression<T> itemsRefs<T extends Object>(
     Expression<T> Function($$ItemsTableAnnotationComposer a) f,
@@ -4197,6 +5213,7 @@ class $$QuestionSetsTableTableManager
           (QuestionSet, $$QuestionSetsTableReferences),
           QuestionSet,
           PrefetchHooks Function({
+            bool packId,
             bool itemsRefs,
             bool importedMarketplaceSetsRefs,
           })
@@ -4221,6 +5238,7 @@ class $$QuestionSetsTableTableManager
                 Value<int> createdAt = const Value.absent(),
                 Value<int> updatedAt = const Value.absent(),
                 Value<String?> category = const Value.absent(),
+                Value<int> packId = const Value.absent(),
               }) => QuestionSetsCompanion(
                 id: id,
                 title: title,
@@ -4229,6 +5247,7 @@ class $$QuestionSetsTableTableManager
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 category: category,
+                packId: packId,
               ),
           createCompanionCallback:
               ({
@@ -4239,6 +5258,7 @@ class $$QuestionSetsTableTableManager
                 required int createdAt,
                 required int updatedAt,
                 Value<String?> category = const Value.absent(),
+                required int packId,
               }) => QuestionSetsCompanion.insert(
                 id: id,
                 title: title,
@@ -4247,6 +5267,7 @@ class $$QuestionSetsTableTableManager
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 category: category,
+                packId: packId,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -4257,14 +5278,47 @@ class $$QuestionSetsTableTableManager
               )
               .toList(),
           prefetchHooksCallback:
-              ({itemsRefs = false, importedMarketplaceSetsRefs = false}) {
+              ({
+                packId = false,
+                itemsRefs = false,
+                importedMarketplaceSetsRefs = false,
+              }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
                     if (itemsRefs) db.items,
                     if (importedMarketplaceSetsRefs) db.importedMarketplaceSets,
                   ],
-                  addJoins: null,
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (packId) {
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.packId,
+                            referencedTable: $$QuestionSetsTableReferences
+                                ._packIdTable(db),
+                            referencedColumn: $$QuestionSetsTableReferences
+                                ._packIdTable(db)
+                                .id,
+                          ) as T;
+                        }
+
+                        return state;
+                      },
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (itemsRefs)
@@ -4329,7 +5383,11 @@ typedef $$QuestionSetsTableProcessedTableManager =
       $$QuestionSetsTableUpdateCompanionBuilder,
       (QuestionSet, $$QuestionSetsTableReferences),
       QuestionSet,
-      PrefetchHooks Function({bool itemsRefs, bool importedMarketplaceSetsRefs})
+      PrefetchHooks Function({
+        bool packId,
+        bool itemsRefs,
+        bool importedMarketplaceSetsRefs,
+      })
     >;
 typedef $$ItemsTableCreateCompanionBuilder = ItemsCompanion Function({
   Value<int> id,
@@ -6605,6 +7663,8 @@ typedef $$ImportedMarketplaceSetsTableProcessedTableManager =
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
+  $$PacksTableTableManager get packs =>
+      $$PacksTableTableManager(_db, _db.packs);
   $$QuestionSetsTableTableManager get questionSets =>
       $$QuestionSetsTableTableManager(_db, _db.questionSets);
   $$ItemsTableTableManager get items =>

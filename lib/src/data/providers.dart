@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'clock.dart';
 import 'database.dart';
 import 'marketplace_repository.dart';
+import 'packs_repository.dart';
 import 'seed_loader.dart';
 import 'settings_repository.dart';
 import 'sets_repository.dart';
@@ -24,6 +25,13 @@ final systemClockProvider = Provider<Clock>((ref) => SystemClock());
 
 final setsRepositoryProvider = Provider<SetsRepository>((ref) {
   return SetsRepository(
+    ref.watch(appDatabaseProvider),
+    ref.watch(systemClockProvider),
+  );
+});
+
+final packsRepositoryProvider = Provider<PacksRepository>((ref) {
+  return PacksRepository(
     ref.watch(appDatabaseProvider),
     ref.watch(systemClockProvider),
   );

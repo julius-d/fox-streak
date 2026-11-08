@@ -27,6 +27,7 @@ Future<List<Item>> _persistItems(AppDatabase db) async {
       .into(db.questionSets)
       .insert(
         QuestionSetsCompanion.insert(
+          packId: 1,
           id: const Value(1),
           title: 'Set',
           createdBy: 'test',

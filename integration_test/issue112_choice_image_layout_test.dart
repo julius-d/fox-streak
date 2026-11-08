@@ -44,6 +44,7 @@ void main() {
         .into(db.questionSets)
         .insert(
           QuestionSetsCompanion.insert(
+            packId: 1,
             title: 'Flags',
             createdBy: 'test',
             createdAt: 0,

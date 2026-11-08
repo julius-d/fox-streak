@@ -53,12 +53,18 @@ Future<String?> shareSet(WidgetRef ref, int setId, String title) async {
   return file.path;
 }
 
-/// Picks a `.foxstreak.json` file and imports it as a new set.
+/// Picks a `.foxstreak.json` file and imports it as a new set into the pack
+/// chosen by [choosePack] (issue #121; null = cancelled, nothing imported).
+/// Without [choosePack] the default own pack is used.
 ///
-/// Returns the new set id, or null when the picker was cancelled (no-op).
+/// Returns the new set id, or null when the picker or the pack choice was
+/// cancelled (no-op).
 /// Throws [SetImportException] on bad content so callers can show a snackbar
 /// (copy owned by #008).
-Future<int?> importSetFromPicker(WidgetRef ref) async {
+Future<int?> importSetFromPicker(
+  WidgetRef ref, {
+  Future<int?> Function()? choosePack,
+}) async {
   final picked = await FilePicker.pickFiles(
     type: FileType.custom,
     allowedExtensions: ['json'],
@@ -70,7 +76,13 @@ Future<int?> importSetFromPicker(WidgetRef ref) async {
   if (decoded is! Map) {
     throw const SetImportException('picked file is not a set object');
   }
+  final json = Map<dynamic, dynamic>.from(decoded);
+  int? packId;
+  if (choosePack != null) {
+    packId = await choosePack();
+    if (packId == null) return null; // cancel = no-op
+  }
   return ref
       .read(setsRepositoryProvider)
-      .importSetFromJson(Map<dynamic, dynamic>.from(decoded));
+      .importSetFromJson(json, packId: packId);
 }

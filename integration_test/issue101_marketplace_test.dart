@@ -1,9 +1,9 @@
-// Marketplace browse/import/update flow (issue #101).
+// Marketplace browse/download/update flow (issue #101, packs since #121).
 //
-// Drives the real app through Library's `newSetFab` speed-dial's new
-// "Marketplace" mini-FAB: add a source, browse Source -> Packs -> Sets ->
-// Set preview, "Add to Library", then simulate the publisher changing the
-// set and exercise "Update". `httpClientProvider` is overridden with a
+// Drives the real app through Library's `newSetFab` speed-dial's
+// "Marketplace" mini-FAB: add a source, browse Source -> Pack (read-only set
+// preview), "Download pack", then simulate the publisher changing the set
+// and exercise "Update pack". `httpClientProvider` is overridden with a
 // `MockClient` serving a tiny fake marketplace — no real network access.
 
 import 'package:flutter/material.dart';
@@ -142,142 +142,143 @@ void main() {
 
   final l10n = AppLocalizationsEn();
 
-  testWidgets(
-    'add a marketplace source, browse to a Set, add it to the Library, '
-    'then update it once the publisher changes it',
-    (tester) async {
-      var publisherUpdated = false;
-      final client = MockClient((request) async {
-        final path = request.url.path;
-        if (path.endsWith('marketplace.json')) {
-          return http.Response(_manifestJson, 200);
-        }
-        if (path.endsWith('packs/english.json')) {
-          return http.Response(
-            _packJson(
-              setUpdatedAt: publisherUpdated ? '2026-11-01' : '2026-10-01',
-            ),
-            200,
-          );
-        }
-        if (path.endsWith('sets/animals.foxstreak.json')) {
-          return http.Response(publisherUpdated ? _setJsonV2 : _setJsonV1, 200);
-        }
-        return http.Response('not found', 404);
-      });
+  testWidgets('add a marketplace source, download its pack, '
+      'then update it once the publisher changes it', (tester) async {
+    var publisherUpdated = false;
+    final client = MockClient((request) async {
+      final path = request.url.path;
+      if (path.endsWith('marketplace.json')) {
+        return http.Response(_manifestJson, 200);
+      }
+      if (path.endsWith('packs/english.json')) {
+        return http.Response(
+          _packJson(
+            setUpdatedAt: publisherUpdated ? '2026-11-01' : '2026-10-01',
+          ),
+          200,
+        );
+      }
+      if (path.endsWith('sets/animals.foxstreak.json')) {
+        return http.Response(publisherUpdated ? _setJsonV2 : _setJsonV1, 200);
+      }
+      return http.Response('not found', 404);
+    });
 
-      final db = makeIntegrationTestDb();
-      addTearDown(db.close);
-      final clock = FakeClock(DateTime(2026, 10, 14, 9));
+    final db = makeIntegrationTestDb();
+    addTearDown(db.close);
+    final clock = FakeClock(DateTime(2026, 10, 14, 9));
 
-      await _pumpAppWithMarketplace(
-        tester,
-        db: db,
-        clock: clock,
-        httpClient: client,
-      );
-      await skipOnboardingAndOpenLibrary(tester);
+    await _pumpAppWithMarketplace(
+      tester,
+      db: db,
+      clock: clock,
+      httpClient: client,
+    );
+    await skipOnboardingAndOpenLibrary(tester);
 
-      // Open the Marketplace via the newSetFab speed-dial's third mini-FAB.
-      await tester.tap(find.byKey(const Key('newSetFab')));
-      await settle(tester);
-      await tester.tap(find.byKey(const Key('marketplaceFab')));
-      await settle(tester);
-      expect(find.byKey(const Key('marketplaceSourcesScreen')), findsOneWidget);
+    // Open the Marketplace via the newSetFab speed-dial's third mini-FAB.
+    await tester.tap(find.byKey(const Key('newSetFab')));
+    await settle(tester);
+    await tester.tap(find.byKey(const Key('marketplaceFab')));
+    await settle(tester);
+    expect(find.byKey(const Key('marketplaceSourcesScreen')), findsOneWidget);
 
-      // Add a source, typing the bare base URL (shorthand).
-      await tester.tap(find.byKey(const Key('addMarketplaceSourceFab')));
-      await settle(tester);
-      await tester.enterText(
-        find.byKey(const Key('marketplaceSourceUrlField')),
-        'https://marketplace.example',
-      );
-      await tester.pump();
-      await tester.tap(
-        find.byKey(const Key('confirmAddMarketplaceSourceButton')),
-      );
-      await settle(tester);
-      expect(find.text("Jane's Packs"), findsOneWidget);
+    // Add a source, typing the bare base URL (shorthand).
+    await tester.tap(find.byKey(const Key('addMarketplaceSourceFab')));
+    await settle(tester);
+    await tester.enterText(
+      find.byKey(const Key('marketplaceSourceUrlField')),
+      'https://marketplace.example',
+    );
+    await tester.pump();
+    await tester.tap(
+      find.byKey(const Key('confirmAddMarketplaceSourceButton')),
+    );
+    await settle(tester);
+    expect(find.text("Jane's Packs"), findsOneWidget);
 
-      // Source -> Packs -> Sets -> Set preview.
-      await tester.tap(find.text("Jane's Packs"));
-      await settle(tester);
-      expect(find.text('English for Germans'), findsOneWidget);
-      await tester.tap(find.text('English for Germans'));
-      await settle(tester);
-      expect(find.text('Animals'), findsOneWidget);
-      await tester.tap(find.text('Animals'));
-      await settle(tester);
+    // Source -> Packs -> Pack with its read-only set preview.
+    await tester.tap(find.text("Jane's Packs"));
+    await settle(tester);
+    expect(find.text('English for Germans'), findsOneWidget);
+    await tester.tap(find.text('English for Germans'));
+    await settle(tester);
+    expect(find.text('Animals'), findsOneWidget);
+    expect(find.text('Download pack'), findsOneWidget);
 
-      expect(
-        find.byKey(const Key('marketplaceSetPreviewScreen')),
-        findsOneWidget,
-      );
-      expect(
-        find.byKey(const Key('marketplacePreviewDescription')),
-        findsOneWidget,
-      );
-      expect(find.text('Created by Jane'), findsOneWidget);
-      expect(find.text(l10n.setItemCount(2)), findsOneWidget);
-      expect(find.text('Add to Library'), findsOneWidget);
+    // The set preview is read-only: details, but no import action.
+    await tester.tap(find.text('Animals'));
+    await settle(tester);
+    expect(
+      find.byKey(const Key('marketplaceSetPreviewScreen')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('marketplacePreviewDescription')),
+      findsOneWidget,
+    );
+    expect(find.text('Created by Jane'), findsOneWidget);
+    expect(find.text(l10n.setItemCount(2)), findsOneWidget);
+    expect(
+      find.byKey(const Key('marketplacePrimaryActionButton')),
+      findsNothing,
+    );
+    await tester.pageBack();
+    await settle(tester);
 
-      // Add to Library.
-      await tester.tap(find.byKey(const Key('marketplacePrimaryActionButton')));
-      await settle(tester);
-      expect(find.text('Added to your Library.'), findsOneWidget);
-      // The button's status refreshes without leaving the screen.
-      await pumpUntilFound(tester, find.text('Already up to date'));
+    // Download the whole pack.
+    await tester.tap(find.byKey(const Key('marketplacePrimaryActionButton')));
+    await settle(tester);
+    expect(find.text('Pack added to your Library.'), findsOneWidget);
+    // The status refreshes without leaving the screen.
+    await pumpUntilFound(tester, find.text('Pack is up to date'));
 
-      // Back out to the Library: the imported set is there with its items.
-      await tester.pageBack();
-      await settle(tester);
-      await tester.pageBack();
-      await settle(tester);
-      await tester.pageBack();
-      await settle(tester);
-      await tester.pageBack();
-      await settle(tester);
-      expect(listTileWithText('Animals'), findsOneWidget);
-      await openSetDetail(tester, 'Animals');
-      expect(listTileWithText('Mama'), findsOneWidget);
-      expect(listTileWithText('Papa'), findsOneWidget);
-      await tester.pageBack();
-      await settle(tester);
+    // Back out to the Library: the downloaded pack is its own section
+    // next to the (now empty) "My sets", holding the set with its items.
+    await tester.pageBack();
+    await settle(tester);
+    await tester.pageBack();
+    await settle(tester);
+    await tester.pageBack();
+    await settle(tester);
+    expect(find.text('My sets'), findsOneWidget);
+    expect(find.byKey(const Key('packEmptyHint')), findsOneWidget);
+    expect(find.text('English for Germans'), findsOneWidget);
+    expect(listTileWithText('Animals'), findsOneWidget);
+    await openSetDetail(tester, 'Animals');
+    expect(listTileWithText('Mama'), findsOneWidget);
+    expect(listTileWithText('Papa'), findsOneWidget);
+    await tester.pageBack();
+    await settle(tester);
 
-      // The publisher changes the set; browse back to it via the
-      // Marketplace and update.
-      publisherUpdated = true;
-      await tester.tap(find.byKey(const Key('newSetFab')));
-      await settle(tester);
-      await tester.tap(find.byKey(const Key('marketplaceFab')));
-      await settle(tester);
-      await tester.tap(find.text("Jane's Packs"));
-      await settle(tester);
-      await tester.tap(find.text('English for Germans'));
-      await settle(tester);
-      await tester.tap(find.text('Animals'));
-      await settle(tester);
+    // The publisher changes the set; browse back to the pack and update.
+    publisherUpdated = true;
+    await tester.tap(find.byKey(const Key('newSetFab')));
+    await settle(tester);
+    await tester.tap(find.byKey(const Key('marketplaceFab')));
+    await settle(tester);
+    await tester.tap(find.text("Jane's Packs"));
+    await settle(tester);
+    await tester.tap(find.text('English for Germans'));
+    await settle(tester);
 
-      expect(find.text('Update'), findsOneWidget);
-      await tester.tap(find.byKey(const Key('marketplacePrimaryActionButton')));
-      await settle(tester);
-      expect(find.text('Set updated.'), findsOneWidget);
+    expect(find.text('Update pack'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('marketplacePrimaryActionButton')));
+    await settle(tester);
+    expect(find.text('Pack updated.'), findsOneWidget);
 
-      // Back out to the Library: the set's content reflects the update —
-      // new title, and items matched/updated or replaced per their id.
-      await tester.pageBack();
-      await settle(tester);
-      await tester.pageBack();
-      await settle(tester);
-      await tester.pageBack();
-      await settle(tester);
-      await tester.pageBack();
-      await settle(tester);
-      expect(listTileWithText('Animals (updated)'), findsOneWidget);
-      await openSetDetail(tester, 'Animals (updated)');
-      expect(listTileWithText('Mama'), findsOneWidget);
-      expect(listTileWithText('Oma'), findsOneWidget);
-      expect(listTileWithText('Papa'), findsNothing);
-    },
-  );
+    // Back out to the Library: the set's content reflects the update —
+    // new title, and items matched/updated or replaced per their id.
+    await tester.pageBack();
+    await settle(tester);
+    await tester.pageBack();
+    await settle(tester);
+    await tester.pageBack();
+    await settle(tester);
+    expect(listTileWithText('Animals (updated)'), findsOneWidget);
+    await openSetDetail(tester, 'Animals (updated)');
+    expect(listTileWithText('Mama'), findsOneWidget);
+    expect(listTileWithText('Oma'), findsOneWidget);
+    expect(listTileWithText('Papa'), findsNothing);
+  });
 }

@@ -35,6 +35,7 @@ Future<int> _insertImageItemSet(AppDatabase db) async {
       .into(db.questionSets)
       .insert(
         QuestionSetsCompanion.insert(
+          packId: 1,
           title: 'Issue 103',
           description: const Value(''),
           createdBy: 'test',

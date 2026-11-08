@@ -6,6 +6,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fox_streak_app/src/data/database.dart';
 import 'package:fox_streak_app/src/data/marketplace_repository.dart';
+import 'package:fox_streak_app/src/data/packs_repository.dart';
+import 'package:fox_streak_app/src/data/set_json_codec.dart';
 import 'package:fox_streak_app/src/data/sets_repository.dart';
 
 import 'test_helpers.dart';
@@ -107,6 +109,7 @@ void main() {
     test('upToDate right after import; updateAvailable once the listing '
         'updatedAt changes', () async {
       final localSetId = await marketplaceRepo.importSet(
+        localPackId: 1,
         sourceUrl: 'https://a.example/marketplace.json',
         packId: 'pack-1',
         setId: 'set-1',
@@ -138,6 +141,7 @@ void main() {
     test('creates a new local set via SetsRepository and records the '
         'mapping', () async {
       final localSetId = await marketplaceRepo.importSet(
+        localPackId: 1,
         sourceUrl: 'https://a.example/marketplace.json',
         packId: 'pack-1',
         setId: 'set-1',
@@ -158,6 +162,7 @@ void main() {
   group('isLocallyEdited', () {
     test('becomes true once the local set is edited after import', () async {
       final localSetId = await marketplaceRepo.importSet(
+        localPackId: 1,
         sourceUrl: 'https://a.example/marketplace.json',
         packId: 'pack-1',
         setId: 'set-1',
@@ -177,6 +182,7 @@ void main() {
         'their attempt history; unmatched new items start fresh; dropped '
         'items are removed', () async {
       final localSetId = await marketplaceRepo.importSet(
+        localPackId: 1,
         sourceUrl: 'https://a.example/marketplace.json',
         packId: 'pack-1',
         setId: 'set-1',
@@ -274,6 +280,7 @@ void main() {
 
     test('preserves item order from the new Set JSON', () async {
       final localSetId = await marketplaceRepo.importSet(
+        localPackId: 1,
         sourceUrl: 'https://a.example/marketplace.json',
         packId: 'pack-1',
         setId: 'set-1',
@@ -321,6 +328,249 @@ void main() {
 
       final items = await setsRepo.getItemsForSet(localSetId);
       expect(items.map((i) => i.prompt), ['B', 'A']);
+    });
+  });
+
+  group('packs (#121)', () {
+    const source = 'https://a.example/marketplace.json';
+
+    FetchedMarketplaceSet fetched(
+      String setId,
+      String title, {
+      String updatedAt = '2026-10-01',
+      List<Map<String, dynamic>> items = const [],
+    }) => FetchedMarketplaceSet(
+      setId: setId,
+      listingUpdatedAt: updatedAt,
+      json: _setJson(title: title, items: items),
+    );
+
+    Future<int> download({
+      List<FetchedMarketplaceSet>? sets,
+      String packId = 'pack-1',
+    }) => marketplaceRepo.downloadPack(
+      sourceUrl: source,
+      packId: packId,
+      title: 'Animals pack',
+      description: 'All the animals',
+      sets: sets ?? [fetched('s1', 'Dogs'), fetched('s2', 'Cats')],
+    );
+
+    Future<MarketplacePackState> stateFor(Map<String, String> listed) =>
+        marketplaceRepo.packStateFor(
+          sourceUrl: source,
+          packId: 'pack-1',
+          listedSets: listed,
+        );
+
+    test('downloadPack creates a downloaded pack with all its sets', () async {
+      final packId = await download();
+
+      final pack = (await db.select(db.packs).get()).singleWhere(
+        (p) => p.id == packId,
+      );
+      expect(pack.title, 'Animals pack');
+      expect(pack.description, 'All the animals');
+      expect(pack.sourceUrl, source);
+      expect(pack.sourcePackId, 'pack-1');
+      final sets = (await setsRepo.getAllSets()).where(
+        (s) => s.packId == packId,
+      );
+      expect(sets.map((s) => s.title), ['Dogs', 'Cats']);
+      expect(
+        (await stateFor({'s1': '2026-10-01', 's2': '2026-10-01'})).status,
+        MarketplacePackStatus.upToDate,
+      );
+    });
+
+    test('is never downloaded twice into two local packs', () async {
+      await download();
+      await expectLater(download(), throwsStateError);
+      final downloaded = (await db.select(db.packs).get()).where(
+        (p) => p.sourceUrl != null,
+      );
+      expect(downloaded, hasLength(1));
+    });
+
+    test('a failing set rolls the whole download back', () async {
+      final packsBefore = await db.select(db.packs).get();
+      final setsBefore = await setsRepo.getAllSets();
+
+      await expectLater(
+        download(
+          sets: [
+            fetched('s1', 'Dogs'),
+            const FetchedMarketplaceSet(
+              setId: 's2',
+              listingUpdatedAt: '2026-10-01',
+              json: {'format': 'nonsense'},
+            ),
+          ],
+        ),
+        throwsA(isA<SetImportException>()),
+      );
+
+      expect(await db.select(db.packs).get(), hasLength(packsBefore.length));
+      expect(await setsRepo.getAllSets(), hasLength(setsBefore.length));
+      expect(await db.select(db.importedMarketplaceSets).get(), isEmpty);
+      expect(
+        (await stateFor({'s1': 'x'})).status,
+        MarketplacePackStatus.notDownloaded,
+      );
+      // Retry succeeds.
+      await download();
+    });
+
+    group('packStateFor', () {
+      test('notDownloaded before any download', () async {
+        final state = await stateFor({'s1': '2026-10-01'});
+        expect(state.status, MarketplacePackStatus.notDownloaded);
+        expect(state.localPackId, isNull);
+      });
+
+      test('updateAvailable when a set changed or a new set appeared; '
+          'sets removed upstream are ignored', () async {
+        final packId = await download();
+        final listed = {'s1': '2026-10-01', 's2': '2026-10-01'};
+
+        expect(
+          (await stateFor({...listed, 's2': '2026-11-01'})).status,
+          MarketplacePackStatus.updateAvailable,
+        );
+        final withNew = await stateFor({...listed, 's3': '2026-10-01'});
+        expect(withNew.status, MarketplacePackStatus.updateAvailable);
+        expect(withNew.localPackId, packId);
+        expect(
+          (await stateFor({'s1': '2026-10-01'})).status,
+          MarketplacePackStatus.upToDate,
+        );
+      });
+
+      test('deleting the downloaded pack makes it new again', () async {
+        final packId = await download();
+        await PacksRepository(db, clock).deletePack(packId);
+        expect(
+          (await stateFor({'s1': '2026-10-01'})).status,
+          MarketplacePackStatus.notDownloaded,
+        );
+        await download(); // allowed again
+      });
+    });
+
+    test('syncPackMeta refreshes title and description', () async {
+      final packId = await download();
+      await marketplaceRepo.syncPackMeta(
+        sourceUrl: source,
+        packId: 'pack-1',
+        title: 'Renamed upstream',
+        description: 'New text',
+      );
+      final pack = (await db.select(db.packs).get()).singleWhere(
+        (p) => p.id == packId,
+      );
+      expect(pack.title, 'Renamed upstream');
+      expect(pack.description, 'New text');
+    });
+
+    group('updatePack', () {
+      test('updates changed sets, adds new ones, keeps sets removed '
+          'upstream and follows the pack title', () async {
+        final packId = await download();
+
+        await marketplaceRepo.updatePack(
+          sourceUrl: source,
+          packId: 'pack-1',
+          title: 'Animals v2',
+          description: 'More',
+          sets: [
+            fetched('s1', 'Dogs v2', updatedAt: '2026-11-01'),
+            fetched('s3', 'Birds', updatedAt: '2026-11-01'),
+          ],
+        );
+
+        final inPack = (await setsRepo.getAllSets()).where(
+          (s) => s.packId == packId,
+        );
+        expect(inPack.map((s) => s.title), ['Dogs v2', 'Cats', 'Birds']);
+        final pack = (await db.select(db.packs).get()).singleWhere(
+          (p) => p.id == packId,
+        );
+        expect(pack.title, 'Animals v2');
+        expect(pack.description, 'More');
+        expect(
+          (await stateFor({'s1': '2026-11-01', 's3': '2026-11-01'})).status,
+          MarketplacePackStatus.upToDate,
+        );
+      });
+
+      test('skipped (locally edited) sets stay untouched', () async {
+        final packId = await download();
+        final dogs = (await setsRepo.getAllSets()).firstWhere(
+          (s) => s.title == 'Dogs',
+        );
+        clock.setNow(kTestToday.add(const Duration(hours: 1)));
+        await setsRepo.updateSet(id: dogs.id, title: 'My dogs');
+
+        final edited = await marketplaceRepo.locallyEditedSets(
+          sourceUrl: source,
+          packId: 'pack-1',
+          setIds: ['s1', 's2'],
+        );
+        expect(edited.map((e) => e.setId), ['s1']);
+        expect(edited.single.set.title, 'My dogs');
+
+        await marketplaceRepo.updatePack(
+          sourceUrl: source,
+          packId: 'pack-1',
+          title: 'Animals pack',
+          description: '',
+          skipSetIds: {'s1'},
+          sets: [
+            fetched('s1', 'Dogs v2', updatedAt: '2026-11-01'),
+            fetched('s2', 'Cats v2', updatedAt: '2026-11-01'),
+          ],
+        );
+
+        final titles = (await setsRepo.getAllSets())
+            .where((s) => s.packId == packId)
+            .map((s) => s.title);
+        expect(titles, ['My dogs', 'Cats v2']);
+        // The skipped set is still outdated, so the pack still offers it.
+        expect(
+          (await stateFor({'s1': '2026-11-01', 's2': '2026-11-01'})).status,
+          MarketplacePackStatus.updateAvailable,
+        );
+      });
+
+      test('a failing set leaves already-downloaded sets intact', () async {
+        final packId = await download();
+        await expectLater(
+          marketplaceRepo.updatePack(
+            sourceUrl: source,
+            packId: 'pack-1',
+            title: 'Changed title',
+            description: '',
+            sets: [
+              fetched('s1', 'Dogs v2', updatedAt: '2026-11-01'),
+              const FetchedMarketplaceSet(
+                setId: 's2',
+                listingUpdatedAt: '2026-11-01',
+                json: {'format': 'nonsense'},
+              ),
+            ],
+          ),
+          throwsA(isA<SetImportException>()),
+        );
+
+        final titles = (await setsRepo.getAllSets())
+            .where((s) => s.packId == packId)
+            .map((s) => s.title);
+        expect(titles, ['Dogs', 'Cats']);
+        final pack = (await db.select(db.packs).get()).singleWhere(
+          (p) => p.id == packId,
+        );
+        expect(pack.title, 'Animals pack');
+      });
     });
   });
 }

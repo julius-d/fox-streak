@@ -15,12 +15,17 @@ import '../data/validation.dart';
 import '../theme/fox_streak_theme.dart';
 import '../widgets/widgets.dart';
 import 'item_type_icons.dart';
+import 'pack_picker.dart';
 
 /// Form for creating a set (when [existing] is null) or renaming/editing it.
 class SetEditorScreen extends ConsumerStatefulWidget {
   final QuestionSet? existing;
 
-  const SetEditorScreen({super.key, this.existing});
+  /// New sets only (#121): preselects this own pack instead of the last-used
+  /// one, e.g. from an empty pack's "Add set" action.
+  final int? initialPackId;
+
+  const SetEditorScreen({super.key, this.existing, this.initialPackId});
 
   @override
   ConsumerState<SetEditorScreen> createState() => _SetEditorScreenState();
@@ -32,6 +37,7 @@ class _SetEditorScreenState extends ConsumerState<SetEditorScreen> {
   late final TextEditingController _creator;
   late final TextEditingController _description;
   late String _category;
+  int? _packId;
   bool _saving = false;
   String? _saveError;
 
@@ -68,6 +74,7 @@ class _SetEditorScreenState extends ConsumerState<SetEditorScreen> {
           description: _description.text,
           createdBy: _creator.text,
           category: _category,
+          packId: _packId,
         );
         if (!mounted) return;
         Navigator.of(context).pop(id);
@@ -132,6 +139,13 @@ class _SetEditorScreenState extends ConsumerState<SetEditorScreen> {
               decoration: InputDecoration(labelText: l10n.setDescriptionLabel),
               maxLines: 3,
             ),
+            if (!isEdit) ...[
+              const SizedBox(height: 12),
+              PackPicker(
+                initialPackId: widget.initialPackId,
+                onChanged: (id) => setState(() => _packId = id),
+              ),
+            ],
             const SizedBox(height: 16),
             Align(
               alignment: Alignment.centerLeft,
@@ -191,7 +205,7 @@ class _SetEditorScreenState extends ConsumerState<SetEditorScreen> {
               label: isEdit ? l10n.save : l10n.create,
               expanded: true,
               isLoading: _saving,
-              onPressed: _saving ? null : _save,
+              onPressed: _saving || (!isEdit && _packId == null) ? null : _save,
             ),
           ],
         ),

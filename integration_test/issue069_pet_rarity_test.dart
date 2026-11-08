@@ -55,6 +55,7 @@ Future<({int setId, int itemId})> _insertSingleItemSet(AppDatabase db) async {
       .into(db.questionSets)
       .insert(
         QuestionSetsCompanion.insert(
+          packId: 1,
           title: 'Animals',
           description: const Value(''),
           createdBy: 'test',

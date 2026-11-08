@@ -969,39 +969,35 @@
     }
   },
   "marketplacePreviewCreatedBy": "Erstellt von {creator}",
-  "@marketplaceAddToLibrary": {
-    "description": "Set preview primary button label when the set was never imported before (issue #101)",
-    "placeholders": {}
-  },
-  "marketplaceAddToLibrary": "Zur Bibliothek hinzufügen",
-  "@marketplaceUpdateAction": {
-    "description": "Set preview primary button label when the set was imported before and the marketplace copy changed (issue #101)",
-    "placeholders": {}
-  },
-  "marketplaceUpdateAction": "Aktualisieren",
-  "@marketplaceAlreadyUpToDate": {
-    "description": "Set preview primary button's disabled label when the set was imported before and is unchanged (issue #101)",
-    "placeholders": {}
-  },
-  "marketplaceAlreadyUpToDate": "Bereits aktuell",
-  "@marketplaceUpdateConfirmTitle": {
-    "description": "Confirm-dialog title shown before Update overwrites a locally-edited imported set (issue #101)",
-    "placeholders": {}
-  },
-  "marketplaceUpdateConfirmTitle": "Lokale Änderungen überschreiben?",
-  "@marketplaceUpdateConfirmMessage": {
-    "description": "Confirm-dialog body shown before Update overwrites a locally-edited imported set, explaining which items keep progress (issue #101)",
-    "placeholders": {}
-  },
-  "marketplaceUpdateConfirmMessage": "Du hast dieses Set seit dem Import bearbeitet. Eine Aktualisierung ersetzt es durch die aktuelle Version des Marktplatzes – übereinstimmende Fragen behalten ihren Fortschritt, andere starten neu.",
-  "@marketplaceImportSuccessMessage": {
-    "description": "Snackbar shown after successfully adding a marketplace set to the Library (issue #101)",
-    "placeholders": {}
-  },
-  "marketplaceImportSuccessMessage": "Zur Bibliothek hinzugefügt.",
-  "@marketplaceUpdateSuccessMessage": {
-    "description": "Snackbar shown after successfully updating a previously-imported marketplace set (issue #101)",
-    "placeholders": {}
-  },
-  "marketplaceUpdateSuccessMessage": "Set aktualisiert."
+  "packSetCount": "{count, plural, =0{Keine Sets} =1{1 Set} other{{count} Sets}}",
+  "packHeaderExpanded": "{title}, {count, plural, =1{1 Set} other{{count} Sets}}, aufgeklappt. Tippen zum Zuklappen.",
+  "packHeaderCollapsed": "{title}, {count, plural, =1{1 Set} other{{count} Sets}}, zugeklappt. Tippen zum Aufklappen.",
+  "packEmptyHint": "Dieses Pack hat noch keine Sets.",
+  "packAddSet": "Set hinzufügen",
+  "packPickerLabel": "Pack",
+  "packPickerNewPack": "Neues Pack…",
+  "packNewTitleLabel": "Titel des neuen Packs",
+  "packNewCreate": "Pack anlegen",
+  "packImportTitle": "In welches Pack importieren?",
+  "packManageTitle": "Packs",
+  "packDownloadedLabel": "Heruntergeladen",
+  "packRename": "Pack umbenennen",
+  "packDelete": "Pack löschen",
+  "packActions": "Pack-Aktionen",
+  "packDeleteTitle": "Dieses Pack löschen?",
+  "packDeleteMessage": "\"{title}\" zusammen mit {count, plural, =0{keinen Sets} =1{seinem 1 Set} other{seinen {count} Sets}} löschen? Das kann nicht rückgängig gemacht werden.",
+  "moveToPack": "In anderes Pack verschieben…",
+  "moveToPackTitle": "In welches Pack verschieben?",
+  "marketplaceDownloadPack": "Pack herunterladen",
+  "marketplaceUpdatePack": "Pack aktualisieren",
+  "marketplacePackUpToDate": "Pack ist aktuell",
+  "marketplaceDownloadProgress": "Lade Set {done} von {total} …",
+  "marketplaceDownloadFailed": "Download fehlgeschlagen – es wurde nichts gespeichert. Prüfe deine Verbindung und versuche es erneut.",
+  "marketplacePackDownloaded": "Pack zur Bibliothek hinzugefügt.",
+  "marketplacePackUpdated": "Pack aktualisiert.",
+  "marketplacePackOverwriteTitle": "Deine Änderungen überschreiben?",
+  "marketplacePackOverwriteMessage": "Du hast diese Sets seit dem Download geändert:\n{sets}\n\nÜberschreiben ersetzt sie durch die Marketplace-Version – passende Aufgaben behalten ihren Fortschritt, andere starten neu.",
+  "marketplacePackOverwriteConfirm": "Überschreiben",
+  "marketplacePackOverwriteSkip": "Diese Sets überspringen",
+  "marketplacePackSetsHeading": "Sets in diesem Pack"
 }

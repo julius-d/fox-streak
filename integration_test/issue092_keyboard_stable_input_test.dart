@@ -36,6 +36,7 @@ Future<int> _insertSingleItemSet(
       .into(db.questionSets)
       .insert(
         QuestionSetsCompanion.insert(
+          packId: 1,
           title: 'Issue 092',
           description: const Value(''),
           createdBy: 'test',

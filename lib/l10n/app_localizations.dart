@@ -1554,47 +1554,191 @@ abstract class AppLocalizations {
   /// **'Created by {creator}'**
   String marketplacePreviewCreatedBy(String creator);
 
-  /// Set preview primary button label when the set was never imported before (issue #101)
+  /// Number of sets in a pack, shown in the library section header (issue #121)
   ///
   /// In en, this message translates to:
-  /// **'Add to Library'**
-  String get marketplaceAddToLibrary;
+  /// **'{count, plural, =0{No sets} =1{1 set} other{{count} sets}}'**
+  String packSetCount(int count);
 
-  /// Set preview primary button label when the set was imported before and the marketplace copy changed (issue #101)
+  /// Screen-reader label of an expanded library pack header (issue #121)
   ///
   /// In en, this message translates to:
-  /// **'Update'**
-  String get marketplaceUpdateAction;
+  /// **'{title}, {count, plural, =1{1 set} other{{count} sets}}, expanded. Tap to collapse.'**
+  String packHeaderExpanded(String title, int count);
 
-  /// Set preview primary button's disabled label when the set was imported before and is unchanged (issue #101)
+  /// Screen-reader label of a collapsed library pack header (issue #121)
   ///
   /// In en, this message translates to:
-  /// **'Already up to date'**
-  String get marketplaceAlreadyUpToDate;
+  /// **'{title}, {count, plural, =1{1 set} other{{count} sets}}, collapsed. Tap to expand.'**
+  String packHeaderCollapsed(String title, int count);
 
-  /// Confirm-dialog title shown before Update overwrites a locally-edited imported set (issue #101)
+  /// Hint inside an empty own pack in the library (issue #121)
+  ///
+  /// In en, this message translates to:
+  /// **'This pack has no sets yet.'**
+  String get packEmptyHint;
+
+  /// Action in an empty own pack that creates a set in it (issue #121)
+  ///
+  /// In en, this message translates to:
+  /// **'Add set'**
+  String get packAddSet;
+
+  /// Label of the pack picker when creating/importing a set (issue #121)
+  ///
+  /// In en, this message translates to:
+  /// **'Pack'**
+  String get packPickerLabel;
+
+  /// Picker entry that reveals the inline new-pack field (issue #121)
+  ///
+  /// In en, this message translates to:
+  /// **'New pack…'**
+  String get packPickerNewPack;
+
+  /// Label of the inline new-pack title field (issue #121)
+  ///
+  /// In en, this message translates to:
+  /// **'New pack title'**
+  String get packNewTitleLabel;
+
+  /// Button creating the inline new pack (issue #121)
+  ///
+  /// In en, this message translates to:
+  /// **'Create pack'**
+  String get packNewCreate;
+
+  /// Title of the dialog asking for the target pack of a file import (issue #121)
+  ///
+  /// In en, this message translates to:
+  /// **'Import into which pack?'**
+  String get packImportTitle;
+
+  /// Title of the pack management screen and its app bar action tooltip (issue #121)
+  ///
+  /// In en, this message translates to:
+  /// **'Packs'**
+  String get packManageTitle;
+
+  /// Badge/subtitle marking a downloaded pack (issue #121)
+  ///
+  /// In en, this message translates to:
+  /// **'Downloaded'**
+  String get packDownloadedLabel;
+
+  /// Pack menu entry and rename dialog title (issue #121)
+  ///
+  /// In en, this message translates to:
+  /// **'Rename pack'**
+  String get packRename;
+
+  /// Pack menu entry (issue #121)
+  ///
+  /// In en, this message translates to:
+  /// **'Delete pack'**
+  String get packDelete;
+
+  /// Tooltip of a pack's three-dot menu (issue #121)
+  ///
+  /// In en, this message translates to:
+  /// **'Pack actions'**
+  String get packActions;
+
+  /// Confirm title for deleting a pack (issue #121)
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this pack?'**
+  String get packDeleteTitle;
+
+  /// Confirm body for deleting a pack, with the number of sets that go with it (issue #121)
+  ///
+  /// In en, this message translates to:
+  /// **'Delete \"{title}\" together with {count, plural, =0{no sets} =1{its 1 set} other{its {count} sets}}? This cannot be undone.'**
+  String packDeleteMessage(String title, int count);
+
+  /// Set menu entry moving an own set to another own pack (issue #121)
+  ///
+  /// In en, this message translates to:
+  /// **'Move to pack…'**
+  String get moveToPack;
+
+  /// Title of the move-set dialog (issue #121)
+  ///
+  /// In en, this message translates to:
+  /// **'Move to which pack?'**
+  String get moveToPackTitle;
+
+  /// Marketplace pack screen primary action when the pack is not downloaded yet (issue #121)
+  ///
+  /// In en, this message translates to:
+  /// **'Download pack'**
+  String get marketplaceDownloadPack;
+
+  /// Marketplace pack screen primary action when the pack has updates (issue #121)
+  ///
+  /// In en, this message translates to:
+  /// **'Update pack'**
+  String get marketplaceUpdatePack;
+
+  /// Disabled marketplace pack action when everything is current (issue #121)
+  ///
+  /// In en, this message translates to:
+  /// **'Pack is up to date'**
+  String get marketplacePackUpToDate;
+
+  /// Progress text during a pack download/update (issue #121)
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading set {done} of {total}…'**
+  String marketplaceDownloadProgress(int done, int total);
+
+  /// Error banner after a failed pack download/update (issue #121)
+  ///
+  /// In en, this message translates to:
+  /// **'Download failed — nothing was saved. Check your connection and try again.'**
+  String get marketplaceDownloadFailed;
+
+  /// Snackbar after a successful pack download (issue #121)
+  ///
+  /// In en, this message translates to:
+  /// **'Pack added to your Library.'**
+  String get marketplacePackDownloaded;
+
+  /// Snackbar after a successful pack update (issue #121)
+  ///
+  /// In en, this message translates to:
+  /// **'Pack updated.'**
+  String get marketplacePackUpdated;
+
+  /// Dialog title when a pack update would overwrite locally edited sets (issue #121)
   ///
   /// In en, this message translates to:
   /// **'Overwrite your local edits?'**
-  String get marketplaceUpdateConfirmTitle;
+  String get marketplacePackOverwriteTitle;
 
-  /// Confirm-dialog body shown before Update overwrites a locally-edited imported set, explaining which items keep progress (issue #101)
+  /// Dialog body listing locally edited sets (issue #121)
   ///
   /// In en, this message translates to:
-  /// **'You edited this set since importing it. Updating replaces it with the marketplace\'s current version — matching items keep their progress, others start fresh.'**
-  String get marketplaceUpdateConfirmMessage;
+  /// **'You edited these sets since downloading them:\n{sets}\n\nOverwriting replaces them with the marketplace version — matching items keep their progress, others start fresh.'**
+  String marketplacePackOverwriteMessage(String sets);
 
-  /// Snackbar shown after successfully adding a marketplace set to the Library (issue #101)
+  /// Overwrite button of the pack update dialog (issue #121)
   ///
   /// In en, this message translates to:
-  /// **'Added to your Library.'**
-  String get marketplaceImportSuccessMessage;
+  /// **'Overwrite'**
+  String get marketplacePackOverwriteConfirm;
 
-  /// Snackbar shown after successfully updating a previously-imported marketplace set (issue #101)
+  /// Skip button of the pack update dialog (issue #121)
   ///
   /// In en, this message translates to:
-  /// **'Set updated.'**
-  String get marketplaceUpdateSuccessMessage;
+  /// **'Skip these sets'**
+  String get marketplacePackOverwriteSkip;
+
+  /// Heading above the read-only set preview list (issue #121)
+  ///
+  /// In en, this message translates to:
+  /// **'Sets in this pack'**
+  String get marketplacePackSetsHeading;
 }
 
 class _AppLocalizationsDelegate

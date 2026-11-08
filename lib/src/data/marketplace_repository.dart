@@ -1,4 +1,5 @@
-// Marketplace sources + imported-set-tracking repository (issue #101).
+// Marketplace sources + imported-set-tracking repository (issue #101), and
+// whole-pack download/update (issue #121).
 //
 // Owns the `marketplace_sources`/`imported_marketplace_sets` tables and the
 // import/update orchestration on top of `SetsRepository`'s existing item
@@ -25,6 +26,31 @@ class MarketplaceImportState {
   final int? localSetId;
 
   const MarketplaceImportState(this.status, this.localSetId);
+}
+
+/// A Marketplace pack's local state: [notDownloaded] (no local pack yet),
+/// [updateAvailable] (some set is new upstream or changed) or [upToDate].
+enum MarketplacePackStatus { notDownloaded, updateAvailable, upToDate }
+
+class MarketplacePackState {
+  final MarketplacePackStatus status;
+  final int? localPackId;
+
+  const MarketplacePackState(this.status, this.localPackId);
+}
+
+/// One fetched Marketplace set ready to be written locally: its Marketplace
+/// [setId], the listing's [listingUpdatedAt] and the set's share JSON.
+class FetchedMarketplaceSet {
+  final String setId;
+  final String listingUpdatedAt;
+  final Map<String, dynamic> json;
+
+  const FetchedMarketplaceSet({
+    required this.setId,
+    required this.listingUpdatedAt,
+    required this.json,
+  });
 }
 
 /// Repository for `marketplace_sources` + `imported_marketplace_sets`, and
@@ -112,12 +138,203 @@ class MarketplaceRepository {
           ))
           .getSingleOrNull();
 
+  // -- Packs (#121) -------------------------------------------------------
+
+  Future<Pack?> findPack(String sourceUrl, String packId) =>
+      (_db.select(_db.packs)..where(
+            (t) =>
+                t.sourceUrl.equals(sourceUrl) & t.sourcePackId.equals(packId),
+          ))
+          .getSingleOrNull();
+
+  /// Keeps a downloaded pack's title/description in step with the
+  /// Marketplace (they cannot be renamed locally), e.g. replacing the
+  /// placeholder title a migrated pack got.
+  Future<void> syncPackMeta({
+    required String sourceUrl,
+    required String packId,
+    required String title,
+    required String description,
+  }) async {
+    final pack = await findPack(sourceUrl, packId);
+    if (pack == null ||
+        (pack.title == title && pack.description == description)) {
+      return;
+    }
+    await (_db.update(_db.packs)..where((t) => t.id.equals(pack.id))).write(
+      PacksCompanion(title: Value(title), description: Value(description)),
+    );
+  }
+
+  /// Local state of the Marketplace pack [packId] given the [listedSets]
+  /// (`setId` -> listing `updatedAt`) it currently offers. Sets removed
+  /// upstream are ignored (they stay local, never block "up to date").
+  Future<MarketplacePackState> packStateFor({
+    required String sourceUrl,
+    required String packId,
+    required Map<String, String> listedSets,
+  }) async {
+    final pack = await findPack(sourceUrl, packId);
+    if (pack == null) {
+      return const MarketplacePackState(
+        MarketplacePackStatus.notDownloaded,
+        null,
+      );
+    }
+    final outdated = await outdatedSetIds(
+      sourceUrl: sourceUrl,
+      packId: packId,
+      listedSets: listedSets,
+    );
+    if (outdated.isNotEmpty) {
+      return MarketplacePackState(
+        MarketplacePackStatus.updateAvailable,
+        pack.id,
+      );
+    }
+    return MarketplacePackState(MarketplacePackStatus.upToDate, pack.id);
+  }
+
+  /// Ids of [listedSets] (`setId` -> listing `updatedAt`) that are new
+  /// upstream or changed since the last sync, in listing order.
+  Future<List<String>> outdatedSetIds({
+    required String sourceUrl,
+    required String packId,
+    required Map<String, String> listedSets,
+  }) async {
+    final outdated = <String>[];
+    for (final entry in listedSets.entries) {
+      final state = await importStateFor(
+        sourceUrl: sourceUrl,
+        packId: packId,
+        setId: entry.key,
+        listingUpdatedAt: entry.value,
+      );
+      if (state.status != MarketplaceSetStatus.upToDate) {
+        outdated.add(entry.key);
+      }
+    }
+    return outdated;
+  }
+
+  /// Local sets that an update of [setIds] would overwrite although the
+  /// learner edited them since their last sync.
+  Future<List<({String setId, QuestionSet set})>> locallyEditedSets({
+    required String sourceUrl,
+    required String packId,
+    required Iterable<String> setIds,
+  }) async {
+    final edited = <({String setId, QuestionSet set})>[];
+    for (final setId in setIds) {
+      final mapping = await _findMapping(sourceUrl, packId, setId);
+      if (mapping == null || !await isLocallyEdited(mapping.localSetId)) {
+        continue;
+      }
+      final set = await _setsRepository.getSetById(mapping.localSetId);
+      if (set != null) edited.add((setId: setId, set: set));
+    }
+    return edited;
+  }
+
+  /// Creates the local downloaded pack with all [sets] in one transaction:
+  /// any failure (e.g. invalid set JSON) leaves nothing behind. Throws
+  /// [StateError] when the pack was already downloaded.
+  Future<int> downloadPack({
+    required String sourceUrl,
+    required String packId,
+    required String title,
+    required String description,
+    required List<FetchedMarketplaceSet> sets,
+    DateTime? today,
+  }) {
+    return _db.transaction(() async {
+      if (await findPack(sourceUrl, packId) != null) {
+        throw StateError(
+          'pack "$packId" of "$sourceUrl" is already downloaded',
+        );
+      }
+      final nowMs = DateTime.now().millisecondsSinceEpoch;
+      final localPackId = await _db
+          .into(_db.packs)
+          .insert(
+            PacksCompanion.insert(
+              title: title,
+              description: Value(description),
+              createdAt: nowMs,
+              sourceUrl: Value(sourceUrl),
+              sourcePackId: Value(packId),
+              downloadedAt: Value(nowMs),
+            ),
+          );
+      for (final set in sets) {
+        await importSet(
+          localPackId: localPackId,
+          sourceUrl: sourceUrl,
+          packId: packId,
+          setId: set.setId,
+          listingUpdatedAt: set.listingUpdatedAt,
+          setJson: set.json,
+          today: today,
+        );
+      }
+      return localPackId;
+    });
+  }
+
+  /// Applies [sets] to the already-downloaded pack in one transaction: known
+  /// sets are updated in place, new ones are added, sets in [skipSetIds]
+  /// (locally edited, overwrite declined) are left alone. The local pack's
+  /// title/description follow the Marketplace pack. All-or-nothing.
+  Future<void> updatePack({
+    required String sourceUrl,
+    required String packId,
+    required String title,
+    required String description,
+    required List<FetchedMarketplaceSet> sets,
+    Set<String> skipSetIds = const {},
+    DateTime? today,
+  }) {
+    return _db.transaction(() async {
+      final pack = await findPack(sourceUrl, packId);
+      if (pack == null) throw StateError('pack "$packId" is not downloaded');
+      for (final set in sets) {
+        if (skipSetIds.contains(set.setId)) continue;
+        final mapping = await _findMapping(sourceUrl, packId, set.setId);
+        if (mapping == null) {
+          await importSet(
+            localPackId: pack.id,
+            sourceUrl: sourceUrl,
+            packId: packId,
+            setId: set.setId,
+            listingUpdatedAt: set.listingUpdatedAt,
+            setJson: set.json,
+            today: today,
+          );
+        } else {
+          await updateSet(
+            localSetId: mapping.localSetId,
+            sourceUrl: sourceUrl,
+            packId: packId,
+            setId: set.setId,
+            listingUpdatedAt: set.listingUpdatedAt,
+            setJson: set.json,
+            today: today,
+          );
+        }
+      }
+      await (_db.update(_db.packs)..where((t) => t.id.equals(pack.id))).write(
+        PacksCompanion(title: Value(title), description: Value(description)),
+      );
+    });
+  }
+
   // -- Import / update ----------------------------------------------------
 
   /// Imports a never-before-imported marketplace Set as a new local set;
   /// returns the new local set id. Throws [SetImportException] on bad
   /// Set JSON (same validation as a plain file import, #008).
   Future<int> importSet({
+    required int localPackId,
     required String sourceUrl,
     required String packId,
     required String setId,
@@ -129,6 +346,7 @@ class MarketplaceRepository {
       final localSetId = await _setsRepository.importSetFromJson(
         setJson,
         today: today,
+        packId: localPackId,
       );
       final imported = await _setsRepository.getSetById(localSetId);
       await _db

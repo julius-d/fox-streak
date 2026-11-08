@@ -160,6 +160,23 @@ void main() {
       await tester.tap(find.byKey(const Key('importSetFab')));
       await settle(tester);
 
+      // #121: the import asks for the target pack; create one inline.
+      expect(find.text(l10n.packImportTitle), findsOneWidget);
+      await tester.tap(find.byKey(const Key('packPicker')));
+      await settle(tester);
+      await tester.tap(find.byKey(const Key('packPickerNewPackOption')).last);
+      await settle(tester);
+      await tester.enterText(
+        find.byKey(const Key('newPackTitleField')),
+        'Imports',
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('createPackButton')));
+      await settle(tester);
+      await tester.tap(find.byKey(const Key('confirmPackChoiceButton')));
+      await settle(tester);
+
+      expect(find.text('Imports'), findsOneWidget);
       expect(
         listTileWithText('Animals'),
         findsNWidgets(2),

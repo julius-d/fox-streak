@@ -38,6 +38,7 @@ void main() {
           .into(db.questionSets)
           .insert(
             QuestionSetsCompanion.insert(
+              packId: 1,
               title: 'Animals',
               description: const Value(''),
               createdBy: 'test',

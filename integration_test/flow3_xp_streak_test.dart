@@ -58,6 +58,7 @@ void main() {
           .into(db.questionSets)
           .insert(
             QuestionSetsCompanion.insert(
+              packId: 1,
               title: 'XP test',
               description: const Value(''),
               createdBy: 'test',

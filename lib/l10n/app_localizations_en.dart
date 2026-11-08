@@ -899,24 +899,134 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get marketplaceAddToLibrary => 'Add to Library';
+  String packSetCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sets',
+      one: '1 set',
+      zero: 'No sets',
+    );
+    return '$_temp0';
+  }
 
   @override
-  String get marketplaceUpdateAction => 'Update';
+  String packHeaderExpanded(String title, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sets',
+      one: '1 set',
+    );
+    return '$title, $_temp0, expanded. Tap to collapse.';
+  }
 
   @override
-  String get marketplaceAlreadyUpToDate => 'Already up to date';
+  String packHeaderCollapsed(String title, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sets',
+      one: '1 set',
+    );
+    return '$title, $_temp0, collapsed. Tap to expand.';
+  }
 
   @override
-  String get marketplaceUpdateConfirmTitle => 'Overwrite your local edits?';
+  String get packEmptyHint => 'This pack has no sets yet.';
 
   @override
-  String get marketplaceUpdateConfirmMessage =>
-      'You edited this set since importing it. Updating replaces it with the marketplace\'s current version — matching items keep their progress, others start fresh.';
+  String get packAddSet => 'Add set';
 
   @override
-  String get marketplaceImportSuccessMessage => 'Added to your Library.';
+  String get packPickerLabel => 'Pack';
 
   @override
-  String get marketplaceUpdateSuccessMessage => 'Set updated.';
+  String get packPickerNewPack => 'New pack…';
+
+  @override
+  String get packNewTitleLabel => 'New pack title';
+
+  @override
+  String get packNewCreate => 'Create pack';
+
+  @override
+  String get packImportTitle => 'Import into which pack?';
+
+  @override
+  String get packManageTitle => 'Packs';
+
+  @override
+  String get packDownloadedLabel => 'Downloaded';
+
+  @override
+  String get packRename => 'Rename pack';
+
+  @override
+  String get packDelete => 'Delete pack';
+
+  @override
+  String get packActions => 'Pack actions';
+
+  @override
+  String get packDeleteTitle => 'Delete this pack?';
+
+  @override
+  String packDeleteMessage(String title, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'its $count sets',
+      one: 'its 1 set',
+      zero: 'no sets',
+    );
+    return 'Delete \"$title\" together with $_temp0? This cannot be undone.';
+  }
+
+  @override
+  String get moveToPack => 'Move to pack…';
+
+  @override
+  String get moveToPackTitle => 'Move to which pack?';
+
+  @override
+  String get marketplaceDownloadPack => 'Download pack';
+
+  @override
+  String get marketplaceUpdatePack => 'Update pack';
+
+  @override
+  String get marketplacePackUpToDate => 'Pack is up to date';
+
+  @override
+  String marketplaceDownloadProgress(int done, int total) {
+    return 'Downloading set $done of $total…';
+  }
+
+  @override
+  String get marketplaceDownloadFailed =>
+      'Download failed — nothing was saved. Check your connection and try again.';
+
+  @override
+  String get marketplacePackDownloaded => 'Pack added to your Library.';
+
+  @override
+  String get marketplacePackUpdated => 'Pack updated.';
+
+  @override
+  String get marketplacePackOverwriteTitle => 'Overwrite your local edits?';
+
+  @override
+  String marketplacePackOverwriteMessage(String sets) {
+    return 'You edited these sets since downloading them:\n$sets\n\nOverwriting replaces them with the marketplace version — matching items keep their progress, others start fresh.';
+  }
+
+  @override
+  String get marketplacePackOverwriteConfirm => 'Overwrite';
+
+  @override
+  String get marketplacePackOverwriteSkip => 'Skip these sets';
+
+  @override
+  String get marketplacePackSetsHeading => 'Sets in this pack';
 }

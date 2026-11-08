@@ -49,6 +49,7 @@ Future<Item> _persistSingleItem(
       .into(db.questionSets)
       .insert(
         QuestionSetsCompanion.insert(
+          packId: 1,
           title: 'Test set',
           createdBy: 'tester',
           createdAt: 0,

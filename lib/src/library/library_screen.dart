@@ -18,6 +18,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../data/database.dart';
+import '../data/packs_repository.dart';
 import '../data/providers.dart';
 import '../data/set_json_codec.dart';
 import '../lesson/lesson.dart';
@@ -26,6 +27,9 @@ import '../pet/pet_providers.dart';
 import '../theme/fox_streak_theme.dart';
 import '../widgets/widgets.dart';
 import 'library_providers.dart';
+import 'pack_management_screen.dart';
+import 'pack_picker.dart';
+import 'pack_sections.dart';
 import 'set_detail_screen.dart';
 import 'set_editor_screen.dart';
 import 'share_actions.dart';
@@ -43,13 +47,38 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   String? _seedError;
   bool _fabMenuExpanded = false;
 
-  Future<void> _openEditor([QuestionSet? existing]) async {
+  Future<void> _openEditor({QuestionSet? existing, int? packId}) async {
     await Navigator.of(context).push(
       MaterialPageRoute<int>(
-        builder: (_) => SetEditorScreen(existing: existing),
+        builder: (_) =>
+            SetEditorScreen(existing: existing, initialPackId: packId),
       ),
     );
   }
+
+  Future<void> _moveSet(QuestionSet set, List<Pack> targets) async {
+    final l10n = AppLocalizations.of(context)!;
+    final targetId = await showDialog<int>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: Text(l10n.moveToPackTitle),
+        children: [
+          for (final pack in targets)
+            SimpleDialogOption(
+              key: Key('moveTarget-${pack.id}'),
+              onPressed: () => Navigator.of(ctx).pop(pack.id),
+              child: Text(pack.title),
+            ),
+        ],
+      ),
+    );
+    if (targetId == null) return;
+    await ref.read(setsRepositoryProvider).moveSetToPack(set.id, targetId);
+  }
+
+  Future<void> _togglePack(Pack pack) => ref
+      .read(packsRepositoryProvider)
+      .setCollapsed(pack.id, collapsed: !pack.collapsed);
 
   Future<void> _confirmDeleteSet(QuestionSet set) async {
     final l10n = AppLocalizations.of(context)!;
@@ -98,7 +127,10 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     _collapseFabMenu();
     final l10n = AppLocalizations.of(context)!;
     try {
-      await importSetFromPicker(ref);
+      await importSetFromPicker(
+        ref,
+        choosePack: () => showPackChoiceDialog(context),
+      );
     } on SetImportException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
@@ -121,13 +153,28 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final setsAsync = ref.watch(allSetsProvider);
+    final packsAsync = ref.watch(allPacksProvider);
     return PopScope(
       canPop: !_fabMenuExpanded,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _collapseFabMenu();
       },
       child: Scaffold(
-        appBar: AppBar(title: Text(l10n.libraryTitle)),
+        appBar: AppBar(
+          title: Text(l10n.libraryTitle),
+          actions: [
+            IconButton(
+              key: const Key('managePacksButton'),
+              tooltip: l10n.packManageTitle,
+              icon: const Icon(Icons.folder_outlined),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const PackManagementScreen(),
+                ),
+              ),
+            ),
+          ],
+        ),
         floatingActionButton: _fabMenuExpanded
             ? FloatingActionButton(
                 key: const Key('newSetFab'),
@@ -143,39 +190,83 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               ),
         body: Stack(
           children: [
-            setsAsync.when(
-              loading: () => Center(
+            if (setsAsync.hasError)
+              Center(child: Text(setsAsync.error.toString()))
+            else if (!setsAsync.hasValue || !packsAsync.hasValue)
+              Center(
                 key: const Key('libraryLoading'),
                 child: Text(l10n.libraryLoading),
+              )
+            else
+              _buildLibrary(
+                context,
+                l10n,
+                packsAsync.requireValue,
+                setsAsync.requireValue,
               ),
-              error: (e, _) => Center(child: Text(e.toString())),
-              data: (sets) {
-                if (sets.isEmpty) return _buildEmpty(context, l10n);
-                return ListView.builder(
-                  padding: fabListBottomPadding(context),
-                  itemCount: sets.length,
-                  itemBuilder: (context, index) {
-                    final set = sets[index];
-                    return _SetCard(
-                      set: set,
-                      onOpen: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => SetDetailScreen(setId: set.id),
-                        ),
-                      ),
-                      onRename: () => _openEditor(set),
-                      onDuplicate: () => _duplicateSet(set.id),
-                      onDelete: () => _confirmDeleteSet(set),
-                    );
-                  },
-                );
-              },
-            ),
             if (_fabMenuExpanded) _buildFabMenuOverlay(l10n),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildLibrary(
+    BuildContext context,
+    AppLocalizations l10n,
+    List<Pack> packs,
+    List<QuestionSet> sets,
+  ) {
+    if (sets.isEmpty && packs.length <= 1) return _buildEmpty(context, l10n);
+    final sections = groupSetsByPack(packs, sets);
+    // One pack only: a plain list, no header and no collapse control.
+    final showHeaders = sections.length > 1;
+    final ownPacks = packs.where((p) => p.isOwn).toList();
+    final rows = <Widget>[];
+    for (final section in sections) {
+      final pack = section.pack;
+      if (showHeaders) {
+        rows.add(
+          PackSectionHeader(
+            pack: pack,
+            setCount: section.sets.length,
+            onToggle: () => _togglePack(pack),
+          ),
+        );
+      }
+      if (showHeaders && pack.collapsed) continue;
+      if (section.sets.isEmpty) {
+        rows.add(
+          _EmptyPackHint(
+            onAddSet: pack.isOwn ? () => _openEditor(packId: pack.id) : null,
+          ),
+        );
+        continue;
+      }
+      for (final set in section.sets) {
+        final moveTargets = [
+          for (final p in ownPacks)
+            if (p.id != pack.id) p,
+        ];
+        rows.add(
+          _SetCard(
+            set: set,
+            onOpen: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => SetDetailScreen(setId: set.id),
+              ),
+            ),
+            onRename: () => _openEditor(existing: set),
+            onDuplicate: () => _duplicateSet(set.id),
+            onDelete: () => _confirmDeleteSet(set),
+            onMove: pack.isOwn && moveTargets.isNotEmpty
+                ? () => _moveSet(set, moveTargets)
+                : null,
+          ),
+        );
+      }
+    }
+    return ListView(padding: fabListBottomPadding(context), children: rows);
   }
 
   Widget _buildFabMenuOverlay(AppLocalizations l10n) {
@@ -265,12 +356,17 @@ class _SetCard extends ConsumerWidget {
   final VoidCallback onDuplicate;
   final VoidCallback onDelete;
 
+  /// Null when the set cannot be moved (downloaded pack, or no other own
+  /// pack to move to).
+  final VoidCallback? onMove;
+
   const _SetCard({
     required this.set,
     required this.onOpen,
     required this.onRename,
     required this.onDuplicate,
     required this.onDelete,
+    required this.onMove,
   });
 
   Future<void> _share(
@@ -328,6 +424,8 @@ class _SetCard extends ConsumerWidget {
                     onRename();
                   case 'duplicate':
                     onDuplicate();
+                  case 'move':
+                    onMove?.call();
                   case 'share':
                     _share(context, ref, l10n);
                   case 'delete':
@@ -359,6 +457,15 @@ class _SetCard extends ConsumerWidget {
                     title: Text(l10n.duplicate),
                   ),
                 ),
+                if (onMove != null)
+                  PopupMenuItem(
+                    value: 'move',
+                    child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.drive_file_move_outline),
+                      title: Text(l10n.moveToPack),
+                    ),
+                  ),
                 PopupMenuItem(
                   value: 'share',
                   child: ListTile(
@@ -379,6 +486,39 @@ class _SetCard extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Hint + "Add set" action shown inside an empty own pack.
+class _EmptyPackHint extends StatelessWidget {
+  /// Null for downloaded packs: own sets cannot be added to them.
+  final VoidCallback? onAddSet;
+
+  const _EmptyPackHint({required this.onAddSet});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: FoxSpacing.lg,
+        vertical: FoxSpacing.sm,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.packEmptyHint, key: const Key('packEmptyHint')),
+          if (onAddSet != null) ...[
+            const SizedBox(height: FoxSpacing.sm),
+            FoxSecondaryButton(
+              key: const Key('packAddSetButton'),
+              label: l10n.packAddSet,
+              onPressed: onAddSet,
+            ),
+          ],
+        ],
       ),
     );
   }

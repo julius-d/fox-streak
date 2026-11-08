@@ -33,6 +33,7 @@ Future<List<Item>> _persistSet(AppDatabase db) async {
       .into(db.questionSets)
       .insert(
         QuestionSetsCompanion.insert(
+          packId: 1,
           title: 'Animals',
           createdBy: 'tester',
           createdAt: 0,

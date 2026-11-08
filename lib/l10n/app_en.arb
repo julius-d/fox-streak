@@ -1072,39 +1072,175 @@
     }
   },
   "marketplacePreviewCreatedBy": "Created by {creator}",
-  "@marketplaceAddToLibrary": {
-    "description": "Set preview primary button label when the set was never imported before (issue #101)",
+  "@packSetCount": {
+    "description": "Number of sets in a pack, shown in the library section header (issue #121)",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "packSetCount": "{count, plural, =0{No sets} =1{1 set} other{{count} sets}}",
+  "@packHeaderExpanded": {
+    "description": "Screen-reader label of an expanded library pack header (issue #121)",
+    "placeholders": {
+      "title": {"type": "String"},
+      "count": {"type": "int"}
+    }
+  },
+  "packHeaderExpanded": "{title}, {count, plural, =1{1 set} other{{count} sets}}, expanded. Tap to collapse.",
+  "@packHeaderCollapsed": {
+    "description": "Screen-reader label of a collapsed library pack header (issue #121)",
+    "placeholders": {
+      "title": {"type": "String"},
+      "count": {"type": "int"}
+    }
+  },
+  "packHeaderCollapsed": "{title}, {count, plural, =1{1 set} other{{count} sets}}, collapsed. Tap to expand.",
+  "@packEmptyHint": {
+    "description": "Hint inside an empty own pack in the library (issue #121)",
     "placeholders": {}
   },
-  "marketplaceAddToLibrary": "Add to Library",
-  "@marketplaceUpdateAction": {
-    "description": "Set preview primary button label when the set was imported before and the marketplace copy changed (issue #101)",
+  "packEmptyHint": "This pack has no sets yet.",
+  "@packAddSet": {
+    "description": "Action in an empty own pack that creates a set in it (issue #121)",
     "placeholders": {}
   },
-  "marketplaceUpdateAction": "Update",
-  "@marketplaceAlreadyUpToDate": {
-    "description": "Set preview primary button's disabled label when the set was imported before and is unchanged (issue #101)",
+  "packAddSet": "Add set",
+  "@packPickerLabel": {
+    "description": "Label of the pack picker when creating/importing a set (issue #121)",
     "placeholders": {}
   },
-  "marketplaceAlreadyUpToDate": "Already up to date",
-  "@marketplaceUpdateConfirmTitle": {
-    "description": "Confirm-dialog title shown before Update overwrites a locally-edited imported set (issue #101)",
+  "packPickerLabel": "Pack",
+  "@packPickerNewPack": {
+    "description": "Picker entry that reveals the inline new-pack field (issue #121)",
     "placeholders": {}
   },
-  "marketplaceUpdateConfirmTitle": "Overwrite your local edits?",
-  "@marketplaceUpdateConfirmMessage": {
-    "description": "Confirm-dialog body shown before Update overwrites a locally-edited imported set, explaining which items keep progress (issue #101)",
+  "packPickerNewPack": "New pack…",
+  "@packNewTitleLabel": {
+    "description": "Label of the inline new-pack title field (issue #121)",
     "placeholders": {}
   },
-  "marketplaceUpdateConfirmMessage": "You edited this set since importing it. Updating replaces it with the marketplace's current version — matching items keep their progress, others start fresh.",
-  "@marketplaceImportSuccessMessage": {
-    "description": "Snackbar shown after successfully adding a marketplace set to the Library (issue #101)",
+  "packNewTitleLabel": "New pack title",
+  "@packNewCreate": {
+    "description": "Button creating the inline new pack (issue #121)",
     "placeholders": {}
   },
-  "marketplaceImportSuccessMessage": "Added to your Library.",
-  "@marketplaceUpdateSuccessMessage": {
-    "description": "Snackbar shown after successfully updating a previously-imported marketplace set (issue #101)",
+  "packNewCreate": "Create pack",
+  "@packImportTitle": {
+    "description": "Title of the dialog asking for the target pack of a file import (issue #121)",
     "placeholders": {}
   },
-  "marketplaceUpdateSuccessMessage": "Set updated."
+  "packImportTitle": "Import into which pack?",
+  "@packManageTitle": {
+    "description": "Title of the pack management screen and its app bar action tooltip (issue #121)",
+    "placeholders": {}
+  },
+  "packManageTitle": "Packs",
+  "@packDownloadedLabel": {
+    "description": "Badge/subtitle marking a downloaded pack (issue #121)",
+    "placeholders": {}
+  },
+  "packDownloadedLabel": "Downloaded",
+  "@packRename": {
+    "description": "Pack menu entry and rename dialog title (issue #121)",
+    "placeholders": {}
+  },
+  "packRename": "Rename pack",
+  "@packDelete": {
+    "description": "Pack menu entry (issue #121)",
+    "placeholders": {}
+  },
+  "packDelete": "Delete pack",
+  "@packActions": {
+    "description": "Tooltip of a pack's three-dot menu (issue #121)",
+    "placeholders": {}
+  },
+  "packActions": "Pack actions",
+  "@packDeleteTitle": {
+    "description": "Confirm title for deleting a pack (issue #121)",
+    "placeholders": {}
+  },
+  "packDeleteTitle": "Delete this pack?",
+  "@packDeleteMessage": {
+    "description": "Confirm body for deleting a pack, with the number of sets that go with it (issue #121)",
+    "placeholders": {
+      "title": {"type": "String"},
+      "count": {"type": "int"}
+    }
+  },
+  "packDeleteMessage": "Delete \"{title}\" together with {count, plural, =0{no sets} =1{its 1 set} other{its {count} sets}}? This cannot be undone.",
+  "@moveToPack": {
+    "description": "Set menu entry moving an own set to another own pack (issue #121)",
+    "placeholders": {}
+  },
+  "moveToPack": "Move to pack…",
+  "@moveToPackTitle": {
+    "description": "Title of the move-set dialog (issue #121)",
+    "placeholders": {}
+  },
+  "moveToPackTitle": "Move to which pack?",
+  "@marketplaceDownloadPack": {
+    "description": "Marketplace pack screen primary action when the pack is not downloaded yet (issue #121)",
+    "placeholders": {}
+  },
+  "marketplaceDownloadPack": "Download pack",
+  "@marketplaceUpdatePack": {
+    "description": "Marketplace pack screen primary action when the pack has updates (issue #121)",
+    "placeholders": {}
+  },
+  "marketplaceUpdatePack": "Update pack",
+  "@marketplacePackUpToDate": {
+    "description": "Disabled marketplace pack action when everything is current (issue #121)",
+    "placeholders": {}
+  },
+  "marketplacePackUpToDate": "Pack is up to date",
+  "@marketplaceDownloadProgress": {
+    "description": "Progress text during a pack download/update (issue #121)",
+    "placeholders": {
+      "done": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "marketplaceDownloadProgress": "Downloading set {done} of {total}…",
+  "@marketplaceDownloadFailed": {
+    "description": "Error banner after a failed pack download/update (issue #121)",
+    "placeholders": {}
+  },
+  "marketplaceDownloadFailed": "Download failed — nothing was saved. Check your connection and try again.",
+  "@marketplacePackDownloaded": {
+    "description": "Snackbar after a successful pack download (issue #121)",
+    "placeholders": {}
+  },
+  "marketplacePackDownloaded": "Pack added to your Library.",
+  "@marketplacePackUpdated": {
+    "description": "Snackbar after a successful pack update (issue #121)",
+    "placeholders": {}
+  },
+  "marketplacePackUpdated": "Pack updated.",
+  "@marketplacePackOverwriteTitle": {
+    "description": "Dialog title when a pack update would overwrite locally edited sets (issue #121)",
+    "placeholders": {}
+  },
+  "marketplacePackOverwriteTitle": "Overwrite your local edits?",
+  "@marketplacePackOverwriteMessage": {
+    "description": "Dialog body listing locally edited sets (issue #121)",
+    "placeholders": {
+      "sets": {"type": "String"}
+    }
+  },
+  "marketplacePackOverwriteMessage": "You edited these sets since downloading them:\n{sets}\n\nOverwriting replaces them with the marketplace version — matching items keep their progress, others start fresh.",
+  "@marketplacePackOverwriteConfirm": {
+    "description": "Overwrite button of the pack update dialog (issue #121)",
+    "placeholders": {}
+  },
+  "marketplacePackOverwriteConfirm": "Overwrite",
+  "@marketplacePackOverwriteSkip": {
+    "description": "Skip button of the pack update dialog (issue #121)",
+    "placeholders": {}
+  },
+  "marketplacePackOverwriteSkip": "Skip these sets",
+  "@marketplacePackSetsHeading": {
+    "description": "Heading above the read-only set preview list (issue #121)",
+    "placeholders": {}
+  },
+  "marketplacePackSetsHeading": "Sets in this pack"
 }

@@ -6,6 +6,7 @@ import 'package:drift/drift.dart';
 
 import 'clock.dart';
 import 'database.dart';
+import 'packs_repository.dart';
 import 'set_json_codec.dart';
 import 'validation.dart';
 
@@ -39,13 +40,17 @@ class SetsRepository {
     _db.questionSets,
   )..where((t) => t.id.equals(id))).getSingleOrNull();
 
+  /// Creates a set in the own pack [packId] (default: the first own pack).
+  /// Own sets can never live in a downloaded pack.
   Future<int> createSet({
     required String title,
     String description = '',
     required String createdBy,
     String? category,
-  }) {
+    int? packId,
+  }) async {
     _checkSetFields(title: title, createdBy: createdBy, category: category);
+    final targetPackId = await _resolveOwnPackId(packId);
     final nowMs = _clock.now().millisecondsSinceEpoch;
     return _db
         .into(_db.questionSets)
@@ -57,8 +62,23 @@ class SetsRepository {
             createdAt: nowMs,
             updatedAt: nowMs,
             category: Value(category),
+            packId: targetPackId,
           ),
         );
+  }
+
+  /// Moves an own set into another own pack. Sets of downloaded packs stay
+  /// in their pack and nothing can be moved into a downloaded pack.
+  Future<void> moveSetToPack(int setId, int packId) async {
+    final set = await getSetById(setId);
+    if (set == null) throw ArgumentError('unknown set id $setId');
+    final source = await _packById(set.packId);
+    if (source.isDownloaded) {
+      throw ArgumentError('sets of downloaded packs cannot be moved');
+    }
+    await _resolveOwnPackId(packId);
+    await (_db.update(_db.questionSets)..where((t) => t.id.equals(setId)))
+        .write(QuestionSetsCompanion(packId: Value(packId)));
   }
 
   Future<void> updateSet({
@@ -295,6 +315,11 @@ class SetsRepository {
     if (source == null) throw ArgumentError('unknown set id $id');
     final items = await getItemsForSet(id);
     final nowMs = _clock.now().millisecondsSinceEpoch;
+    // A copy is an own set: it never stays inside a downloaded pack.
+    final sourcePack = await _packById(source.packId);
+    final targetPackId = sourcePack.isDownloaded
+        ? await ensureDefaultOwnPack(_db, _clock)
+        : source.packId;
     return _db.transaction(() async {
       final newId = await _db
           .into(_db.questionSets)
@@ -306,6 +331,7 @@ class SetsRepository {
               createdAt: nowMs,
               updatedAt: nowMs,
               category: Value(source.category),
+              packId: targetPackId,
             ),
           );
       for (final item in items) {
@@ -375,11 +401,16 @@ class SetsRepository {
   /// Imports a v1 share map as a *new* set; returns the new set id.
   ///
   /// Throws [SetImportException] on bad schema / unknown version.
+  ///
+  /// The set lands in [packId] (default: the first own pack). The set file
+  /// format is pack-free; the target is always chosen by the caller.
   Future<int> importSetFromJson(
     Map<dynamic, dynamic> json, {
     DateTime? today,
+    int? packId,
   }) async {
     final share = decodeSetFromJson(json, today: today);
+    final targetPackId = packId ?? await ensureDefaultOwnPack(_db, _clock);
     final nowMs = (_clock.now()).millisecondsSinceEpoch;
     return _db.transaction(() async {
       final newId = await _db
@@ -392,6 +423,7 @@ class SetsRepository {
               createdAt: nowMs,
               updatedAt: nowMs,
               category: Value(share.category),
+              packId: targetPackId,
             ),
           );
       for (var i = 0; i < share.items.length; i++) {
@@ -423,6 +455,24 @@ class SetsRepository {
   }
 
   // -- Internals ----------------------------------------------------------
+
+  Future<Pack> _packById(int id) async {
+    final pack = await (_db.select(
+      _db.packs,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
+    if (pack == null) throw ArgumentError('unknown pack id $id');
+    return pack;
+  }
+
+  /// [packId] (validated to be an own pack) or the default own pack.
+  Future<int> _resolveOwnPackId(int? packId) async {
+    if (packId == null) return ensureDefaultOwnPack(_db, _clock);
+    final pack = await _packById(packId);
+    if (pack.isDownloaded) {
+      throw ArgumentError('sets can only be added to own packs');
+    }
+    return packId;
+  }
 
   void _checkSetFields({
     required String title,

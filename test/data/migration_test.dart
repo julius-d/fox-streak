@@ -3,7 +3,7 @@
 // #055), v7 -> v8 (issue #059), v8 -> v9 (issue #064), v9 -> v10 (issue
 // #065), v10 -> v11 (issue #068), v11 -> v12 (issue #084), v12 -> v13
 // (issue #014), v13 -> v14 (issue #094), v14 -> v15 (issue #087), and
-// v15 -> v16 (issue #101) migration tests.
+// v15 -> v16 (issue #101), and v16 -> v17 (issue #121) migration tests.
 //
 // Simulates pre-migration databases on disk, then reopens them with the
 // real (current schemaVersion) `AppDatabase` and asserts `onUpgrade` applied
@@ -16,10 +16,18 @@
 import 'dart:io';
 
 import 'package:drift/drift.dart'
-    show MigrationStrategy, Migrator, QueryExecutor, Value, Variable;
+    show
+        MigrationStrategy,
+        Migrator,
+        OrderingTerm,
+        QueryExecutor,
+        Value,
+        Variable;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fox_streak_app/src/data/database.dart';
+import 'package:fox_streak_app/src/data/marketplace_repository.dart';
+import 'package:fox_streak_app/src/data/sets_repository.dart';
 import 'package:fox_streak_app/src/pet/pet_catalog.dart' show kDefaultPetId;
 
 /// Creates the pre-#022 `items` shape (`direction` TEXT instead of
@@ -187,6 +195,42 @@ class _LegacyV4Database extends AppDatabase {
   );
 }
 
+/// Creates the pre-#121 `question_sets` shape (no `pack_id` column) — the
+/// current Dart `QuestionSets` definition already has it, so
+/// `m.createTable(db.questionSets)` can't be used for any pre-v17 fixture.
+Future<void> _createQuestionSetsWithoutPackId(Migrator m) async {
+  final db = m.database as AppDatabase;
+  await db.customStatement('''
+    CREATE TABLE question_sets (
+      id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      description TEXT NOT NULL DEFAULT '',
+      created_by TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      category TEXT NULL
+    )
+  ''');
+}
+
+/// Inserts a pre-#121 `question_sets` row via raw SQL (the current
+/// `QuestionSetsCompanion` requires the `pack_id` the legacy table lacks).
+Future<int> _insertLegacySet(
+  AppDatabase db, {
+  String title = 'Legacy set',
+  required int createdAt,
+  required int updatedAt,
+}) => db.customInsert(
+  'INSERT INTO question_sets (title, created_by, created_at, updated_at) '
+  'VALUES (?, ?, ?, ?)',
+  variables: [
+    Variable.withString(title),
+    Variable.withString('teacher'),
+    Variable.withInt(createdAt),
+    Variable.withInt(updatedAt),
+  ],
+);
+
 /// Creates the pre-#045 `question_sets` shape (no `category` column) — the
 /// current Dart `QuestionSets` definition already has it, so
 /// `m.createTable(db.questionSets)` can't be used for this pre-v6 fixture.
@@ -267,7 +311,7 @@ class _LegacyV6Database extends AppDatabase {
     onCreate: (m) async {
       await _createProfileStatsPrePetColumns(m);
       final db = m.database as AppDatabase;
-      await m.createTable(db.questionSets);
+      await _createQuestionSetsWithoutPackId(m);
       await _createItemsTableWithoutImage(m);
       await m.createTable(db.attempts);
     },
@@ -291,7 +335,7 @@ class _LegacyV7Database extends AppDatabase {
     onCreate: (m) async {
       await _createProfileStatsPrePetColumns(m);
       final db = m.database as AppDatabase;
-      await m.createTable(db.questionSets);
+      await _createQuestionSetsWithoutPackId(m);
       await _createItemsTableWithoutImage(m);
       await m.createTable(db.attempts);
       await m.createTable(db.appSettings);
@@ -355,7 +399,7 @@ class _LegacyV8Database extends AppDatabase {
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
       final db = m.database as AppDatabase;
-      await m.createTable(db.questionSets);
+      await _createQuestionSetsWithoutPackId(m);
       await _createItemsTableWithoutImage(m);
       await m.createTable(db.attempts);
       await _createProfileStatsPreCoinsTotal(m);
@@ -381,7 +425,7 @@ class _LegacyV9Database extends AppDatabase {
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
       final db = m.database as AppDatabase;
-      await m.createTable(db.questionSets);
+      await _createQuestionSetsWithoutPackId(m);
       await _createItemsTableWithoutImage(m);
       await m.createTable(db.attempts);
       await _createProfileStatsPreCoinsTotal(m);
@@ -413,7 +457,7 @@ class _LegacyV10Database extends AppDatabase {
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
       final db = m.database as AppDatabase;
-      await m.createTable(db.questionSets);
+      await _createQuestionSetsWithoutPackId(m);
       await _createItemsTableWithoutImage(m);
       await m.createTable(db.attempts);
       await m.database.customStatement('''
@@ -464,7 +508,7 @@ class _LegacyV11Database extends AppDatabase {
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
       final db = m.database as AppDatabase;
-      await m.createTable(db.questionSets);
+      await _createQuestionSetsWithoutPackId(m);
       await _createItemsTableWithoutImage(m);
       await m.createTable(db.attempts);
       await _createProfileStatsTableWithoutStreakFreezes(m);
@@ -511,7 +555,7 @@ class _LegacyV12Database extends AppDatabase {
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
       final db = m.database as AppDatabase;
-      await m.createTable(db.questionSets);
+      await _createQuestionSetsWithoutPackId(m);
       await _createItemsTableWithoutImage(m);
       await m.createTable(db.attempts);
       await _createProfileStatsTableWithoutStreakFreezes(m);
@@ -562,7 +606,7 @@ class _LegacyV13Database extends AppDatabase {
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
       final db = m.database as AppDatabase;
-      await m.createTable(db.questionSets);
+      await _createQuestionSetsWithoutPackId(m);
       await _createItemsTableWithImageNoCopyright(m);
       await m.createTable(db.attempts);
       await _createProfileStatsTableWithoutStreakFreezes(m);
@@ -616,7 +660,7 @@ class _LegacyV14Database extends AppDatabase {
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
       final db = m.database as AppDatabase;
-      await m.createTable(db.questionSets);
+      await _createQuestionSetsWithoutPackId(m);
       await _createItemsTableWithoutMarketplaceId(m);
       await m.createTable(db.attempts);
       await _createProfileStatsTableWithoutStreakFreezes(m);
@@ -668,7 +712,7 @@ class _LegacyV15Database extends AppDatabase {
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
       final db = m.database as AppDatabase;
-      await m.createTable(db.questionSets);
+      await _createQuestionSetsWithoutPackId(m);
       await _createItemsTableWithoutMarketplaceId(m);
       await m.createTable(db.attempts);
       await m.createTable(db.profileStats);
@@ -678,6 +722,51 @@ class _LegacyV15Database extends AppDatabase {
     },
   );
 }
+
+/// A schemaVersion-16 view of [AppDatabase], used only to seed a pre-#121
+/// file: `question_sets` has no `pack_id` yet and the `packs` table doesn't
+/// exist; every other table is already in its current shape.
+class _LegacyV16Database extends AppDatabase {
+  _LegacyV16Database(QueryExecutor executor) : super.forTesting(executor); // ignore: use_super_parameters — must forward to the named forTesting() ctor, not the default unnamed one
+
+  @override
+  int get schemaVersion => 16;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) async {
+      final db = m.database as AppDatabase;
+      await _createQuestionSetsWithoutPackId(m);
+      await m.createTable(db.items);
+      await m.createTable(db.attempts);
+      await m.createTable(db.profileStats);
+      await m.createTable(db.appSettings);
+      await m.createTable(db.ownedPets);
+      await m.createTable(db.dailyActivity);
+      await m.createTable(db.marketplaceSources);
+      await m.createTable(db.importedMarketplaceSets);
+    },
+  );
+}
+
+Future<void> _markImported(
+  AppDatabase db, {
+  required int setId,
+  required String source,
+  required String pack,
+  required String marketplaceSetId,
+}) => db
+    .into(db.importedMarketplaceSets)
+    .insert(
+      ImportedMarketplaceSetsCompanion.insert(
+        localSetId: Value(setId),
+        sourceUrl: source,
+        packId: pack,
+        setId: marketplaceSetId,
+        listingUpdatedAt: '2026-10-01',
+        localUpdatedAtAtSync: 2,
+      ),
+    );
 
 void main() {
   test('onUpgrade rewrites vocab -> choice exactly once', () async {
@@ -689,16 +778,7 @@ void main() {
 
     // 1. Seed a v1 database directly on disk with a 'vocab' row.
     final legacyDb = _LegacyV1Database(NativeDatabase(file));
-    final setId = await legacyDb
-        .into(legacyDb.questionSets)
-        .insert(
-          QuestionSetsCompanion.insert(
-            title: 'Legacy set',
-            createdBy: 'teacher',
-            createdAt: 0,
-            updatedAt: 0,
-          ),
-        );
+    final setId = await _insertLegacySet(legacyDb, createdAt: 0, updatedAt: 0);
     final vocabId = await _insertLegacyItem(
       legacyDb,
       setId: setId,
@@ -785,16 +865,7 @@ void main() {
     // 1. Seed a v3 database directly on disk with deEn/enDe/no-direction
     // items.
     final legacyDb = _LegacyV3Database(NativeDatabase(file));
-    final setId = await legacyDb
-        .into(legacyDb.questionSets)
-        .insert(
-          QuestionSetsCompanion.insert(
-            title: 'Legacy set',
-            createdBy: 'teacher',
-            createdAt: 0,
-            updatedAt: 0,
-          ),
-        );
+    final setId = await _insertLegacySet(legacyDb, createdAt: 0, updatedAt: 0);
     final deEnId = await _insertLegacyItem(
       legacyDb,
       setId: setId,
@@ -906,16 +977,7 @@ void main() {
     // 1. Seed a v5 database directly on disk (question_sets has no
     // category column yet) with a pre-existing set row.
     final legacyDb = _LegacyV5Database(NativeDatabase(file));
-    final setId = await legacyDb
-        .into(legacyDb.questionSets)
-        .insert(
-          QuestionSetsCompanion.insert(
-            title: 'Legacy set',
-            createdBy: 'teacher',
-            createdAt: 1,
-            updatedAt: 2,
-          ),
-        );
+    final setId = await _insertLegacySet(legacyDb, createdAt: 1, updatedAt: 2);
     await legacyDb.close();
 
     // 2. Reopen the SAME file with the real (current schemaVersion)
@@ -1242,16 +1304,7 @@ void main() {
     // 1. Seed a v12 database directly on disk (items has no image_type/
     // image_content columns yet) with a pre-existing item row.
     final legacyDb = _LegacyV12Database(NativeDatabase(file));
-    final setId = await legacyDb
-        .into(legacyDb.questionSets)
-        .insert(
-          QuestionSetsCompanion.insert(
-            title: 'Legacy set',
-            createdBy: 'teacher',
-            createdAt: 1,
-            updatedAt: 2,
-          ),
-        );
+    final setId = await _insertLegacySet(legacyDb, createdAt: 1, updatedAt: 2);
     final itemId = await legacyDb.customInsert(
       'INSERT INTO items (set_id, type, prompt, answer, position) '
       'VALUES (?, ?, ?, ?, ?)',
@@ -1298,16 +1351,7 @@ void main() {
     // image_content but no image_copyright yet) with a pre-existing item
     // row that already carries an image.
     final legacyDb = _LegacyV13Database(NativeDatabase(file));
-    final setId = await legacyDb
-        .into(legacyDb.questionSets)
-        .insert(
-          QuestionSetsCompanion.insert(
-            title: 'Legacy set',
-            createdBy: 'teacher',
-            createdAt: 1,
-            updatedAt: 2,
-          ),
-        );
+    final setId = await _insertLegacySet(legacyDb, createdAt: 1, updatedAt: 2);
     final itemId = await legacyDb.customInsert(
       'INSERT INTO items '
       '(set_id, type, prompt, answer, position, image_type, image_content) '
@@ -1407,16 +1451,7 @@ void main() {
     // marketplace_item_id column yet, the two marketplace tables don't
     // exist) with a pre-existing item row.
     final legacyDb = _LegacyV15Database(NativeDatabase(file));
-    final setId = await legacyDb
-        .into(legacyDb.questionSets)
-        .insert(
-          QuestionSetsCompanion.insert(
-            title: 'Legacy set',
-            createdBy: 'teacher',
-            createdAt: 1,
-            updatedAt: 2,
-          ),
-        );
+    final setId = await _insertLegacySet(legacyDb, createdAt: 1, updatedAt: 2);
     final itemId = await legacyDb.customInsert(
       'INSERT INTO items (set_id, type, prompt, answer, position) '
       'VALUES (?, ?, ?, ?, ?)',
@@ -1456,6 +1491,227 @@ void main() {
     expect(
       await (upgradedDb.select(upgradedDb.importedMarketplaceSets)).get(),
       isEmpty,
+    );
+  });
+
+  group('v16 -> v17 (#121): sets grouped into packs by origin', () {
+    late Directory dir;
+    late File file;
+
+    setUp(() {
+      dir = Directory.systemTemp.createTempSync('foxstreak_migration_v17');
+      file = File('${dir.path}/test.sqlite');
+    });
+
+    tearDown(() {
+      if (dir.existsSync()) dir.deleteSync(recursive: true);
+    });
+
+    test('imported sets go into one downloaded pack per (source, pack id), '
+        'everything else into "My sets"; nothing is lost', () async {
+      const srcA = 'https://a.example/marketplace.json';
+      const srcB = 'https://b.example/marketplace.json';
+      final legacy = _LegacyV16Database(NativeDatabase(file));
+      final created = await _insertLegacySet(
+        legacy,
+        title: 'Created',
+        createdAt: 1,
+        updatedAt: 1,
+      );
+      final fileImported = await _insertLegacySet(
+        legacy,
+        title: 'From file',
+        createdAt: 2,
+        updatedAt: 2,
+      );
+      final a1 = await _insertLegacySet(
+        legacy,
+        title: 'A1',
+        createdAt: 10,
+        updatedAt: 2,
+      );
+      final a2 = await _insertLegacySet(
+        legacy,
+        title: 'A2',
+        createdAt: 5,
+        updatedAt: 2,
+      );
+      final otherPack = await _insertLegacySet(
+        legacy,
+        title: 'Other pack',
+        createdAt: 7,
+        updatedAt: 2,
+      );
+      final otherSource = await _insertLegacySet(
+        legacy,
+        title: 'Other source',
+        createdAt: 8,
+        updatedAt: 2,
+      );
+      await _markImported(
+        legacy,
+        setId: a1,
+        source: srcA,
+        pack: 'pack-1',
+        marketplaceSetId: 's1',
+      );
+      await _markImported(
+        legacy,
+        setId: a2,
+        source: srcA,
+        pack: 'pack-1',
+        marketplaceSetId: 's2',
+      );
+      await _markImported(
+        legacy,
+        setId: otherPack,
+        source: srcA,
+        pack: 'pack-2',
+        marketplaceSetId: 's3',
+      );
+      await _markImported(
+        legacy,
+        setId: otherSource,
+        source: srcB,
+        pack: 'pack-1',
+        marketplaceSetId: 's4',
+      );
+      final itemId = await legacy
+          .into(legacy.items)
+          .insert(
+            ItemsCompanion.insert(
+              setId: a1,
+              type: 'phone',
+              prompt: 'Mama',
+              answer: '0123456',
+              position: 0,
+            ),
+          );
+      await legacy
+          .into(legacy.attempts)
+          .insert(AttemptsCompanion.insert(itemId: itemId, ok: true, at: 99));
+      await legacy
+          .into(legacy.profileStats)
+          .insert(
+            ProfileStatsCompanion.insert(
+              id: const Value(0),
+              xpTotal: const Value(420),
+            ),
+          );
+      await legacy.close();
+
+      final db = AppDatabase.forTesting(NativeDatabase(file));
+      addTearDown(db.close);
+
+      final packs = await (db.select(
+        db.packs,
+      )..orderBy([(t) => OrderingTerm.asc(t.id)])).get();
+      final own = packs.where((p) => p.sourceUrl == null).toList();
+      expect(own, hasLength(1));
+      expect(own.single.title, 'My sets');
+      final downloaded = {
+        for (final p in packs.where((p) => p.sourceUrl != null))
+          (p.sourceUrl, p.sourcePackId): p,
+      };
+      expect(downloaded.keys, {
+        (srcA, 'pack-1'),
+        (srcA, 'pack-2'),
+        (srcB, 'pack-1'),
+      });
+      // Titled by the Marketplace pack id until the real title is known;
+      // download date = earliest import.
+      expect(downloaded[(srcA, 'pack-1')]!.title, 'pack-1');
+      expect(downloaded[(srcA, 'pack-1')]!.downloadedAt, 5);
+
+      Future<int> packOf(int setId) async => (await (db.select(
+        db.questionSets,
+      )..where((t) => t.id.equals(setId))).getSingle()).packId;
+      expect(await packOf(created), own.single.id);
+      expect(await packOf(fileImported), own.single.id);
+      expect(await packOf(a1), downloaded[(srcA, 'pack-1')]!.id);
+      expect(await packOf(a2), downloaded[(srcA, 'pack-1')]!.id);
+      expect(await packOf(otherPack), downloaded[(srcA, 'pack-2')]!.id);
+      expect(await packOf(otherSource), downloaded[(srcB, 'pack-1')]!.id);
+
+      // Nothing lost or changed: sets, items, attempts, progress.
+      final sets = await db.select(db.questionSets).get();
+      expect(sets, hasLength(6));
+      expect(
+        sets.firstWhere((s) => s.id == a1).updatedAt,
+        2,
+        reason: 'updatedAt untouched (update detection relies on it)',
+      );
+      expect(await db.select(db.items).get(), hasLength(1));
+      expect(await db.select(db.attempts).get(), hasLength(1));
+      expect((await db.select(db.profileStats).getSingle()).xpTotal, 420);
+
+      // Update detection keeps working for previously imported sets.
+      final repo = MarketplaceRepository(db, SetsRepository(db));
+      final state = await repo.importStateFor(
+        sourceUrl: srcA,
+        packId: 'pack-1',
+        setId: 's1',
+        listingUpdatedAt: '2026-10-01',
+      );
+      expect(state.status, MarketplaceSetStatus.upToDate);
+      expect(state.localSetId, a1);
+      expect(
+        (await repo.packStateFor(
+          sourceUrl: srcA,
+          packId: 'pack-1',
+          listedSets: {'s1': '2026-10-01', 's2': '2026-10-01'},
+        )).status,
+        MarketplacePackStatus.upToDate,
+      );
+    });
+
+    test('a device with only own sets ends up with a single pack', () async {
+      final legacy = _LegacyV16Database(NativeDatabase(file));
+      final id = await _insertLegacySet(legacy, createdAt: 1, updatedAt: 1);
+      await legacy.close();
+
+      final db = AppDatabase.forTesting(NativeDatabase(file));
+      addTearDown(db.close);
+
+      final packs = await db.select(db.packs).get();
+      expect(packs, hasLength(1));
+      expect(packs.single.sourceUrl, isNull);
+      expect(
+        (await (db.select(
+          db.questionSets,
+        )..where((t) => t.id.equals(id))).getSingle()).packId,
+        packs.single.id,
+      );
+    });
+
+    test('an empty device gets the default pack', () async {
+      final legacy = _LegacyV16Database(NativeDatabase(file));
+      await legacy.close();
+      final db = AppDatabase.forTesting(NativeDatabase(file));
+      addTearDown(db.close);
+      expect(await db.select(db.packs).get(), hasLength(1));
+    });
+
+    test(
+      'a device with only Marketplace sets gets no empty "My sets"',
+      () async {
+        final legacy = _LegacyV16Database(NativeDatabase(file));
+        final id = await _insertLegacySet(legacy, createdAt: 1, updatedAt: 1);
+        await _markImported(
+          legacy,
+          setId: id,
+          source: 'https://a.example/marketplace.json',
+          pack: 'pack-1',
+          marketplaceSetId: 's1',
+        );
+        await legacy.close();
+
+        final db = AppDatabase.forTesting(NativeDatabase(file));
+        addTearDown(db.close);
+        final packs = await db.select(db.packs).get();
+        expect(packs, hasLength(1));
+        expect(packs.single.sourceUrl, 'https://a.example/marketplace.json');
+      },
     );
   });
 }
