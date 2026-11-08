@@ -12,20 +12,25 @@
 // `streakFreezesAvailable`) by `PetService.recordLessonCompletion` before
 // this screen ever opens — the spin itself is purely cosmetic and always
 // lands on that reward's slice, regardless of whether the user taps a
-// second time to stop it early or lets the automatic timeout stop it.
+// second time to stop it early or lets the automatic timeout stop it (the
+// motion lives in `wheel_spin.dart`, the painting in `wheel_painter.dart`;
+// issue #117 made the spin feel physical).
 // Unlike the lootbox/streak-saved/XP-up screens (#082, still open for those
 // three), this one ships with `PopScope(canPop: false)` from day one: a
 // spin result is visible (persisted) as soon as it's drawn, so there's no
 // safe "undo" point to back out to.
-import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../pet/lootbox_reward.dart';
 import '../theme/fox_streak_theme.dart';
 import '../widgets/widgets.dart';
+import 'wheel_painter.dart';
+import 'wheel_spin.dart';
 
 /// How far around the wheel (in full turns) the spin must land to put
 /// [reward]'s slice under the fixed top pointer, plus [extraFullTurns]
@@ -50,59 +55,114 @@ double wheelTargetRotationTurns(WheelReward reward, {int extraFullTurns = 4}) {
 /// The four states a wheel moves through, in order, never backwards: idle
 /// and tappable to start; spinning (tappable a second time to stop early,
 /// otherwise stopped automatically after a short delay); stopping (the
-/// short wind-down animation already underway, no longer tappable — see
+/// wind-down already underway, no longer tappable — see
 /// [_WheelScreenState._stopSpin] for why a tap here must be a no-op); and
 /// stopped on the already-decided segment.
 enum _WheelPhase { idle, spinning, stopping, stopped }
 
 /// Tap-to-spin wheel-of-fortune reveal for an already-won [reward].
-class WheelScreen extends StatefulWidget {
+class WheelScreen extends ConsumerStatefulWidget {
   final WheelReward reward;
   final AppLocalizations l10n;
 
   const WheelScreen({super.key, required this.reward, required this.l10n});
 
   @override
-  State<WheelScreen> createState() => _WheelScreenState();
+  ConsumerState<WheelScreen> createState() => _WheelScreenState();
 }
 
-class _WheelScreenState extends State<WheelScreen>
-    with SingleTickerProviderStateMixin {
-  static const int _extraFullTurns = 4;
-  static const Duration _spinDuration = Duration(milliseconds: 3000);
-  static const Duration _autoStopDelay = Duration(milliseconds: 1600);
-  static const Duration _quickStopDuration = Duration(milliseconds: 500);
+class _WheelScreenState extends ConsumerState<WheelScreen>
+    with TickerProviderStateMixin {
+  static const Duration _idleBreathDuration = Duration(milliseconds: 700);
+  static const Duration _idlePauseDuration = Duration(milliseconds: 1600);
+  static const Duration _flickDuration = Duration(milliseconds: 110);
+  static const Duration _winPulseDuration = Duration(milliseconds: 450);
+  static const int _winPulseCount = 3;
 
   _WheelPhase _phase = _WheelPhase.idle;
-  late final AnimationController _controller;
-  late final Animation<double> _rotation;
-  Timer? _autoStopTimer;
+  final ValueNotifier<double> _rotation = ValueNotifier<double>(0);
+  late final Ticker _ticker;
+  late final double _restFraction;
+  late WheelTrajectory _trajectory;
+  bool _reduceMotion = false;
+  Duration _elapsed = Duration.zero;
+  final WheelBoundaryTracker _boundaries = WheelBoundaryTracker(
+    segments: kWheelSegments.length,
+  );
+  final WheelHapticThrottle _haptics = WheelHapticThrottle();
+
+  late final AnimationController _flick = AnimationController(
+    vsync: this,
+    duration: _flickDuration,
+  );
+  late final AnimationController _winPulse = AnimationController(
+    vsync: this,
+    duration: _winPulseDuration,
+  );
+
+  // Idle invitation: the same bounded breathe-then-pause loop as the
+  // lootbox's closed-box pulse (#073/#079), never an endless animation.
+  late final BoundedLoopController _idleLoop = BoundedLoopController(
+    vsync: this,
+    playback: BoundedLoopPlayback.pingPong,
+    duration: _idleBreathDuration,
+    pauseDuration: () => _idlePauseDuration,
+    reduceMotion: () => MediaQuery.disableAnimationsOf(context),
+  );
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: _spinDuration)
-      ..addStatusListener(_handleStatus);
-    final targetTurns = wheelTargetRotationTurns(
-      widget.reward,
-      extraFullTurns: _extraFullTurns,
-    );
-    _rotation = Tween<double>(
-      begin: 0,
-      end: targetTurns,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
+    _restFraction =
+        wheelTargetRotationTurns(widget.reward, extraFullTurns: 0) % 1;
+    _trajectory = WheelTrajectory(restFraction: _restFraction);
+    _ticker = createTicker(_handleTick);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_phase != _WheelPhase.idle) return;
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _idleLoop.reset();
+    } else {
+      _idleLoop.startIfIdle();
+    }
   }
 
   @override
   void dispose() {
-    _autoStopTimer?.cancel();
-    _controller.dispose();
+    _ticker.dispose();
+    _rotation.dispose();
+    _flick.dispose();
+    _winPulse.dispose();
+    _idleLoop.dispose();
     super.dispose();
   }
 
-  void _handleStatus(AnimationStatus status) {
-    if (status == AnimationStatus.completed) {
+  void _handleTick(Duration elapsed) {
+    _elapsed = elapsed;
+    final double turns = _trajectory.turnsAt(elapsed);
+    _rotation.value = turns;
+    if (_boundaries.advance(turns) > 0) {
+      _flick.forward(from: 0);
+      if (_haptics.tryFire(elapsed)) {
+        FoxFeedback.tick(context, ref);
+      }
+    }
+    // The automatic stop has engaged: from here a tap must be a no-op, or it
+    // would re-plan the stop from a later moment and speed the wheel up.
+    if (_phase == _WheelPhase.spinning &&
+        elapsed >= _trajectory.stopEngagesAt) {
+      setState(() => _phase = _WheelPhase.stopping);
+    }
+    if (elapsed >= _trajectory.totalDuration) {
+      _ticker.stop();
+      _rotation.value = _trajectory.restTurns;
       setState(() => _phase = _WheelPhase.stopped);
+      if (!_reduceMotion) {
+        _winPulse.repeat(reverse: true, count: _winPulseCount * 2);
+      }
     }
   }
 
@@ -119,31 +179,36 @@ class _WheelScreenState extends State<WheelScreen>
   }
 
   void _startSpin() {
-    setState(() => _phase = _WheelPhase.spinning);
-    _controller.forward();
-    _autoStopTimer = Timer(_autoStopDelay, _stopSpin);
+    _idleLoop.reset();
+    final bool reduceMotion = MediaQuery.disableAnimationsOf(context);
+    _reduceMotion = reduceMotion;
+    _trajectory = WheelTrajectory(
+      restFraction: _restFraction,
+      reduceMotion: reduceMotion,
+    );
+    // The plain reduce-motion spin has no early stop to offer.
+    setState(
+      () => _phase = reduceMotion ? _WheelPhase.stopping : _WheelPhase.spinning,
+    );
+    _ticker.start();
   }
 
-  /// Ends the spin, whether called from a second tap or [_autoStopTimer] —
-  /// either way, animates the *same* [_controller] from wherever it
-  /// currently is up to `1.0` (i.e. [Tween.end], [widget.reward]'s slice),
-  /// just over a shorter, fixed [_quickStopDuration]. Only how long the
-  /// remaining spin takes differs between the two callers, never the
-  /// landing slice.
+  /// Ends the spin early on a second tap: replaces the trajectory with one
+  /// whose deceleration engages now. The two trajectories agree up to this
+  /// moment, so the wheel carries on from where it is, only slowing down,
+  /// and lands on the same slice as an unhindered spin.
   ///
-  /// Moves to [_WheelPhase.stopping] (rather than leaving [_phase] at
-  /// `spinning` until the animation completes) so [_handleTap] ignores any
-  /// further taps during this short wind-down — without this, tapping
-  /// faster than [_quickStopDuration] would keep restarting `animateTo`
-  /// from a fresh `0%`, starving the controller of ever reaching
-  /// `completed` and leaving the screen permanently stuck (no back nav,
+  /// Moves to [_WheelPhase.stopping] so [_handleTap] ignores any further
+  /// taps during the wind-down — re-planning on every tap could otherwise
+  /// keep postponing the landing and leave the screen stuck (no back nav,
   /// per [PopScope]).
   void _stopSpin() {
     if (_phase != _WheelPhase.spinning) return;
-    _autoStopTimer?.cancel();
-    _autoStopTimer = null;
     setState(() => _phase = _WheelPhase.stopping);
-    _controller.animateTo(1.0, duration: _quickStopDuration);
+    _trajectory = WheelTrajectory(
+      restFraction: _restFraction,
+      stopAfter: _elapsed,
+    );
   }
 
   @override
@@ -159,6 +224,16 @@ class _WheelScreenState extends State<WheelScreen>
       WheelCoinsReward(amount: final amount) => l10n.coinsSemanticLabel(amount),
       WheelStreakOnIceReward() => l10n.streakOnIceSemanticLabel,
     };
+    final int? winningIndex = stopped ? kWheelSegments.indexOf(reward) : null;
+    Widget dial({required String label, VoidCallback? onTap}) => _WheelDial(
+      rotation: _rotation,
+      flick: _flick,
+      idle: _idleLoop.controller,
+      winPulse: _winPulse,
+      winningIndex: winningIndex,
+      semanticLabel: label,
+      onTap: onTap,
+    );
     return PopScope(
       canPop: false,
       child: Scaffold(
@@ -177,18 +252,9 @@ class _WheelScreenState extends State<WheelScreen>
                   ),
                   const SizedBox(height: FoxSpacing.xl),
                   if (stopped)
-                    FoxCelebration(
-                      child: _WheelDial(
-                        rotation: _rotation,
-                        semanticLabel: wonSemanticLabel,
-                      ),
-                    )
+                    FoxCelebration(child: dial(label: wonSemanticLabel))
                   else
-                    _WheelDial(
-                      rotation: _rotation,
-                      semanticLabel: l10n.wheelTapPrompt,
-                      onTap: _handleTap,
-                    ),
+                    dial(label: l10n.wheelTapPrompt, onTap: _handleTap),
                   const SizedBox(height: FoxSpacing.xxl),
                   if (stopped)
                     FoxPrimaryButton(
@@ -222,20 +288,33 @@ String _labelFor(WheelReward segment) => switch (segment) {
 /// also gates `LootboxScreen`'s `_LootboxAnimation`.
 class _WheelDial extends StatelessWidget {
   static const double _size = 220;
+  static const double _idleScale = 0.05;
+  static const double _idleWobbleTurns = 0.012;
+  static const double _flickTilt = 0.5;
 
-  final Animation<double> rotation;
+  final ValueNotifier<double> rotation;
+  final Animation<double> flick;
+  final Animation<double> idle;
+  final Animation<double> winPulse;
+  final int? winningIndex;
   final String semanticLabel;
   final VoidCallback? onTap;
 
   const _WheelDial({
     required this.rotation,
+    required this.flick,
+    required this.idle,
+    required this.winPulse,
+    required this.winningIndex,
     required this.semanticLabel,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final semantics = Theme.of(context).extension<FoxSemanticColors>()!;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
+    final semantics = theme.extension<FoxSemanticColors>()!;
     final sliceColors = <Color>[
       semantics.gold,
       semantics.coin,
@@ -255,8 +334,7 @@ class _WheelDial extends StatelessWidget {
       semantics.onIce,
     ];
     final textStyle =
-        Theme.of(context).textTheme.titleMedium
-            ?.copyWith(fontWeight: FontWeight.w800) ??
+        theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800) ??
         const TextStyle(fontWeight: FontWeight.w800);
 
     final Widget dial = SizedBox(
@@ -267,27 +345,54 @@ class _WheelDial extends StatelessWidget {
         alignment: Alignment.center,
         children: <Widget>[
           AnimatedBuilder(
-            animation: rotation,
-            builder: (context, child) => Transform.rotate(
-              angle: rotation.value * 2 * math.pi,
-              child: child,
-            ),
-            child: CustomPaint(
-              size: const Size.square(_size),
-              painter: _WheelPainter(
-                labels: kWheelSegments.map(_labelFor).toList(),
-                sliceColors: sliceColors,
-                onSliceColors: onSliceColors,
-                textStyle: textStyle,
+            animation: Listenable.merge(<Listenable>[rotation, idle]),
+            builder: (context, child) {
+              final double wobble =
+                  math.sin(idle.value * 2 * math.pi) * _idleWobbleTurns;
+              return Transform.scale(
+                scale: 1 + _idleScale * Curves.easeInOut.transform(idle.value),
+                child: Transform.rotate(
+                  key: const Key('wheelRotation'),
+                  angle: (rotation.value + wobble) * 2 * math.pi,
+                  child: child,
+                ),
+              );
+            },
+            child: RepaintBoundary(
+              child: CustomPaint(
+                size: const Size.square(_size),
+                painter: WheelPainter(
+                  labels: kWheelSegments.map(_labelFor).toList(),
+                  sliceColors: sliceColors,
+                  onSliceColors: onSliceColors,
+                  textStyle: textStyle,
+                  rimColor: scheme.primary,
+                  rimLightColor: scheme.onPrimary,
+                  dividerColor: scheme.surface,
+                  hubColor: scheme.surface,
+                  shadowColor: scheme.shadow,
+                  surfaceColor: scheme.surface,
+                  onSurfaceColor: scheme.onSurface,
+                  winningIndex: winningIndex,
+                  pulse: winPulse,
+                ),
               ),
             ),
           ),
           Positioned(
             top: 0,
-            child: Icon(
-              Icons.arrow_drop_down,
-              size: 36,
-              color: Theme.of(context).colorScheme.onSurface,
+            child: AnimatedBuilder(
+              animation: flick,
+              builder: (context, child) => Transform.rotate(
+                alignment: Alignment.topCenter,
+                angle: math.sin(flick.value * math.pi) * _flickTilt,
+                child: child,
+              ),
+              child: Icon(
+                Icons.arrow_drop_down,
+                size: 36,
+                color: scheme.onSurface,
+              ),
             ),
           ),
         ],
@@ -302,69 +407,4 @@ class _WheelDial extends StatelessWidget {
       child: dial,
     );
   }
-}
-
-/// Paints [labels.length] equal pie slices, each filled with its
-/// [sliceColors] entry and labelled with its [labels] entry in the matching
-/// [onSliceColors] entry (the AA-checked "safe for text on this fill"
-/// counterpart — see `FoxSemanticColors`'s class doc). Slice `0` starts at
-/// the top (12 o'clock) and slices proceed clockwise —
-/// [wheelTargetRotationTurns] relies on this exact layout to compute which
-/// rotation lands which slice under the fixed pointer.
-class _WheelPainter extends CustomPainter {
-  final List<String> labels;
-  final List<Color> sliceColors;
-  final List<Color> onSliceColors;
-  final TextStyle textStyle;
-
-  const _WheelPainter({
-    required this.labels,
-    required this.sliceColors,
-    required this.onSliceColors,
-    required this.textStyle,
-  }) : assert(
-         sliceColors.length == labels.length &&
-             onSliceColors.length == labels.length,
-         'sliceColors/onSliceColors must have one entry per labels entry '
-         '(labels: ${labels.length}, sliceColors: ${sliceColors.length}, '
-         'onSliceColors: ${onSliceColors.length})',
-       );
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Offset center = size.center(Offset.zero);
-    final double radius = size.shortestSide / 2;
-    final double sliceAngle = 2 * math.pi / labels.length;
-
-    for (var i = 0; i < labels.length; i++) {
-      final double startAngle = -math.pi / 2 + i * sliceAngle;
-      final Paint fillPaint = Paint()..color = sliceColors[i];
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        startAngle,
-        sliceAngle,
-        true,
-        fillPaint,
-      );
-
-      final double labelAngle = startAngle + sliceAngle / 2;
-      final Offset labelOffset =
-          center +
-          Offset(math.cos(labelAngle), math.sin(labelAngle)) * radius * 0.65;
-      final TextPainter textPainter = TextPainter(
-        text: TextSpan(
-          text: labels[i],
-          style: textStyle.copyWith(color: onSliceColors[i]),
-        ),
-        textDirection: TextDirection.ltr,
-      )..layout();
-      textPainter.paint(
-        canvas,
-        labelOffset - Offset(textPainter.width / 2, textPainter.height / 2),
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _WheelPainter oldDelegate) => false;
 }

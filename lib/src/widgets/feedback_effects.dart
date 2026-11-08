@@ -42,6 +42,12 @@ abstract final class FoxFeedback {
     return _buzz(ref, HapticFeedback.lightImpact);
   }
 
+  /// Light tick for a continuous motion passing a detent, e.g. a wheel
+  /// slice boundary passing the pointer (issue #117). Callers throttle.
+  static Future<void> tick(BuildContext context, WidgetRef ref) {
+    return _buzz(ref, HapticFeedback.lightImpact);
+  }
+
   static Future<void> error(BuildContext context, WidgetRef ref) {
     return _buzz(ref, HapticFeedback.heavyImpact);
   }

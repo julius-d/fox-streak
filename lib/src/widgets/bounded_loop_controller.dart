@@ -106,6 +106,9 @@ class BoundedLoopController {
   void reset() {
     stop();
     controller.value = 0;
+    // Jumping to 0 reports `dismissed`, which would arm the next cycle's
+    // pause timer again — the opposite of a reset.
+    cancelPendingPause();
   }
 
   void dispose() {
