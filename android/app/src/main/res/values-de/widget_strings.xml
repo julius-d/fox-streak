@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_label">FoxStreak</string>
+    <string name="widget_description">Deine Streak, dein Tier und die heutigen XP auf einen Blick</string>
+    <string name="widget_open_app">FoxStreak öffnen</string>
+</resources>

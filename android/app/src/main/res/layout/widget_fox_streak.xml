@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="8dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <!-- Streak: flame above the day count. -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <ImageView
+                android:id="@+id/widget_flame"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_widget_flame" />
+
+            <TextView
+                android:id="@+id/widget_streak"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:importantForAccessibility="no"
+                android:textColor="@color/widget_on_background"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Equipped pet (emoji, static). -->
+        <TextView
+            android:id="@+id/widget_pet"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:importantForAccessibility="no"
+            android:textSize="30sp" />
+
+        <!-- Today's XP inside the goal ring. -->
+        <FrameLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center">
+
+            <ProgressBar
+                android:id="@+id/widget_ring"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:layout_gravity="center"
+                android:importantForAccessibility="no"
+                android:indeterminate="false"
+                android:max="100"
+                android:progressDrawable="@drawable/widget_ring" />
+
+            <TextView
+                android:id="@+id/widget_xp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:importantForAccessibility="no"
+                android:maxLines="1"
+                android:textColor="@color/widget_on_background"
+                android:textSize="11sp"
+                android:textStyle="bold" />
+        </FrameLayout>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/widget_at_risk"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:gravity="center"
+        android:importantForAccessibility="no"
+        android:textColor="@color/widget_on_background"
+        android:textSize="12sp"
+        android:visibility="gone" />
+</LinearLayout>

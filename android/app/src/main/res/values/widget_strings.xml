@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Only the strings the widget needs before the app has ever run (and so
+     before Flutter could push localized text); all other widget copy comes
+     from the app's arb files (issue #115). -->
+<resources>
+    <string name="widget_label">FoxStreak</string>
+    <string name="widget_description">Your streak, pet and today\'s XP at a glance</string>
+    <string name="widget_open_app">Open FoxStreak</string>
+</resources>

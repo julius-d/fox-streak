@@ -6,6 +6,7 @@ import 'package:window_manager/window_manager.dart';
 
 import 'l10n/app_localizations.dart';
 import 'src/home/home_screen.dart';
+import 'src/home_widget/home_widget_providers.dart';
 import 'src/theme/fox_streak_theme.dart';
 
 void main() async {
@@ -21,11 +22,12 @@ void main() async {
   runApp(const ProviderScope(child: FoxStreakApp()));
 }
 
-class FoxStreakApp extends StatelessWidget {
+class FoxStreakApp extends ConsumerWidget {
   const FoxStreakApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(homeWidgetSyncProvider);
     return MaterialApp(
       title: 'FoxStreak',
       debugShowCheckedModeBanner: false,

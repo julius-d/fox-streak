@@ -999,5 +999,19 @@
   "marketplacePackOverwriteMessage": "Du hast diese Sets seit dem Download geändert:\n{sets}\n\nÜberschreiben ersetzt sie durch die Marketplace-Version – passende Aufgaben behalten ihren Fortschritt, andere starten neu.",
   "marketplacePackOverwriteConfirm": "Überschreiben",
   "marketplacePackOverwriteSkip": "Diese Sets überspringen",
-  "marketplacePackSetsHeading": "Sets in diesem Pack"
+  "marketplacePackSetsHeading": "Sets in diesem Pack",
+  "@widgetSemanticsLabel": {
+    "description": "Screen-reader description of the Android home-screen widget: streak length and today's XP progress (issue #115)",
+    "placeholders": {
+      "streakCount": {"type": "int"},
+      "earnedXp": {"type": "int"},
+      "goalXp": {"type": "int"}
+    }
+  },
+  "widgetSemanticsLabel": "{streakCount, plural, =1{1 Tag Streak} other{{streakCount} Tage Streak}}, {earnedXp} von {goalXp} XP heute",
+  "@widgetAtRiskText": {
+    "description": "Encouraging line on the Android home-screen widget when the streak is at risk (streak > 0, no activity yet today) (issue #115)",
+    "placeholders": {}
+  },
+  "widgetAtRiskText": "Übe heute, um deine Streak zu halten!"
 }

@@ -1739,6 +1739,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sets in this pack'**
   String get marketplacePackSetsHeading;
+
+  /// Screen-reader description of the Android home-screen widget: streak length and today's XP progress (issue #115)
+  ///
+  /// In en, this message translates to:
+  /// **'{streakCount, plural, =1{1 day streak} other{{streakCount} day streak}}, {earnedXp} of {goalXp} XP today'**
+  String widgetSemanticsLabel(int streakCount, int earnedXp, int goalXp);
+
+  /// Encouraging line on the Android home-screen widget when the streak is at risk (streak > 0, no activity yet today) (issue #115)
+  ///
+  /// In en, this message translates to:
+  /// **'Practice today to keep your streak!'**
+  String get widgetAtRiskText;
 }
 
 class _AppLocalizationsDelegate

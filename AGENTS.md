@@ -93,6 +93,14 @@ Lints via `flutter_lints` + `riverpod_lint` surface through `flutter analyze`;
   (a `workflow_dispatch` CI job, per #019's fallback plan) — not from a
   macOS or Windows dev machine.
 
+## Android home-screen widget (issue #115)
+
+- Native Kotlin `FoxStreakWidgetProvider` fed over our own `MethodChannel`
+  (no `home_widget` plugin: it lacks desktop support). Rules live in
+  `lib/src/home_widget/` (pure, tested); Kotlin only renders. Widget copy comes
+  from the arb files via the pushed payload — except the two pre-first-run
+  strings in `res/values*/widget_strings.xml`.
+
 ## Conventions
 
 - **Conventional commits**, e.g. `feat: …`. Commit `pubspec.lock` (app, not package).

@@ -1242,5 +1242,19 @@
     "description": "Heading above the read-only set preview list (issue #121)",
     "placeholders": {}
   },
-  "marketplacePackSetsHeading": "Sets in this pack"
+  "marketplacePackSetsHeading": "Sets in this pack",
+  "@widgetSemanticsLabel": {
+    "description": "Screen-reader description of the Android home-screen widget: streak length and today's XP progress (issue #115)",
+    "placeholders": {
+      "streakCount": {"type": "int"},
+      "earnedXp": {"type": "int"},
+      "goalXp": {"type": "int"}
+    }
+  },
+  "widgetSemanticsLabel": "{streakCount, plural, =1{1 day streak} other{{streakCount} day streak}}, {earnedXp} of {goalXp} XP today",
+  "@widgetAtRiskText": {
+    "description": "Encouraging line on the Android home-screen widget when the streak is at risk (streak > 0, no activity yet today) (issue #115)",
+    "placeholders": {}
+  },
+  "widgetAtRiskText": "Practice today to keep your streak!"
 }

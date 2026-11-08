@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Home-screen widget palette (issue #115). Pre-Android-12 fallback is a
+     neutral light scheme; values-v31 / values-night-v31 swap in the system's
+     Material You (wallpaper-derived) colors. -->
+<resources>
+    <color name="widget_background">#FFFFF3E8</color>
+    <color name="widget_on_background">#FF2B1700</color>
+    <color name="widget_ring">#FFE65100</color>
+    <color name="widget_ring_track">#FFFFDCC2</color>
+    <color name="widget_flame">#FFE65100</color>
+</resources>

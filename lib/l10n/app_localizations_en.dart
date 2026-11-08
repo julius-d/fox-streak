@@ -1029,4 +1029,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get marketplacePackSetsHeading => 'Sets in this pack';
+
+  @override
+  String widgetSemanticsLabel(int streakCount, int earnedXp, int goalXp) {
+    String _temp0 = intl.Intl.pluralLogic(
+      streakCount,
+      locale: localeName,
+      other: '$streakCount day streak',
+      one: '1 day streak',
+    );
+    return '$_temp0, $earnedXp of $goalXp XP today';
+  }
+
+  @override
+  String get widgetAtRiskText => 'Practice today to keep your streak!';
 }
