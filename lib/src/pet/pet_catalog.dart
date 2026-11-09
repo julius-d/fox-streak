@@ -37,6 +37,7 @@ const String kDefaultPetId = 'emoji_u1f98a_lottie';
 enum PetRarity {
   common,
   uncommon,
+  rare,
   epic,
   legendary,
   mythic;
@@ -44,8 +45,9 @@ enum PetRarity {
   /// This tier's fixed share (summing to 100 across every value) of a
   /// weighted pet draw.
   int get weight => switch (this) {
-    PetRarity.common => 55,
-    PetRarity.uncommon => 30,
+    PetRarity.common => 50,
+    PetRarity.uncommon => 20,
+    PetRarity.rare => 15,
     PetRarity.epic => 10,
     PetRarity.legendary => 4,
     PetRarity.mythic => 1,
@@ -238,11 +240,18 @@ abstract final class PetCatalog {
       sortOrder: 9,
     ),
     PetEntry(
+      id: 'emoji_u1f984_lottie',
+      assetPath: '${kPetAssetDir}emoji_u1f984_lottie.json',
+      emoji: '🦄',
+      rarity: PetRarity.legendary,
+      sortOrder: 10,
+    ),
+    PetEntry(
       id: 'emoji_u1f426_200d_1f525_lottie',
       assetPath: '${kPetAssetDir}emoji_u1f426_200d_1f525_lottie.json',
       emoji: '🐦‍🔥',
       rarity: PetRarity.mythic,
-      sortOrder: 10,
+      sortOrder: 11,
     ),
   ];
 
