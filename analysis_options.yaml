@@ -34,6 +34,8 @@ analyzer:
     - windows/**
     - '**/*.g.dart'
     - macos/**
+    - web/**
+    - linux/**
 
 plugins:
   riverpod_lint: ^3.1.9
