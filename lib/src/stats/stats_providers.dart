@@ -15,28 +15,24 @@ final profileProvider = StreamProvider<ProfileStat>((ref) {
   return ref.watch(statsRepositoryProvider).watchProfile();
 });
 
-/// The #084 Streak Details screen's calendar data: the live profile's
-/// streak/goal fields combined with the `daily_activity` rows covering the
-/// ~6-month window, re-derived whenever [profileProvider] emits.
+/// The Streak Details screen's data (#084, #128): the live profile's
+/// streak fields combined with every recorded `daily_activity` row (the
+/// all-time stats and the scrollable history both need all of them),
+/// re-derived whenever [profileProvider] emits.
 final activityCalendarProvider =
     FutureProvider.autoDispose<ActivityCalendarData>((ref) async {
       final statsRepo = ref.watch(statsRepositoryProvider);
       final now = ref.watch(systemClockProvider).now();
-      final windowDays = buildWindowDays(today: now);
       // Started concurrently (not sequentially awaited) — the profile read
-      // and the daily_activity range query are independent.
+      // and the daily_activity query are independent.
       final profileFuture = ref.watch(profileProvider.future);
-      final entriesFuture = statsRepo.getDailyActivityRange(
-        fromDay: windowDays.first,
-        toDay: windowDays.last,
-      );
+      final entriesFuture = statsRepo.getAllDailyActivity();
       final profile = await profileFuture;
       final entries = await entriesFuture;
       return ActivityCalendarData.build(
         today: now,
         streakCount: profile.streakCount,
         lastActiveDay: profile.lastActiveDay,
-        dailyGoalXp: profile.dailyGoalXp,
         entries: entries,
         streakFreezesAvailable: profile.streakFreezesAvailable,
       );

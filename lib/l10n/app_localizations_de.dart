@@ -731,28 +731,7 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String streakDetailsLongestStreakHeadline(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Längste Streak der letzten 6 Monate: $count Tage',
-      one: 'Längste Streak der letzten 6 Monate: 1 Tag',
-      zero: 'Keine Aktivität in den letzten 6 Monaten',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get streakDetailsLegendNone => 'Keine Aktivität';
-
-  @override
-  String get streakDetailsLegendLow => 'Niedrig';
-
-  @override
-  String get streakDetailsLegendMedium => 'Mittel';
-
-  @override
-  String get streakDetailsLegendHigh => 'Ziel erreicht';
+  String get streakDetailsLegendNone => 'Nicht geübt';
 
   @override
   String streakCalendarCellActivityLabel(String day, int xp) {
@@ -761,7 +740,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String streakCalendarCellNoActivityLabel(String day) {
-    return '$day: keine Aktivität';
+    return '$day: nicht geübt';
   }
 
   @override
@@ -799,11 +778,95 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get streakDetailsLegendStreakOnIce => 'Streak-Freeze genutzt';
+  String get streakDetailsLegendStreakOnIce => 'Durch Streak-Freeze gerettet';
 
   @override
   String streakCalendarCellStreakOnIceLabel(String day) {
-    return '$day: Streak-Freeze genutzt';
+    return '$day: durch Streak-Freeze gerettet';
+  }
+
+  @override
+  String streakDetailsHeroDaysLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Tage in Folge!',
+      one: 'Tag in Folge!',
+      zero: 'Tage in Folge',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get streakDetailsHeroPracticedToday =>
+      'Du bist Feuer und Flamme! Bis morgen.';
+
+  @override
+  String get streakDetailsHeroNotYetToday =>
+      'Übe heute, damit deine Streak weiterläuft.';
+
+  @override
+  String get streakDetailsHeroNoStreak => 'Starte heute eine neue Streak!';
+
+  @override
+  String get streakDetailsStatLongestLabel => 'Längste Streak';
+
+  @override
+  String streakDetailsStatLongestSemantics(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Längste Streak: $count Tage',
+      one: 'Längste Streak: 1 Tag',
+      zero: 'Längste Streak: noch keine',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get streakDetailsStatPracticeDaysLabel => 'Übungstage';
+
+  @override
+  String streakDetailsStatPracticeDaysSemantics(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Übungstage insgesamt',
+      one: '1 Übungstag insgesamt',
+      zero: 'Noch keine Übungstage',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get streakDetailsStatFreezesLabel => 'Streak-Freezes';
+
+  @override
+  String get streakDetailsLegendPracticed => 'Geübt';
+
+  @override
+  String get streakDetailsLegendCurrentStreak => 'Aktuelle Streak';
+
+  @override
+  String get streakDetailsLegendLongestStreak => 'Längste Streak';
+
+  @override
+  String streakDetailsDayXpEarned(int xp) {
+    return '$xp XP verdient';
+  }
+
+  @override
+  String get streakDetailsDayStreakFreeze => 'Durch Streak-Freeze gerettet ❄️';
+
+  @override
+  String get streakDetailsDayNoPractice => 'Nicht geübt';
+
+  @override
+  String get streakDetailsDayNotYetToday => 'Heute noch nicht geübt';
+
+  @override
+  String streakCalendarCellTodayNotPracticedLabel(String day) {
+    return '$day: heute noch nicht geübt';
   }
 
   @override

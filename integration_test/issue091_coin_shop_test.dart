@@ -86,7 +86,14 @@ void main() {
       await settle(tester);
       await tester.tap(find.byKey(const Key('streakBadgeButton')));
       await settle(tester);
-      expect(find.text('1 streak freeze available'), findsOneWidget);
+      // #128: the freeze balance lives in the freezes stat tile.
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('streakStatFreezes')),
+          matching: find.text('1'),
+        ),
+        findsOneWidget,
+      );
     },
   );
 }

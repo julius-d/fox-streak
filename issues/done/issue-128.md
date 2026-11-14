@@ -1,6 +1,6 @@
 # Issue 128: Streak Details glow-up — flame hero, clean streak bands, animations
 
-Status: open | Priority: P3 | Type: enhancement | Refined-at: 2026-11-14
+Status: done | Priority: P3 | Type: enhancement | Refined-at: 2026-11-14 | Completed-at: 2026-11-14
 
 ## Goal
 
@@ -118,47 +118,47 @@ this screen. This issue replaces that line with the freezes stat tile. If
 
 ## Acceptance criteria
 
-- [ ] Hero shows a large flame with the current streak number and a
+- [x] Hero shows a large flame with the current streak number and a
       situation-dependent encouraging line (practiced today / not yet today /
       no streak); the 0-streak state uses a dimmed flame and inviting copy.
-- [ ] Stat tiles show all-time longest streak (freeze days included, never
+- [x] Stat tiles show all-time longest streak (freeze days included, never
       below the current streak), all-time practice days (freeze days
       excluded), and the number of streak freezes owned with the icy-blue
       snowflake.
-- [ ] The three old text headlines are gone; at large font sizes the tiles
+- [x] The three old text headlines are gone; at large font sizes the tiles
       wrap/stack without clipping.
-- [ ] Grid keeps the GitHub-style layout with ~20dp cells, scrolls back at
+- [x] Grid keeps the GitHub-style layout with ~20dp cells, scrolls back at
       least ~6 months and further to the first recorded practice day if
       older, and opens scrolled to today.
-- [ ] Cells show only three states (practiced / streak freeze / none); the
+- [x] Cells show only three states (practiced / streak freeze / none); the
       legend matches and explains the current and (when shown) longest streak
       bands.
-- [ ] Week columns are Monday-first (Mon top, Sun bottom) in every
+- [x] Week columns are Monday-first (Mon top, Sun bottom) in every
       language; weekday letters sit on the Mon/Wed/Fri rows; month labels
       still sit above the first column of each month.
-- [ ] A streak crossing a Sunday→Monday break renders with open band ends
+- [x] A streak crossing a Sunday→Monday break renders with open band ends
       at both column edges; no stubs or notches stick out of the grid.
-- [ ] Longest-streak band shows only when it is a different run than the
+- [x] Longest-streak band shows only when it is a different run than the
       current streak; shared days use the current-streak color.
-- [ ] Today is visually marked. Tapping a day shows a popup with the date and
+- [x] Today is visually marked. Tapping a day shows a popup with the date and
       XP / freeze / no practice / not yet today. Only one popup is open at a
       time, and it closes on outside tap or scroll.
-- [ ] Count-up (≤ ~1 s), flame flicker, backwards band draw-in, and today
+- [x] Count-up (≤ ~1 s), flame flicker, backwards band draw-in, and today
       pulse play as described each time the screen opens. All are skipped
       with reduce motion on.
-- [ ] Looks right in light and dark theme, at large font sizes, and on a
+- [x] Looks right in light and dark theme, at large font sizes, and on a
       small (360dp) Android phone.
-- [ ] Screen readers get the hero/stat values and per-day labels; decorative
+- [x] Screen readers get the hero/stat values and per-day labels; decorative
       animations, icons and header labels are not announced separately.
-- [ ] Widget tests cover the three hero states, the stat values (incl.
+- [x] Widget tests cover the three hero states, the stat values (incl.
       freeze days excluded from practice days), the day popup texts, and
       reduce-motion behavior.
-- [ ] Golden tests (#019) cover the hero and a streak band crossing a week
+- [x] Golden tests (#019) cover the hero and a streak band crossing a week
       break, in light and dark theme. Changed baselines are updated.
-- [ ] An integration test drives the real app to the Streak Details screen
+- [x] An integration test drives the real app to the Streak Details screen
       and checks hero, grid, and day popup.
-- [ ] Follows #015 (kit reuse, semantic colors, a11y labels, DE + EN strings).
-- [ ] `flutter analyze`, `dart format --output=none --set-exit-if-changed .`,
+- [x] Follows #015 (kit reuse, semantic colors, a11y labels, DE + EN strings).
+- [x] `flutter analyze`, `dart format --output=none --set-exit-if-changed .`,
       `tool/check_issues.sh`, `dart fix --dry-run`, and `flutter test` are
       clean per AGENTS.md.
 
@@ -177,3 +177,30 @@ this screen. This issue replaces that line with the freezes stat tile. If
   tile; see "Relation to #127".
 - Builds on #084 / #087 / #089 (Streak Details screen, freeze days,
   labels + connected highlight).
+
+## Summary
+- Data: `ActivityCalendarData.build` now reads all `daily_activity` rows (`getAllDailyActivity`); window = max(6 months, first recorded day). Three `ActivityDayState`s replace the XP buckets; `longestStreak` (≥ current), `practiceDays` (freezes excluded), `showLongestStreakBand` (only when strictly longer than the current streak).
+- Grid: Monday-first `groupIntoWeeks`, 20dp cells, `computeStreakBandSegments` (pure, with `openTop`/`openBottom` + `daysAfter` for the backwards draw-in) painted by `StreakBandPainter`. Today ring + pulse, tap popup via `OverlayPortal`. Header labels now scale with the font (clamped 2×).
+- Hero + stat tiles in `streak_details_hero.dart`; shared animation timing in `streak_motion.dart`. All animations are bounded and skipped under reduce motion. The freezes tile carries #127's `FoxStreakFreezeIcon`, which replaces #127's balance line on this screen.
+- Goldens: `activity_calendar_*` updated, `streak_hero_*` new (macOS baselines; Linux via `update-goldens.yml`).
+- Screenshots: `issue-128-practiced-light.png`, `-day-popup`, `-not-yet-today-dark`, `-no-streak`, `-large-font`.
+
+## Code review
+- A freeze day inside the current run pushed the run's first day out of the band (`streakCount` doesn't count freezes), so a gold "longest" band showed on the same run.
+  Fixed: `currentStreakDays` skips freeze days when counting; the longest band needs a non-overlapping run. Three test fixtures (Home, #108, #127) that had counted the freeze were corrected.
+- A broken streak (2+ missed days) still shows as alive in the hero and band.
+  Not fixed: out of scope (streak counting is unchanged), filed as #131.
+- Linux golden baselines are stale or missing.
+  Fixed after merge via `update-goldens.yml`.
+- `didUpdateWidget` called `setState` to dismiss the popup.
+  Fixed: state is cleared directly (build follows anyway).
+- The hero doesn't restart its animations when data or reduce motion changes while the screen is open.
+  Not fixed: the data can't change while this screen is open; per spec, animations play when the screen opens.
+- `longestRun` was quadratic over the now-unbounded history.
+  Fixed: index-based, linear.
+- Home and the calendar now load and build the full history (all rows, every cell eagerly).
+  Not fixed: one row per day stays small (about 1,100 cells after 3 years); revisit if it shows in profiling.
+- The stat tiles stack at default font size on 320dp phones.
+  Not fixed: stacking is the intended non-clipping fallback.
+- An over-long comment line in `home_screen.dart`.
+  Fixed.

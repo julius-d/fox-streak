@@ -134,17 +134,17 @@ class _HomeDashboard extends ConsumerWidget {
     final bool packUpdateBannerVisible = ref.watch(
       packUpdateControllerProvider.select((s) => s.visible),
     );
-    // Issue #108: reuses the same windowed `daily_activity` data #084's
-    // Streak Details calendar already reads — no new query — filtered down
-    // to just the current streak's days (oldest -> newest, matching
+    // Issue #108: reuses the same `daily_activity` data #084's Streak
+    // Details calendar already reads — no new query — filtered down to just
+    // the current streak's days (oldest -> newest, matching
     // `ActivityCalendarData.days`' own ordering) for the badge's per-day
-    // icon row. A streak longer than the ~6-month window (see
+    // icon row. A streak older than the recorded history (see
     // `buildWindowDays`) only shows icons for the days inside it — the same
-    // accepted v1 edge case `ActivityCalendarData.build`'s own doc already
-    // calls out for `isCurrentStreak`; the numeric count next to the row
-    // stays exact regardless. Reads `.value` (not `.maybeWhen`'s `orElse`)
-    // on purpose: this provider recomputes on every profile write (lesson,
-    // streak, coins, ...), and without `skipLoadingOnReload` each of those
+    // accepted v1 edge case `currentStreakDays`' own doc already calls out;
+    // the numeric count next to the row stays exact regardless. Reads
+    // `.value` (not `.maybeWhen`'s `orElse`) on purpose: this provider
+    // recomputes on every profile write (lesson, streak, coins, ...), and
+    // without `skipLoadingOnReload` each of those
     // briefly re-enters `AsyncLoading` — `maybeWhen`'s `orElse` would flash
     // the icon row to empty on every such write, where `.value` just keeps
     // returning the last-known data through that reload.

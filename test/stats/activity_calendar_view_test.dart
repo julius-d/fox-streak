@@ -1,517 +1,401 @@
-// Widget tests for the #084/#089 Streak Details calendar's rendering:
-// per-day cell colors (bucket thresholds), connected current-streak/
-// longest-streak highlight shapes (incl. boundary connectors), weekday/
-// month header labels, empty/no-data days, and the initial scroll position.
+// Widget tests for the Streak Details calendar (#084, #089, #128): cell
+// colors per day state, Monday-first weekday labels, streak bands (open
+// ends at week breaks, colors, backwards draw-in), the today marker +
+// pulse, the tap-a-day popup, reduce motion, semantics, and the initial
+// scroll position.
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fox_streak_app/l10n/app_localizations.dart';
 import 'package:fox_streak_app/src/stats/activity_calendar.dart';
 import 'package:fox_streak_app/src/stats/activity_calendar_view.dart';
 import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
 
+String oct(int d) => '2026-10-${d.toString().padLeft(2, '0')}';
+
+/// Mon 2026-10-05 .. Wed 2026-10-14 (today). A current streak Fri 09 ..
+/// today crosses the Sunday -> Monday break; Oct 10 is a freeze day; Oct
+/// 06/07 are a longest-streak run when [withLongest].
+ActivityCalendarData fixture({
+  bool practicedToday = true,
+  bool withLongest = false,
+}) {
+  final days = <ActivityDay>[
+    for (var i = 5; i <= 14; i++)
+      ActivityDay(
+        day: oct(i),
+        xpEarned: i == 10 ? 0 : 20 + i,
+        state: switch (i) {
+          10 => ActivityDayState.streakFreeze,
+          14 when !practicedToday => ActivityDayState.none,
+          8 => ActivityDayState.none,
+          5 => ActivityDayState.none,
+          _ => ActivityDayState.practiced,
+        },
+        isToday: i == 14,
+        isCurrentStreak: i >= 9 && (practicedToday || i < 14),
+        isLongestStreak: withLongest && (i == 6 || i == 7),
+      ),
+  ];
+  return ActivityCalendarData(
+    days: days,
+    currentStreakCount: practicedToday ? 6 : 5,
+    longestStreak: 6,
+    practiceDays: 7,
+    showLongestStreakBand: withLongest,
+  );
+}
+
 Future<void> pumpCalendar(
   WidgetTester tester,
   ActivityCalendarData data, {
-  Locale locale = const Locale('en'),
+  bool reduceMotion = true,
+  double? width,
+  bool settle = true,
 }) async {
   await tester.pumpWidget(
-    ProviderScope(
-      child: MaterialApp(
-        locale: locale,
-        theme: FoxStreakTheme.light(),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: ActivityCalendarView(
-            data: data,
-            cellSemanticsLabel: (day) => 'cell-${day.day}',
-          ),
+    MaterialApp(
+      theme: FoxStreakTheme.light(),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(disableAnimations: reduceMotion),
+        child: child!,
+      ),
+      home: Scaffold(
+        body: Column(
+          children: [
+            const Text('outside', key: Key('outside')),
+            SizedBox(
+              width: width,
+              child: ActivityCalendarView(
+                data: data,
+                cellSemanticsLabel: (day) => 'cell-${day.day}',
+                dayPopupText: (day) =>
+                    (date: 'date-${day.day}', status: 'status-${day.day}'),
+              ),
+            ),
+          ],
         ),
       ),
     ),
   );
-  await tester.pumpAndSettle();
+  if (settle) await tester.pumpAndSettle();
 }
 
-ActivityDay day(
-  String d, {
-  int xp = 0,
-  bool hasActivity = false,
-  ActivityLevel level = ActivityLevel.none,
-  bool isCurrentStreak = false,
-  bool isLongestStreak = false,
-  bool isStreakOnIce = false,
-}) => ActivityDay(
-  day: d,
-  xpEarned: xp,
-  hasActivity: hasActivity,
-  level: level,
-  isCurrentStreak: isCurrentStreak,
-  isLongestStreak: isLongestStreak,
-  isStreakOnIce: isStreakOnIce,
-);
-
-BoxDecoration decorationOf(WidgetTester tester, String dayStr) {
+Color cellColor(WidgetTester tester, String day) {
   final container = tester.widget<Container>(
     find
         .descendant(
-          of: find.byKey(Key('activityCalendarCell-$dayStr')),
+          of: find.byKey(Key('activityCalendarCell-$day')),
           matching: find.byType(Container),
         )
         .first,
   );
-  return container.decoration as BoxDecoration;
+  return (container.decoration! as BoxDecoration).color!;
 }
 
-BoxDecoration highlightDecorationOf(WidgetTester tester, String firstDay) {
-  final container = tester.widget<Container>(
-    find.byKey(Key('activityCalendarHighlight-$firstDay')),
-  );
-  return container.decoration as BoxDecoration;
-}
+StreakBandPainter bandOf(WidgetTester tester, String firstDay) =>
+    tester
+            .widget<CustomPaint>(
+              find.byKey(Key('activityCalendarBand-$firstDay')),
+            )
+            .painter!
+        as StreakBandPainter;
 
-/// Any connector widget's key contains this, regardless of which pair of
-/// adjacent week-columns it bridges — tests only care whether one exists.
-Finder anyConnectorFinder() => find.byWidgetPredicate(
-  (widget) =>
-      widget.key?.toString().contains('activityCalendarConnector') ?? false,
-);
+double todayScale(WidgetTester tester, String day) => tester
+    .widget<Transform>(
+      find
+          .descendant(
+            of: find.byKey(Key('activityCalendarCell-$day')),
+            matching: find.byType(Transform),
+          )
+          .first,
+    )
+    .transform
+    .getMaxScaleOnAxis();
 
 void main() {
   testWidgets('renders exactly one cell per day', (tester) async {
-    final data = ActivityCalendarData(
-      days: [day('2026-10-09'), day('2026-10-10'), day('2026-10-11')],
-      currentStreakCount: 0,
-      longestStreakInWindow: 0,
-      longestDiffersFromCurrent: false,
-    );
-    await pumpCalendar(tester, data);
-
+    await pumpCalendar(tester, fixture());
     expect(
-      find.byKey(const Key('activityCalendarCell-2026-10-09')),
-      findsOneWidget,
-    );
-    expect(
-      find.byKey(const Key('activityCalendarCell-2026-10-10')),
-      findsOneWidget,
-    );
-    expect(
-      find.byKey(const Key('activityCalendarCell-2026-10-11')),
-      findsOneWidget,
+      find.byWidgetPredicate(
+        (w) =>
+            w.key is ValueKey<String> &&
+            (w.key! as ValueKey<String>).value.startsWith(
+              'activityCalendarCell-',
+            ),
+      ),
+      findsNWidgets(10),
     );
   });
 
-  testWidgets('a day with no activity renders the neutral empty color', (
-    tester,
-  ) async {
-    final data = ActivityCalendarData(
-      days: [day('2026-10-11')],
-      currentStreakCount: 0,
-      longestStreakInWindow: 0,
-      longestDiffersFromCurrent: false,
-    );
-    await pumpCalendar(tester, data);
-
-    final decoration = decorationOf(tester, '2026-10-11');
-    final scheme = Theme.of(tester.element(find.byType(Scaffold))).colorScheme;
-    expect(decoration.color, scheme.surfaceContainerHighest);
-    expect(decoration.border, isNull);
+  testWidgets('cells show only three states: practiced (flame), streak '
+      'freeze (ice), no practice (neutral)', (tester) async {
+    await pumpCalendar(tester, fixture());
+    final theme = FoxStreakTheme.light();
+    final semantics = theme.extension<FoxSemanticColors>()!;
+    expect(cellColor(tester, oct(9)), semantics.flame);
+    expect(cellColor(tester, oct(10)), semantics.ice);
     expect(
-      find.byKey(const Key('activityCalendarHighlight-2026-10-11')),
-      findsNothing,
+      cellColor(tester, oct(8)),
+      theme.colorScheme.surfaceContainerHighest,
     );
   });
 
-  testWidgets(
-    'low/medium/high buckets render increasing flame alpha, distinct from '
-    'the empty color',
-    (tester) async {
-      final data = ActivityCalendarData(
-        days: [
-          day('2026-10-09', hasActivity: true, level: ActivityLevel.low),
-          day('2026-10-10', hasActivity: true, level: ActivityLevel.medium),
-          day('2026-10-11', hasActivity: true, level: ActivityLevel.high),
-        ],
-        currentStreakCount: 0,
-        longestStreakInWindow: 0,
-        longestDiffersFromCurrent: false,
-      );
-      await pumpCalendar(tester, data);
-
-      final low = decorationOf(tester, '2026-10-09').color!;
-      final medium = decorationOf(tester, '2026-10-10').color!;
-      final high = decorationOf(tester, '2026-10-11').color!;
-
-      expect(low.a, lessThan(medium.a));
-      expect(medium.a, lessThan(high.a));
-      expect(high.a, 1.0);
-    },
-  );
-
-  testWidgets(
-    'a streak-on-ice day renders the icy-blue color, distinct from every '
-    'flame bucket (issue #087)',
-    (tester) async {
-      final data = ActivityCalendarData(
-        days: [
-          day('2026-10-10', hasActivity: true, level: ActivityLevel.low),
-          day(
-            '2026-10-11',
-            hasActivity: true,
-            level: ActivityLevel.low,
-            isStreakOnIce: true,
-          ),
-        ],
-        currentStreakCount: 0,
-        longestStreakInWindow: 0,
-        longestDiffersFromCurrent: false,
-      );
-      await pumpCalendar(tester, data);
-
-      final ordinaryLow = decorationOf(tester, '2026-10-10').color!;
-      final iceColor = decorationOf(tester, '2026-10-11').color!;
-      final ice = foxSemantics(tester.element(find.byType(Scaffold))).ice;
-      expect(iceColor, ice);
-      expect(iceColor, isNot(ordinaryLow));
-    },
-  );
-
-  testWidgets('a current-streak day gets a flame-colored highlight shape', (
-    tester,
-  ) async {
-    final data = ActivityCalendarData(
-      days: [day('2026-10-11', hasActivity: true, isCurrentStreak: true)],
-      currentStreakCount: 1,
-      longestStreakInWindow: 0,
-      longestDiffersFromCurrent: false,
+  testWidgets('weekday letters sit on the Mon/Wed/Fri rows (1st, 3rd, 5th) '
+      'of a Monday-first week', (tester) async {
+    await pumpCalendar(tester, fixture());
+    final double mondayY = tester.getCenter(find.text('M')).dy;
+    final double wednesdayY = tester.getCenter(find.text('W')).dy;
+    final double fridayY = tester.getCenter(find.text('F')).dy;
+    // Row 0 = Monday 2026-10-05, row 2 = Wed 07, row 4 = Fri 09.
+    expect(
+      mondayY,
+      moreOrLessEquals(
+        tester.getCenter(find.byKey(Key('activityCalendarCell-${oct(5)}'))).dy,
+      ),
     );
-    await pumpCalendar(tester, data);
-
-    final decoration = highlightDecorationOf(tester, '2026-10-11');
-    final flame = foxSemantics(tester.element(find.byType(Scaffold))).flame;
-    expect((decoration.border as Border).top.color, flame);
+    expect(
+      wednesdayY,
+      moreOrLessEquals(
+        tester.getCenter(find.byKey(Key('activityCalendarCell-${oct(7)}'))).dy,
+      ),
+    );
+    expect(
+      fridayY,
+      moreOrLessEquals(
+        tester.getCenter(find.byKey(Key('activityCalendarCell-${oct(9)}'))).dy,
+      ),
+    );
+    expect(find.text('T'), findsNothing);
+    expect(find.text('S'), findsNothing);
+    expect(find.text('Oct'), findsOneWidget);
   });
 
-  testWidgets(
-    'a longest-streak (non-current) day gets a distinct highlight shape',
-    (tester) async {
-      final data = ActivityCalendarData(
-        days: [day('2026-09-01', hasActivity: true, isLongestStreak: true)],
-        currentStreakCount: 0,
-        longestStreakInWindow: 1,
-        longestDiffersFromCurrent: true,
+  testWidgets('a current streak crossing Sunday -> Monday renders as two '
+      'flame bands, open at the week break', (tester) async {
+    await pumpCalendar(tester, fixture());
+    final flame = FoxStreakTheme.light().extension<FoxSemanticColors>()!.flame;
+    final first = bandOf(tester, oct(9));
+    expect(first.color, flame);
+    expect(first.openTop, isFalse);
+    expect(first.openBottom, isTrue);
+    final second = bandOf(tester, oct(12));
+    expect(second.openTop, isTrue);
+    expect(second.openBottom, isFalse);
+    // One band per column, not per day.
+    expect(find.byKey(Key('activityCalendarBand-${oct(10)}')), findsNothing);
+    expect(find.byKey(Key('activityCalendarBand-${oct(13)}')), findsNothing);
+  });
+
+  testWidgets('the band never pokes outside the grid: the open ends stop '
+      'at the grid edge', (tester) async {
+    await pumpCalendar(tester, fixture());
+    final Rect grid = tester.getRect(find.byKey(const Key('activityCalendar')));
+    for (final day in [oct(9), oct(12)]) {
+      final Rect band = tester.getRect(
+        find.byKey(Key('activityCalendarBand-$day')),
       );
-      await pumpCalendar(tester, data);
+      expect(band.bottom, lessThanOrEqualTo(grid.bottom));
+      expect(band.top, greaterThanOrEqualTo(grid.top));
+    }
+  });
 
-      final decoration = highlightDecorationOf(tester, '2026-09-01');
-      final scheme = Theme.of(tester.element(find.byType(Scaffold)))
-          .colorScheme;
-      final flame = foxSemantics(tester.element(find.byType(Scaffold))).flame;
-      final borderColor = (decoration.border as Border).top.color;
-      expect(borderColor, scheme.primary);
-      expect(borderColor, isNot(flame));
-    },
-  );
+  testWidgets('a longest-streak band uses the gold color', (tester) async {
+    await pumpCalendar(tester, fixture(withLongest: true));
+    final gold = FoxStreakTheme.light().extension<FoxSemanticColors>()!.goldInk;
+    expect(bandOf(tester, oct(6)).color, gold);
+  });
 
-  testWidgets(
-    'a run of consecutive same-column streak days renders as one merged '
-    'shape, not one per cell',
-    (tester) async {
-      // 2026-10-12/13/14 (Mon/Tue/Wed) fall in the same Sunday-first week
-      // column.
-      final data = ActivityCalendarData(
-        days: [
-          day('2026-10-12', hasActivity: true, isCurrentStreak: true),
-          day('2026-10-13', hasActivity: true, isCurrentStreak: true),
-          day('2026-10-14', hasActivity: true, isCurrentStreak: true),
-        ],
-        currentStreakCount: 3,
-        longestStreakInWindow: 0,
-        longestDiffersFromCurrent: false,
-      );
-      await pumpCalendar(tester, data);
+  testWidgets('with reduce motion the band is fully drawn and today does '
+      'not pulse', (tester) async {
+    await pumpCalendar(tester, fixture(practicedToday: false), settle: false);
+    await tester.pump();
+    expect(bandOf(tester, oct(9)).reveal, 1);
+    expect(bandOf(tester, oct(12)).reveal, 1);
+    await tester.pump(const Duration(milliseconds: 350));
+    expect(todayScale(tester, oct(14)), 1);
+    expect(tester.binding.hasScheduledFrame, isFalse);
+  });
 
-      expect(
-        find.byKey(const Key('activityCalendarHighlight-2026-10-12')),
-        findsOneWidget,
-      );
-      expect(
-        find.byKey(const Key('activityCalendarHighlight-2026-10-13')),
-        findsNothing,
-      );
-      expect(
-        find.byKey(const Key('activityCalendarHighlight-2026-10-14')),
-        findsNothing,
-      );
-      // The merged shape spans all 3 cells plus the 2 gaps between them.
-      final size = tester.getSize(
-        find.byKey(const Key('activityCalendarHighlight-2026-10-12')),
-      );
-      expect(size.height, closeTo(14 * 3 + 3 * 2, 0.01));
-    },
-  );
+  testWidgets('the current band draws in backwards: today first, the '
+      'earliest days last', (tester) async {
+    await pumpCalendar(tester, fixture(), reduceMotion: false, settle: false);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    // 6 days total; the later column (3 days) grows first.
+    expect(bandOf(tester, oct(12)).reveal, greaterThan(0));
+    expect(bandOf(tester, oct(9)).reveal, 0);
+    await tester.pumpAndSettle();
+    expect(bandOf(tester, oct(12)).reveal, 1);
+    expect(bandOf(tester, oct(9)).reveal, 1);
+  });
 
-  testWidgets(
-    'a current streak crossing a week-column boundary renders two merged '
-    'shapes joined by a connector',
-    (tester) async {
-      // 2026-10-09/10 (Fri/Sat) end one week column; 2026-10-11/12
-      // (Sun/Mon) continue in the next.
-      final data = ActivityCalendarData(
-        days: [
-          day('2026-10-09', hasActivity: true, isCurrentStreak: true),
-          day('2026-10-10', hasActivity: true, isCurrentStreak: true),
-          day('2026-10-11', hasActivity: true, isCurrentStreak: true),
-          day('2026-10-12', hasActivity: true, isCurrentStreak: true),
-        ],
-        currentStreakCount: 4,
-        longestStreakInWindow: 0,
-        longestDiffersFromCurrent: false,
-      );
-      await pumpCalendar(tester, data);
-
-      expect(
-        find.byKey(const Key('activityCalendarHighlight-2026-10-09')),
-        findsOneWidget,
-      );
-      expect(
-        find.byKey(const Key('activityCalendarHighlight-2026-10-11')),
-        findsOneWidget,
-      );
-      // One notch on the Saturday cell, one on the Sunday cell.
-      expect(anyConnectorFinder(), findsNWidgets(2));
-    },
-  );
-
-  testWidgets(
-    'no connector is rendered when a run does not reach both boundary '
-    'cells',
-    (tester) async {
-      // 2026-10-11/12 (Sun/Mon) alone: the preceding week's Saturday
-      // (2026-10-10) isn't part of the run, so there's nothing to bridge.
-      final data = ActivityCalendarData(
-        days: [
-          day('2026-10-10', hasActivity: true),
-          day('2026-10-11', hasActivity: true, isCurrentStreak: true),
-          day('2026-10-12', hasActivity: true, isCurrentStreak: true),
-        ],
-        currentStreakCount: 2,
-        longestStreakInWindow: 0,
-        longestDiffersFromCurrent: false,
-      );
-      await pumpCalendar(tester, data);
-
-      expect(anyConnectorFinder(), findsNothing);
-    },
-  );
-
-  testWidgets(
-    'a run ending on the Saturday of the very last week-column renders '
-    'with no dangling connector (nothing to bridge to)',
-    (tester) async {
-      // 2026-10-08/09/10 (Thu/Fri/Sat) is a single week-column with no
-      // column after it.
-      final data = ActivityCalendarData(
-        days: [
-          day('2026-10-08', hasActivity: true, isCurrentStreak: true),
-          day('2026-10-09', hasActivity: true, isCurrentStreak: true),
-          day('2026-10-10', hasActivity: true, isCurrentStreak: true),
-        ],
-        currentStreakCount: 3,
-        longestStreakInWindow: 0,
-        longestDiffersFromCurrent: false,
-      );
-      await pumpCalendar(tester, data);
-
-      expect(
-        find.byKey(const Key('activityCalendarHighlight-2026-10-08')),
-        findsOneWidget,
-      );
-      expect(anyConnectorFinder(), findsNothing);
-    },
-  );
-
-  testWidgets(
-    'weekday letters appear only on the Mon/Wed/Fri rows, locale-aware',
-    (tester) async {
-      final data = ActivityCalendarData(
-        days: [day('2026-10-11')],
-        currentStreakCount: 0,
-        longestStreakInWindow: 0,
-        longestDiffersFromCurrent: false,
-      );
-      await pumpCalendar(tester, data, locale: const Locale('en'));
-      expect(find.text('M'), findsOneWidget);
-      expect(find.text('W'), findsOneWidget);
-      expect(find.text('F'), findsOneWidget);
-      // Sunday/Tuesday/Thursday/Saturday rows are blank, not labeled 'S'/
-      // 'T': only the 3 labeled rows render any weekday text at all.
-      expect(find.text('S'), findsNothing);
-      expect(find.text('T'), findsNothing);
-
-      await pumpCalendar(tester, data, locale: const Locale('de'));
-      // German: Montag/Mittwoch both narrow to 'M' (confirmed collision,
-      // same as #089's rationale for not labeling every row) while Freitag
-      // narrows to 'F'.
-      expect(find.text('M'), findsNWidgets(2));
-      expect(find.text('F'), findsOneWidget);
-    },
-  );
-
-  testWidgets(
-    'month abbreviations appear above each month\'s first week-column, '
-    'locale-aware',
-    (tester) async {
-      // Window: 2026-09-27 (Sun) .. 2026-10-12 (Mon) — 3 week columns.
-      // Column 0 (Sep27-Oct03) is September's first column even though
-      // October's days start mid-column; column 1 (Oct04-10) is the first
-      // column whose own topmost day is October.
-      final days = [
-        for (
-          var d = DateTime(2026, 9, 27);
-          !d.isAfter(DateTime(2026, 10, 12));
-          d = d.add(const Duration(days: 1))
-        )
-          day(
-            '${d.year.toString().padLeft(4, '0')}-'
-            '${d.month.toString().padLeft(2, '0')}-'
-            '${d.day.toString().padLeft(2, '0')}',
-          ),
-      ];
-      final data = ActivityCalendarData(
-        days: days,
-        currentStreakCount: 0,
-        longestStreakInWindow: 0,
-        longestDiffersFromCurrent: false,
-      );
-
-      await pumpCalendar(tester, data, locale: const Locale('en'));
-      expect(find.text('Sep'), findsOneWidget);
-      expect(find.text('Oct'), findsOneWidget);
-
-      await pumpCalendar(tester, data, locale: const Locale('de'));
-      expect(find.text('Sep'), findsOneWidget);
-      expect(find.text('Okt'), findsOneWidget);
-    },
-  );
-
-  testWidgets(
-    'a month label still renders (right-anchored, not clipped) when its '
-    'column is the very last one, with no column to its right to bleed '
-    'into',
-    (tester) async {
-      // Window: 2026-09-28 (Mon) .. 2026-10-04 (Sun) — column 0 is
-      // September, column 1 (just 2026-10-04) is October's first column
-      // *and* the last column in the whole dataset.
-      final days = [
-        for (
-          var d = DateTime(2026, 9, 28);
-          !d.isAfter(DateTime(2026, 10, 4));
-          d = d.add(const Duration(days: 1))
-        )
-          day(
-            '${d.year.toString().padLeft(4, '0')}-'
-            '${d.month.toString().padLeft(2, '0')}-'
-            '${d.day.toString().padLeft(2, '0')}',
-          ),
-      ];
-      final data = ActivityCalendarData(
-        days: days,
-        currentStreakCount: 0,
-        longestStreakInWindow: 0,
-        longestDiffersFromCurrent: false,
-      );
-
-      await pumpCalendar(tester, data, locale: const Locale('en'));
-      expect(tester.takeException(), isNull);
-      expect(find.text('Sep'), findsOneWidget);
-      expect(find.text('Oct'), findsOneWidget);
-    },
-  );
-
-  testWidgets(
-    'weekday/month header labels are excluded from the semantics tree',
-    (tester) async {
-      final data = ActivityCalendarData(
-        days: [day('2026-10-11', hasActivity: true, xp: 10)],
-        currentStreakCount: 0,
-        longestStreakInWindow: 0,
-        longestDiffersFromCurrent: false,
-      );
-      final SemanticsHandle handle = tester.ensureSemantics();
-      await pumpCalendar(tester, data);
-
-      // The weekday letter renders visually...
-      expect(find.text('M'), findsOneWidget);
-      // ...but isn't surfaced as its own semantics node, unlike the cell's
-      // own (unchanged) semantics label.
-      expect(find.bySemanticsLabel('M'), findsNothing);
-      expect(find.bySemanticsLabel('cell-2026-10-11'), findsOneWidget);
-      handle.dispose();
-    },
-  );
-
-  testWidgets('a cell carries the caller-provided semantics label', (
-    tester,
-  ) async {
-    final data = ActivityCalendarData(
-      days: [day('2026-10-11', hasActivity: true, xp: 10)],
-      currentStreakCount: 0,
-      longestStreakInWindow: 0,
-      longestDiffersFromCurrent: false,
+  testWidgets('today is marked; it pulses while not practiced yet, then '
+      'rests', (tester) async {
+    await pumpCalendar(
+      tester,
+      fixture(practicedToday: false),
+      reduceMotion: false,
+      settle: false,
     );
-    await pumpCalendar(tester, data);
-
-    final semantics = tester.widget<Semantics>(
-      find.byKey(const Key('activityCalendarCell-2026-10-11')),
+    expect(
+      find.byKey(const Key('activityCalendarTodayMarker')),
+      findsOneWidget,
     );
-    expect(semantics.properties.label, 'cell-2026-10-11');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
+    expect(todayScale(tester, oct(14)), greaterThan(1));
+    await tester.pumpAndSettle();
+    expect(todayScale(tester, oct(14)), moreOrLessEquals(1));
+  });
+
+  testWidgets('a practiced today is marked but does not pulse', (tester) async {
+    await pumpCalendar(tester, fixture(), reduceMotion: false, settle: false);
+    expect(
+      find.byKey(const Key('activityCalendarTodayMarker')),
+      findsOneWidget,
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
+    expect(todayScale(tester, oct(14)), 1);
+  });
+
+  group('tap a day', () {
+    Finder popup() => find.byKey(const Key('activityCalendarDayPopup'));
+
+    testWidgets('shows a popup with the day\'s date and status', (
+      tester,
+    ) async {
+      await pumpCalendar(tester, fixture());
+      await tester.tap(find.byKey(Key('activityCalendarCell-${oct(10)}')));
+      await tester.pumpAndSettle();
+      expect(popup(), findsOneWidget);
+      expect(find.text('date-${oct(10)}'), findsOneWidget);
+      expect(find.text('status-${oct(10)}'), findsOneWidget);
+    });
+
+    testWidgets('tapping another day replaces it — only one popup', (
+      tester,
+    ) async {
+      await pumpCalendar(tester, fixture());
+      await tester.tap(find.byKey(Key('activityCalendarCell-${oct(10)}')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(Key('activityCalendarCell-${oct(6)}')));
+      await tester.pumpAndSettle();
+      expect(popup(), findsOneWidget);
+      expect(find.text('date-${oct(10)}'), findsNothing);
+      expect(find.text('date-${oct(6)}'), findsOneWidget);
+    });
+
+    testWidgets('tapping outside closes it', (tester) async {
+      await pumpCalendar(tester, fixture());
+      await tester.tap(find.byKey(Key('activityCalendarCell-${oct(10)}')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('outside')));
+      await tester.pumpAndSettle();
+      expect(popup(), findsNothing);
+    });
+
+    testWidgets('tapping the popup itself closes it', (tester) async {
+      await pumpCalendar(tester, fixture());
+      await tester.tap(find.byKey(Key('activityCalendarCell-${oct(10)}')));
+      await tester.pumpAndSettle();
+      await tester.tap(popup());
+      await tester.pumpAndSettle();
+      expect(popup(), findsNothing);
+    });
+
+    testWidgets('scrolling the calendar closes it', (tester) async {
+      final days = buildWindowDays(today: DateTime(2026, 10, 14))
+          .map((d) => ActivityDay(day: d, isToday: d == oct(14)))
+          .toList();
+      await pumpCalendar(
+        tester,
+        ActivityCalendarData(
+          days: days,
+          currentStreakCount: 0,
+          longestStreak: 0,
+          practiceDays: 0,
+          showLongestStreakBand: false,
+        ),
+        width: 200,
+      );
+      await tester.tap(find.byKey(Key('activityCalendarCell-${oct(13)}')));
+      await tester.pumpAndSettle();
+      expect(popup(), findsOneWidget);
+      await tester.drag(
+        find.byKey(const Key('activityCalendarScroll')),
+        const Offset(100, 0),
+      );
+      await tester.pumpAndSettle();
+      expect(popup(), findsNothing);
+    });
+
+    testWidgets('empty padding cells are not tappable', (tester) async {
+      // First day Wed 2026-10-07: Mon/Tue of that column are padding.
+      final data = ActivityCalendarData(
+        days: [for (var i = 7; i <= 9; i++) ActivityDay(day: oct(i))],
+        currentStreakCount: 0,
+        longestStreak: 0,
+        practiceDays: 0,
+        showLongestStreakBand: false,
+      );
+      await pumpCalendar(tester, data);
+      final Offset wed = tester.getCenter(
+        find.byKey(Key('activityCalendarCell-${oct(7)}')),
+      );
+      final double pitch =
+          tester
+              .getCenter(find.byKey(Key('activityCalendarCell-${oct(8)}')))
+              .dy -
+          wed.dy;
+      await tester.tapAt(wed - Offset(0, 2 * pitch));
+      await tester.pumpAndSettle();
+      expect(popup(), findsNothing);
+    });
+  });
+
+  testWidgets('a cell carries the caller-provided semantics label and no '
+      'extra tap action (the popup is for sighted users only)', (tester) async {
+    final handle = tester.ensureSemantics();
+    await pumpCalendar(tester, fixture());
+    final node = tester.getSemantics(
+      find.byKey(Key('activityCalendarCell-${oct(11)}')),
+    );
+    expect(node.label, 'cell-${oct(11)}');
+    expect(node.getSemanticsData().hasAction(SemanticsAction.tap), isFalse);
+    handle.dispose();
   });
 
   testWidgets('the initial scroll position is at the end (today)', (
     tester,
   ) async {
     final days = buildWindowDays(today: DateTime(2026, 10, 11))
-        .map((d) => day(d))
+        .map((d) => ActivityDay(day: d))
         .toList();
-    final data = ActivityCalendarData(
-      days: days,
-      currentStreakCount: 0,
-      longestStreakInWindow: 0,
-      longestDiffersFromCurrent: false,
+    await pumpCalendar(
+      tester,
+      ActivityCalendarData(
+        days: days,
+        currentStreakCount: 0,
+        longestStreak: 0,
+        practiceDays: 0,
+        showLongestStreakBand: false,
+      ),
+      width: 200,
     );
-    // Narrower than the full ~6-month calendar width so it actually needs
-    // to scroll (the default 800px test surface fits the whole thing).
-    await tester.pumpWidget(
-      ProviderScope(
-        child: MaterialApp(
-          theme: FoxStreakTheme.light(),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: SizedBox(
-              width: 200,
-              child: ActivityCalendarView(
-                data: data,
-                cellSemanticsLabel: (day) => 'cell-${day.day}',
-              ),
-            ),
+    final position = tester
+        .state<ScrollableState>(
+          find.descendant(
+            of: find.byKey(const Key('activityCalendarScroll')),
+            matching: find.byType(Scrollable),
           ),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    final scrollable = tester.state<ScrollableState>(
-      find.descendant(
-        of: find.byKey(const Key('activityCalendarScroll')),
-        matching: find.byType(Scrollable),
-      ),
-    );
-    final position = scrollable.position;
-    expect(position.pixels, position.maxScrollExtent);
+        )
+        .position;
     expect(position.maxScrollExtent, greaterThan(0));
+    expect(position.pixels, position.maxScrollExtent);
   });
 }

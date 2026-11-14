@@ -57,12 +57,14 @@ void main() {
         xpDelta: 10,
         source: DailyActivitySource.lessonCompleted,
       );
-      await statsRepo.setStreak(streakCount: 4, lastActiveDay: todayDay);
+      // A bridged freeze day doesn't count toward streakCount (#087): 3
+      // lessons + 1 freeze is a streak of 3.
+      await statsRepo.setStreak(streakCount: 3, lastActiveDay: todayDay);
 
       await pumpFoxStreakApp(tester, db: db, clock: clock);
 
       expect(find.byKey(const Key('streakBadge')), findsOneWidget);
-      expect(find.text('4'), findsOneWidget);
+      expect(find.text('3'), findsOneWidget);
       expect(find.byIcon(Icons.local_fire_department), findsNWidgets(3));
       expect(find.byType(FoxStreakFreezeIcon), findsOneWidget);
 

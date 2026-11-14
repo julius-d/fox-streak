@@ -348,9 +348,8 @@ class StatsRepository {
   }
 
   /// The `daily_activity` rows for [fromDay]..[toDay] (inclusive, both
-  /// `YYYY-MM-DD`), ascending by day — the #084 Streak Details calendar's
-  /// data source. Day strings sort lexicographically the same as
-  /// chronologically, so plain string comparison is enough.
+  /// `YYYY-MM-DD`), ascending by day. Day strings sort lexicographically
+  /// the same as chronologically, so plain string comparison is enough.
   Future<List<DailyActivityData>> getDailyActivityRange({
     required String fromDay,
     required String toDay,
@@ -363,6 +362,15 @@ class StatsRepository {
           )
           ..orderBy([(t) => OrderingTerm.asc(t.day)]))
         .get();
+  }
+
+  /// Every `daily_activity` row, ascending by day — the Streak Details
+  /// screen's all-time history (#128). One row per recorded day, so it
+  /// stays small.
+  Future<List<DailyActivityData>> getAllDailyActivity() {
+    return (_db.select(
+      _db.dailyActivity,
+    )..orderBy([(t) => OrderingTerm.asc(t.day)])).get();
   }
 
   /// Runs [action] atomically against the underlying database.

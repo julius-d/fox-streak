@@ -31,7 +31,7 @@ void main() {
 
   testWidgets(
     'tapping Home\'s streak badge opens the real Streak Details screen, '
-    'showing the current streak and the longest-in-window run from real '
+    'showing the current streak and the longest run from real '
     'daily_activity rows, with today highlighted as the current streak',
     (tester) async {
       final db = AppDatabase.forTesting(NativeDatabase.memory());
@@ -84,8 +84,19 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('streakDetailsScreen')), findsOneWidget);
-      expect(find.text('Current streak: 3 days'), findsOneWidget);
-      expect(find.text('Longest in the last 6 months: 5 days'), findsOneWidget);
+      // #128: the hero shows the current streak, the longest-streak tile
+      // the earlier, longer run.
+      expect(
+        tester.widget<Text>(find.byKey(const Key('streakHeroCount'))).data,
+        '3',
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('streakStatLongest')),
+          matching: find.text('5'),
+        ),
+        findsOneWidget,
+      );
       expect(find.byKey(const Key('activityCalendar')), findsOneWidget);
       expect(
         find.byKey(const Key('activityCalendarCell-2026-10-13')),

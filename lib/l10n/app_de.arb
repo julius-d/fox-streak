@@ -735,39 +735,17 @@
   },
   "streakDetailsTitle": "Streak-Historie",
   "@streakDetailsCurrentStreakHeadline": {
-    "description": "Headline on the Streak Details screen showing the exact current streak, from profile.streakCount (issue #084)",
+    "description": "Screen-reader label for the Streak Details hero, the exact current streak from profile.streakCount (issue #084, #128)",
     "placeholders": {
       "count": {"type": "int"}
     }
   },
   "streakDetailsCurrentStreakHeadline": "{count, plural, =0{Keine aktuelle Streak} =1{Aktuelle Streak: 1 Tag} other{Aktuelle Streak: {count} Tage}}",
-  "@streakDetailsLongestStreakHeadline": {
-    "description": "Headline on the Streak Details screen showing the longest run of active days within the visible ~6-month window — explicitly labeled as windowed, not a lifetime \"longest streak ever\" claim (issue #084)",
-    "placeholders": {
-      "count": {"type": "int"}
-    }
-  },
-  "streakDetailsLongestStreakHeadline": "{count, plural, =0{Keine Aktivität in den letzten 6 Monaten} =1{Längste Streak der letzten 6 Monate: 1 Tag} other{Längste Streak der letzten 6 Monate: {count} Tage}}",
   "@streakDetailsLegendNone": {
-    "description": "Calendar color-bucket legend label: no daily_activity row for that day (issue #084)",
+    "description": "Calendar legend: a day without a daily_activity row (issue #084, reworded #128)",
     "placeholders": {}
   },
-  "streakDetailsLegendNone": "Keine Aktivität",
-  "@streakDetailsLegendLow": {
-    "description": "Calendar color-bucket legend label: lowest non-empty bucket, below 50% of the daily goal (or a future streak-on-ice day at 0 XP) (issue #084)",
-    "placeholders": {}
-  },
-  "streakDetailsLegendLow": "Niedrig",
-  "@streakDetailsLegendMedium": {
-    "description": "Calendar color-bucket legend label: 50-99% of the daily goal (issue #084)",
-    "placeholders": {}
-  },
-  "streakDetailsLegendMedium": "Mittel",
-  "@streakDetailsLegendHigh": {
-    "description": "Calendar color-bucket legend label: at or above 100% of the daily goal (issue #084)",
-    "placeholders": {}
-  },
-  "streakDetailsLegendHigh": "Ziel erreicht",
+  "streakDetailsLegendNone": "Nicht geübt",
   "@streakCalendarCellActivityLabel": {
     "description": "Screen-reader label for one activity-calendar cell that has a daily_activity row, naming the formatted day and the XP earned that day (issue #084)",
     "placeholders": {
@@ -782,7 +760,7 @@
       "day": {"type": "String"}
     }
   },
-  "streakCalendarCellNoActivityLabel": "{day}: keine Aktivität",
+  "streakCalendarCellNoActivityLabel": "{day}: nicht geübt",
   "@wheelHeading": {
     "description": "Heading on the unspun wheel-of-fortune screen (issue #085)",
     "placeholders": {}
@@ -823,17 +801,112 @@
   },
   "streakFreezesAvailableLabel": "{count, plural, =0{Keine Streak-Freezes verfügbar} =1{1 Streak-Freeze verfügbar} other{{count} Streak-Freezes verfügbar}}",
   "@streakDetailsLegendStreakOnIce": {
-    "description": "Calendar color-bucket legend label for a streakOnIce day, distinct from the ActivityLevel buckets (issue #087)",
+    "description": "Calendar legend: a day saved by a streak freeze (issue #087, reworded #128)",
     "placeholders": {}
   },
-  "streakDetailsLegendStreakOnIce": "Streak-Freeze genutzt",
+  "streakDetailsLegendStreakOnIce": "Durch Streak-Freeze gerettet",
   "@streakCalendarCellStreakOnIceLabel": {
     "description": "Screen-reader label for one activity-calendar cell whose daily_activity row has source streakOnIce (issue #087)",
     "placeholders": {
       "day": {"type": "String"}
     }
   },
-  "streakCalendarCellStreakOnIceLabel": "{day}: Streak-Freeze genutzt",
+  "streakCalendarCellStreakOnIceLabel": "{day}: durch Streak-Freeze gerettet",
+  "@streakDetailsHeroDaysLabel": {
+    "description": "Streak Details hero: label next to the big current-streak number (issue #128)",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "streakDetailsHeroDaysLabel": "{count, plural, =0{Tage in Folge} =1{Tag in Folge!} other{Tage in Folge!}}",
+  "@streakDetailsHeroPracticedToday": {
+    "description": "Streak Details hero line when today is already practiced — celebrating, never shaming (issue #128)",
+    "placeholders": {}
+  },
+  "streakDetailsHeroPracticedToday": "Du bist Feuer und Flamme! Bis morgen.",
+  "@streakDetailsHeroNotYetToday": {
+    "description": "Streak Details hero line when the streak is alive but today is not practiced yet — a friendly nudge (issue #128)",
+    "placeholders": {}
+  },
+  "streakDetailsHeroNotYetToday": "Übe heute, damit deine Streak weiterläuft.",
+  "@streakDetailsHeroNoStreak": {
+    "description": "Streak Details hero line with no current streak — an invitation, no \"you lost your streak\" tone (issue #128)",
+    "placeholders": {}
+  },
+  "streakDetailsHeroNoStreak": "Starte heute eine neue Streak!",
+  "@streakDetailsStatLongestLabel": {
+    "description": "Streak Details stat tile caption: all-time longest streak, freeze days included (issue #128)",
+    "placeholders": {}
+  },
+  "streakDetailsStatLongestLabel": "Längste Streak",
+  "@streakDetailsStatLongestSemantics": {
+    "description": "Screen-reader label for the longest-streak stat tile (issue #128)",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "streakDetailsStatLongestSemantics": "{count, plural, =0{Längste Streak: noch keine} =1{Längste Streak: 1 Tag} other{Längste Streak: {count} Tage}}",
+  "@streakDetailsStatPracticeDaysLabel": {
+    "description": "Streak Details stat tile caption: all-time number of days practiced, streak-freeze days excluded (issue #128)",
+    "placeholders": {}
+  },
+  "streakDetailsStatPracticeDaysLabel": "Übungstage",
+  "@streakDetailsStatPracticeDaysSemantics": {
+    "description": "Screen-reader label for the practice-days stat tile (issue #128)",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "streakDetailsStatPracticeDaysSemantics": "{count, plural, =0{Noch keine Übungstage} =1{1 Übungstag insgesamt} other{{count} Übungstage insgesamt}}",
+  "@streakDetailsStatFreezesLabel": {
+    "description": "Streak Details stat tile caption: streak freezes owned (issue #128)",
+    "placeholders": {}
+  },
+  "streakDetailsStatFreezesLabel": "Streak-Freezes",
+  "@streakDetailsLegendPracticed": {
+    "description": "Calendar legend: a practiced day (issue #128)",
+    "placeholders": {}
+  },
+  "streakDetailsLegendPracticed": "Geübt",
+  "@streakDetailsLegendCurrentStreak": {
+    "description": "Calendar legend: the band marking the current streak (issue #128)",
+    "placeholders": {}
+  },
+  "streakDetailsLegendCurrentStreak": "Aktuelle Streak",
+  "@streakDetailsLegendLongestStreak": {
+    "description": "Calendar legend: the band marking the all-time longest streak, shown only when that band is drawn (issue #128)",
+    "placeholders": {}
+  },
+  "streakDetailsLegendLongestStreak": "Längste Streak",
+  "@streakDetailsDayXpEarned": {
+    "description": "Tap-a-day popup status: XP earned on a practiced day (issue #128)",
+    "placeholders": {
+      "xp": {"type": "int"}
+    }
+  },
+  "streakDetailsDayXpEarned": "{xp} XP verdient",
+  "@streakDetailsDayStreakFreeze": {
+    "description": "Tap-a-day popup status: a day saved by a streak freeze (issue #128)",
+    "placeholders": {}
+  },
+  "streakDetailsDayStreakFreeze": "Durch Streak-Freeze gerettet ❄️",
+  "@streakDetailsDayNoPractice": {
+    "description": "Tap-a-day popup status: a past day without practice (issue #128)",
+    "placeholders": {}
+  },
+  "streakDetailsDayNoPractice": "Nicht geübt",
+  "@streakDetailsDayNotYetToday": {
+    "description": "Tap-a-day popup status: today, not practiced yet (issue #128)",
+    "placeholders": {}
+  },
+  "streakDetailsDayNotYetToday": "Heute noch nicht geübt",
+  "@streakCalendarCellTodayNotPracticedLabel": {
+    "description": "Screen-reader label for today's calendar cell while today is not practiced yet (issue #128)",
+    "placeholders": {
+      "day": {"type": "String"}
+    }
+  },
+  "streakCalendarCellTodayNotPracticedLabel": "{day}: heute noch nicht geübt",
   "@coinShopTitle": {
     "description": "AppBar title for the coin shop screen, reached by tapping Home's CoinBadge (issue #091)",
     "placeholders": {}

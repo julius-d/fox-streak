@@ -1,6 +1,7 @@
-// Unit tests for the #084 Streak Details calendar's pure logic: window
-// building, color buckets, current-streak days, longest-run-in-window, and
-// the combined ActivityCalendarData.build.
+// Unit tests for the Streak Details screen's pure logic (#084, #128):
+// window building, day states, current-streak days, longest run, the
+// combined ActivityCalendarData.build (hero/stat numbers), Monday-first
+// week grouping, and streak-band segments with open ends at week breaks.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fox_streak_app/src/data/database.dart';
@@ -12,327 +13,367 @@ DailyActivityData entry(
   String source = 'lessonCompleted',
 }) => DailyActivityData(day: day, xpEarned: xp, activitySource: source);
 
+DailyActivityData freeze(String day) => entry(day, 0, source: 'streakOnIce');
+
+String oct(int d) => '2026-10-${d.toString().padLeft(2, '0')}';
+
 void main() {
   group('buildWindowDays', () {
-    test('spans exactly ~6 months, ascending, ending at today', () {
-      final days = buildWindowDays(today: DateTime(2026, 10, 31));
-      // April only has 30 days; DateTime(2026, 4, 31) normalizes forward to
-      // May 1st — an accepted "~6 months" wobble, not exact calendar math.
-      expect(days.first, '2026-05-01');
-      expect(days.last, '2026-10-31');
-      expect(days, hasLength(days.toSet().length)); // no duplicates
-      expect(
-        days,
-        everyElement(
-          predicate<String>((d) => RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(d)),
-        ),
-      );
+    test('spans exactly 6 months, ascending, ending at today', () {
+      final days = buildWindowDays(today: DateTime(2026, 10, 11));
+      expect(days.first, '2026-04-11');
+      expect(days.last, '2026-10-11');
     });
 
     test('is strictly ascending', () {
-      final days = buildWindowDays(today: DateTime(2026, 10, 31));
+      final days = buildWindowDays(today: DateTime(2026, 10, 11));
       for (var i = 1; i < days.length; i++) {
         expect(days[i].compareTo(days[i - 1]), greaterThan(0));
       }
     });
 
     test('handles a year rollover cleanly', () {
-      final days = buildWindowDays(today: DateTime(2026, 1, 15));
-      expect(days.first, '2025-07-15');
-      expect(days.last, '2026-01-15');
+      final days = buildWindowDays(today: DateTime(2027, 2, 3));
+      expect(days.first, '2026-08-03');
+      expect(days, contains('2026-12-31'));
+      expect(days, contains('2027-01-01'));
+    });
+
+    test('reaches back to an older first recorded day', () {
+      final days = buildWindowDays(
+        today: DateTime(2026, 10, 11),
+        firstRecordedDay: '2025-01-05',
+      );
+      expect(days.first, '2025-01-05');
+      expect(days.last, '2026-10-11');
+    });
+
+    test('a first recorded day inside the 6 months keeps the 6 months', () {
+      final days = buildWindowDays(
+        today: DateTime(2026, 10, 11),
+        firstRecordedDay: '2026-09-01',
+      );
+      expect(days.first, '2026-04-11');
     });
   });
 
-  group('bucketFor', () {
-    test('no row -> none, regardless of goal', () {
-      expect(
-        bucketFor(hasActivity: false, xpEarned: 0, dailyGoalXp: 100),
-        ActivityLevel.none,
-      );
-    });
-
-    test('a row with xpEarned 0 is the lowest non-empty bucket, not none '
-        '(the future streakOnIce case)', () {
-      expect(
-        bucketFor(hasActivity: true, xpEarned: 0, dailyGoalXp: 100),
-        ActivityLevel.low,
-      );
-    });
-
-    test('>0-<50% of goal is low', () {
-      expect(
-        bucketFor(hasActivity: true, xpEarned: 49, dailyGoalXp: 100),
-        ActivityLevel.low,
-      );
-    });
-
-    test('50-99% of goal is medium', () {
-      expect(
-        bucketFor(hasActivity: true, xpEarned: 50, dailyGoalXp: 100),
-        ActivityLevel.medium,
-      );
-      expect(
-        bucketFor(hasActivity: true, xpEarned: 99, dailyGoalXp: 100),
-        ActivityLevel.medium,
-      );
-    });
-
-    test('>=100% of goal is high', () {
-      expect(
-        bucketFor(hasActivity: true, xpEarned: 100, dailyGoalXp: 100),
-        ActivityLevel.high,
-      );
-      expect(
-        bucketFor(hasActivity: true, xpEarned: 500, dailyGoalXp: 100),
-        ActivityLevel.high,
-      );
-    });
-
-    test('dailyGoalXp <= 0: any earned xp is high, zero is low', () {
-      expect(
-        bucketFor(hasActivity: true, xpEarned: 10, dailyGoalXp: 0),
-        ActivityLevel.high,
-      );
-      expect(
-        bucketFor(hasActivity: true, xpEarned: 0, dailyGoalXp: 0),
-        ActivityLevel.low,
-      );
+  group('stateFor', () {
+    test('no row is none, a lesson row is practiced, a freeze row is '
+        'streakFreeze', () {
+      expect(stateFor(null), ActivityDayState.none);
+      expect(stateFor(entry('2026-10-01', 0)), ActivityDayState.practiced);
+      expect(stateFor(freeze('2026-10-01')), ActivityDayState.streakFreeze);
     });
   });
 
   group('currentStreakDays', () {
-    test('empty when streakCount is 0', () {
+    test('empty when streakCount is 0 or lastActiveDay is null/malformed', () {
       expect(
         currentStreakDays(streakCount: 0, lastActiveDay: '2026-10-11'),
         isEmpty,
       );
-    });
-
-    test('empty when lastActiveDay is null', () {
       expect(currentStreakDays(streakCount: 3, lastActiveDay: null), isEmpty);
+      expect(currentStreakDays(streakCount: 3, lastActiveDay: 'x'), isEmpty);
     });
 
-    test('empty for a malformed lastActiveDay', () {
-      expect(
-        currentStreakDays(streakCount: 3, lastActiveDay: 'not-a-date'),
-        isEmpty,
-      );
-    });
-
-    test('the exact N consecutive days ending at lastActiveDay', () {
-      final days = currentStreakDays(
-        streakCount: 3,
-        lastActiveDay: '2026-10-11',
-      );
-      expect(days, {'2026-10-09', '2026-10-10', '2026-10-11'});
-    });
-
-    test('a single-day streak is just lastActiveDay itself', () {
-      expect(currentStreakDays(streakCount: 1, lastActiveDay: '2026-10-11'), {
-        '2026-10-11',
+    test('the exact N consecutive days ending at lastActiveDay, across a '
+        'month boundary', () {
+      expect(currentStreakDays(streakCount: 3, lastActiveDay: '2026-10-02'), {
+        '2026-09-30',
+        '2026-10-01',
+        '2026-10-02',
       });
-    });
-
-    test('crosses a month boundary correctly', () {
-      final days = currentStreakDays(
-        streakCount: 3,
-        lastActiveDay: '2026-11-01',
-      );
-      expect(days, {'2026-10-30', '2026-10-31', '2026-11-01'});
     });
   });
 
-  group('longestRunInWindow', () {
-    final window = buildWindowDays(today: DateTime(2026, 10, 10));
+  test('currentStreakDays: a bridged freeze day is part of the run but '
+      'not counted, so the first day stays in', () {
+    // 5 practiced days, a freeze on Oct 6, a lesson on Oct 7: streak 6.
+    expect(
+      currentStreakDays(
+        streakCount: 6,
+        lastActiveDay: oct(7),
+        freezeDays: {oct(6)},
+      ),
+      {oct(1), oct(2), oct(3), oct(4), oct(5), oct(6), oct(7)},
+    );
+    // Right after the launch auto-apply, lastActiveDay is the freeze day.
+    expect(
+      currentStreakDays(
+        streakCount: 2,
+        lastActiveDay: oct(6),
+        freezeDays: {oct(6)},
+      ),
+      {oct(4), oct(5), oct(6)},
+    );
+  });
+
+  group('longestRun', () {
+    final window = [oct(1), oct(2), oct(3), oct(4)];
 
     test('empty when nothing is active', () {
-      expect(longestRunInWindow(window, {}), isEmpty);
-    });
-
-    test('a single active day is a run of length 1', () {
-      final run = longestRunInWindow(window, {'2026-10-10'});
-      expect(run, {'2026-10-10'});
+      expect(longestRun(window, {}), isEmpty);
     });
 
     test('finds the longest of several runs, separated by gaps', () {
-      final active = {
-        '2026-10-01',
-        '2026-10-02',
-        // gap
-        '2026-10-05',
-        '2026-10-06',
-        '2026-10-07',
-        '2026-10-08',
-        // gap
-        '2026-10-10',
-      };
-      final run = longestRunInWindow(window, active);
-      expect(run, {'2026-10-05', '2026-10-06', '2026-10-07', '2026-10-08'});
+      expect(longestRun(window, {oct(1), oct(3), oct(4)}), {oct(3), oct(4)});
     });
 
     test('a tie between two equal-length runs prefers the most recent', () {
-      final active = {
-        '2026-10-01',
-        '2026-10-02',
-        // gap
-        '2026-10-09',
-        '2026-10-10',
-      };
-      final run = longestRunInWindow(window, active);
-      expect(run, {'2026-10-09', '2026-10-10'});
+      expect(longestRun(window, {oct(1), oct(4)}), {oct(4)});
+    });
+
+    test('handles a multi-year run', () {
+      final days = buildWindowDays(
+        today: DateTime(2026, 10, 11),
+        firstRecordedDay: '2023-10-11',
+      );
+      expect(longestRun(days, days.toSet()), hasLength(days.length));
     });
   });
 
   group('ActivityCalendarData.build', () {
     final today = DateTime(2026, 10, 11);
 
-    test('every window day is represented, oldest first, today last', () {
-      final data = ActivityCalendarData.build(
-        today: today,
-        streakCount: 0,
-        lastActiveDay: null,
-        dailyGoalXp: 100,
-        entries: const [],
-      );
+    ActivityCalendarData build({
+      int streakCount = 0,
+      String? lastActiveDay,
+      List<DailyActivityData> entries = const [],
+      int freezes = 0,
+    }) => ActivityCalendarData.build(
+      today: today,
+      streakCount: streakCount,
+      lastActiveDay: lastActiveDay,
+      entries: entries,
+      streakFreezesAvailable: freezes,
+    );
+
+    test('every window day is represented, oldest first, today last and '
+        'marked as today', () {
+      final data = build();
       expect(data.days.first.day, buildWindowDays(today: today).first);
-      expect(data.days.last.day, '2026-10-11');
-      expect(data.days, hasLength(buildWindowDays(today: today).length));
+      expect(data.days.last.day, oct(11));
+      expect(data.days.last.isToday, isTrue);
+      expect(data.days.where((d) => d.isToday), hasLength(1));
     });
 
-    test('days without a daily_activity row render level.none and no '
-        'highlight', () {
-      final data = ActivityCalendarData.build(
-        today: today,
-        streakCount: 0,
-        lastActiveDay: null,
-        dailyGoalXp: 100,
-        entries: const [],
-      );
-      for (final d in data.days) {
-        expect(d.hasActivity, isFalse);
-        expect(d.level, ActivityLevel.none);
-        expect(d.isCurrentStreak, isFalse);
-        expect(d.isLongestStreak, isFalse);
-      }
+    test('the window reaches back to the first recorded day when older '
+        'than 6 months', () {
+      final data = build(entries: [entry('2025-03-01', 10)]);
+      expect(data.days.first.day, '2025-03-01');
+      expect(data.days.first.state, ActivityDayState.practiced);
     });
 
-    test('the current streak run is highlighted with isCurrentStreak', () {
-      final data = ActivityCalendarData.build(
-        today: today,
-        streakCount: 3,
-        lastActiveDay: '2026-10-11',
-        dailyGoalXp: 100,
+    test('entries after today are ignored', () {
+      final data = build(entries: [entry(oct(12), 10)]);
+      expect(data.days.last.day, oct(11));
+      expect(data.practiceDays, 0);
+    });
+
+    test('cells carry state and XP; freeze days are streakFreeze', () {
+      final data = build(entries: [entry(oct(9), 40), freeze(oct(10))]);
+      final byDay = {for (final d in data.days) d.day: d};
+      expect(byDay[oct(9)]!.state, ActivityDayState.practiced);
+      expect(byDay[oct(9)]!.xpEarned, 40);
+      expect(byDay[oct(10)]!.state, ActivityDayState.streakFreeze);
+      expect(byDay[oct(10)]!.isStreakOnIce, isTrue);
+      expect(byDay[oct(11)]!.state, ActivityDayState.none);
+      expect(byDay[oct(11)]!.hasActivity, isFalse);
+    });
+
+    test('practice days count all-time practiced days, freeze days '
+        'excluded', () {
+      final data = build(
         entries: [
-          entry('2026-10-09', 10),
-          entry('2026-10-10', 10),
-          entry('2026-10-11', 10),
+          entry('2025-01-01', 10),
+          entry(oct(9), 10),
+          freeze(oct(10)),
+          entry(oct(11), 10),
         ],
       );
-      final highlighted = data.days
-          .where((d) => d.isCurrentStreak)
-          .map((d) => d.day);
-      expect(highlighted, {'2026-10-09', '2026-10-10', '2026-10-11'});
-      expect(data.currentStreakCount, 3);
+      expect(data.practiceDays, 3);
     });
 
-    test('longest-in-window is highlighted separately when it differs from '
-        'the current streak', () {
-      final data = ActivityCalendarData.build(
-        today: today,
+    test('longest streak is all-time and counts freeze days', () {
+      final data = build(
         streakCount: 1,
-        lastActiveDay: '2026-10-11',
-        dailyGoalXp: 100,
+        lastActiveDay: oct(11),
         entries: [
-          entry('2026-09-01', 10),
-          entry('2026-09-02', 10),
-          entry('2026-09-03', 10),
-          entry('2026-10-11', 10),
+          entry('2025-01-01', 10),
+          freeze('2025-01-02'),
+          entry('2025-01-03', 10),
+          entry(oct(11), 10),
         ],
       );
-      expect(data.longestDiffersFromCurrent, isTrue);
-      expect(data.longestStreakInWindow, 3);
-      final longestDays = data.days
-          .where((d) => d.isLongestStreak)
-          .map((d) => d.day);
-      expect(longestDays, {'2026-09-01', '2026-09-02', '2026-09-03'});
-      // The current-streak day is highlighted too, but not double-tagged
-      // as the longest run.
-      final current = data.days.where((d) => d.day == '2026-10-11').single;
-      expect(current.isCurrentStreak, isTrue);
-      expect(current.isLongestStreak, isFalse);
+      expect(data.longestStreak, 3);
+      expect(data.showLongestStreakBand, isTrue);
+      expect(data.days.where((d) => d.isLongestStreak).map((d) => d.day), [
+        '2025-01-01',
+        '2025-01-02',
+        '2025-01-03',
+      ]);
     });
 
-    test('when the longest run in window IS the current streak, only the '
-        'current-streak highlight is set (no duplicate longest highlight)', () {
-      final data = ActivityCalendarData.build(
-        today: today,
-        streakCount: 3,
-        lastActiveDay: '2026-10-11',
-        dailyGoalXp: 100,
-        entries: [
-          entry('2026-10-09', 10),
-          entry('2026-10-10', 10),
-          entry('2026-10-11', 10),
-        ],
+    test('longest streak is never shown smaller than the current streak, '
+        'e.g. a streak predating the recorded history', () {
+      final data = build(
+        streakCount: 10,
+        lastActiveDay: oct(11),
+        entries: [entry(oct(10), 10), entry(oct(11), 10)],
       );
-      expect(data.longestDiffersFromCurrent, isFalse);
+      expect(data.longestStreak, 10);
+      expect(data.showLongestStreakBand, isFalse);
       expect(data.days.where((d) => d.isLongestStreak), isEmpty);
     });
 
-    test(
-      'a row with xpEarned 0 still renders as hasActivity/low, not none',
-      () {
-        final data = ActivityCalendarData.build(
-          today: today,
-          streakCount: 0,
-          lastActiveDay: null,
-          dailyGoalXp: 100,
-          entries: [entry('2026-10-11', 0)],
-        );
-        final day = data.days.last;
-        expect(day.hasActivity, isTrue);
-        expect(day.level, ActivityLevel.low);
-      },
-    );
-
-    test('a row with source streakOnIce sets isStreakOnIce; an ordinary '
-        'lessonCompleted row does not (issue #087)', () {
-      final data = ActivityCalendarData.build(
-        today: today,
-        streakCount: 0,
-        lastActiveDay: null,
-        dailyGoalXp: 100,
+    test('when the current streak is the record (incl. a tie), only the '
+        'current band is shown', () {
+      final data = build(
+        streakCount: 2,
+        lastActiveDay: oct(11),
         entries: [
-          entry('2026-10-10', 10),
-          entry('2026-10-11', 0, source: 'streakOnIce'),
+          entry(oct(1), 10),
+          entry(oct(2), 10),
+          entry(oct(10), 10),
+          entry(oct(11), 10),
         ],
       );
-      final iceDay = data.days.firstWhere((d) => d.day == '2026-10-11');
-      final ordinaryDay = data.days.firstWhere((d) => d.day == '2026-10-10');
-      expect(iceDay.isStreakOnIce, isTrue);
-      expect(ordinaryDay.isStreakOnIce, isFalse);
+      expect(data.longestStreak, 2);
+      expect(data.showLongestStreakBand, isFalse);
+      expect(data.days.where((d) => d.isCurrentStreak).map((d) => d.day), [
+        oct(10),
+        oct(11),
+      ]);
     });
 
-    test('carries streakFreezesAvailable through unchanged, defaulting to '
-        '0 (issue #087)', () {
-      final defaulted = ActivityCalendarData.build(
-        today: today,
-        streakCount: 0,
-        lastActiveDay: null,
-        dailyGoalXp: 100,
-        entries: const [],
+    test('a freeze inside the current run keeps the whole run in the '
+        'current band, with no extra longest band on it', () {
+      final data = build(
+        streakCount: 6,
+        lastActiveDay: oct(11),
+        entries: [
+          for (var d = 5; d <= 9; d++) entry(oct(d), 10),
+          freeze(oct(10)),
+          entry(oct(11), 10),
+        ],
       );
-      expect(defaulted.streakFreezesAvailable, 0);
+      expect(data.days.where((d) => d.isCurrentStreak).map((d) => d.day), [
+        for (var d = 5; d <= 11; d++) oct(d),
+      ]);
+      expect(data.showLongestStreakBand, isFalse);
+      expect(data.days.where((d) => d.isLongestStreak), isEmpty);
+      // Freeze days count toward the longest streak.
+      expect(data.longestStreak, 7);
+    });
 
-      final withFreezes = ActivityCalendarData.build(
-        today: today,
-        streakCount: 0,
-        lastActiveDay: null,
-        dailyGoalXp: 100,
-        entries: const [],
-        streakFreezesAvailable: 3,
-      );
-      expect(withFreezes.streakFreezesAvailable, 3);
+    test('practicedToday reflects only a practiced today cell', () {
+      expect(build().practicedToday, isFalse);
+      expect(build(entries: [entry(oct(11), 10)]).practicedToday, isTrue);
+    });
+
+    test('carries streakFreezesAvailable through unchanged', () {
+      expect(build(freezes: 3).streakFreezesAvailable, 3);
+    });
+  });
+
+  group('groupIntoWeeks', () {
+    test('Monday-first: Monday on row 0, Sunday on row 6, padded with '
+        'nulls before the first and after the last day', () {
+      // 2026-10-07 is a Wednesday, 2026-10-13 a Tuesday.
+      final days = [for (var d = 7; d <= 13; d++) ActivityDay(day: oct(d))];
+      final weeks = groupIntoWeeks(days);
+      expect(weeks, hasLength(2));
+      expect(weeks[0][0], isNull);
+      expect(weeks[0][1], isNull);
+      expect(weeks[0][2]!.day, oct(7));
+      expect(weeks[0][6]!.day, oct(11)); // Sunday at the bottom.
+      expect(weeks[1][0]!.day, oct(12)); // Monday at the top.
+      expect(weeks[1][1]!.day, oct(13));
+      expect(weeks[1].sublist(2), everyElement(isNull));
+    });
+
+    test('is empty for no days', () {
+      expect(groupIntoWeeks(const []), isEmpty);
+    });
+  });
+
+  group('computeStreakBandSegments', () {
+    ActivityDay d(String day, {bool current = false, bool longest = false}) =>
+        ActivityDay(
+          day: day,
+          isCurrentStreak: current,
+          isLongestStreak: longest,
+        );
+
+    test('a run crossing Sunday -> Monday is open at the bottom of the '
+        'first column and at the top of the next, closed at its real '
+        'start and end', () {
+      // Mon 2026-10-05 .. Wed 2026-10-14; streak Fri 09 .. Tue 13.
+      final days = [
+        for (var i = 5; i <= 14; i++) d(oct(i), current: i >= 9 && i <= 13),
+      ];
+      final segments = computeStreakBandSegments(groupIntoWeeks(days));
+      expect(segments, hasLength(2));
+      final first = segments[0];
+      expect(first.column, 0);
+      expect(first.startRow, 4);
+      expect(first.endRow, 6);
+      expect(first.firstDay, oct(9));
+      expect(first.openTop, isFalse);
+      expect(first.openBottom, isTrue);
+      expect(first.daysAfter, 2);
+      final second = segments[1];
+      expect(second.column, 1);
+      expect(second.startRow, 0);
+      expect(second.endRow, 1);
+      expect(second.firstDay, oct(12));
+      expect(second.openTop, isTrue);
+      expect(second.openBottom, isFalse);
+      expect(second.daysAfter, 0);
+    });
+
+    test('a run filling a whole middle column is open at both ends', () {
+      // Sun 2026-10-04 .. Mon 2026-10-12, all current.
+      final days = [for (var i = 4; i <= 12; i++) d(oct(i), current: true)];
+      final segments = computeStreakBandSegments(groupIntoWeeks(days));
+      expect(segments, hasLength(3));
+      expect(segments[1].openTop, isTrue);
+      expect(segments[1].openBottom, isTrue);
+      expect(segments[1].length, 7);
+      expect(segments.map((s) => s.daysAfter), [8, 1, 0]);
+    });
+
+    test('a run ending on a Sunday, with the next Monday not banded, '
+        'stays closed', () {
+      final days = [
+        d(oct(10), current: true),
+        d(oct(11), current: true),
+        d(oct(12)),
+      ];
+      final segment = computeStreakBandSegments(groupIntoWeeks(days)).single;
+      expect(segment.openBottom, isFalse);
+      expect(segment.openTop, isFalse);
+    });
+
+    test('a day in both runs takes the current kind', () {
+      final days = [
+        d(oct(5), longest: true),
+        d(oct(6), longest: true),
+        d(oct(7), longest: true, current: true),
+        d(oct(8), current: true),
+      ];
+      final segments = computeStreakBandSegments(groupIntoWeeks(days));
+      expect(segments, hasLength(2));
+      expect(segments[0].kind, StreakBandKind.longest);
+      expect(segments[0].endRow, 1);
+      expect(segments[1].kind, StreakBandKind.current);
+      expect(segments[1].startRow, 2);
+      expect(segments[1].endRow, 3);
+    });
+
+    test('no banded days, no segments', () {
+      final days = [d(oct(5)), d(oct(6))];
+      expect(computeStreakBandSegments(groupIntoWeeks(days)), isEmpty);
     });
   });
 }

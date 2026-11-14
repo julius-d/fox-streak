@@ -397,4 +397,26 @@ void main() {
       expect(rows, isEmpty);
     });
   });
+
+  group('getAllDailyActivity', () {
+    test('returns every recorded row, ascending by day', () async {
+      for (final day in ['2026-10-12', '2025-01-03', '2026-03-01']) {
+        await repo.recordDailyActivity(
+          day: day,
+          xpDelta: 10,
+          source: DailyActivitySource.lessonCompleted,
+        );
+      }
+      final rows = await repo.getAllDailyActivity();
+      expect(rows.map((r) => r.day), [
+        '2025-01-03',
+        '2026-03-01',
+        '2026-10-12',
+      ]);
+    });
+
+    test('returns an empty list when nothing is recorded yet', () async {
+      expect(await repo.getAllDailyActivity(), isEmpty);
+    });
+  });
 }

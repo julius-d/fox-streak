@@ -1302,41 +1302,17 @@ abstract class AppLocalizations {
   /// **'Streak history'**
   String get streakDetailsTitle;
 
-  /// Headline on the Streak Details screen showing the exact current streak, from profile.streakCount (issue #084)
+  /// Screen-reader label for the Streak Details hero, the exact current streak from profile.streakCount (issue #084, #128)
   ///
   /// In en, this message translates to:
   /// **'{count, plural, =0{No current streak} =1{Current streak: 1 day} other{Current streak: {count} days}}'**
   String streakDetailsCurrentStreakHeadline(int count);
 
-  /// Headline on the Streak Details screen showing the longest run of active days within the visible ~6-month window — explicitly labeled as windowed, not a lifetime "longest streak ever" claim (issue #084)
+  /// Calendar legend: a day without a daily_activity row (issue #084, reworded #128)
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =0{No activity in the last 6 months} =1{Longest in the last 6 months: 1 day} other{Longest in the last 6 months: {count} days}}'**
-  String streakDetailsLongestStreakHeadline(int count);
-
-  /// Calendar color-bucket legend label: no daily_activity row for that day (issue #084)
-  ///
-  /// In en, this message translates to:
-  /// **'No activity'**
+  /// **'No practice'**
   String get streakDetailsLegendNone;
-
-  /// Calendar color-bucket legend label: lowest non-empty bucket, below 50% of the daily goal (or a future streak-on-ice day at 0 XP) (issue #084)
-  ///
-  /// In en, this message translates to:
-  /// **'Low'**
-  String get streakDetailsLegendLow;
-
-  /// Calendar color-bucket legend label: 50-99% of the daily goal (issue #084)
-  ///
-  /// In en, this message translates to:
-  /// **'Medium'**
-  String get streakDetailsLegendMedium;
-
-  /// Calendar color-bucket legend label: at or above 100% of the daily goal (issue #084)
-  ///
-  /// In en, this message translates to:
-  /// **'Goal reached'**
-  String get streakDetailsLegendHigh;
 
   /// Screen-reader label for one activity-calendar cell that has a daily_activity row, naming the formatted day and the XP earned that day (issue #084)
   ///
@@ -1347,7 +1323,7 @@ abstract class AppLocalizations {
   /// Screen-reader label for one activity-calendar cell with no daily_activity row (issue #084)
   ///
   /// In en, this message translates to:
-  /// **'{day}: no activity'**
+  /// **'{day}: no practice'**
   String streakCalendarCellNoActivityLabel(String day);
 
   /// Heading on the unspun wheel-of-fortune screen (issue #085)
@@ -1392,17 +1368,119 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{No streak freezes available} =1{1 streak freeze available} other{{count} streak freezes available}}'**
   String streakFreezesAvailableLabel(int count);
 
-  /// Calendar color-bucket legend label for a streakOnIce day, distinct from the ActivityLevel buckets (issue #087)
+  /// Calendar legend: a day saved by a streak freeze (issue #087, reworded #128)
   ///
   /// In en, this message translates to:
-  /// **'Streak freeze used'**
+  /// **'Saved by a streak freeze'**
   String get streakDetailsLegendStreakOnIce;
 
   /// Screen-reader label for one activity-calendar cell whose daily_activity row has source streakOnIce (issue #087)
   ///
   /// In en, this message translates to:
-  /// **'{day}: streak freeze used'**
+  /// **'{day}: saved by a streak freeze'**
   String streakCalendarCellStreakOnIceLabel(String day);
+
+  /// Streak Details hero: label next to the big current-streak number (issue #128)
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{days in a row} =1{day in a row!} other{days in a row!}}'**
+  String streakDetailsHeroDaysLabel(int count);
+
+  /// Streak Details hero line when today is already practiced — celebrating, never shaming (issue #128)
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re on fire! See you tomorrow.'**
+  String get streakDetailsHeroPracticedToday;
+
+  /// Streak Details hero line when the streak is alive but today is not practiced yet — a friendly nudge (issue #128)
+  ///
+  /// In en, this message translates to:
+  /// **'Practice today to keep your streak going.'**
+  String get streakDetailsHeroNotYetToday;
+
+  /// Streak Details hero line with no current streak — an invitation, no "you lost your streak" tone (issue #128)
+  ///
+  /// In en, this message translates to:
+  /// **'Start a new streak today!'**
+  String get streakDetailsHeroNoStreak;
+
+  /// Streak Details stat tile caption: all-time longest streak, freeze days included (issue #128)
+  ///
+  /// In en, this message translates to:
+  /// **'Longest streak'**
+  String get streakDetailsStatLongestLabel;
+
+  /// Screen-reader label for the longest-streak stat tile (issue #128)
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Longest streak: none yet} =1{Longest streak: 1 day} other{Longest streak: {count} days}}'**
+  String streakDetailsStatLongestSemantics(int count);
+
+  /// Streak Details stat tile caption: all-time number of days practiced, streak-freeze days excluded (issue #128)
+  ///
+  /// In en, this message translates to:
+  /// **'Practice days'**
+  String get streakDetailsStatPracticeDaysLabel;
+
+  /// Screen-reader label for the practice-days stat tile (issue #128)
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No practice days yet} =1{1 practice day in total} other{{count} practice days in total}}'**
+  String streakDetailsStatPracticeDaysSemantics(int count);
+
+  /// Streak Details stat tile caption: streak freezes owned (issue #128)
+  ///
+  /// In en, this message translates to:
+  /// **'Streak freezes'**
+  String get streakDetailsStatFreezesLabel;
+
+  /// Calendar legend: a practiced day (issue #128)
+  ///
+  /// In en, this message translates to:
+  /// **'Practiced'**
+  String get streakDetailsLegendPracticed;
+
+  /// Calendar legend: the band marking the current streak (issue #128)
+  ///
+  /// In en, this message translates to:
+  /// **'Current streak'**
+  String get streakDetailsLegendCurrentStreak;
+
+  /// Calendar legend: the band marking the all-time longest streak, shown only when that band is drawn (issue #128)
+  ///
+  /// In en, this message translates to:
+  /// **'Longest streak'**
+  String get streakDetailsLegendLongestStreak;
+
+  /// Tap-a-day popup status: XP earned on a practiced day (issue #128)
+  ///
+  /// In en, this message translates to:
+  /// **'{xp} XP earned'**
+  String streakDetailsDayXpEarned(int xp);
+
+  /// Tap-a-day popup status: a day saved by a streak freeze (issue #128)
+  ///
+  /// In en, this message translates to:
+  /// **'Saved by a streak freeze ❄️'**
+  String get streakDetailsDayStreakFreeze;
+
+  /// Tap-a-day popup status: a past day without practice (issue #128)
+  ///
+  /// In en, this message translates to:
+  /// **'No practice'**
+  String get streakDetailsDayNoPractice;
+
+  /// Tap-a-day popup status: today, not practiced yet (issue #128)
+  ///
+  /// In en, this message translates to:
+  /// **'Not practiced yet today'**
+  String get streakDetailsDayNotYetToday;
+
+  /// Screen-reader label for today's calendar cell while today is not practiced yet (issue #128)
+  ///
+  /// In en, this message translates to:
+  /// **'{day}: not practiced yet today'**
+  String streakCalendarCellTodayNotPracticedLabel(String day);
 
   /// AppBar title for the coin shop screen, reached by tapping Home's CoinBadge (issue #091)
   ///

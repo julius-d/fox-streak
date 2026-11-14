@@ -55,8 +55,15 @@ void main() {
         await statsRepo.setOnboarded();
         await statsRepo.addCoins(1000);
         await statsRepo.addStreakFreezes(2);
+        final twoDaysAgo = toLocalDayString(DateTime(2026, 11, 12));
         final yesterday = toLocalDayString(DateTime(2026, 11, 13));
         final todayDay = toLocalDayString(today);
+        // Lesson (streak 1), freeze (still 1, #087), lesson today (2).
+        await statsRepo.recordDailyActivity(
+          day: twoDaysAgo,
+          xpDelta: 10,
+          source: DailyActivitySource.lessonCompleted,
+        );
         await statsRepo.recordDailyActivity(
           day: yesterday,
           xpDelta: 0,
@@ -71,7 +78,8 @@ void main() {
 
         await pumpFoxStreakApp(tester, db: db, clock: clock);
 
-        // Home: flame for today, snowflake for the frozen day before it.
+        // Home: flames for the two lesson days, snowflake for the frozen
+        // day between them.
         final Finder badgeSnowflake = _snowflakeIn(const Key('streakBadge'));
         expect(badgeSnowflake, findsOneWidget);
         expect(tester.widget<Icon>(badgeSnowflake).color, ice);
@@ -80,10 +88,11 @@ void main() {
             of: find.byKey(const Key('streakBadge')),
             matching: find.byIcon(Icons.local_fire_department),
           ),
-          findsOneWidget,
+          findsNWidgets(2),
         );
 
-        // Streak Details: snowflake in front of the balance line only.
+        // Streak Details: the snowflake sits in the freezes stat tile only
+        // (#128 replaced the balance line with that tile).
         await tester.tap(find.byKey(const Key('streakBadgeButton')));
         await settle(tester);
         final Finder detailsSnowflake = find.byIcon(
@@ -91,16 +100,19 @@ void main() {
         );
         expect(detailsSnowflake, findsOneWidget);
         expect(tester.widget<Icon>(detailsSnowflake).color, ice);
-        expect(find.text('2 streak freezes available'), findsOneWidget);
         expect(
-          tester.getCenter(detailsSnowflake).dx,
-          lessThan(
-            tester
-                .getTopLeft(
-                  find.byKey(const Key('streakFreezesAvailableLabel')),
-                )
-                .dx,
+          find.descendant(
+            of: find.byKey(const Key('streakStatFreezes')),
+            matching: detailsSnowflake,
           ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.byKey(const Key('streakStatFreezes')),
+            matching: find.text('2'),
+          ),
+          findsOneWidget,
         );
         await tester.pageBack();
         await settle(tester);

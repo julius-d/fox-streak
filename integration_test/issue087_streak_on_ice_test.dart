@@ -107,9 +107,19 @@ void main() {
 
       await tester.tap(find.byKey(const Key('streakBadgeButton')));
       await settle(tester);
-      expect(find.text('Current streak: 5 days'), findsOneWidget);
-      expect(find.text('No streak freezes available'), findsOneWidget);
-      expect(find.text('Streak freeze used'), findsOneWidget);
+      // #128: hero count, the (now empty) freezes tile, and the legend.
+      expect(
+        tester.widget<Text>(find.byKey(const Key('streakHeroCount'))).data,
+        '5',
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('streakStatFreezes')),
+          matching: find.text('0'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Saved by a streak freeze'), findsOneWidget);
 
       final profile = await statsRepo.getProfile();
       expect(profile.streakFreezesAvailable, 0);
@@ -168,6 +178,13 @@ void main() {
 
     await tester.tap(find.byKey(const Key('streakBadgeButton')));
     await settle(tester);
-    expect(find.text('1 streak freeze available'), findsOneWidget);
+    // #128: the freeze balance lives in the freezes stat tile.
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('streakStatFreezes')),
+        matching: find.text('1'),
+      ),
+      findsOneWidget,
+    );
   });
 }

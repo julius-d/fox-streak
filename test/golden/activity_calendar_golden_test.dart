@@ -1,7 +1,8 @@
-// Golden (screenshot-comparison) tests for the #089 Streak Details
-// calendar polish: weekday/month header labels and the connected (not
-// per-cell) streak highlight, across `en`/`de` locales (weekday letters
-// differ, e.g. German Mo/Mi both narrow to "M") and light/dark themes.
+// Golden (screenshot-comparison) tests for the Streak Details calendar
+// (#089, #128): weekday/month header labels, Monday-first weeks, the three
+// cell states, today's ring and the streak bands (open at a Sunday ->
+// Monday break), across `en`/`de` locales (weekday letters differ, e.g.
+// German Mo/Mi both narrow to "M") and light/dark themes.
 //
 // Plain `flutter_test` (`matchesGoldenFile`), same approach and per-OS
 // baseline layout as `kit_golden_test.dart` (issue #019) — see that file's
@@ -22,47 +23,43 @@ String get _goldenPlatformDir {
   return 'linux';
 }
 
-ActivityDay _day(
-  String d, {
-  bool isCurrentStreak = false,
-  bool isLongestStreak = false,
-  ActivityLevel level = ActivityLevel.none,
-}) => ActivityDay(
-  day: d,
-  xpEarned: 0,
-  hasActivity: level != ActivityLevel.none,
-  level: level,
-  isCurrentStreak: isCurrentStreak,
-  isLongestStreak: isLongestStreak,
-);
+String _d(int month, int day) =>
+    '2026-${month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}';
 
-/// 3 week-columns (2026-09-27..2026-10-12): a longest-in-window run
-/// (Sep28-30, primary color) entirely within the first column, and a
-/// current streak (Oct09-12, flame color) that crosses the boundary
-/// between the 2nd and 3rd columns — covering both #089 highlight shapes
-/// and the connector in one fixture.
+/// 3 Monday-first week-columns (Mon 2026-09-28 .. Wed 2026-10-14 = today):
+/// a longest-streak run (Sep 29 - Oct 1, gold) inside the first column, and
+/// a current streak (Fri Oct 9 .. today, flame) with a freeze day (Oct 10)
+/// that crosses the Sunday -> Monday break between the 2nd and 3rd columns
+/// — the open band ends, today's ring and all three cell states in one
+/// fixture.
 final ActivityCalendarData _data = ActivityCalendarData(
   days: [
-    _day('2026-09-27'),
-    _day('2026-09-28', isLongestStreak: true, level: ActivityLevel.medium),
-    _day('2026-09-29', isLongestStreak: true, level: ActivityLevel.medium),
-    _day('2026-09-30', isLongestStreak: true, level: ActivityLevel.medium),
-    _day('2026-10-01', level: ActivityLevel.low),
-    _day('2026-10-02'),
-    _day('2026-10-03', level: ActivityLevel.low),
-    _day('2026-10-04'),
-    _day('2026-10-05', level: ActivityLevel.medium),
-    _day('2026-10-06', level: ActivityLevel.low),
-    _day('2026-10-07', level: ActivityLevel.high),
-    _day('2026-10-08'),
-    _day('2026-10-09', isCurrentStreak: true, level: ActivityLevel.high),
-    _day('2026-10-10', isCurrentStreak: true, level: ActivityLevel.high),
-    _day('2026-10-11', isCurrentStreak: true, level: ActivityLevel.high),
-    _day('2026-10-12', isCurrentStreak: true, level: ActivityLevel.high),
+    for (final (month, day) in [
+      for (var d = 28; d <= 30; d++) (9, d),
+      for (var d = 1; d <= 14; d++) (10, d),
+    ])
+      ActivityDay(
+        day: _d(month, day),
+        xpEarned: 20,
+        state: switch ((month, day)) {
+          (10, 10) => ActivityDayState.streakFreeze,
+          (9, 29) || (9, 30) || (10, 1) => ActivityDayState.practiced,
+          (10, 5) || (10, 7) => ActivityDayState.practiced,
+          (10, final int d) when d >= 9 => ActivityDayState.practiced,
+          _ => ActivityDayState.none,
+        },
+        isToday: month == 10 && day == 14,
+        isLongestStreak:
+            (month, day) == (9, 29) ||
+            (month, day) == (9, 30) ||
+            (month, day) == (10, 1),
+        isCurrentStreak: month == 10 && day >= 9,
+      ),
   ],
-  currentStreakCount: 4,
-  longestStreakInWindow: 3,
-  longestDiffersFromCurrent: true,
+  currentStreakCount: 6,
+  longestStreak: 6,
+  practiceDays: 11,
+  showLongestStreakBand: true,
 );
 
 /// Pumps the calendar under [locale]/[theme] at its exact natural size (3
@@ -75,8 +72,8 @@ Future<void> _expectCalendarGolden(
   required Locale locale,
   required ThemeData theme,
 }) async {
-  const Size calendarSize = Size(69, 134);
-  await tester.binding.setSurfaceSize(const Size(100, 160));
+  const Size calendarSize = Size(90, 190);
+  await tester.binding.setSurfaceSize(const Size(120, 220));
   tester.view.devicePixelRatio = 1.0;
   addTearDown(() {
     tester.binding.setSurfaceSize(null);
@@ -89,6 +86,11 @@ Future<void> _expectCalendarGolden(
       theme: theme,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
+      // Final state, no draw-in / today pulse mid-frame.
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(disableAnimations: true),
+        child: child!,
+      ),
       home: Scaffold(
         body: Center(
           child: RepaintBoundary(
@@ -99,6 +101,7 @@ Future<void> _expectCalendarGolden(
               child: ActivityCalendarView(
                 data: _data,
                 cellSemanticsLabel: (day) => day.day,
+                dayPopupText: (day) => (date: day.day, status: ''),
               ),
             ),
           ),
@@ -125,15 +128,18 @@ void main() {
 
   for (final (String localeName, Locale locale) in locales) {
     for (final (String themeName, ThemeData theme) in themes) {
-      testWidgets('activity calendar header labels + connected streak '
-          '($localeName, $themeName)', (WidgetTester tester) async {
-        await _expectCalendarGolden(
-          tester,
-          'activity_calendar_${localeName}_$themeName',
-          locale: locale,
-          theme: theme,
-        );
-      });
+      testWidgets(
+        'activity calendar headers + streak bands across a week break '
+        '($localeName, $themeName)',
+        (WidgetTester tester) async {
+          await _expectCalendarGolden(
+            tester,
+            'activity_calendar_${localeName}_$themeName',
+            locale: locale,
+            theme: theme,
+          );
+        },
+      );
     }
   }
 }
