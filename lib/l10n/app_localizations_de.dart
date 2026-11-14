@@ -654,6 +654,7 @@ class AppLocalizationsDe extends AppLocalizations {
     String _temp0 = intl.Intl.selectLogic(rarity, {
       'common': 'Gewöhnlich',
       'uncommon': 'Ungewöhnlich',
+      'rare': 'Selten',
       'epic': 'Episch',
       'legendary': 'Legendär',
       'mythic': 'Mythisch',
@@ -680,6 +681,7 @@ class AppLocalizationsDe extends AppLocalizations {
     String _temp0 = intl.Intl.selectLogic(rarity, {
       'common': 'Du hast ein gewöhnliches Pet bekommen!',
       'uncommon': 'Du hast ein ungewöhnliches Pet bekommen!',
+      'rare': 'Du hast ein seltenes Pet bekommen!',
       'epic': 'Du hast ein episches Pet bekommen!',
       'legendary': 'Du hast ein legendäres Pet bekommen!',
       'mythic': 'Du hast ein mythisches Pet bekommen!',

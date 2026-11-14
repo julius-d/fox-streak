@@ -660,12 +660,12 @@
   },
   "petLockedSemanticLabel": "Gesperrtes Pet",
   "@petRarityLabel": {
-    "description": "Visible rarity/seasonal label shown under a collection-screen tile, owned or locked (issue #069). rarity is one of: common, uncommon, epic, legendary, mythic, seasonal",
+    "description": "Visible rarity/seasonal label shown under a collection-screen tile, owned or locked (issue #069). rarity is one of: common, uncommon, rare, epic, legendary, mythic, seasonal",
     "placeholders": {
       "rarity": {"type": "String"}
     }
   },
-  "petRarityLabel": "{rarity, select, common{Gewöhnlich} uncommon{Ungewöhnlich} epic{Episch} legendary{Legendär} mythic{Mythisch} seasonal{Saisonal} other{Gewöhnlich}}",
+  "petRarityLabel": "{rarity, select, common{Gewöhnlich} uncommon{Ungewöhnlich} rare{Selten} epic{Episch} legendary{Legendär} mythic{Mythisch} seasonal{Saisonal} other{Gewöhnlich}}",
   "@homePetSemanticLabel": {
     "description": "A11y label for Home's tap-to-collect pet button (issue #059)",
     "placeholders": {}
@@ -687,12 +687,12 @@
   },
   "lootboxTapPrompt": "Tippe, um deine Belohnung aufzudecken!",
   "@lootboxRevealedTitle": {
-    "description": "Heading shown once the lootbox has been opened with a pet reward, naming the won pet's rarity/seasonal label (issue #059; reworded by #069). rarity is one of: common, uncommon, epic, legendary, mythic, seasonal",
+    "description": "Heading shown once the lootbox has been opened with a pet reward, naming the won pet's rarity/seasonal label (issue #059; reworded by #069). rarity is one of: common, uncommon, rare, epic, legendary, mythic, seasonal",
     "placeholders": {
       "rarity": {"type": "String"}
     }
   },
-  "lootboxRevealedTitle": "{rarity, select, common{Du hast ein gewöhnliches Pet bekommen!} uncommon{Du hast ein ungewöhnliches Pet bekommen!} epic{Du hast ein episches Pet bekommen!} legendary{Du hast ein legendäres Pet bekommen!} mythic{Du hast ein mythisches Pet bekommen!} seasonal{Du hast ein saisonales Pet bekommen!} other{Du hast ein neues Pet bekommen!}}",
+  "lootboxRevealedTitle": "{rarity, select, common{Du hast ein gewöhnliches Pet bekommen!} uncommon{Du hast ein ungewöhnliches Pet bekommen!} rare{Du hast ein seltenes Pet bekommen!} epic{Du hast ein episches Pet bekommen!} legendary{Du hast ein legendäres Pet bekommen!} mythic{Du hast ein mythisches Pet bekommen!} seasonal{Du hast ein saisonales Pet bekommen!} other{Du hast ein neues Pet bekommen!}}",
   "@lootboxCoinsRevealedTitle": {
     "description": "Heading shown once the lootbox has been opened with a coins reward (issue #065)",
     "placeholders": {
