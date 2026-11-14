@@ -1,4 +1,4 @@
-// Unit tests for SessionAnswers (issue #120).
+// Unit tests for sessionCorrectAnswers (issues #120, #126).
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fox_streak_app/src/data/database.dart';
@@ -21,39 +21,59 @@ LessonItemOutcome _outcome(int id, {required bool correct, bool? skipped}) =>
 void main() {
   final items = [_item(1, ' Dog '), _item(2, 'cat'), _item(3, 'mouse')];
 
-  test('no outcomes yields empty sets', () {
-    final result = SessionAnswers.from(items: items, outcomes: const []);
-    expect(result.correct, isEmpty);
-    expect(result.missed, isEmpty);
+  test('no outcomes yields an empty set', () {
+    expect(sessionCorrectAnswers(items: items, outcomes: const []), isEmpty);
   });
 
-  test('classifies normalised answers by outcome, skips count as missed', () {
-    final result = SessionAnswers.from(
+  test('keeps normalised correct answers only, not missed or skipped', () {
+    final result = sessionCorrectAnswers(
       items: items,
       outcomes: [
         _outcome(1, correct: true),
         _outcome(2, correct: false, skipped: true),
+        _outcome(3, correct: false),
       ],
     );
-    expect(result.correct, {'dog'});
-    expect(result.missed, {'cat'});
+    expect(result, {'dog'});
   });
 
   test('a later outcome of the same item supersedes an earlier one', () {
-    final result = SessionAnswers.from(
-      items: items,
-      outcomes: [_outcome(1, correct: false), _outcome(1, correct: true)],
+    expect(
+      sessionCorrectAnswers(
+        items: items,
+        outcomes: [_outcome(1, correct: false), _outcome(1, correct: true)],
+      ),
+      {'dog'},
     );
-    expect(result.correct, {'dog'});
-    expect(result.missed, isEmpty);
+    expect(
+      sessionCorrectAnswers(
+        items: items,
+        outcomes: [_outcome(1, correct: true), _outcome(1, correct: false)],
+      ),
+      isEmpty,
+    );
+  });
+
+  test('redo round keeps the first round\'s correct answers', () {
+    // First round: 1 correct, 2 and 3 missed; redo round so far: 2 missed
+    // again, 3 not asked yet.
+    final result = sessionCorrectAnswers(
+      items: items,
+      outcomes: [
+        _outcome(1, correct: true),
+        _outcome(2, correct: false),
+        _outcome(3, correct: false),
+        _outcome(2, correct: false),
+      ],
+    );
+    expect(result, {'dog'});
   });
 
   test('an answer that is both correct and missed counts as correct', () {
-    final result = SessionAnswers.from(
+    final result = sessionCorrectAnswers(
       items: [_item(1, 'dog'), _item(2, 'Dog')],
       outcomes: [_outcome(1, correct: true), _outcome(2, correct: false)],
     );
-    expect(result.correct, {'dog'});
-    expect(result.missed, isEmpty);
+    expect(result, {'dog'});
   });
 }

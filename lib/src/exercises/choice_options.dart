@@ -44,13 +44,15 @@ class ChoiceOption {
 ///    too (not just language pair) keeps non-vocab `choice` items (both
 ///    language fields `null`, #022's Bundesländer seed) from leaking in as
 ///    distractors for a differently-typed item that also has no language
-///    pair (e.g. `phone`/`date`). Their answers are ordered by session
-///    knowledge (#120), each group shuffled:
-///    1. answers in [missedAnswers] (missed or skipped this session),
-///    2. all other answers not in [correctAnswers],
-///    3. answers in [correctAnswers] (already answered correctly), last.
-///    Both sets hold answers as produced by [normalizeChoiceAnswer]; omitted
-///    or empty they yield a plain uniform shuffle.
+///    pair (e.g. `phone`/`date`). Their answers are drawn in two groups,
+///    each shuffled uniformly (#120, #126):
+///    1. all answers not in [correctAnswers] — missed, skipped and not yet
+///       asked alike, so missed answers never stand out as the recurring
+///       distractors,
+///    2. answers in [correctAnswers] (already answered correctly this
+///       session), only when group 1 can't fill the slots.
+///    [correctAnswers] holds answers as produced by [normalizeChoiceAnswer];
+///    omitted or empty it yields a plain uniform shuffle.
 /// 3. [placeholderDistractor] for any still-empty slot, called with a
 ///    1-based index.
 List<ChoiceOption> buildChoiceOptions({
@@ -58,7 +60,6 @@ List<ChoiceOption> buildChoiceOptions({
   required List<Item> otherSetItems,
   required String Function(int index) placeholderDistractor,
   Set<String> correctAnswers = const {},
-  Set<String> missedAnswers = const {},
   Random? random,
 }) {
   final rng = random ?? Random();
@@ -91,20 +92,15 @@ List<ChoiceOption> buildChoiceOptions({
         )
         .map((other) => other.answer)
         .toList();
-    final missed = <String>[];
-    final neutral = <String>[];
+    final open = <String>[];
     final correct = <String>[];
     for (final candidate in pool) {
-      final key = normalizeChoiceAnswer(candidate);
-      if (correctAnswers.contains(key)) {
-        correct.add(candidate);
-      } else if (missedAnswers.contains(key)) {
-        missed.add(candidate);
-      } else {
-        neutral.add(candidate);
-      }
+      final isCorrect = correctAnswers.contains(
+        normalizeChoiceAnswer(candidate),
+      );
+      (isCorrect ? correct : open).add(candidate);
     }
-    for (final tier in [missed, neutral, correct]) {
+    for (final tier in [open, correct]) {
       tier.shuffle(rng);
       for (final candidate in tier) {
         if (distractors.length >= 3) break;
@@ -133,7 +129,7 @@ List<ChoiceOption> buildChoiceOptions({
 }
 
 /// Canonical form (trimmed, lowercase) of an answer for the
-/// `correctAnswers`/`missedAnswers` sets of [buildChoiceOptions].
+/// `correctAnswers` set of [buildChoiceOptions].
 String normalizeChoiceAnswer(String answer) => answer.trim().toLowerCase();
 
 List<String> _parseChoices(String? choicesJson) {

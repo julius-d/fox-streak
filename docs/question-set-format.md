@@ -96,11 +96,12 @@ below.
   `demo_bundeslaender.foxstreak.json` in `assets/seed/` for a real example
   of this — 16 capitals, no explicit `choices` anywhere, each item borrows
   its 3 wrong options from the other 15).
-  The borrowed options are ordered by what the learner did in the current
-  session: answers of items they missed or skipped come first, then
-  answers not yet answered, and answers they already got right come last
-  (only used when there are too few others). "Redo missed items" rounds
-  follow the same rule. Authored `choices` always take priority.
+  The borrowed options depend on what the learner did in the current
+  session: they are picked at random from the answers not yet answered
+  correctly (missed, skipped or not asked yet, all with equal chances);
+  answers they already got right are only used when there are too few
+  others. "Redo missed items" rounds follow the same rule. Authored
+  `choices` always take priority.
 - `promptLang`/`answerLang` are optional — see [Language codes](#language-codes-promptlanganswerlang)
   below.
 

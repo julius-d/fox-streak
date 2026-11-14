@@ -414,10 +414,6 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
     // Real card implementations.
     switch (item.type) {
       case 'choice':
-        final sessionAnswers = SessionAnswers.from(
-          items: otherSetItems,
-          outcomes: sessionOutcomes,
-        );
         return buildMultipleChoiceExercise(
           key: cardKey,
           item: item,
@@ -425,8 +421,10 @@ class _LessonScreenState extends ConsumerState<LessonScreen>
           onStateChanged: controller.updateDraft,
           l10n: l10n,
           revealed: isFeedback,
-          correctAnswers: sessionAnswers.correct,
-          missedAnswers: sessionAnswers.missed,
+          correctAnswers: sessionCorrectAnswers(
+            items: otherSetItems,
+            outcomes: sessionOutcomes,
+          ),
         );
       case 'freeText':
         return buildFreeTextExercise(

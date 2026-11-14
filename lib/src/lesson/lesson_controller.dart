@@ -27,7 +27,7 @@ import 'exercise_card.dart';
 /// [outcomes] accumulates one outcome per answered item.
 /// [previousOutcomes] are the outcomes of earlier rounds of this session
 ///   (before "Redo missed items", issue #078), so distractor selection can
-///   still tell what the learner got right or wrong (issue #120). Empty in
+///   still tell what the learner got right (issues #120, #126). Empty in
 ///   a fresh session.
 /// [phase] tracks the current question phase.
 /// [currentDraft] holds the latest ExerciseDraft from the active card

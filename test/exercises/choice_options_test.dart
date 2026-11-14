@@ -200,14 +200,13 @@ void main() {
       expect(a.map((o) => o.label).toList(), b.map((o) => o.label).toList());
     });
 
-    group('session-aware fallback pool (#120)', () {
+    group('session-aware fallback pool (#120, #126)', () {
       final pool = [
         for (var i = 0; i < 8; i++) _item(id: 10 + i, answer: 'a$i'),
       ];
 
       List<String> distractorsOf(
-        Set<String> correct,
-        Set<String> missed, {
+        Set<String> correct, {
         List<Item>? others,
         int seed = 1,
         String? choices,
@@ -217,7 +216,6 @@ void main() {
           otherSetItems: others ?? pool,
           placeholderDistractor: _placeholder,
           correctAnswers: correct,
-          missedAnswers: missed,
           random: Random(seed),
         );
         return options.where((o) => !o.isCorrect).map((o) => o.label).toList();
@@ -226,7 +224,7 @@ void main() {
       test('never uses correctly answered answers while tier 1 suffices', () {
         final correct = {'a0', 'a1', 'a2', 'a3'};
         for (var seed = 0; seed < 20; seed++) {
-          final labels = distractorsOf(correct, const {}, seed: seed);
+          final labels = distractorsOf(correct, seed: seed);
           expect(labels, hasLength(3));
           expect(labels.toSet().intersection(correct), isEmpty);
         }
@@ -235,54 +233,71 @@ void main() {
       test('tier 2 fills the remaining slots when tier 1 is too small', () {
         final correct = {'a0', 'a1', 'a2', 'a3', 'a4', 'a5'};
         for (var seed = 0; seed < 20; seed++) {
-          final labels = distractorsOf(correct, const {}, seed: seed);
+          final labels = distractorsOf(correct, seed: seed);
           expect(labels, hasLength(3));
           expect(labels, containsAll(['a6', 'a7']));
           expect(labels.toSet().intersection(correct), hasLength(1));
         }
       });
 
-      test('missed answers come before other tier-1 answers', () {
-        for (var seed = 0; seed < 20; seed++) {
-          final labels = distractorsOf({'a0', 'a1'}, {'a2', 'a3'}, seed: seed);
-          expect(labels, containsAll(['a2', 'a3']));
-          expect(
-            labels.toSet().difference({'a2', 'a3'}).single,
-            matches('a[4-7]'),
-          );
-        }
-      });
+      // #126: missed answers get no priority, so they are not the same 3
+      // distractors on every card. a0–a2 stand for missed items, a3–a5 for
+      // items not asked yet; neither is in `correctAnswers`.
+      group('missed and not-yet-asked answers form one group', () {
+        final missed = {'a0', 'a1', 'a2'};
+        final open = [
+          for (var i = 0; i < 6; i++) _item(id: 10 + i, answer: 'a$i'),
+        ];
+        final others = [
+          ...open,
+          _item(id: 16, answer: 'a6'),
+          _item(id: 17, answer: 'a7'),
+        ];
+        const correct = {'a6', 'a7'};
+        const seeds = 600;
 
-      test('missed answers still precede tier 2 when tier 1 is small', () {
-        final correct = {'a0', 'a1', 'a2', 'a3', 'a4', 'a5'};
-        final labels = distractorsOf(correct, {'a6'});
-        expect(labels, contains('a6'));
-        expect(labels, contains('a7'));
-      });
+        test('distractors include not-yet-asked answers across seeds', () {
+          var withUnasked = 0;
+          for (var seed = 0; seed < seeds; seed++) {
+            final labels = distractorsOf(correct, others: others, seed: seed);
+            expect(labels, hasLength(3));
+            expect(labels.toSet().intersection(correct), isEmpty);
+            if (!missed.containsAll(labels)) withUnasked++;
+          }
+          // Only 1 in C(6,3) = 20 draws is all-missed.
+          expect(withUnasked, greaterThan(seeds * 0.9));
+        });
 
-      test('an answer both correct and missed counts as correct', () {
-        final labels = distractorsOf({'a0'}, {'a0'});
-        expect(labels, isNot(contains('a0')));
+        test('every answer of the group has an equal chance', () {
+          final counts = <String, int>{};
+          for (var seed = 0; seed < seeds; seed++) {
+            for (final label in distractorsOf(
+              correct,
+              others: others,
+              seed: seed,
+            )) {
+              counts[label] = (counts[label] ?? 0) + 1;
+            }
+          }
+          // Each of the 6 answers fills one of 3 slots: expected 300 hits.
+          expect(counts.keys.toSet(), {for (final i in open) i.answer});
+          for (final count in counts.values) {
+            expect(count, inInclusiveRange(240, 360));
+          }
+        });
       });
 
       test('authored choices keep priority over the session ordering', () {
-        final labels = distractorsOf(
-          {'cat'},
-          const {},
-          choices: '["cat","mouse","bird"]',
-        );
+        final labels = distractorsOf({
+          'cat',
+        }, choices: '["cat","mouse","bird"]');
         expect(labels.toSet(), {'cat', 'mouse', 'bird'});
       });
 
       test('the correct answer is never a distractor', () {
         final others = [...pool, _item(id: 99, answer: 'DOG ')];
         for (var seed = 0; seed < 20; seed++) {
-          final labels = distractorsOf(
-            {'a0'},
-            {'dog'},
-            others: others,
-            seed: seed,
-          );
+          final labels = distractorsOf({'a0'}, others: others, seed: seed);
           expect(
             labels.map((l) => l.trim().toLowerCase()),
             isNot(contains('dog')),
@@ -306,7 +321,6 @@ void main() {
             otherSetItems: pool,
             placeholderDistractor: _placeholder,
             correctAnswers: const {},
-            missedAnswers: const {},
             random: Random(seed),
           ).map((o) => o.label).toList();
           expect(actual, legacy(seed));
@@ -321,7 +335,6 @@ void main() {
         for (var seed = 0; seed < 10; seed++) {
           final labels = distractorsOf(
             {normalizeChoiceAnswer(' Cat ')},
-            const {},
             others: others,
             seed: seed,
           );

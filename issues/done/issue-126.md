@@ -1,6 +1,6 @@
 # Issue 126: Multiple-choice distractors give away the answer after a few misses
 
-Status: open | Priority: P3 | Type: enhancement | Refined-at: 2026-11-14
+Status: done | Priority: P3 | Type: enhancement | Refined-at: 2026-11-14 | Completed-at: 2026-11-14
 
 ## Goal
 
@@ -67,3 +67,12 @@ before other answers". #120's other rules stay.
   missed. That input to distractor selection, and the code that derives and
   passes it, are removed.
 - `flutter analyze`, `dart format` and `flutter test` are clean.
+
+## Summary
+- `buildChoiceOptions` drops `missedAnswers`: pool = one uniformly shuffled group (missed + not yet asked), then already-correct answers.
+- `SessionAnswers` class replaced by `sessionCorrectAnswers()`; `previousOutcomes` stays so redo rounds still deprioritize the first round's correct answers.
+- `docs/question-set-format.md` distractor paragraph updated (it still described missed-first). No UI change, so no integration test/screenshots.
+
+## Code review
+- No findings (reviewed manually by the review subagent; its `code-review` skill run had not reported back in time).
+  Nothing to fix.
