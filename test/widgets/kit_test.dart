@@ -622,6 +622,52 @@ void main() {
     });
   });
 
+  group('FoxStreakFreezeIcon (issue #127)', () {
+    for (final (String name, ThemeData theme) in <(String, ThemeData)>[
+      ('light', FoxStreakTheme.light()),
+      ('dark', FoxStreakTheme.dark()),
+    ]) {
+      testWidgets("renders Material's snowflake in the $name theme's icy "
+          'blue by default, decorative only', (WidgetTester tester) async {
+        final SemanticsHandle semantics = tester.ensureSemantics();
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: theme,
+            home: const Scaffold(body: FoxStreakFreezeIcon()),
+          ),
+        );
+
+        expect(FoxStreakFreezeIcon.iconData, Icons.ac_unit);
+        final Icon icon = tester.widget<Icon>(find.byIcon(Icons.ac_unit));
+        expect(icon.color, theme.extension<FoxSemanticColors>()!.ice);
+        expect(icon.size, 24);
+        expect(icon.semanticLabel, isNull);
+        expect(
+          tester.getSemantics(find.byType(FoxStreakFreezeIcon)).label,
+          isEmpty,
+        );
+        semantics.dispose();
+      });
+    }
+
+    testWidgets('honors an explicit color and size', (
+      WidgetTester tester,
+    ) async {
+      await pumpKit(
+        tester,
+        const FoxStreakFreezeIcon(color: Colors.purple, size: 16),
+      );
+
+      final Icon icon = tester.widget<Icon>(find.byIcon(Icons.ac_unit));
+      expect(icon.color, Colors.purple);
+      expect(icon.size, 16);
+      expect(
+        tester.getSize(find.byType(FoxStreakFreezeIcon)),
+        const Size(16, 16),
+      );
+    });
+  });
+
   group('visibleStreakDayIconCount (issue #108)', () {
     test('shows every day when they all fit the available width', () {
       final int visible = visibleStreakDayIconCount(
@@ -715,8 +761,8 @@ void main() {
     expect(find.byIcon(Icons.check_circle), findsNothing);
   });
 
-  testWidgets('streak badge renders one icon per day, flame or ice cube per '
-      "day's DailyActivitySource, oldest to newest (issue #108)", (
+  testWidgets('streak badge renders one icon per day, flame or snowflake per '
+      "day's DailyActivitySource, oldest to newest (issues #108, #127)", (
     WidgetTester tester,
   ) async {
     await pumpKit(
@@ -732,12 +778,12 @@ void main() {
 
     expect(find.text('3'), findsOneWidget);
     expect(find.byIcon(Icons.local_fire_department), findsNWidgets(2));
-    expect(find.byType(FoxIceCubeIcon), findsOneWidget);
+    expect(find.byType(FoxStreakFreezeIcon), findsOneWidget);
 
     final double firstFlameX = tester
         .getTopLeft(find.byIcon(Icons.local_fire_department).at(0))
         .dx;
-    final double iceX = tester.getTopLeft(find.byType(FoxIceCubeIcon)).dx;
+    final double iceX = tester.getTopLeft(find.byType(FoxStreakFreezeIcon)).dx;
     final double secondFlameX = tester
         .getTopLeft(find.byIcon(Icons.local_fire_department).at(1))
         .dx;
@@ -776,7 +822,7 @@ void main() {
           .length;
       expect(shownFlames, greaterThanOrEqualTo(0));
       expect(shownFlames, lessThan(29));
-      expect(find.byType(FoxIceCubeIcon), findsOneWidget);
+      expect(find.byType(FoxStreakFreezeIcon), findsOneWidget);
     },
   );
 

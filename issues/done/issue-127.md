@@ -1,6 +1,7 @@
 # Issue 127: The snowflake is the one icon for a streak freeze
 
-Status: open | Priority: P3 | Type: enhancement | Refined-at: 2026-11-14
+Status: done | Priority: P3 | Type: enhancement | Refined-at: 2026-11-14
+Completed-at: 2026-11-14
 
 ## Goal
 
@@ -85,3 +86,21 @@ an ice cube.
       and the wheel; golden baselines are updated where the change affects
       them.
 - [ ] Follows #015 (kit reuse, semantic colors, a11y labels, DE + EN strings).
+
+## Summary
+
+- New kit widget `FoxStreakFreezeIcon` (`Icons.ac_unit`, defaults to `FoxSemanticColors.ice`) replaces `FoxIceCubeIcon`. Used by the Home streak badge, the coin shop balance and (new) the Streak Details balance line.
+- `WheelPainter` labels are now typed (`WheelTextLabel` / `WheelIconLabel`); the freeze slice paints `FoxStreakFreezeIcon.iconData` in `onIce` instead of the ❄ character.
+- EN coin shop copy now says "streak freeze" with proper plurals; arb keys kept their old `…StreakOnIce…` names. DE was already consistent.
+- No golden covers these widgets, so no baselines changed. Screenshots: `issue-127-*-{light,dark}.png`.
+
+## Code review
+
+- Wheel icon style ignores `textStyle`'s weight/features; glyph size/centering not asserted.
+  Not fixed: Material icons have one weight; checked visually via the screenshots.
+- Streak Details snowflake is a fixed 20dp (no text scaling) and was vertically centered against wrapped text.
+  Fixed: top-aligned. Scaling not changed: kit icons don't scale elsewhere either, and #012 owns the large-font pass.
+- arb keys still named `…StreakOnIce…` while copy says "streak freeze".
+  Not fixed: internal names only, renaming would churn all call sites.
+- Issue file not yet moved to `issues/done/`.
+  Fixed: moved as part of completion.

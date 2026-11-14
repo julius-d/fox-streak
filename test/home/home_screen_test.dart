@@ -502,8 +502,8 @@ void main() {
 
   testWidgets(
     "the streak badge's per-day icon row renders a flame for a day with "
-    'normal practice and an ice cube for a day saved by a streak-on-ice '
-    '(issue #108)',
+    'normal practice and an icy-blue snowflake for a day saved by a streak '
+    'freeze (issues #108, #127)',
     (tester) async {
       final clock = FakeClock(kTestToday);
       await pumpOnboardedHome(
@@ -538,7 +538,11 @@ void main() {
 
       expect(find.text('3'), findsOneWidget);
       expect(find.byIcon(Icons.local_fire_department), findsNWidgets(2));
-      expect(find.byType(FoxIceCubeIcon), findsOneWidget);
+      expect(find.byType(FoxStreakFreezeIcon), findsOneWidget);
+      expect(
+        tester.widget<Icon>(find.byIcon(FoxStreakFreezeIcon.iconData)).color,
+        FoxStreakTheme.light().extension<FoxSemanticColors>()!.ice,
+      );
       await unmount(tester);
     },
   );

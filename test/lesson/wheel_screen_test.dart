@@ -28,6 +28,7 @@ Widget _harness(
   WheelReward reward, {
   bool hapticsEnabled = true,
   bool reduceMotion = false,
+  ThemeData? theme,
 }) {
   return ProviderScope(
     overrides: [
@@ -36,7 +37,7 @@ Widget _harness(
       ),
     ],
     child: MaterialApp(
-      theme: FoxStreakTheme.light(),
+      theme: theme ?? FoxStreakTheme.light(),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) => MediaQuery(
@@ -219,6 +220,52 @@ void main() {
       expect(find.byKey(const Key('wheelContinueButton')), findsOneWidget);
     },
   );
+
+  for (final (String name, ThemeData theme) in <(String, ThemeData)>[
+    ('light', FoxStreakTheme.light()),
+    ('dark', FoxStreakTheme.dark()),
+  ]) {
+    testWidgets(
+      'the streak-freeze slice paints the shared snowflake icon in the icy '
+      "slice's contrasting foreground color, coin slices their amount "
+      '($name theme, issue #127)',
+      (tester) async {
+        await tester.pumpWidget(
+          _harness(const WheelCoinsReward(50), theme: theme),
+        );
+        await tester.pump();
+
+        final FoxSemanticColors semantics = theme
+            .extension<FoxSemanticColors>()!;
+        final WheelPainter painter = _painter(tester);
+        for (var i = 0; i < kWheelSegments.length; i++) {
+          switch (kWheelSegments[i]) {
+            case WheelStreakOnIceReward():
+              expect(
+                painter.labels[i],
+                isA<WheelIconLabel>().having(
+                  (label) => label.icon,
+                  'icon',
+                  FoxStreakFreezeIcon.iconData,
+                ),
+              );
+              expect(painter.sliceColors[i], semantics.ice);
+              expect(painter.onSliceColors[i], semantics.onIce);
+            case WheelCoinsReward(amount: final amount):
+              expect(
+                painter.labels[i],
+                isA<WheelTextLabel>().having(
+                  (label) => label.text,
+                  'text',
+                  '$amount',
+                ),
+              );
+          }
+        }
+        expect(find.text('❄'), findsNothing);
+      },
+    );
+  }
 
   testWidgets('a second tap during the wind-down (the stopping phase) is '
       "ignored — it doesn't postpone the landing (regression guard)", (

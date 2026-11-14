@@ -12,6 +12,7 @@ import 'package:intl/intl.dart';
 import '../../l10n/app_localizations.dart';
 import '../data/clock.dart' show parseDayString;
 import '../theme/fox_streak_theme.dart';
+import '../widgets/widgets.dart';
 import 'activity_calendar.dart';
 import 'activity_calendar_view.dart';
 import 'stats_providers.dart';
@@ -79,10 +80,24 @@ class _StreakDetailsBody extends StatelessWidget {
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: FoxSpacing.xs),
-            Text(
-              l10n.streakFreezesAvailableLabel(data.streakFreezesAvailable),
-              key: const Key('streakFreezesAvailableLabel'),
-              style: Theme.of(context).textTheme.bodyMedium,
+            // Same snowflake as the coin shop's balance (#127), sized to the
+            // body text and top-aligned so it stays on the first line when
+            // the text wraps; decorative, the text stays the accessible label.
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                const FoxStreakFreezeIcon(size: 20),
+                const SizedBox(width: FoxSpacing.sm),
+                Expanded(
+                  child: Text(
+                    l10n.streakFreezesAvailableLabel(
+                      data.streakFreezesAvailable,
+                    ),
+                    key: const Key('streakFreezesAvailableLabel'),
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: FoxSpacing.lg),
             ActivityCalendarView(

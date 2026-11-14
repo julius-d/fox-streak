@@ -16,6 +16,7 @@ import 'package:fox_streak_app/src/data/providers.dart';
 import 'package:fox_streak_app/src/data/stats_repository.dart';
 import 'package:fox_streak_app/src/stats/streak_details_screen.dart';
 import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
+import 'package:fox_streak_app/src/widgets/widgets.dart';
 
 import '../data/test_helpers.dart';
 
@@ -106,6 +107,41 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('2 streak freezes available'), findsOneWidget);
+    await unmount(tester);
+  });
+
+  testWidgets('the freeze balance line has the same icy-blue snowflake as '
+      'the coin shop in front of it; screen readers read only the text '
+      '(issue #127)', (tester) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    final clock = FakeClock(kTestToday);
+    await pumpStreakDetails(
+      tester,
+      clock,
+      seed: (stats) async {
+        await stats.addStreakFreezes(1);
+      },
+    );
+
+    final Finder snowflake = find.byIcon(FoxStreakFreezeIcon.iconData);
+    final Finder label = find.byKey(const Key('streakFreezesAvailableLabel'));
+    // Exactly one: the calendar cells + legend stay icon-free (#087).
+    expect(find.byType(FoxStreakFreezeIcon), findsOneWidget);
+    expect(
+      tester.widget<Icon>(snowflake).color,
+      FoxStreakTheme.light().extension<FoxSemanticColors>()!.ice,
+    );
+    expect(
+      tester.getCenter(snowflake).dx,
+      lessThan(tester.getTopLeft(label).dx),
+    );
+    expect(
+      (tester.getCenter(snowflake).dy - tester.getCenter(label).dy).abs(),
+      lessThan(2),
+    );
+    expect(tester.getSemantics(snowflake).label, isEmpty);
+    expect(find.bySemanticsLabel('1 streak freeze available'), findsOneWidget);
+    handle.dispose();
     await unmount(tester);
   });
 

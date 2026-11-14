@@ -2,7 +2,7 @@
 //
 // Reached by tapping Home's CoinBadge (mirrors #084's StreakBadge ->
 // StreakDetailsScreen entry point). A single-item shop for now: buy one
-// streak on ice for a fixed price, reusing #087's `addStreakFreezes`
+// streak freeze for a fixed price, reusing #087's `addStreakFreezes`
 // increment rather than adding a new repository method for the freeze
 // balance — this issue only adds the spend-coins side.
 import 'package:flutter/material.dart';
@@ -15,7 +15,7 @@ import '../stats/stats_providers.dart';
 import '../theme/fox_streak_theme.dart';
 import '../widgets/widgets.dart';
 
-/// Fixed price of one streak on ice, in coins — no bulk pricing/discounts
+/// Fixed price of one streak freeze, in coins — no bulk pricing/discounts
 /// in scope (issue #091).
 const int kStreakOnIcePriceCoins = 400;
 
@@ -98,7 +98,7 @@ class _CoinShopScreenState extends ConsumerState<CoinShopScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
-                        FoxIceCubeIcon(color: foxSemantics(context).ice),
+                        const FoxStreakFreezeIcon(),
                         const SizedBox(width: FoxSpacing.sm),
                         Text(
                           l10n.coinShopStreakOnIceCountLabel(

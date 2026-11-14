@@ -812,24 +812,24 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get coinShopConfirmTitle => 'Buy streak on ice?';
+  String get coinShopConfirmTitle => 'Buy streak freeze?';
 
   @override
   String coinShopConfirmMessage(int price) {
-    return 'Spend $price coins for one streak on ice?';
+    return 'Spend $price coins for one streak freeze?';
   }
 
   @override
-  String get coinShopPurchaseSuccessMessage => 'You bought a streak on ice! ❄️';
+  String get coinShopPurchaseSuccessMessage => 'You bought a streak freeze! ❄️';
 
   @override
   String coinShopStreakOnIceCountLabel(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count streak on ice',
-      one: '1 streak on ice',
-      zero: 'No streak on ice yet',
+      other: '$count streak freezes',
+      one: '1 streak freeze',
+      zero: 'No streak freezes yet',
     );
     return '$_temp0';
   }

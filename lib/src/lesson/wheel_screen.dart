@@ -273,14 +273,15 @@ class _WheelScreenState extends ConsumerState<WheelScreen>
   }
 }
 
-/// The text label painted on one wheel slice: the coin amount, or a
-/// snowflake glyph for the streak-on-ice segment — decorative only (the
-/// dial's own [FoxRevealTapTarget.semanticLabel] carries the a11y text), so
-/// a plain Unicode character needs no l10n entry, same as the wheel's own
-/// pointer icon.
-String _labelFor(WheelReward segment) => switch (segment) {
-  WheelCoinsReward(amount: final amount) => '$amount',
-  WheelStreakOnIceReward() => '❄',
+/// The label painted on one wheel slice: the coin amount, or the shared
+/// [FoxStreakFreezeIcon] snowflake (#127) for the streak-freeze segment —
+/// decorative only (the dial's own [FoxRevealTapTarget.semanticLabel]
+/// carries the a11y text), so neither needs an l10n entry.
+WheelSliceLabel _labelFor(WheelReward segment) => switch (segment) {
+  WheelCoinsReward(amount: final amount) => WheelTextLabel('$amount'),
+  WheelStreakOnIceReward() => const WheelIconLabel(
+    FoxStreakFreezeIcon.iconData,
+  ),
 };
 
 /// The wheel's rotating [CustomPaint] plus its fixed (non-rotating) top

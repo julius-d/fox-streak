@@ -3,10 +3,10 @@
 // Drives the real `FoxStreakApp` from a cold launch, proving Home's streak
 // badge renders the real per-day icon row — sourced from the same
 // `daily_activity` rows #084's Streak Details calendar reads, oldest to
-// newest — with a flame for normal practice days and an ice cube for a
-// #087 streak-on-ice day, hides entirely at `streakCount == 0`, and that
-// the coin shop's streak-on-ice row uses the same ice-cube icon (acceptance
-// criterion 3), not the old snowflake.
+// newest — with a flame for normal practice days and the streak-freeze
+// snowflake (#127 replaced #108's ice cube) for a #087 streak-on-ice day,
+// and hides entirely at `streakCount == 0`. The coin shop's matching icon
+// is covered by `issue127_streak_freeze_snowflake_test.dart`.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -22,7 +22,7 @@ void main() {
 
   testWidgets(
     "Home's streak badge renders a flame for each normally-practiced day "
-    'and an ice cube for the day a streak freeze saved it, oldest to '
+    'and a snowflake for the day a streak freeze saved it, oldest to '
     'newest, next to the still-accurate numeric count',
     (tester) async {
       final db = makeIntegrationTestDb();
@@ -64,14 +64,16 @@ void main() {
       expect(find.byKey(const Key('streakBadge')), findsOneWidget);
       expect(find.text('4'), findsOneWidget);
       expect(find.byIcon(Icons.local_fire_department), findsNWidgets(3));
-      expect(find.byType(FoxIceCubeIcon), findsOneWidget);
+      expect(find.byType(FoxStreakFreezeIcon), findsOneWidget);
 
       // Oldest -> newest, left -> right: flame (3 days ago), ice (2 days
       // ago), flame (yesterday), flame (today, the rightmost icon).
       final double firstFlameX = tester
           .getTopLeft(find.byIcon(Icons.local_fire_department).at(0))
           .dx;
-      final double iceX = tester.getTopLeft(find.byType(FoxIceCubeIcon)).dx;
+      final double iceX = tester
+          .getTopLeft(find.byType(FoxStreakFreezeIcon))
+          .dx;
       final double secondFlameX = tester
           .getTopLeft(find.byIcon(Icons.local_fire_department).at(1))
           .dx;
@@ -96,26 +98,4 @@ void main() {
     expect(find.byKey(const Key('streakBadge')), findsNothing);
     expect(find.byKey(const Key('streakBadgeButton')), findsNothing);
   });
-
-  testWidgets(
-    "the coin shop's streak-on-ice row uses the same ice-cube icon as "
-    "Home's badge, not the old snowflake (acceptance criterion 3)",
-    (tester) async {
-      final db = makeIntegrationTestDb();
-      addTearDown(db.close);
-      final clock = FakeClock(DateTime(2026, 10, 20, 9));
-      final statsRepo = StatsRepository(db, clock);
-      await statsRepo.setOnboarded();
-      await statsRepo.addCoins(1000);
-
-      await pumpFoxStreakApp(tester, db: db, clock: clock);
-
-      await tester.tap(find.byKey(const Key('coinBadgeButton')));
-      await settle(tester);
-
-      expect(find.byKey(const Key('coinShopScreen')), findsOneWidget);
-      expect(find.byType(FoxIceCubeIcon), findsOneWidget);
-      expect(find.byIcon(Icons.ac_unit), findsNothing);
-    },
-  );
 }

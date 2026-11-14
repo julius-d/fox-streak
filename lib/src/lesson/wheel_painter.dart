@@ -39,6 +39,25 @@ double _contrast(Color a, Color b) {
   return (math.max(la, lb) + 0.05) / (math.min(la, lb) + 0.05);
 }
 
+/// What one wheel slice shows: a text label (a coin amount) or an icon glyph
+/// (the streak-freeze snowflake, #127). Both are drawn in the slice's
+/// contrasting foreground color.
+sealed class WheelSliceLabel {
+  const WheelSliceLabel();
+}
+
+final class WheelTextLabel extends WheelSliceLabel {
+  final String text;
+
+  const WheelTextLabel(this.text);
+}
+
+final class WheelIconLabel extends WheelSliceLabel {
+  final IconData icon;
+
+  const WheelIconLabel(this.icon);
+}
+
 /// Paints `labels.length` equal pie slices. Slice `0` starts at the top
 /// (12 o'clock) and slices proceed clockwise — `wheelTargetRotationTurns`
 /// relies on this exact layout.
@@ -75,7 +94,11 @@ class WheelPainter extends CustomPainter {
   static const double rimWidthFraction = 0.09;
   static const double pulseGrowth = 0.05;
 
-  final List<String> labels;
+  /// An icon label's size relative to [textStyle]'s font size — a glyph
+  /// at text size reads smaller than the bold digits beside it.
+  static const double iconLabelScale = 1.25;
+
+  final List<WheelSliceLabel> labels;
   final List<Color> sliceColors;
   final List<Color> onSliceColors;
   final TextStyle textStyle;
@@ -167,20 +190,17 @@ class WheelPainter extends CustomPainter {
     canvas.drawCircle(center, inner * 0.11, Paint()..color = hubColor);
   }
 
-  /// Draws [text] along the slice direction, reading from the hub outwards.
+  /// Draws [label] along the slice direction, reading from the hub outwards.
   void _paintLabel(
     Canvas canvas,
     Offset center,
     double radius,
     double angle,
-    String text,
+    WheelSliceLabel label,
     Color color,
   ) {
     final TextPainter painter = TextPainter(
-      text: TextSpan(
-        text: text,
-        style: textStyle.copyWith(color: color),
-      ),
+      text: _spanFor(label, color),
       textDirection: TextDirection.ltr,
     )..layout();
     canvas
@@ -193,6 +213,26 @@ class WheelPainter extends CustomPainter {
     );
     canvas.restore();
   }
+
+  TextSpan _spanFor(WheelSliceLabel label, Color color) => switch (label) {
+    WheelTextLabel(text: final text) => TextSpan(
+      text: text,
+      style: textStyle.copyWith(color: color),
+    ),
+    // Same font setup the `Icon` widget uses to render an [IconData].
+    WheelIconLabel(icon: final icon) => TextSpan(
+      text: String.fromCharCode(icon.codePoint),
+      style: TextStyle(
+        inherit: false,
+        color: color,
+        fontSize: (textStyle.fontSize ?? 16) * iconLabelScale,
+        fontFamily: icon.fontFamily,
+        fontFamilyFallback: icon.fontFamilyFallback,
+        package: icon.fontPackage,
+        height: 1,
+      ),
+    ),
+  };
 
   // Every input is rebuilt per frame of the parent anyway; a cheap repaint
   // beats a field-by-field comparison that silently misses new fields.

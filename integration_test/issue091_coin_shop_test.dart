@@ -1,4 +1,4 @@
-// Issue #091 — Coin shop: buy streak on ice with coins.
+// Issue #091 — Coin shop: buy a streak freeze with coins.
 //
 // Drives the real app end-to-end: Home's CoinBadge opens CoinShopScreen,
 // the buy button is disabled below the fixed price, and confirming a buy
@@ -36,7 +36,7 @@ void main() {
 
       expect(find.byKey(const Key('coinShopScreen')), findsOneWidget);
       expect(find.text('100'), findsOneWidget);
-      expect(find.text('No streak on ice yet'), findsOneWidget);
+      expect(find.text('No streak freezes yet'), findsOneWidget);
       final button = tester.widget<FoxPrimaryButton>(
         find.byKey(const Key('coinShopBuyButton')),
       );
@@ -70,14 +70,14 @@ void main() {
 
       await tester.tap(find.byKey(const Key('coinShopBuyButton')));
       await settle(tester);
-      expect(find.text('Buy streak on ice?'), findsOneWidget);
+      expect(find.text('Buy streak freeze?'), findsOneWidget);
 
       await tester.tap(find.byKey(const Key('coinShopConfirmBuyButton')));
       await settle(tester);
 
-      expect(find.text('You bought a streak on ice! ❄️'), findsOneWidget);
+      expect(find.text('You bought a streak freeze! ❄️'), findsOneWidget);
       expect(find.text('0'), findsOneWidget);
-      expect(find.text('1 streak on ice'), findsOneWidget);
+      expect(find.text('1 streak freeze'), findsOneWidget);
       final profile = await statsRepo.getProfile();
       expect(profile.coinsTotal, 0);
       expect(profile.streakFreezesAvailable, 1);

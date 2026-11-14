@@ -78,17 +78,58 @@ void main() {
   );
 
   testWidgets(
-    'the streak-on-ice row shows the shared ice-cube icon, not a snowflake '
-    '(issue #108)',
+    'the freeze balance shows the shared icy-blue snowflake next to its '
+    'label; the buy button stays icon-less (issue #127)',
     (tester) async {
       final clock = FakeClock(kTestToday);
       await pumpCoinShop(tester, clock);
 
-      expect(find.byType(FoxIceCubeIcon), findsOneWidget);
-      expect(find.byIcon(Icons.ac_unit), findsNothing);
+      final Finder snowflake = find.byIcon(FoxStreakFreezeIcon.iconData);
+      expect(find.byType(FoxStreakFreezeIcon), findsOneWidget);
+      expect(snowflake, findsOneWidget);
+      expect(
+        tester.widget<Icon>(snowflake).color,
+        FoxStreakTheme.light().extension<FoxSemanticColors>()!.ice,
+      );
+      final Finder label = find.byKey(
+        const Key('coinShopStreakOnIceCountLabel'),
+      );
+      expect(
+        tester.getCenter(snowflake).dx,
+        lessThan(tester.getTopLeft(label).dx),
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('coinShopBuyButton')),
+          matching: find.byType(Icon),
+        ),
+        findsNothing,
+      );
       await unmount(tester);
     },
   );
+
+  for (final (int count, String text) in <(int, String)>[
+    (0, 'No streak freezes yet'),
+    (1, '1 streak freeze'),
+    (2, '2 streak freezes'),
+  ]) {
+    testWidgets('the balance label calls $count freeze(s) "$text" — '
+        'never "streak on ice" (issue #127)', (tester) async {
+      final clock = FakeClock(kTestToday);
+      await pumpCoinShop(
+        tester,
+        clock,
+        seed: (stats) async {
+          if (count > 0) await stats.addStreakFreezes(count);
+        },
+      );
+
+      expect(find.text(text), findsOneWidget);
+      expect(find.textContaining('on ice'), findsNothing);
+      await unmount(tester);
+    });
+  }
 
   testWidgets(
     'buy button is enabled once coinsTotal reaches the price (issue #091)',
@@ -135,7 +176,7 @@ void main() {
   });
 
   testWidgets('confirming the buy dialog spends the fixed price and awards one '
-      'streak on ice, then shows a success banner; buying again stays '
+      'streak freeze, then shows a success banner; buying again stays '
       'possible while affordable (issue #091)', (tester) async {
     final clock = FakeClock(kTestToday);
     final db = await pumpCoinShop(
@@ -147,8 +188,15 @@ void main() {
 
     await tester.tap(find.byKey(const Key('coinShopBuyButton')));
     await settle(tester);
+    // EN copy says "streak freeze", not "streak on ice" (issue #127).
+    expect(find.text('Buy streak freeze?'), findsOneWidget);
+    expect(
+      find.text('Spend $kStreakOnIcePriceCoins coins for one streak freeze?'),
+      findsOneWidget,
+    );
     await tester.tap(find.byKey(const Key('coinShopConfirmBuyButton')));
     await settle(tester);
+    expect(find.text('You bought a streak freeze! ❄️'), findsOneWidget);
 
     var profile = await repo.getProfile();
     expect(profile.coinsTotal, kStreakOnIcePriceCoins);

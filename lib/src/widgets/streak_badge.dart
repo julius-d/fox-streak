@@ -8,11 +8,11 @@
 import 'package:flutter/material.dart';
 
 import '../theme/fox_streak_theme.dart';
-import 'fox_ice_cube_icon.dart';
+import 'fox_streak_freeze_icon.dart';
 
 /// One day's render in [StreakBadge.dayIcons]: a flame for a day with
-/// normal practice activity, an ice cube for a day saved by a streak-on-ice
-/// (#087's `DailyActivitySource.streakOnIce`).
+/// normal practice activity, the [FoxStreakFreezeIcon] snowflake (#127) for
+/// a day saved by a streak freeze (#087's `DailyActivitySource.streakOnIce`).
 enum StreakDayIcon { flame, ice }
 
 /// Edge length of each icon in [StreakBadge]'s per-day row (#108) — smaller
@@ -166,7 +166,7 @@ class _StreakDayIconView extends StatelessWidget {
           size: kStreakDayIconSize,
         );
       case StreakDayIcon.ice:
-        return FoxIceCubeIcon(color: ice, size: kStreakDayIconSize);
+        return FoxStreakFreezeIcon(color: ice, size: kStreakDayIconSize);
     }
   }
 }
