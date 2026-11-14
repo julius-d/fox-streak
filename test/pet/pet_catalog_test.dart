@@ -1,7 +1,7 @@
 // Unit tests for the pet catalog (issue #059; replaced by issue #069's
 // static hardcoded list).
 //
-// Covers: the static catalog's shape (11 entries, `sortOrder`-ascending,
+// Covers: the static catalog's shape (12 entries, `sortOrder`-ascending,
 // fox first, folder <-> catalog sync), the Noto Emoji hex-codepoint decode
 // (including a multi-codepoint ZWJ sequence) and its consistency with each
 // entry's literal `emoji`, [PetRarity]'s fixed weights, [PetEntry]'s
@@ -39,8 +39,8 @@ class _QueueRandom implements Random {
 
 void main() {
   group('PetCatalog.entries', () {
-    test('has exactly the 11 real collectible pets', () {
-      expect(PetCatalog.entries, hasLength(11));
+    test('has exactly the 12 real collectible pets', () {
+      expect(PetCatalog.entries, hasLength(12));
       expect(PetCatalog.entries.map((e) => e.id), contains(kDefaultPetId));
     });
 
@@ -136,14 +136,15 @@ void main() {
   });
 
   group('PetRarity.weight', () {
-    test('the five tiers sum to 100', () {
+    test('the six tiers sum to 100', () {
       final total = PetRarity.values.fold(0, (sum, r) => sum + r.weight);
       expect(total, 100);
     });
 
-    test('matches the fixed table: 55/30/10/4/1', () {
-      expect(PetRarity.common.weight, 55);
-      expect(PetRarity.uncommon.weight, 30);
+    test('matches the fixed table: 50/20/15/10/4/1', () {
+      expect(PetRarity.common.weight, 50);
+      expect(PetRarity.uncommon.weight, 20);
+      expect(PetRarity.rare.weight, 15);
       expect(PetRarity.epic.weight, 10);
       expect(PetRarity.legendary.weight, 4);
       expect(PetRarity.mythic.weight, 1);
@@ -261,32 +262,47 @@ void main() {
       rarity: PetRarity.uncommon,
       sortOrder: 2,
     );
+    const rare = PetEntry(
+      id: 'r1',
+      assetPath: 'r1.json',
+      emoji: '🦉',
+      rarity: PetRarity.rare,
+      sortOrder: 3,
+    );
     const epic = PetEntry(
       id: 'e1',
       assetPath: 'e1.json',
       emoji: '🦖',
       rarity: PetRarity.epic,
-      sortOrder: 3,
+      sortOrder: 4,
     );
     const legendary = PetEntry(
       id: 'l1',
       assetPath: 'l1.json',
       emoji: '🐉',
       rarity: PetRarity.legendary,
-      sortOrder: 4,
+      sortOrder: 5,
     );
     const mythic = PetEntry(
       id: 'm1',
       assetPath: 'm1.json',
       emoji: '🐦‍🔥',
       rarity: PetRarity.mythic,
-      sortOrder: 5,
+      sortOrder: 6,
     );
-    final fullPool = [common1, common2, uncommon, epic, legendary, mythic];
+    final fullPool = [
+      common1,
+      common2,
+      uncommon,
+      rare,
+      epic,
+      legendary,
+      mythic,
+    ];
 
-    test('a draw landing in the common tier\'s weight range (0..54) '
+    test('a draw landing in the common tier\'s weight range (0..49) '
         'returns a common pet, split evenly by within-tier index', () {
-      // Tier-select draw 0 lands in common (weight 55); within-tier draw 1
+      // Tier-select draw 0 lands in common (weight 50); within-tier draw 1
       // picks the 2nd of the 2 common pets.
       final won = drawPet(fullPool, _QueueRandom([0, 1]));
       expect(won, common2);
@@ -294,16 +310,17 @@ void main() {
 
     test('a draw landing just past the common tier\'s weight lands on '
         'uncommon', () {
-      // Tier-select draw 55 is the first uncommon-tier value (common ends
-      // at 54); within-tier draw 0 picks the (only) uncommon pet.
-      final won = drawPet(fullPool, _QueueRandom([55, 0]));
+      // Tier-select draw 50 is the first uncommon-tier value (common ends
+      // at 49); within-tier draw 0 picks the (only) uncommon pet.
+      final won = drawPet(fullPool, _QueueRandom([50, 0]));
       expect(won, uncommon);
     });
 
-    test('a draw landing on the epic/legendary/mythic tiers returns the '
-        'matching tier\'s pet', () {
-      // Cumulative bounds: common 0-54, uncommon 55-84, epic 85-94,
-      // legendary 95-98, mythic 99.
+    test('a draw landing on the rare/epic/legendary/mythic tiers returns '
+        'the matching tier\'s pet', () {
+      // Cumulative bounds: common 0-49, uncommon 50-69, rare 70-84,
+      // epic 85-94, legendary 95-98, mythic 99.
+      expect(drawPet(fullPool, _QueueRandom([70, 0])), rare);
       expect(drawPet(fullPool, _QueueRandom([85, 0])), epic);
       expect(drawPet(fullPool, _QueueRandom([95, 0])), legendary);
       expect(drawPet(fullPool, _QueueRandom([99, 0])), mythic);
@@ -313,8 +330,15 @@ void main() {
         'draws into that gap — a tier-select draw that would have landed '
         'on legendary instead resolves within the tiers that do have a '
         'pet', () {
-      final poolWithoutLegendary = [common1, common2, uncommon, epic, mythic];
-      // Present tiers sum to 55 + 30 + 10 + 1 = 96 (legendary's 4 dropped
+      final poolWithoutLegendary = [
+        common1,
+        common2,
+        uncommon,
+        rare,
+        epic,
+        mythic,
+      ];
+      // Present tiers sum to 50 + 20 + 15 + 10 + 1 = 96 (legendary's 4 dropped
       // entirely), so every draw in 0..95 resolves to one of them.
       for (var draw = 0; draw < 96; draw++) {
         final won = drawPet(poolWithoutLegendary, _QueueRandom([draw, 0]));
@@ -325,14 +349,14 @@ void main() {
     test('a single-tier pool always returns from that tier, regardless of '
         'the tier-select draw', () {
       final onlyCommon = [common1, common2];
-      for (var draw = 0; draw < 55; draw++) {
+      for (var draw = 0; draw < 50; draw++) {
         final won = drawPet(onlyCommon, _QueueRandom([draw, 0]));
         expect(won, common1);
       }
     });
 
     test('distribution sanity: over many seeded trials, common pets are '
-        'drawn far more often than mythic, matching the 55:1 weight '
+        'drawn far more often than mythic, matching the 50:1 weight '
         'ratio', () {
       final random = Random(42);
       var commonCount = 0;

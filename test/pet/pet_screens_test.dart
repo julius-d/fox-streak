@@ -77,7 +77,7 @@ Future<AppDatabase> pumpCollectionScreen(
 }) async {
   final db = database ?? AppDatabase.forTesting(NativeDatabase.memory());
   addTearDown(() async => db.close());
-  // Tall enough that every one of the catalog's 11 tiles (4 rows of 3) is
+  // Tall enough that every one of the catalog's 12 tiles (4 rows of 3) is
   // already built, so tests can find any tile's key directly without
   // scrolling/`ensureVisible` racing the grid's lazy build.
   await tester.binding.setSurfaceSize(const Size(800, 1200));
