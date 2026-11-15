@@ -2,6 +2,8 @@
 
 Status: open | Priority: P2 | Type: feature | Refined-at: 2026-11-15
 
+PR: https://github.com/julius-d/fox-streak/pull/4
+
 ## Goal
 
 At a glance on the Library overview, the user sees how well they already
