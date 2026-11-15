@@ -1,6 +1,6 @@
 # Issue 133: "New set" speed-dial overlaps its lowest option on edge-to-edge Android, and pops in without motion
 
-Status: open | Priority: P2 | Type: bug | Refined-at: 2026-11-15
+Status: done | Priority: P2 | Type: bug | Refined-at: 2026-11-15 | Completed-at: 2026-11-15
 
 ## Goal
 
@@ -110,3 +110,28 @@ micro-moments (#015).
   it no longer fits.
 - No question/data format or schema changes are involved, so no `docs`
   updates are needed.
+
+## Summary
+- Root cause: the options sat at a fixed `bottom: 96` in the body while Scaffold lifts the FAB above the bottom system inset. Now `SpeedDial` (`lib/src/library/speed_dial.dart`) puts options + main FAB together in Scaffold's FAB slot, so they always stack directly above it; on short screens the options scroll (`speedDialOptions`) instead of reaching the app bar.
+- One `AnimationController` in `LibraryScreen` drives scrim (`SpeedDialScrim`), staggered `easeOutBack` pops (`speedDialOptionSlice`) and the extended → round FAB morph. forward/reverse keeps interrupts smooth. Options ignore taps while closing and are read by screen readers only once fully shown. Reduced motion sets the value directly. Open plays `FoxFeedback.tick`.
+- Audit: Set Detail / Marketplace Sources had no overlap. But long labels at large fonts pushed extended FABs off the left edge, so the new kit `FoxFabLabel` scales them down instead (all extended FABs on these screens).
+- Tests: `test/library/library_speed_dial_test.dart` (edge-to-edge inset + 2x text via `test/widgets/edge_to_edge_view.dart`), audit tests in the Set Detail / Marketplace Sources screen tests, `integration_test/issue133_speed_dial_test.dart`.
+- Screenshots: `issue-133-1-collapsed-navbar-48dp-text-1.6x.png`, `issue-133-2-opening-mid-pop.png`, `issue-133-3-open-navbar-48dp-text-1.6x.png`, `issue-133-4-open-short-landscape-text-2x.png`.
+
+## Code review
+- Option count was a separate constant from the options list (controller duration could drift from the stagger).
+  Fixed: duration is set from `options.length`.
+- A visible snack bar lifts the FAB slot past the short-screen height cap.
+  Fixed: opening the menu hides the current snack bar; test added.
+- Options' shadow was clipped on the right by the scroll view.
+  Fixed: custom `ClipRect` widened to the right instead of the scroll view's own clip.
+- FoxFabLabel and the morphing FAB hard-coded the same M3 chrome values separately.
+  Fixed: shared constants on `FoxFabLabel`.
+- `bottomClearance` used `padding.bottom` only; Scaffold lifts by the view padding too.
+  Fixed: uses the larger of both.
+- Main FAB semantics flip to "New set" as soon as closing starts, while it still looks like ×.
+  Not fixed: during close a tap reopens the menu, so "New set" matches the action.
+- SpeedDial has its own status listener, although the Library also rebuilds on status.
+  Not fixed: keeps SpeedDial correct on its own, without relying on the parent.
+- The morphed main FAB keeps its zero-width label, so `find.text('New set')` matches twice when open.
+  Not fixed: needed for the smooth morph; label is excluded from semantics, tests find by key.

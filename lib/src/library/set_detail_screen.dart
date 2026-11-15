@@ -113,7 +113,7 @@ class SetDetailScreen extends ConsumerWidget {
               l10n: l10n,
             ),
             icon: const Icon(Icons.play_arrow),
-            label: Text(l10n.lessonStart),
+            label: FoxFabLabel(l10n.lessonStart),
           ),
         ],
       ),

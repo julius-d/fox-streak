@@ -18,7 +18,10 @@ import 'package:fox_streak_app/src/marketplace/marketplace_providers.dart';
 import 'package:fox_streak_app/src/marketplace/marketplace_sources_screen.dart';
 import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
 import 'package:http/http.dart' as http;
+import 'package:fox_streak_app/src/widgets/widgets.dart';
 import 'package:http/testing.dart';
+
+import '../widgets/edge_to_edge_view.dart';
 
 const _validManifest = '''
 {
@@ -80,6 +83,29 @@ Future<AppDatabase> pumpSourcesScreen(
 }
 
 void main() {
+  for (final textScale in [1.0, 2.0]) {
+    testWidgets(
+      'edge-to-edge (48dp nav bar, ${textScale}x text): "Add source" FAB '
+      'clears the nav bar, within the list clearance (#133)',
+      (tester) async {
+        simulateEdgeToEdgeView(tester, top: 52, textScale: textScale);
+        await pumpSourcesScreen(tester);
+
+        final screen = viewSize(tester);
+        final fab = tester.getRect(
+          find.byKey(const Key('addMarketplaceSourceFab')),
+        );
+        expect(fab.bottom, lessThanOrEqualTo(screen.height - kNavBarInset));
+        expect(fab.left, greaterThanOrEqualTo(0));
+        expect(
+          screen.height - kNavBarInset - fab.top,
+          lessThanOrEqualTo(kFabListClearance),
+        );
+        await unmount(tester);
+      },
+    );
+  }
+
   testWidgets('shows the empty state with an add-a-marketplace CTA', (
     tester,
   ) async {

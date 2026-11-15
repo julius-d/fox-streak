@@ -154,7 +154,15 @@ void main() {
       expect(find.byKey(const Key('newSetMiniFab')), findsOneWidget);
       expect(find.byKey(const Key('importSetFab')), findsOneWidget);
       expect(find.byKey(const Key('marketplaceFab')), findsOneWidget);
-      expect(find.text('New set'), findsOneWidget);
+      // The morphed main FAB keeps its shrunk "New set" label (#133); the
+      // visible one is the option's.
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('newSetMiniFab')),
+          matching: find.text('New set'),
+        ),
+        findsOneWidget,
+      );
       expect(find.text('Import'), findsOneWidget);
       expect(find.text('Marketplace'), findsOneWidget);
       await unmount(tester);

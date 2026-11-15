@@ -57,7 +57,7 @@ class MarketplaceSourcesScreen extends ConsumerWidget {
         key: const Key('addMarketplaceSourceFab'),
         onPressed: () => _addSource(context),
         icon: const Icon(Icons.add),
-        label: Text(l10n.marketplaceAddSource),
+        label: FoxFabLabel(l10n.marketplaceAddSource),
       ),
       body: sourcesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),

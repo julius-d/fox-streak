@@ -9,10 +9,15 @@
 // `newSetFab` is a speed-dial (issue #074): collapsed, it's a single
 // extended FAB; tapping it expands labeled mini-FABs ("New set", "Import",
 // and — issue #101 — "Marketplace") behind a scrim. Tapping a mini-FAB,
-// the scrim, the main FAB again, or the back gesture collapses it.
+// the scrim, the main FAB again, or the back gesture collapses it. Since
+// #133 the menu animates (see `speed_dial.dart`): options pop in bottom →
+// top, the main FAB morphs into a round ×, closing plays it in reverse —
+// instant under the OS reduce-motion setting.
 // Import/Share used to live on `SetDetailScreen`'s now-removed overflow
 // menu — Import moved to this speed-dial, Share moved into each card's
 // three-dot menu.
+
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -36,6 +41,7 @@ import 'set_detail_screen.dart';
 import 'set_editor_screen.dart';
 import 'set_mastery_indicator.dart';
 import 'share_actions.dart';
+import 'speed_dial.dart';
 
 /// Library home screen: all sets with mastery + play/edit affordances.
 class LibraryScreen extends ConsumerStatefulWidget {
@@ -45,10 +51,28 @@ class LibraryScreen extends ConsumerStatefulWidget {
   ConsumerState<LibraryScreen> createState() => _LibraryScreenState();
 }
 
-class _LibraryScreenState extends ConsumerState<LibraryScreen> {
+class _LibraryScreenState extends ConsumerState<LibraryScreen>
+    with SingleTickerProviderStateMixin {
   bool _seeding = false;
   String? _seedError;
-  bool _fabMenuExpanded = false;
+
+  /// Drives the speed-dial: 0 collapsed, 1 open. Its status is the menu's
+  /// state — forward/completed counts as open, so a close tap mid-pop
+  /// reverses from wherever the animation is.
+  late final AnimationController _fabMenu =
+      AnimationController(vsync: this, reverseDuration: speedDialCloseDuration)
+        ..addStatusListener((_) {
+          // Rebuild for scrim mounting and `PopScope.canPop`.
+          if (mounted) setState(() {});
+        });
+
+  bool get _fabMenuExpanded => _fabMenu.status.isForwardOrCompleted;
+
+  @override
+  void dispose() {
+    _fabMenu.dispose();
+    super.dispose();
+  }
 
   Future<void> _openEditor({QuestionSet? existing, int? packId}) async {
     await Navigator.of(context).push(
@@ -117,9 +141,30 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     }
   }
 
-  void _expandFabMenu() => setState(() => _fabMenuExpanded = true);
+  void _toggleFabMenu() =>
+      _fabMenuExpanded ? _collapseFabMenu() : _expandFabMenu();
 
-  void _collapseFabMenu() => setState(() => _fabMenuExpanded = false);
+  void _expandFabMenu() {
+    // A snack bar lifts the FAB slot; the option stack's height cap
+    // (short screens) doesn't account for that, so clear it first.
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _fabMenu.value = 1;
+    } else {
+      _fabMenu.forward();
+    }
+    FoxFeedback.tick(context, ref);
+  }
+
+  /// Never awaited: picking an option navigates right away while the menu
+  /// closes underneath.
+  void _collapseFabMenu() {
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _fabMenu.value = 0;
+    } else {
+      _fabMenu.reverse();
+    }
+  }
 
   Future<void> _createNewSet() async {
     _collapseFabMenu();
@@ -157,40 +202,29 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     final l10n = AppLocalizations.of(context)!;
     final setsAsync = ref.watch(allSetsProvider);
     final packsAsync = ref.watch(allPacksProvider);
+    final appBar = AppBar(
+      title: Text(l10n.libraryTitle),
+      actions: [
+        IconButton(
+          key: const Key('managePacksButton'),
+          tooltip: l10n.packManageTitle,
+          icon: const Icon(Icons.folder_outlined),
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const PackManagementScreen(),
+            ),
+          ),
+        ),
+      ],
+    );
     return PopScope(
       canPop: !_fabMenuExpanded,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _collapseFabMenu();
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: Text(l10n.libraryTitle),
-          actions: [
-            IconButton(
-              key: const Key('managePacksButton'),
-              tooltip: l10n.packManageTitle,
-              icon: const Icon(Icons.folder_outlined),
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const PackManagementScreen(),
-                ),
-              ),
-            ),
-          ],
-        ),
-        floatingActionButton: _fabMenuExpanded
-            ? FloatingActionButton(
-                key: const Key('newSetFab'),
-                tooltip: l10n.newSetFabCollapseTooltip,
-                onPressed: _collapseFabMenu,
-                child: const Icon(Icons.close),
-              )
-            : FloatingActionButton.extended(
-                key: const Key('newSetFab'),
-                onPressed: _expandFabMenu,
-                icon: const Icon(Icons.add),
-                label: Text(l10n.newSet),
-              ),
+        appBar: appBar,
+        floatingActionButton: _buildFabMenu(context, l10n, appBar),
         body: Stack(
           children: [
             if (setsAsync.hasError)
@@ -207,7 +241,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 packsAsync.requireValue,
                 setsAsync.requireValue,
               ),
-            if (_fabMenuExpanded) _buildFabMenuOverlay(l10n),
+            if (!_fabMenu.isDismissed)
+              Positioned.fill(
+                child: SpeedDialScrim(
+                  key: const Key('newSetFabScrim'),
+                  animation: _fabMenu,
+                  onTap: _collapseFabMenu,
+                ),
+              ),
           ],
         ),
       ),
@@ -272,59 +313,47 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     return ListView(padding: fabListBottomPadding(context), children: rows);
   }
 
-  Widget _buildFabMenuOverlay(AppLocalizations l10n) {
-    // `BlockSemantics` hides the dimmed Library list behind the scrim from
-    // screen readers — without it, the scrim only dims the list visually;
-    // a11y users could still navigate to and "activate" cards/menus that
-    // are no longer hit-testable underneath it.
-    return BlockSemantics(
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: GestureDetector(
-              key: const Key('newSetFabScrim'),
-              onTap: _collapseFabMenu,
-              child: Container(color: Colors.black54),
-            ),
-          ),
-          Positioned(
-            right: FoxSpacing.lg,
-            bottom: 96,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                FloatingActionButton.extended(
-                  key: const Key('marketplaceFab'),
-                  heroTag: 'marketplaceFab',
-                  tooltip: l10n.marketplace,
-                  onPressed: _openMarketplace,
-                  icon: const Icon(Icons.storefront),
-                  label: Text(l10n.marketplace),
-                ),
-                const SizedBox(height: FoxSpacing.sm),
-                FloatingActionButton.extended(
-                  key: const Key('importSetFab'),
-                  heroTag: 'importSetFab',
-                  tooltip: l10n.importSet,
-                  onPressed: _importSet,
-                  icon: const Icon(Icons.file_upload),
-                  label: Text(l10n.importSet),
-                ),
-                const SizedBox(height: FoxSpacing.sm),
-                FloatingActionButton.extended(
-                  key: const Key('newSetMiniFab'),
-                  heroTag: 'newSetMiniFab',
-                  tooltip: l10n.newSet,
-                  onPressed: _createNewSet,
-                  icon: const Icon(Icons.edit),
-                  label: Text(l10n.newSet),
-                ),
-              ],
-            ),
-          ),
-        ],
+  Widget _buildFabMenu(
+    BuildContext context,
+    AppLocalizations l10n,
+    PreferredSizeWidget appBar,
+  ) {
+    final padding = MediaQuery.paddingOf(context);
+    final options = [
+      SpeedDialOption(
+        key: const Key('marketplaceFab'),
+        label: l10n.marketplace,
+        icon: Icons.storefront,
+        onPressed: _openMarketplace,
       ),
+      SpeedDialOption(
+        key: const Key('importSetFab'),
+        label: l10n.importSet,
+        icon: Icons.file_upload,
+        onPressed: _importSet,
+      ),
+      SpeedDialOption(
+        key: const Key('newSetMiniFab'),
+        label: l10n.newSet,
+        icon: Icons.edit,
+        onPressed: _createNewSet,
+      ),
+    ];
+    // Stagger length follows the option count.
+    _fabMenu.duration = speedDialOpenDuration(options.length);
+    return SpeedDial(
+      animation: _fabMenu,
+      mainKey: const Key('newSetFab'),
+      label: l10n.newSet,
+      icon: Icons.add,
+      closeTooltip: l10n.newSetFabCollapseTooltip,
+      onToggle: _toggleFabMenu,
+      topClearance: padding.top + appBar.preferredSize.height,
+      // Scaffold lifts the FAB by the larger of the two (e.g. keyboard up).
+      bottomClearance:
+          math.max(padding.bottom, MediaQuery.viewPaddingOf(context).bottom) +
+          kFloatingActionButtonMargin,
+      options: options,
     );
   }
 

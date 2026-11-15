@@ -26,7 +26,10 @@ import 'package:fox_streak_app/src/library/item_editor.dart';
 import 'package:fox_streak_app/src/library/set_detail_screen.dart';
 import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
 
+import 'package:fox_streak_app/src/widgets/widgets.dart';
+
 import '../data/test_helpers.dart';
+import '../widgets/edge_to_edge_view.dart';
 
 /// Pumps frames until none are scheduled (or [cap] is hit, which fails).
 Future<void> settle(WidgetTester tester, {int cap = 50}) async {
@@ -88,6 +91,46 @@ Future<void> pumpSetDetail(
 
 void main() {
   final l10n = AppLocalizationsEn();
+
+  for (final textScale in [1.0, 2.0]) {
+    testWidgets(
+      'edge-to-edge (48dp nav bar, ${textScale}x text): the stacked FABs '
+      'clear the nav bar and each other, within the list clearance (#133)',
+      (tester) async {
+        simulateEdgeToEdgeView(tester, top: 52, textScale: textScale);
+        final clock = FakeClock(kTestToday);
+        final db = AppDatabase.forTesting(NativeDatabase.memory());
+        addTearDown(() async => db.close());
+        final repo = SetsRepository(db, clock);
+        final setId = await repo.createSet(title: 'Many', createdBy: 'Mama');
+        for (var i = 0; i < 30; i++) {
+          await repo.addItem(
+            setId: setId,
+            type: 'choice',
+            prompt: 'Q$i',
+            answer: 'A$i',
+          );
+        }
+        await pumpSetDetail(tester, db, clock, setId);
+
+        final screen = viewSize(tester);
+        final addItem = tester.getRect(find.byKey(const Key('addItemFab')));
+        final start = tester.getRect(find.byKey(const Key('startLessonFab')));
+        expect(addItem.bottom, lessThanOrEqualTo(start.top));
+        expect(start.bottom, lessThanOrEqualTo(screen.height - kNavBarInset));
+        expect(start.left, greaterThanOrEqualTo(0));
+        expect(
+          screen.height - kNavBarInset - addItem.top,
+          lessThanOrEqualTo(kFabListClearance),
+        );
+        expect(
+          tester.widget<ListView>(find.byType(ListView)).padding,
+          const EdgeInsets.only(bottom: kFabListClearance + kNavBarInset),
+        );
+        await unmount(tester);
+      },
+    );
+  }
 
   testWidgets(
     'both FABs stay visible without scrolling, even with a long item list',
