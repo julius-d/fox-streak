@@ -43,10 +43,16 @@ class _SlowStatsRepository extends StatsRepository {
   Future<int> recordAttempt({
     required int itemId,
     required bool ok,
+    bool hintUsed = false,
     DateTime? now,
   }) async {
     await Future<void>.delayed(const Duration(milliseconds: 500));
-    return super.recordAttempt(itemId: itemId, ok: ok, now: now);
+    return super.recordAttempt(
+      itemId: itemId,
+      ok: ok,
+      hintUsed: hintUsed,
+      now: now,
+    );
   }
 }
 

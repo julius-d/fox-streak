@@ -1,8 +1,9 @@
 // Home library: list of sets + FAB (issue #003).
 //
-// Lists title, item count. No "last score" — moved to #005/#012. Watches
-// `watchAllSets` via [allSetsProvider]; counts/play-affordance via
-// [itemsForSetProvider]. Each row's play icon jumps straight into
+// Lists title and mastery crowns (#134, replacing the item count). No "last
+// score" — moved to #005/#012. Watches `watchAllSets` via [allSetsProvider];
+// play-affordance via [itemsForSetProvider], crowns via
+// [masteryForSetProvider]. Each row's play icon jumps straight into
 // `LessonScreen`, skipping `SetDetailScreen` entirely (#042).
 //
 // `newSetFab` is a speed-dial (issue #074): collapsed, it's a single
@@ -21,6 +22,7 @@ import '../data/database.dart';
 import '../data/packs_repository.dart';
 import '../data/providers.dart';
 import '../data/set_json_codec.dart';
+import '../data/set_mastery.dart';
 import '../lesson/lesson.dart';
 import '../marketplace/marketplace_sources_screen.dart';
 import '../pet/pet_providers.dart';
@@ -32,9 +34,10 @@ import 'pack_picker.dart';
 import 'pack_sections.dart';
 import 'set_detail_screen.dart';
 import 'set_editor_screen.dart';
+import 'set_mastery_indicator.dart';
 import 'share_actions.dart';
 
-/// Library home screen: all sets with counts + play/edit affordances.
+/// Library home screen: all sets with mastery + play/edit affordances.
 class LibraryScreen extends ConsumerStatefulWidget {
   const LibraryScreen({super.key});
 
@@ -343,7 +346,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   }
 }
 
-/// One set row: title, item count, play icon + three-dot menu.
+/// One set row: title, mastery crowns or "New" badge (#134; nothing for a
+/// set without items), play icon + three-dot menu.
 ///
 /// The row itself is not a tap target (#042) — play and the three-dot menu
 /// are explicit, unambiguous icon buttons instead of an implicit whole-row
@@ -387,17 +391,25 @@ class _SetCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final itemsAsync = ref.watch(itemsForSetProvider(set.id));
-    final subtitle = itemsAsync.when(
-      loading: () => l10n.libraryLoading,
-      error: (_, _) => '',
-      data: (loadedItems) => l10n.setItemCount(loadedItems.length),
-    );
+    final mastery = ref.watch(masteryForSetProvider(set.id)).value;
     return Card(
       child: ListTile(
         key: Key('setTile-${set.id}'),
         minVerticalPadding: 12,
         title: Text(set.title),
-        subtitle: Text(subtitle),
+        subtitle: mastery == null || mastery.kind == MasteryKind.none
+            ? null
+            : Padding(
+                padding: const EdgeInsets.only(top: FoxSpacing.xs),
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: SetMasteryIndicator(
+                    key: Key('setMastery-${set.id}'),
+                    setId: set.id,
+                    mastery: mastery,
+                  ),
+                ),
+              ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [

@@ -48,6 +48,26 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get masteryNewBadge => 'New';
+
+  @override
+  String get masteryNewSemantics => 'New, not practiced yet';
+
+  @override
+  String masteryPercentSemantics(int percent) {
+    return '$percent% mastered';
+  }
+
+  @override
+  String setMasteredCount(int count) {
+    return '$count mastered';
+  }
+
+  @override
+  String get setMasteryExplanation =>
+      'Mastered = answered correctly twice in a row without a hint';
+
+  @override
   String get newSet => 'New set';
 
   @override

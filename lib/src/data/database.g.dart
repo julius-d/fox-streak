@@ -1894,8 +1894,23 @@ class $AttemptsTable extends Attempts with TableInfo<$AttemptsTable, Attempt> {
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _hintUsedMeta = const VerificationMeta(
+    'hintUsed',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, itemId, ok, at];
+  late final GeneratedColumn<bool> hintUsed = GeneratedColumn<bool>(
+    'hint_used',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("hint_used" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, itemId, ok, at, hintUsed];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1929,6 +1944,12 @@ class $AttemptsTable extends Attempts with TableInfo<$AttemptsTable, Attempt> {
     } else if (isInserting) {
       context.missing(_atMeta);
     }
+    if (data.containsKey('hint_used')) {
+      context.handle(
+        _hintUsedMeta,
+        hintUsed.isAcceptableOrUnknown(data['hint_used']!, _hintUsedMeta),
+      );
+    }
     return context;
   }
 
@@ -1954,6 +1975,10 @@ class $AttemptsTable extends Attempts with TableInfo<$AttemptsTable, Attempt> {
         DriftSqlType.int,
         data['${effectivePrefix}at'],
       )!,
+      hintUsed: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}hint_used'],
+      )!,
     );
   }
 
@@ -1968,11 +1993,13 @@ class Attempt extends DataClass implements Insertable<Attempt> {
   final int itemId;
   final bool ok;
   final int at;
+  final bool hintUsed;
   const Attempt({
     required this.id,
     required this.itemId,
     required this.ok,
     required this.at,
+    required this.hintUsed,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1981,6 +2008,7 @@ class Attempt extends DataClass implements Insertable<Attempt> {
     map['item_id'] = Variable<int>(itemId);
     map['ok'] = Variable<bool>(ok);
     map['at'] = Variable<int>(at);
+    map['hint_used'] = Variable<bool>(hintUsed);
     return map;
   }
 
@@ -1990,6 +2018,7 @@ class Attempt extends DataClass implements Insertable<Attempt> {
       itemId: Value(itemId),
       ok: Value(ok),
       at: Value(at),
+      hintUsed: Value(hintUsed),
     );
   }
 
@@ -2003,6 +2032,7 @@ class Attempt extends DataClass implements Insertable<Attempt> {
       itemId: serializer.fromJson<int>(json['itemId']),
       ok: serializer.fromJson<bool>(json['ok']),
       at: serializer.fromJson<int>(json['at']),
+      hintUsed: serializer.fromJson<bool>(json['hintUsed']),
     );
   }
   @override
@@ -2013,21 +2043,25 @@ class Attempt extends DataClass implements Insertable<Attempt> {
       'itemId': serializer.toJson<int>(itemId),
       'ok': serializer.toJson<bool>(ok),
       'at': serializer.toJson<int>(at),
+      'hintUsed': serializer.toJson<bool>(hintUsed),
     };
   }
 
-  Attempt copyWith({int? id, int? itemId, bool? ok, int? at}) => Attempt(
-    id: id ?? this.id,
-    itemId: itemId ?? this.itemId,
-    ok: ok ?? this.ok,
-    at: at ?? this.at,
-  );
+  Attempt copyWith({int? id, int? itemId, bool? ok, int? at, bool? hintUsed}) =>
+      Attempt(
+        id: id ?? this.id,
+        itemId: itemId ?? this.itemId,
+        ok: ok ?? this.ok,
+        at: at ?? this.at,
+        hintUsed: hintUsed ?? this.hintUsed,
+      );
   Attempt copyWithCompanion(AttemptsCompanion data) {
     return Attempt(
       id: data.id.present ? data.id.value : this.id,
       itemId: data.itemId.present ? data.itemId.value : this.itemId,
       ok: data.ok.present ? data.ok.value : this.ok,
       at: data.at.present ? data.at.value : this.at,
+      hintUsed: data.hintUsed.present ? data.hintUsed.value : this.hintUsed,
     );
   }
 
@@ -2037,13 +2071,14 @@ class Attempt extends DataClass implements Insertable<Attempt> {
           ..write('id: $id, ')
           ..write('itemId: $itemId, ')
           ..write('ok: $ok, ')
-          ..write('at: $at')
+          ..write('at: $at, ')
+          ..write('hintUsed: $hintUsed')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, itemId, ok, at);
+  int get hashCode => Object.hash(id, itemId, ok, at, hintUsed);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2051,7 +2086,8 @@ class Attempt extends DataClass implements Insertable<Attempt> {
           other.id == this.id &&
           other.itemId == this.itemId &&
           other.ok == this.ok &&
-          other.at == this.at);
+          other.at == this.at &&
+          other.hintUsed == this.hintUsed);
 }
 
 class AttemptsCompanion extends UpdateCompanion<Attempt> {
@@ -2059,17 +2095,20 @@ class AttemptsCompanion extends UpdateCompanion<Attempt> {
   final Value<int> itemId;
   final Value<bool> ok;
   final Value<int> at;
+  final Value<bool> hintUsed;
   const AttemptsCompanion({
     this.id = const Value.absent(),
     this.itemId = const Value.absent(),
     this.ok = const Value.absent(),
     this.at = const Value.absent(),
+    this.hintUsed = const Value.absent(),
   });
   AttemptsCompanion.insert({
     this.id = const Value.absent(),
     required int itemId,
     required bool ok,
     required int at,
+    this.hintUsed = const Value.absent(),
   }) : itemId = Value(itemId),
        ok = Value(ok),
        at = Value(at);
@@ -2078,12 +2117,14 @@ class AttemptsCompanion extends UpdateCompanion<Attempt> {
     Expression<int>? itemId,
     Expression<bool>? ok,
     Expression<int>? at,
+    Expression<bool>? hintUsed,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (itemId != null) 'item_id': itemId,
       if (ok != null) 'ok': ok,
       if (at != null) 'at': at,
+      if (hintUsed != null) 'hint_used': hintUsed,
     });
   }
 
@@ -2092,12 +2133,14 @@ class AttemptsCompanion extends UpdateCompanion<Attempt> {
     Value<int>? itemId,
     Value<bool>? ok,
     Value<int>? at,
+    Value<bool>? hintUsed,
   }) {
     return AttemptsCompanion(
       id: id ?? this.id,
       itemId: itemId ?? this.itemId,
       ok: ok ?? this.ok,
       at: at ?? this.at,
+      hintUsed: hintUsed ?? this.hintUsed,
     );
   }
 
@@ -2116,6 +2159,9 @@ class AttemptsCompanion extends UpdateCompanion<Attempt> {
     if (at.present) {
       map['at'] = Variable<int>(at.value);
     }
+    if (hintUsed.present) {
+      map['hint_used'] = Variable<bool>(hintUsed.value);
+    }
     return map;
   }
 
@@ -2125,7 +2171,8 @@ class AttemptsCompanion extends UpdateCompanion<Attempt> {
           ..write('id: $id, ')
           ..write('itemId: $itemId, ')
           ..write('ok: $ok, ')
-          ..write('at: $at')
+          ..write('at: $at, ')
+          ..write('hintUsed: $hintUsed')
           ..write(')'))
         .toString();
   }
@@ -4780,7 +4827,12 @@ class $$PacksTableTableManager
               getPrefetchedDataCallback: (items) async {
                 return [
                   if (questionSetsRefs)
-                    await $_getPrefetchedData<Pack, $PacksTable, QuestionSet>(
+                    await $_getPrefetchedDataByColumns<
+                      Pack,
+                      $PacksTable,
+                      QuestionSet,
+                      $QuestionSetsTable
+                    >(
                       currentTable: table,
                       referencedTable: $$PacksTableReferences
                           ._questionSetsRefsTable(db),
@@ -4789,8 +4841,8 @@ class $$PacksTableTableManager
                         table,
                         p0,
                       ).questionSetsRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.packId == item.id),
+                      currentColumn: 'id',
+                      referencedColumn: 'pack_id',
                       typedResults: items,
                     ),
                 ];
@@ -5322,10 +5374,11 @@ class $$QuestionSetsTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (itemsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           QuestionSet,
                           $QuestionSetsTable,
-                          Item
+                          Item,
+                          $ItemsTable
                         >(
                           currentTable: table,
                           referencedTable: $$QuestionSetsTableReferences
@@ -5336,17 +5389,16 @@ class $$QuestionSetsTableTableManager
                                 table,
                                 p0,
                               ).itemsRefs,
-                          referencedItemsForCurrentItem: (
-                            item,
-                            referencedItems,
-                          ) => referencedItems.where((e) => e.setId == item.id),
+                          currentColumn: 'id',
+                          referencedColumn: 'set_id',
                           typedResults: items,
                         ),
                       if (importedMarketplaceSetsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           QuestionSet,
                           $QuestionSetsTable,
-                          ImportedMarketplaceSet
+                          ImportedMarketplaceSet,
+                          $ImportedMarketplaceSetsTable
                         >(
                           currentTable: table,
                           referencedTable: $$QuestionSetsTableReferences
@@ -5357,10 +5409,8 @@ class $$QuestionSetsTableTableManager
                                 table,
                                 p0,
                               ).importedMarketplaceSetsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.localSetId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'local_set_id',
                           typedResults: items,
                         ),
                     ];
@@ -5924,14 +5974,19 @@ class $$ItemsTableTableManager
               getPrefetchedDataCallback: (items) async {
                 return [
                   if (attemptsRefs)
-                    await $_getPrefetchedData<Item, $ItemsTable, Attempt>(
+                    await $_getPrefetchedDataByColumns<
+                      Item,
+                      $ItemsTable,
+                      Attempt,
+                      $AttemptsTable
+                    >(
                       currentTable: table,
                       referencedTable: $$ItemsTableReferences
                           ._attemptsRefsTable(db),
                       managerFromTypedResult: (p0) =>
                           $$ItemsTableReferences(db, table, p0).attemptsRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.itemId == item.id),
+                      currentColumn: 'id',
+                      referencedColumn: 'item_id',
                       typedResults: items,
                     ),
                 ];
@@ -5961,12 +6016,14 @@ typedef $$AttemptsTableCreateCompanionBuilder = AttemptsCompanion Function({
   required int itemId,
   required bool ok,
   required int at,
+  Value<bool> hintUsed,
 });
 typedef $$AttemptsTableUpdateCompanionBuilder = AttemptsCompanion Function({
   Value<int> id,
   Value<int> itemId,
   Value<bool> ok,
   Value<int> at,
+  Value<bool> hintUsed,
 });
 
 final class $$AttemptsTableReferences
@@ -6012,6 +6069,11 @@ class $$AttemptsTableFilterComposer
 
   ColumnFilters<int> get at => $composableBuilder(
     column: $table.at,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get hintUsed => $composableBuilder(
+    column: $table.hintUsed,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6063,6 +6125,11 @@ class $$AttemptsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get hintUsed => $composableBuilder(
+    column: $table.hintUsed,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$ItemsTableOrderingComposer get itemId {
     final $$ItemsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -6104,6 +6171,9 @@ class $$AttemptsTableAnnotationComposer
 
   GeneratedColumn<int> get at =>
       $composableBuilder(column: $table.at, builder: (column) => column);
+
+  GeneratedColumn<bool> get hintUsed =>
+      $composableBuilder(column: $table.hintUsed, builder: (column) => column);
 
   $$ItemsTableAnnotationComposer get itemId {
     final $$ItemsTableAnnotationComposer composer = $composerBuilder(
@@ -6155,23 +6225,33 @@ class $$AttemptsTableTableManager
               $$AttemptsTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $$AttemptsTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<int> id = const Value.absent(),
-            Value<int> itemId = const Value.absent(),
-            Value<bool> ok = const Value.absent(),
-            Value<int> at = const Value.absent(),
-          }) => AttemptsCompanion(id: id, itemId: itemId, ok: ok, at: at),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> itemId = const Value.absent(),
+                Value<bool> ok = const Value.absent(),
+                Value<int> at = const Value.absent(),
+                Value<bool> hintUsed = const Value.absent(),
+              }) => AttemptsCompanion(
+                id: id,
+                itemId: itemId,
+                ok: ok,
+                at: at,
+                hintUsed: hintUsed,
+              ),
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
                 required int itemId,
                 required bool ok,
                 required int at,
+                Value<bool> hintUsed = const Value.absent(),
               }) => AttemptsCompanion.insert(
                 id: id,
                 itemId: itemId,
                 ok: ok,
                 at: at,
+                hintUsed: hintUsed,
               ),
           withReferenceMapper: (p0) => p0
               .map(

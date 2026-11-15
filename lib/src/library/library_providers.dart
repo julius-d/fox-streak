@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/database.dart';
 import '../data/providers.dart';
+import '../data/set_mastery.dart';
 
 /// All sets, ordered by id (repository order).
 final allSetsProvider = StreamProvider<List<QuestionSet>>((ref) {
@@ -19,6 +20,22 @@ final itemsForSetProvider = StreamProvider.family<List<Item>, int>((
   setId,
 ) {
   return ref.watch(setsRepositoryProvider).watchItemsForSet(setId);
+});
+
+/// Mastery of every set with items, by set id (issue #134); a set missing
+/// from the map has no items ([SetMastery.empty]).
+final setMasteryProvider = StreamProvider<Map<int, SetMastery>>((ref) {
+  return ref.watch(statsRepositoryProvider).watchSetMastery();
+});
+
+/// One set's mastery, derived from [setMasteryProvider].
+final masteryForSetProvider = Provider.family<AsyncValue<SetMastery>, int>((
+  ref,
+  setId,
+) {
+  return ref
+      .watch(setMasteryProvider)
+      .whenData((bySet) => bySet[setId] ?? SetMastery.empty);
 });
 
 /// All packs in library order: own first (by creation), then downloaded (by

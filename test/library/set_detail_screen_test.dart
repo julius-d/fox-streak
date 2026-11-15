@@ -20,6 +20,7 @@ import 'package:fox_streak_app/l10n/app_localizations_en.dart';
 import 'package:fox_streak_app/src/data/database.dart';
 import 'package:fox_streak_app/src/data/providers.dart';
 import 'package:fox_streak_app/src/data/sets_repository.dart';
+import 'package:fox_streak_app/src/data/stats_repository.dart';
 import 'package:fox_streak_app/src/lesson/lesson_screen.dart';
 import 'package:fox_streak_app/src/library/item_editor.dart';
 import 'package:fox_streak_app/src/library/set_detail_screen.dart';
@@ -391,5 +392,84 @@ void main() {
     expect(listTileWithText('Katze'), findsOneWidget);
 
     await unmount(tester);
+  });
+
+  group('mastery header (issue #134)', () {
+    Future<int> seedPracticedSet(AppDatabase db, FakeClock clock) async {
+      final repo = SetsRepository(db, clock);
+      final stats = StatsRepository(db, clock);
+      final setId = await repo.createSet(title: 'Animals', createdBy: 'Mama');
+      for (var i = 0; i < 3; i++) {
+        final itemId = await repo.addItem(
+          setId: setId,
+          type: 'freeText',
+          prompt: 'P$i',
+          answer: 'A$i',
+        );
+        if (i == 0) {
+          await stats.recordAttempt(itemId: itemId, ok: true);
+          await stats.recordAttempt(itemId: itemId, ok: true);
+        }
+      }
+      return setId;
+    }
+
+    testWidgets('shows "N items · M mastered" plus the explanation line', (
+      tester,
+    ) async {
+      final clock = FakeClock(kTestToday);
+      final db = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(() async => db.close());
+      final setId = await seedPracticedSet(db, clock);
+
+      await pumpSetDetail(tester, db, clock, setId);
+
+      expect(find.text('3 items · 1 mastered'), findsOneWidget);
+      expect(
+        find.text(
+          'Mastered = answered correctly twice in a row without a hint',
+        ),
+        findsOneWidget,
+      );
+      expect(listTileWithText('P0'), findsOneWidget);
+      await unmount(tester);
+    });
+
+    testWidgets('is localized in German', (tester) async {
+      final clock = FakeClock(kTestToday);
+      final db = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(() async => db.close());
+      final setId = await seedPracticedSet(db, clock);
+
+      await pumpSetDetail(tester, db, clock, setId, locale: const Locale('de'));
+
+      expect(find.text('3 Einträge · 1 gemeistert'), findsOneWidget);
+      expect(
+        find.text(
+          'Gemeistert = zweimal hintereinander ohne Hinweis richtig beantwortet',
+        ),
+        findsOneWidget,
+      );
+      await unmount(tester);
+    });
+
+    testWidgets('an empty set shows no mastery, only that it has no items', (
+      tester,
+    ) async {
+      final clock = FakeClock(kTestToday);
+      final db = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(() async => db.close());
+      final setId = await SetsRepository(
+        db,
+        clock,
+      ).createSet(title: 'Empty', createdBy: 'Mama');
+
+      await pumpSetDetail(tester, db, clock, setId);
+
+      expect(find.byKey(const Key('setMasteryHeader')), findsNothing);
+      expect(find.textContaining('mastered'), findsNothing);
+      expect(find.textContaining('No items'), findsOneWidget);
+      await unmount(tester);
+    });
   });
 }

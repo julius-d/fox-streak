@@ -53,8 +53,9 @@ Lints via `flutter_lints` + `riverpod_lint` surface through `flutter analyze`;
   ```
 - `lib/src/data/`: `database.dart`, `clock.dart`, `validation.dart`,
   `set_json_codec.dart`, `sets_repository.dart`, `stats_repository.dart`,
-  `providers.dart`, `seed_loader.dart`. Tests in `test/data/` use
-  `NativeDatabase.memory()` + overridable `Clock`.
+  `providers.dart`, `seed_loader.dart`, `set_mastery.dart` (#134: an item
+  is mastered when its two latest attempts are correct and hint-free).
+  Tests in `test/data/` use `NativeDatabase.memory()` + overridable `Clock`.
 - Ownership: `xp_total` ← #010 only; `streak_count`/`last_active_day` ← #011
   + #087's launch freeze bridge (a freeze day counts, #132); `recordAttempt`
   writes `attempts` rows only.
@@ -62,7 +63,7 @@ Lints via `flutter_lints` + `riverpod_lint` surface through `flutter analyze`;
 ## Design language (issue #015)
 
 - Tokens + theme live in `lib/src/theme/fox_streak_theme.dart`: `FoxStreakTheme.light()` / `.dark()` (orange seed, M3), `FoxSemanticColors` extension (success/error/XP-gold/streak-flame/info, AA-checked light + dark values), `FoxSpacing` / `FoxRadius` / `FoxButtonMetrics`, bold-heading/button type roles, system font only for MVP. Wired as `MaterialApp(theme:, darkTheme:)` in `main.dart`.
-- **Reuse the kit, no ad-hoc styling.** `lib/src/widgets/` (`widgets.dart` barrel) owns chunky `FoxPrimaryButton` / `FoxSecondaryButton` / `FoxCheckButton` (48dp min, bold wrapping labels, hard-shadow press feel), `FoxFeedbackBanner`, `FoxProgressBar` (#010 composes level-progress on top), `FoxConfirmDialog`, `FoxEmptyState`, `FoxPet` (renders the equipped collectible pet's Lottie, final art out of scope), `FoxCelebration` + `FoxFeedback` haptics (toggle `foxHapticsEnabledProvider`, default on). Feature screens compose these; new raw colors, button styles, or dialog patterns need a design reason.
+- **Reuse the kit, no ad-hoc styling.** `lib/src/widgets/` (`widgets.dart` barrel) owns chunky `FoxPrimaryButton` / `FoxSecondaryButton` / `FoxCheckButton` (48dp min, bold wrapping labels, hard-shadow press feel), `FoxFeedbackBanner`, `FoxProgressBar` (#010 composes level-progress on top), `FoxConfirmDialog`, `FoxEmptyState`, `FoxPet` (renders the equipped collectible pet's Lottie, final art out of scope), `FoxMasteryCrowns` + `FoxNewBadge` (#134 set mastery), `FoxCelebration` + `FoxFeedback` haptics (toggle `foxHapticsEnabledProvider`, default on). Feature screens compose these; new raw colors, button styles, or dialog patterns need a design reason.
 - Fox placement: empty states, result celebrations, streak moments only — never random decoration. Motion: instant green/red + bouncy micro-moments, encouraging copy, no shaming; animation budget reserves room for #014 lottie.
 - A11y floor in kit: 48dp targets, screen-reader labels, wrapping (never clipped) labels; #012 owns the per-screen dark-mode / large-font / reader-flow pass. User-visible strings flow via `lib/l10n` arb params (DE + EN), never hardcoded in the kit.
 - Each UI issue (#004–#014) carries a "follows #015" acceptance line pointing back here.

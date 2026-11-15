@@ -146,11 +146,41 @@ abstract class AppLocalizations {
   /// **'Loading demo set…'**
   String get librarySeedLoading;
 
-  /// Item count subtitle on a set card
+  /// Item count of a set (Marketplace set rows/preview, set detail header)
   ///
   /// In en, this message translates to:
   /// **'{count, plural, =0{No items} =1{1 item} other{{count} items}}'**
   String setItemCount(int count);
+
+  /// Badge on a Library set card whose items were never answered (issue #134)
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get masteryNewBadge;
+
+  /// Screen-reader label of the New badge on a Library set card (issue #134)
+  ///
+  /// In en, this message translates to:
+  /// **'New, not practiced yet'**
+  String get masteryNewSemantics;
+
+  /// Screen-reader label of the mastery crowns on a Library set card (issue #134)
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% mastered'**
+  String masteryPercentSemantics(int percent);
+
+  /// Mastered item count in the set detail header, after the item count (issue #134)
+  ///
+  /// In en, this message translates to:
+  /// **'{count} mastered'**
+  String setMasteredCount(int count);
+
+  /// Explains what a mastered item is, below the set detail header counts (issue #134)
+  ///
+  /// In en, this message translates to:
+  /// **'Mastered = answered correctly twice in a row without a hint'**
+  String get setMasteryExplanation;
 
   /// No description provided for @newSet.
   ///
