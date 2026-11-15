@@ -821,7 +821,15 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get streakDetailsStatPracticeDaysLabel => 'Practice days';
+  String streakDetailsStatPracticeDaysLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Practice days',
+      one: 'Practice day',
+    );
+    return '$_temp0';
+  }
 
   @override
   String streakDetailsStatPracticeDaysSemantics(int count) {
@@ -836,13 +844,18 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get streakDetailsStatFreezesLabel => 'Streak freezes';
+  String streakDetailsStatFreezesLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Streak freezes',
+      one: 'Streak freeze',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get streakDetailsLegendPracticed => 'Practiced';
-
-  @override
-  String get streakDetailsLegendCurrentStreak => 'Current streak';
 
   @override
   String get streakDetailsLegendLongestStreak => 'Longest streak';

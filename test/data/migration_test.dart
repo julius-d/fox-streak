@@ -3,7 +3,8 @@
 // #055), v7 -> v8 (issue #059), v8 -> v9 (issue #064), v9 -> v10 (issue
 // #065), v10 -> v11 (issue #068), v11 -> v12 (issue #084), v12 -> v13
 // (issue #014), v13 -> v14 (issue #094), v14 -> v15 (issue #087), and
-// v15 -> v16 (issue #101), and v16 -> v17 (issue #121) migration tests.
+// v15 -> v16 (issue #101), v16 -> v17 (issue #121), and v17 -> v18 (issue
+// #132) migration tests.
 //
 // Simulates pre-migration databases on disk, then reopens them with the
 // real (current schemaVersion) `AppDatabase` and asserts `onUpgrade` applied
@@ -747,6 +748,20 @@ class _LegacyV16Database extends AppDatabase {
       await m.createTable(db.importedMarketplaceSets);
     },
   );
+}
+
+/// A schemaVersion-17 view of [AppDatabase], used only to seed a pre-#132
+/// file. v18 is a data-only step, so every table is already in its current
+/// shape.
+class _LegacyV17Database extends AppDatabase {
+  _LegacyV17Database(QueryExecutor executor) : super.forTesting(executor); // ignore: use_super_parameters — must forward to the named forTesting() ctor, not the default unnamed one
+
+  @override
+  int get schemaVersion => 17;
+
+  @override
+  MigrationStrategy get migration =>
+      MigrationStrategy(onCreate: (m) => m.createAll());
 }
 
 Future<void> _markImported(
@@ -1713,6 +1728,130 @@ void main() {
         expect(packs.single.sourceUrl, 'https://a.example/marketplace.json');
       },
     );
+  });
+
+  group('v17 -> v18 (#132): freeze days count toward the streak', () {
+    late Directory dir;
+    late File file;
+
+    setUp(() {
+      dir = Directory.systemTemp.createTempSync('foxstreak_migration_v18');
+      file = File('${dir.path}/test.sqlite');
+    });
+
+    tearDown(() {
+      if (dir.existsSync()) dir.deleteSync(recursive: true);
+    });
+
+    Future<void> seedDay(AppDatabase db, String day, String source) => db
+        .into(db.dailyActivity)
+        .insert(
+          DailyActivityCompanion.insert(
+            day: day,
+            xpEarned: Value(source == 'streakOnIce' ? 0 : 20),
+            activitySource: source,
+          ),
+        );
+
+    Future<ProfileStat> upgradedProfile() async {
+      final db = AppDatabase.forTesting(NativeDatabase(file));
+      addTearDown(db.close);
+      return (db.select(
+        db.profileStats,
+      )..where((t) => t.id.equals(0))).getSingle();
+    }
+
+    test('a streak with a recorded freeze day gets that day added once, '
+        'everything else unchanged', () async {
+      final legacy = _LegacyV17Database(NativeDatabase(file));
+      // Practiced Mon 5 .. Fri 9, Saturday saved by a freeze, practiced
+      // Sunday: the old rule counted 6.
+      for (var d = 5; d <= 11; d++) {
+        await seedDay(
+          legacy,
+          '2026-10-${d.toString().padLeft(2, '0')}',
+          d == 10 ? 'streakOnIce' : 'lessonCompleted',
+        );
+      }
+      // An older freeze day outside the current run stays uncounted.
+      await seedDay(legacy, '2026-09-20', 'lessonCompleted');
+      await seedDay(legacy, '2026-09-21', 'streakOnIce');
+      await legacy
+          .into(legacy.profileStats)
+          .insert(
+            const ProfileStatsCompanion(
+              id: Value(0),
+              xpTotal: Value(420),
+              streakCount: Value(6),
+              lastActiveDay: Value('2026-10-11'),
+              streakFreezesAvailable: Value(1),
+            ),
+          );
+      await legacy.close();
+
+      final profile = await upgradedProfile();
+      expect(profile.streakCount, 7);
+      expect(profile.lastActiveDay, '2026-10-11');
+      expect(profile.xpTotal, 420);
+      expect(profile.streakFreezesAvailable, 1);
+    });
+
+    test(
+      'runs only once: reopening the upgraded file changes nothing',
+      () async {
+        final legacy = _LegacyV17Database(NativeDatabase(file));
+        await seedDay(legacy, '2026-10-10', 'lessonCompleted');
+        await seedDay(legacy, '2026-10-11', 'streakOnIce');
+        await legacy
+            .into(legacy.profileStats)
+            .insert(
+              const ProfileStatsCompanion(
+                id: Value(0),
+                streakCount: Value(1),
+                lastActiveDay: Value('2026-10-11'),
+              ),
+            );
+        await legacy.close();
+
+        final first = AppDatabase.forTesting(NativeDatabase(file));
+        expect(
+          (await first.select(first.profileStats).getSingle()).streakCount,
+          2,
+        );
+        await first.close();
+        expect((await upgradedProfile()).streakCount, 2);
+      },
+    );
+
+    test('a streak without freeze days, and one older than the recorded '
+        'activity, are left as they are', () async {
+      final legacy = _LegacyV17Database(NativeDatabase(file));
+      // 30-day streak, only its last two days recorded (#084 came later).
+      await seedDay(legacy, '2026-10-10', 'lessonCompleted');
+      await seedDay(legacy, '2026-10-11', 'lessonCompleted');
+      await legacy
+          .into(legacy.profileStats)
+          .insert(
+            const ProfileStatsCompanion(
+              id: Value(0),
+              streakCount: Value(30),
+              lastActiveDay: Value('2026-10-11'),
+            ),
+          );
+      await legacy.close();
+
+      expect((await upgradedProfile()).streakCount, 30);
+    });
+
+    test('a device without a profile row upgrades cleanly', () async {
+      final legacy = _LegacyV17Database(NativeDatabase(file));
+      await seedDay(legacy, '2026-10-11', 'streakOnIce');
+      await legacy.close();
+
+      final db = AppDatabase.forTesting(NativeDatabase(file));
+      addTearDown(db.close);
+      expect(await db.select(db.profileStats).get(), isEmpty);
+    });
   });
 }
 

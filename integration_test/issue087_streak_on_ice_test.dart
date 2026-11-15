@@ -79,8 +79,9 @@ void main() {
 
   testWidgets(
     'app launch auto-applies a banked streak freeze when exactly one day '
-    'was missed: Home shows the one-time banner, the streak is preserved '
-    '(not reset), and Streak Details reflects the consumed freeze',
+    'was missed: Home shows the one-time banner, the saved day counts '
+    'toward the streak (#132), and Streak Details reflects the consumed '
+    'freeze',
     (tester) async {
       final db = makeIntegrationTestDb();
       addTearDown(db.close);
@@ -105,12 +106,20 @@ void main() {
         findsOneWidget,
       );
 
-      await tester.tap(find.byKey(const Key('streakBadgeButton')));
-      await settle(tester);
+      // #132: the saved day is a streak day — 5 + 1, on Home's badge and
+      // the hero alike.
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('streakBadge')),
+          matching: find.text('6'),
+        ),
+        findsOneWidget,
+      );
+      await openStreakDetails(tester);
       // #128: hero count, the (now empty) freezes tile, and the legend.
       expect(
         tester.widget<Text>(find.byKey(const Key('streakHeroCount'))).data,
-        '5',
+        '6',
       );
       expect(
         find.descendant(
@@ -123,7 +132,7 @@ void main() {
 
       final profile = await statsRepo.getProfile();
       expect(profile.streakFreezesAvailable, 0);
-      expect(profile.streakCount, 5);
+      expect(profile.streakCount, 6);
       expect(profile.lastActiveDay, toLocalDayString(DateTime(2026, 10, 19)));
     },
   );
@@ -176,8 +185,7 @@ void main() {
     await tester.tap(find.byKey(const Key('homeButton')));
     await settle(tester);
 
-    await tester.tap(find.byKey(const Key('streakBadgeButton')));
-    await settle(tester);
+    await openStreakDetails(tester);
     // #128: the freeze balance lives in the freezes stat tile.
     expect(
       find.descendant(

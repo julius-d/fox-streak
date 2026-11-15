@@ -13,6 +13,7 @@ import 'package:fox_streak_app/src/home_widget/home_widget_payload.dart';
 import 'package:fox_streak_app/src/home_widget/home_widget_providers.dart';
 import 'package:fox_streak_app/src/pet/pet_catalog.dart';
 import 'package:fox_streak_app/src/stats/pet_service.dart';
+import 'package:fox_streak_app/src/stats/streak_freeze_service.dart';
 
 import '../data/test_helpers.dart';
 
@@ -94,5 +95,17 @@ void main() {
     await _pumpEvents();
 
     expect(bridge.payloads.last.petEmoji, other.emoji);
+  });
+
+  test('a day saved by a streak freeze counts toward the pushed streak '
+      '(#132)', () async {
+    // Today is Sun 2026-11-08; practiced up to Friday, Saturday missed.
+    await stats.setStreak(streakCount: 5, lastActiveDay: '2026-11-06');
+    await stats.addStreakFreezes(1);
+
+    expect(await container.read(streakFreezeAutoApplyProvider.future), isTrue);
+    await _pumpEvents();
+
+    expect(bridge.payloads.last.current.streakCount, 6);
   });
 }

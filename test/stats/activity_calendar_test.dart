@@ -86,26 +86,18 @@ void main() {
     });
   });
 
-  test('currentStreakDays: a bridged freeze day is part of the run but '
-      'not counted, so the first day stays in', () {
-    // 5 practiced days, a freeze on Oct 6, a lesson on Oct 7: streak 6.
-    expect(
-      currentStreakDays(
-        streakCount: 6,
-        lastActiveDay: oct(7),
-        freezeDays: {oct(6)},
-      ),
-      {oct(1), oct(2), oct(3), oct(4), oct(5), oct(6), oct(7)},
-    );
-    // Right after the launch auto-apply, lastActiveDay is the freeze day.
-    expect(
-      currentStreakDays(
-        streakCount: 2,
-        lastActiveDay: oct(6),
-        freezeDays: {oct(6)},
-      ),
-      {oct(4), oct(5), oct(6)},
-    );
+  test('currentStreakDays: a freeze day counts toward the streak, so the '
+      'run is exactly streakCount days (#132)', () {
+    // 5 practiced days, a freeze on Oct 6, a lesson on Oct 7: streak 7.
+    expect(currentStreakDays(streakCount: 7, lastActiveDay: oct(7)), {
+      oct(1),
+      oct(2),
+      oct(3),
+      oct(4),
+      oct(5),
+      oct(6),
+      oct(7),
+    });
   });
 
   group('longestRun', () {
@@ -246,10 +238,11 @@ void main() {
       ]);
     });
 
-    test('a freeze inside the current run keeps the whole run in the '
-        'current band, with no extra longest band on it', () {
+    test('a freeze inside the current run: hero number, band and longest '
+        'streak all agree (#132), with no extra longest band on it', () {
+      // Practiced Mon-Fri, Saturday saved by a freeze, practiced Sunday.
       final data = build(
-        streakCount: 6,
+        streakCount: 7,
         lastActiveDay: oct(11),
         entries: [
           for (var d = 5; d <= 9; d++) entry(oct(d), 10),
@@ -262,7 +255,7 @@ void main() {
       ]);
       expect(data.showLongestStreakBand, isFalse);
       expect(data.days.where((d) => d.isLongestStreak), isEmpty);
-      // Freeze days count toward the longest streak.
+      expect(data.currentStreakCount, 7);
       expect(data.longestStreak, 7);
     });
 

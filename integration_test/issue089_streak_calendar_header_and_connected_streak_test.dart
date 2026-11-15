@@ -72,8 +72,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const Key('streakBadgeButton')));
-      await tester.pumpAndSettle();
+      await openStreakDetails(tester);
       expect(find.byKey(const Key('streakDetailsScreen')), findsOneWidget);
 
       // Weekday header: narrow English letters on Mon/Wed/Fri only.

@@ -80,8 +80,7 @@ void main() {
       expect(find.byKey(const Key('homeScreen')), findsOneWidget);
       expect(find.byKey(const Key('streakBadgeButton')), findsOneWidget);
 
-      await tester.tap(find.byKey(const Key('streakBadgeButton')));
-      await tester.pumpAndSettle();
+      await openStreakDetails(tester);
 
       expect(find.byKey(const Key('streakDetailsScreen')), findsOneWidget);
       // #128: the hero shows the current streak, the longest-streak tile

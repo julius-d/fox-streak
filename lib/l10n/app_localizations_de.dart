@@ -723,9 +723,9 @@ class AppLocalizationsDe extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Aktuelle Streak: $count Tage',
-      one: 'Aktuelle Streak: 1 Tag',
-      zero: 'Keine aktuelle Streak',
+      other: 'Aktueller Streak: $count Tage',
+      one: 'Aktueller Streak: 1 Tag',
+      zero: 'Kein aktueller Streak',
     );
     return '$_temp0';
   }
@@ -763,7 +763,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get streakFreezeAppliedBannerText =>
-      'Deine Streak wurde mit einem Streak-Freeze gerettet! ❄️';
+      'Dein Streak wurde mit einem Streak-Freeze gerettet! ❄️';
 
   @override
   String streakFreezesAvailableLabel(int count) {
@@ -803,28 +803,36 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get streakDetailsHeroNotYetToday =>
-      'Übe heute, damit deine Streak weiterläuft.';
+      'Übe heute, damit dein Streak weiterläuft.';
 
   @override
-  String get streakDetailsHeroNoStreak => 'Starte heute eine neue Streak!';
+  String get streakDetailsHeroNoStreak => 'Starte heute einen neuen Streak!';
 
   @override
-  String get streakDetailsStatLongestLabel => 'Längste Streak';
+  String get streakDetailsStatLongestLabel => 'Längster Streak';
 
   @override
   String streakDetailsStatLongestSemantics(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Längste Streak: $count Tage',
-      one: 'Längste Streak: 1 Tag',
-      zero: 'Längste Streak: noch keine',
+      other: 'Längster Streak: $count Tage',
+      one: 'Längster Streak: 1 Tag',
+      zero: 'Längster Streak: noch keiner',
     );
     return '$_temp0';
   }
 
   @override
-  String get streakDetailsStatPracticeDaysLabel => 'Übungstage';
+  String streakDetailsStatPracticeDaysLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Übungstage',
+      one: 'Übungstag',
+    );
+    return '$_temp0';
+  }
 
   @override
   String streakDetailsStatPracticeDaysSemantics(int count) {
@@ -839,16 +847,21 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get streakDetailsStatFreezesLabel => 'Streak-Freezes';
+  String streakDetailsStatFreezesLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Streak-Freezes',
+      one: 'Streak-Freeze',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get streakDetailsLegendPracticed => 'Geübt';
 
   @override
-  String get streakDetailsLegendCurrentStreak => 'Aktuelle Streak';
-
-  @override
-  String get streakDetailsLegendLongestStreak => 'Längste Streak';
+  String get streakDetailsLegendLongestStreak => 'Längster Streak';
 
   @override
   String streakDetailsDayXpEarned(int xp) {
@@ -1108,7 +1121,7 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get widgetAtRiskText => 'Übe heute, um deine Streak zu halten!';
+  String get widgetAtRiskText => 'Übe heute, um deinen Streak zu halten!';
 
   @override
   String packUpdateBannerOne(String title) {

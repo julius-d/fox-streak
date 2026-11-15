@@ -532,13 +532,13 @@ void main() {
             xpDelta: 10,
             source: DailyActivitySource.lessonCompleted,
           );
-          // A bridged freeze day doesn't count toward streakCount (#087):
-          // lesson (1), freeze (still 1), lesson today (2).
-          await stats.setStreak(streakCount: 2, lastActiveDay: today);
+          // A bridged freeze day counts toward streakCount (#132):
+          // lesson (1), freeze (2), lesson today (3).
+          await stats.setStreak(streakCount: 3, lastActiveDay: today);
         },
       );
 
-      expect(find.text('2'), findsOneWidget);
+      expect(find.text('3'), findsOneWidget);
       expect(find.byIcon(Icons.local_fire_department), findsNWidgets(2));
       expect(find.byType(FoxStreakFreezeIcon), findsOneWidget);
       expect(
@@ -565,7 +565,11 @@ void main() {
       );
 
       await tester.tap(find.byKey(const Key('streakBadgeButton')));
-      await settle(tester);
+      // Not `settle`: Streak Details loops its flame / today pulse for as
+      // long as it's open (#132), so it never settles.
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
 
       expect(find.byKey(const Key('streakDetailsScreen')), findsOneWidget);
       await unmount(tester);

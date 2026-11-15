@@ -1,12 +1,18 @@
-// Widget tests for StreakDetailsScreen (#084, glow-up #128): the three hero
-// states, the all-time stat tiles (freeze days excluded from practice
-// days), the day popup copy, the legend, reduce motion, large fonts, and
-// that everything reflects real repository state.
+// Widget tests for StreakDetailsScreen (#084, glow-up #128, polish #132):
+// the three hero states, the all-time stat tiles (freeze days excluded from
+// practice days, singular/plural captions), a freeze day counted into the
+// streak, the day popup copy, the legend, the opening sequence (order,
+// start after the page transition, pause while hidden or covered), reduce
+// motion, large fonts, and that everything reflects real repository state.
 //
-// NOTE on pumping: bounded `settle()` instead of `pumpAndSettle()` — same
+// NOTE on pumping: never `pumpAndSettle()` — the flame and today pulse loop
+// for as long as the screen is visible (#132), so it never settles; the
+// helpers pump through the opening sequence for a fixed time instead. Same
 // drift `watch()`-under-fake-async caveat as `test/home/home_screen_test.dart`
 // (this screen watches `profileProvider` transitively via
 // `activityCalendarProvider`).
+
+import 'dart:async';
 
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -16,19 +22,25 @@ import 'package:fox_streak_app/l10n/app_localizations.dart';
 import 'package:fox_streak_app/src/data/database.dart';
 import 'package:fox_streak_app/src/data/providers.dart';
 import 'package:fox_streak_app/src/data/stats_repository.dart';
+import 'package:fox_streak_app/src/stats/activity_calendar_view.dart';
 import 'package:fox_streak_app/src/stats/streak_details_screen.dart';
+import 'package:fox_streak_app/src/stats/streak_freeze_service.dart';
+import 'package:fox_streak_app/src/stats/streak_service.dart';
 import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
 import 'package:fox_streak_app/src/widgets/widgets.dart';
 
 import '../data/test_helpers.dart';
 
-Future<void> settle(WidgetTester tester, {int cap = 50}) async {
-  for (var i = 0; i < cap; i++) {
+/// Pumps [ms] of fake time in 100ms frames.
+Future<void> pumpFor(WidgetTester tester, int ms) async {
+  for (var t = 0; t < ms; t += 100) {
     await tester.pump(const Duration(milliseconds: 100));
-    if (!tester.binding.hasScheduledFrame) return;
   }
-  fail('UI did not settle after $cap frames');
 }
+
+/// Count-up (1.5 s) + band draw-in (2 s), with some slack: afterwards only
+/// the loops are still running.
+const int kOpeningMs = 4000;
 
 Future<void> unmount(WidgetTester tester) async {
   await tester.pumpWidget(const SizedBox());
@@ -54,13 +66,14 @@ Future<void> freezeDay(StatsRepository stats, String day) =>
     );
 
 /// Pumps the screen and waits until the provider has resolved (and, unless
-/// [settleAnimations] is off, until the opening animations have rested).
+/// [settleAnimations] is off, until the opening sequence has played).
 Future<void> pumpStreakDetails(
   WidgetTester tester, {
   Future<void> Function(StatsRepository stats)? seed,
   bool reduceMotion = false,
   double textScale = 1,
   bool settleAnimations = true,
+  Locale? locale,
 }) async {
   final clock = FakeClock(kTestToday);
   final db = AppDatabase.forTesting(NativeDatabase.memory());
@@ -76,6 +89,7 @@ Future<void> pumpStreakDetails(
       ],
       child: MaterialApp(
         theme: FoxStreakTheme.light(),
+        locale: locale,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         builder: (context, child) => MediaQuery(
@@ -89,21 +103,63 @@ Future<void> pumpStreakDetails(
       ),
     ),
   );
-  if (settleAnimations) {
-    await settle(tester);
-  } else {
-    for (var i = 0; i < 20; i++) {
-      await tester.pump();
-      if (find.byKey(const Key('streakHero')).evaluate().isNotEmpty) break;
-      await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 10)),
-      );
-    }
+  await waitForHero(tester);
+  if (settleAnimations) await pumpFor(tester, kOpeningMs);
+}
+
+/// Lets the (real-async) drift query resolve until the hero is on screen,
+/// without advancing fake time.
+Future<void> waitForHero(WidgetTester tester) async {
+  for (var i = 0; i < 20; i++) {
+    await tester.pump();
+    if (find.byKey(const Key('streakHero')).evaluate().isNotEmpty) return;
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 10)),
+    );
   }
+  fail('Streak Details never showed its hero');
 }
 
 String heroCount(WidgetTester tester) =>
     tester.widget<Text>(find.byKey(const Key('streakHeroCount'))).data!;
+
+double scaleAbove(WidgetTester tester, Finder child) => tester
+    .widget<Transform>(
+      find.ancestor(of: child, matching: find.byType(Transform)).first,
+    )
+    .transform
+    .getMaxScaleOnAxis();
+
+double flameScale(WidgetTester tester) =>
+    scaleAbove(tester, find.byKey(const Key('streakHeroFlame')));
+
+double todayScale(WidgetTester tester) =>
+    scaleAbove(tester, find.byKey(const Key('activityCalendarTodayMarker')));
+
+double bandReveal(WidgetTester tester, String firstDay) =>
+    (tester
+                .widget<CustomPaint>(
+                  find.byKey(Key('activityCalendarBand-$firstDay')),
+                )
+                .painter!
+            as StreakBandPainter)
+        .reveal;
+
+/// Max flame / today-cell scale seen over [ms] of fake time.
+Future<({double flame, double today})> peakScales(
+  WidgetTester tester,
+  int ms, {
+  bool withToday = true,
+}) async {
+  var flame = 1.0;
+  var today = 1.0;
+  for (var t = 0; t < ms; t += 100) {
+    await tester.pump(const Duration(milliseconds: 100));
+    if (flameScale(tester) > flame) flame = flameScale(tester);
+    if (withToday && todayScale(tester) > today) today = todayScale(tester);
+  }
+  return (flame: flame, today: today);
+}
 
 void main() {
   testWidgets('shows the title, hero, stat tiles, calendar and legend; the '
@@ -275,15 +331,141 @@ void main() {
     await unmount(tester);
   });
 
-  group('legend', () {
-    testWidgets('explains the three cell states and the current band', (
+  testWidgets('a day saved by a streak freeze is a streak day: hero, '
+      'longest tile and band all show the same 7 days (#132)', (tester) async {
+    await pumpStreakDetails(
       tester,
-    ) async {
+      seed: (stats) async {
+        // Practiced Mon 5 .. Fri 9; the app opens on Sun 11 with Saturday
+        // missed and a freeze banked; then today's lesson.
+        for (var d = 5; d <= 9; d++) {
+          await practice(stats, '2026-10-0$d');
+        }
+        await stats.setStreak(streakCount: 5, lastActiveDay: '2026-10-09');
+        await stats.addStreakFreezes(1);
+        final clock = FakeClock(kTestToday);
+        expect(
+          await StreakFreezeService(stats, clock).checkAndApplyOnLaunch(),
+          isTrue,
+        );
+        await practice(stats, today);
+        await StreakService(stats, clock).recordActivity();
+      },
+    );
+
+    expect(heroCount(tester), '7');
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('streakStatLongest')),
+        matching: find.text('7'),
+      ),
+      findsOneWidget,
+    );
+    // Mon..Sun is one week column: one current band around all 7 days.
+    final band = tester.getRect(
+      find.byKey(const Key('activityCalendarBand-2026-10-05')),
+    );
+    for (var d = 5; d <= 11; d++) {
+      final cell = tester.getRect(
+        find.byKey(
+          Key('activityCalendarCell-2026-10-${d.toString().padLeft(2, '0')}'),
+        ),
+      );
+      expect(band.contains(cell.center), isTrue, reason: 'Oct $d in band');
+    }
+    expect(
+      find.byKey(const Key('activityCalendarBand-2026-10-04')),
+      findsNothing,
+    );
+    await unmount(tester);
+  });
+
+  group('stat tile captions follow their number (#132)', () {
+    Future<void> seedOnes(StatsRepository stats) async {
+      await practice(stats, today);
+      await stats.setStreak(streakCount: 1, lastActiveDay: today);
+      await stats.addStreakFreezes(1);
+    }
+
+    Future<void> seedPlural(StatsRepository stats) async {
+      await practice(stats, '2026-10-10');
+      await practice(stats, today);
+      await stats.setStreak(streakCount: 2, lastActiveDay: today);
+      await stats.addStreakFreezes(2);
+    }
+
+    String tileLabel(WidgetTester tester, String key) =>
+        tester.getSemantics(find.byKey(Key(key))).label;
+
+    Finder inTile(String key, String text) =>
+        find.descendant(of: find.byKey(Key(key)), matching: find.text(text));
+
+    testWidgets('German: singular for 1', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pumpStreakDetails(
+        tester,
+        seed: seedOnes,
+        locale: const Locale('de'),
+      );
+      expect(inTile('streakStatPracticeDays', 'Übungstag'), findsOneWidget);
+      expect(inTile('streakStatFreezes', 'Streak-Freeze'), findsOneWidget);
+      expect(inTile('streakStatLongest', 'Längster Streak'), findsOneWidget);
+      expect(
+        tileLabel(tester, 'streakStatPracticeDays'),
+        '1 Übungstag insgesamt',
+      );
+      expect(
+        tileLabel(tester, 'streakStatFreezes'),
+        '1 Streak-Freeze verfügbar',
+      );
+      expect(tileLabel(tester, 'streakStatLongest'), 'Längster Streak: 1 Tag');
+      expect(
+        tester.getSemantics(find.byKey(const Key('streakHero'))).label,
+        contains('Aktueller Streak: 1 Tag'),
+      );
+      handle.dispose();
+      await unmount(tester);
+    });
+
+    testWidgets('German: plural for 0 and 2+', (tester) async {
+      await pumpStreakDetails(tester, locale: const Locale('de'));
+      expect(inTile('streakStatPracticeDays', 'Übungstage'), findsOneWidget);
+      expect(inTile('streakStatFreezes', 'Streak-Freezes'), findsOneWidget);
+      expect(find.text('Starte heute einen neuen Streak!'), findsOneWidget);
+      await unmount(tester);
+
+      await pumpStreakDetails(
+        tester,
+        seed: seedPlural,
+        locale: const Locale('de'),
+      );
+      expect(inTile('streakStatPracticeDays', 'Übungstage'), findsOneWidget);
+      expect(inTile('streakStatFreezes', 'Streak-Freezes'), findsOneWidget);
+      await unmount(tester);
+    });
+
+    testWidgets('English: singular for 1, plural otherwise', (tester) async {
+      await pumpStreakDetails(tester, seed: seedOnes);
+      expect(inTile('streakStatPracticeDays', 'Practice day'), findsOneWidget);
+      expect(inTile('streakStatFreezes', 'Streak freeze'), findsOneWidget);
+      await unmount(tester);
+
+      await pumpStreakDetails(tester, seed: seedPlural);
+      expect(inTile('streakStatPracticeDays', 'Practice days'), findsOneWidget);
+      expect(inTile('streakStatFreezes', 'Streak freezes'), findsOneWidget);
+      await unmount(tester);
+    });
+  });
+
+  group('legend', () {
+    testWidgets('explains the three cell states; no current-streak entry '
+        '(#132)', (tester) async {
       await pumpStreakDetails(tester);
       expect(find.text('Practiced'), findsOneWidget);
       expect(find.text('Saved by a streak freeze'), findsOneWidget);
       expect(find.text('No practice'), findsOneWidget);
-      expect(find.text('Current streak'), findsOneWidget);
+      expect(find.text('Current streak'), findsNothing);
+      expect(find.byKey(const Key('legendCurrentStreak')), findsNothing);
       expect(find.byKey(const Key('legendLongestStreak')), findsNothing);
       await unmount(tester);
     });
@@ -313,7 +495,7 @@ void main() {
   group('day popup', () {
     Future<void> tapDay(WidgetTester tester, String day) async {
       await tester.tap(find.byKey(Key('activityCalendarCell-$day')));
-      await settle(tester);
+      await pumpFor(tester, 300);
     }
 
     Future<void> seed(StatsRepository stats) async {
@@ -383,45 +565,206 @@ void main() {
 
   group('animations', () {
     Future<void> seed(StatsRepository stats) async {
-      for (var d = 1; d <= 11; d++) {
+      for (var d = 1; d <= 10; d++) {
         await practice(stats, '2026-10-${d.toString().padLeft(2, '0')}');
       }
-      await stats.setStreak(streakCount: 11, lastActiveDay: today);
+      // A live 10-day streak, today (Oct 11) not practiced yet: all three
+      // steps apply.
+      await stats.setStreak(streakCount: 10, lastActiveDay: '2026-10-10');
     }
 
-    testWidgets('the streak number counts up from 0 to the current value '
-        'within ~1 s', (tester) async {
+    testWidgets('plays count-up (~1.5 s) -> band draw-in (~2 s) -> today '
+        'pulse, one after the other; the flame flickers from the start', (
+      tester,
+    ) async {
       await pumpStreakDetails(tester, seed: seed, settleAnimations: false);
-      expect(int.parse(heroCount(tester)), lessThan(11));
-      await tester.pump(const Duration(milliseconds: 1000));
-      expect(heroCount(tester), '11');
-      await settle(tester);
+      // Count-up: the number climbs, the flame flickers, the band and the
+      // today pulse wait.
+      await pumpFor(tester, 700);
+      expect(int.parse(heroCount(tester)), inExclusiveRange(0, 10));
+      expect(bandReveal(tester, '2026-10-05'), 0);
+      expect(todayScale(tester), 1);
+      expect(flameScale(tester), greaterThan(1));
+      await pumpFor(tester, 900); // 1.6 s
+      expect(heroCount(tester), '10');
+
+      // Band draw-in: grows back from today, the today pulse still waits.
+      await pumpFor(tester, 700);
+      expect(bandReveal(tester, '2026-10-05'), greaterThan(0));
+      expect(bandReveal(tester, '2026-10-01'), 0);
+      expect(todayScale(tester), 1);
+      await pumpFor(tester, 1400); // 3.7 s
+      expect(bandReveal(tester, '2026-10-01'), 1);
+
+      // Today pulse.
+      final peaks = await peakScales(tester, 1000);
+      expect(peaks.today, greaterThan(1));
       await unmount(tester);
     });
 
-    testWidgets('with reduce motion the final state shows immediately', (
-      tester,
-    ) async {
+    testWidgets('a 0 streak skips count-up and band: the today pulse comes '
+        'first, the dimmed flame stays still', (tester) async {
+      await pumpStreakDetails(tester, settleAnimations: false);
+      final peaks = await peakScales(tester, 1000);
+      expect(peaks.today, greaterThan(1));
+      expect(peaks.flame, 1);
+      await unmount(tester);
+    });
+
+    testWidgets('afterwards the flame and the today pulse keep coming back '
+        'in bursts with rests in between', (tester) async {
+      await pumpStreakDetails(tester, seed: seed);
+      // 4 s in: today pulse burst (3 s) then rest (3 s); flame bursts
+      // every 5 s from the start.
+      var burst = await peakScales(tester, 3000);
+      expect(burst.today, greaterThan(1));
+      final rest = await peakScales(tester, 2500, withToday: true);
+      expect(rest.today, 1);
+      burst = await peakScales(tester, 4000);
+      expect(burst.today, greaterThan(1));
+      expect(burst.flame, greaterThan(1));
+      await unmount(tester);
+    });
+
+    testWidgets('the sequence starts only once the page transition is '
+        'finished', (tester) async {
+      final clock = FakeClock(kTestToday);
+      final db = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(() async => db.close());
+      await seed(StatsRepository(db, clock));
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appDatabaseProvider.overrideWithValue(db),
+            systemClockProvider.overrideWithValue(clock),
+          ],
+          child: MaterialApp(
+            theme: FoxStreakTheme.light(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Builder(
+              builder: (context) => TextButton(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const StreakDetailsScreen(),
+                  ),
+                ),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await waitForHero(tester);
+      final route = ModalRoute.of(
+        tester.element(find.byKey(const Key('streakHero'))),
+      )!;
+      // Mid-transition: nothing has started yet.
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(route.animation!.isCompleted, isFalse);
+      expect(heroCount(tester), '0');
+      expect(flameScale(tester), 1);
+      // Transition over, then the full count-up.
+      while (!route.animation!.isCompleted) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      expect(heroCount(tester), '0');
+      await pumpFor(tester, 700);
+      expect(int.parse(heroCount(tester)), inExclusiveRange(0, 10));
+      await pumpFor(tester, 900);
+      expect(heroCount(tester), '10');
+      await unmount(tester);
+    });
+
+    testWidgets('everything pauses while another screen covers it and '
+        'continues afterwards without replaying', (tester) async {
+      await pumpStreakDetails(tester, seed: seed, settleAnimations: false);
+      // Count-up done, band draw-in just started: its later column (Oct
+      // 5..10, 6 of 10 days) grows first, the earlier one (Oct 1..4) last.
+      await pumpFor(tester, 1600);
+      expect(heroCount(tester), '10');
+      expect(bandReveal(tester, '2026-10-01'), 0);
+
+      final navigator = tester.state<NavigatorState>(find.byType(Navigator));
+      unawaited(
+        navigator.push(
+          MaterialPageRoute<void>(builder: (_) => const Scaffold()),
+        ),
+      );
+      await pumpFor(tester, 1000); // transition over: covered
+      await pumpFor(tester, 3000);
+      expect(tester.binding.hasScheduledFrame, isFalse);
+
+      navigator.pop();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      // Continued from where it was held: neither replayed from 0 nor
+      // jumped ahead by the time it was covered.
+      expect(heroCount(tester), '10');
+      expect(bandReveal(tester, '2026-10-05'), greaterThan(0));
+      expect(bandReveal(tester, '2026-10-01'), lessThan(1));
+      await pumpFor(tester, 2000);
+      expect(bandReveal(tester, '2026-10-01'), 1);
+      await unmount(tester);
+    });
+
+    testWidgets('everything pauses while the app is hidden and continues '
+        'when it is back', (tester) async {
+      await pumpStreakDetails(tester, seed: seed, settleAnimations: false);
+      await pumpFor(tester, 500);
+      final binding = tester.binding;
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      addTearDown(() {
+        binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+        binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      });
+      final String heldCount = heroCount(tester);
+      await pumpFor(tester, 3000);
+      expect(heroCount(tester), heldCount);
+      expect(int.parse(heldCount), inExclusiveRange(0, 10));
+
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await pumpFor(tester, 1200);
+      expect(heroCount(tester), '10');
+      await unmount(tester);
+    });
+
+    testWidgets('tapping a day during the sequence neither stops nor '
+        'restarts it', (tester) async {
+      await pumpStreakDetails(tester, seed: seed, settleAnimations: false);
+      await pumpFor(tester, 700);
+      final int before = int.parse(heroCount(tester));
+      await tester.tap(
+        find.byKey(const Key('activityCalendarCell-2026-10-08')),
+      );
+      await tester.pump();
+      expect(int.parse(heroCount(tester)), greaterThanOrEqualTo(before));
+      await pumpFor(tester, 900);
+      expect(heroCount(tester), '10');
+      expect(find.byKey(const Key('activityCalendarDayPopup')), findsOneWidget);
+      await unmount(tester);
+    });
+
+    testWidgets('with reduce motion the final state shows immediately and '
+        'nothing loops', (tester) async {
       await pumpStreakDetails(
         tester,
         seed: seed,
         reduceMotion: true,
         settleAnimations: false,
       );
-      expect(heroCount(tester), '11');
-      final flameScale = tester
-          .widget<Transform>(
-            find
-                .ancestor(
-                  of: find.byKey(const Key('streakHeroFlame')),
-                  matching: find.byType(Transform),
-                )
-                .first,
-          )
-          .transform
-          .getMaxScaleOnAxis();
-      expect(flameScale, 1);
-      await settle(tester, cap: 3);
+      expect(heroCount(tester), '10');
+      expect(flameScale(tester), 1);
+      expect(bandReveal(tester, '2026-10-01'), 1);
+      expect(todayScale(tester), 1);
+      await pumpFor(tester, 300);
+      expect(tester.binding.hasScheduledFrame, isFalse);
+      final peaks = await peakScales(tester, 6000);
+      expect(peaks.flame, 1);
+      expect(peaks.today, 1);
       await unmount(tester);
     });
   });

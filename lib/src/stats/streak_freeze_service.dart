@@ -6,9 +6,10 @@
 // gap — writing a `daily_activity` row for the missed day (`source:
 // streakOnIce`, 0 XP) and advancing `lastActiveDay` to that day, so #011's
 // `StreakService.computeNext` sees a normal one-day gap (not a reset) the
-// next time the user completes a lesson. `streakCount` itself is left
-// untouched: this path only repairs `lastActiveDay`, it doesn't advance the
-// streak by itself — this is a new, explicit code path that runs *before*
+// next time the user completes a lesson. The saved day is a streak day
+// (#132, replacing #087's "number unchanged" rule), so `streakCount` grows
+// by one with it — without a milestone moment, those only play on a lesson
+// completion. This is a new, explicit code path that runs *before*
 // `computeNext` would otherwise see (and reset) the gap, not a change to
 // that pure algorithm itself.
 //
@@ -61,7 +62,7 @@ class StreakFreezeService {
         source: DailyActivitySource.streakOnIce,
       );
       await _statsRepo.setStreak(
-        streakCount: profile.streakCount,
+        streakCount: profile.streakCount + 1,
         lastActiveDay: missedDay,
       );
     });

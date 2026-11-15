@@ -56,7 +56,8 @@ Lints via `flutter_lints` + `riverpod_lint` surface through `flutter analyze`;
   `providers.dart`, `seed_loader.dart`. Tests in `test/data/` use
   `NativeDatabase.memory()` + overridable `Clock`.
 - Ownership: `xp_total` ← #010 only; `streak_count`/`last_active_day` ← #011
-  only; `recordAttempt` writes `attempts` rows only.
+  + #087's launch freeze bridge (a freeze day counts, #132); `recordAttempt`
+  writes `attempts` rows only.
 
 ## Design language (issue #015)
 

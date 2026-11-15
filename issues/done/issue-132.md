@@ -1,6 +1,6 @@
 # Issue 132: Streak Details polish — freeze days count, German wording, calmer animations
 
-Status: open | Priority: P3 | Type: enhancement | Refined-at: 2026-11-15
+Status: done | Priority: P3 | Type: enhancement | Refined-at: 2026-11-15 | Completed-at: 2026-11-15
 
 ## Goal
 
@@ -102,29 +102,29 @@ Follow-up to #128 after using it on a real phone:
 
 ## Acceptance criteria
 
-- [ ] A streak containing a freeze day shows the same length on Home's
+- [x] A streak containing a freeze day shows the same length on Home's
       badge, the hero, the "Longest streak" tile, the "streak saved"
       screen and the Android widget, equal to the days in the
       current-streak band.
-- [ ] Existing streaks with a freeze day are corrected once on update.
-- [ ] A milestone reached by a freeze day alone plays no milestone moment.
-- [ ] No German string uses a feminine "Streak" (arb files and the Android
+- [x] Existing streaks with a freeze day are corrected once on update.
+- [x] A milestone reached by a freeze day alone plays no milestone moment.
+- [x] No German string uses a feminine "Streak" (arb files and the Android
       widget's German resource strings); the listed strings read as above.
-- [ ] Stat-tile captions and their screen-reader labels use the singular
+- [x] Stat-tile captions and their screen-reader labels use the singular
       for 1 and the plural otherwise, in DE and EN.
-- [ ] The legend no longer has a "Current streak" entry.
-- [ ] The opening animations start after the page transition and play in
+- [x] The legend no longer has a "Current streak" entry.
+- [x] The opening animations start after the page transition and play in
       order (count-up ~1.5 s → band ~2 s → today pulse 3×), skipping steps
       that don't apply.
-- [ ] The flame (live streak) and the today pulse (today not practiced)
+- [x] The flame (live streak) and the today pulse (today not practiced)
       repeat with pauses while the screen is open, pause while it's in the
       background or covered, and none of this runs with reduce motion on.
-- [ ] Widget tests cover the freeze-day counting (incl. the one-time
+- [x] Widget tests cover the freeze-day counting (incl. the one-time
       correction), the German singular captions, the animation order and
       reduce motion. Golden baselines are updated if visuals change.
-- [ ] The #128 integration test still passes and checks the freeze-day
+- [x] The #128 integration test still passes and checks the freeze-day
       streak length.
-- [ ] `flutter analyze`, `dart format --output=none --set-exit-if-changed .`,
+- [x] `flutter analyze`, `dart format --output=none --set-exit-if-changed .`,
       `tool/check_issues.sh`, `dart fix --dry-run`, and `flutter test` are
       clean per AGENTS.md.
 
@@ -138,3 +138,25 @@ Follow-up to #128 after using it on a real phone:
 
 - Builds on #128 (Streak Details glow-up), #087 (streak freeze), #011
   (streak counting).
+
+## Summary
+- Data: the launch freeze bridge now does `streakCount + 1`, so every number (badge, hero, tiles, streak-saved, widget) reads the same `profile.streakCount`. v18 is a data-only migration (`streakCountIncludingFreezeDays`, raw SQL) adding recorded freeze days in the current run once. `currentStreakDays` is plain `streakCount` days back.
+- Motion: `StreakDetailsMotion` (`streak_motion.dart`) owns all controllers; hero + calendar take `Animation`s (default: final frame, so goldens are unchanged). The screen starts it after the route animation completes and pauses it via `TickerMode` (covered) + `AppLifecycleListener` (hidden).
+- The flame/today loops never end, so Streak Details never settles: tests use bounded pumps (`openStreakDetails`/`pumpFrames` in `integration_test/helpers.dart`).
+- l10n: masculine "der Streak" throughout (arb + `values-de/widget_strings.xml`), plural-aware tile captions, legend's current-streak entry removed.
+- Screenshots: `issue-132-freeze-day-streak-light.png`, `issue-132-german-dark.png`.
+
+
+## Code review
+- Motion is configured once from the first data (`hasStreak`/`todayPending`); a streak or day change while the screen is open won't start a missing loop.
+  Not fixed: nothing can change the streak behind this screen, and #128 already decided animations follow the screen open.
+- Reduce motion is one-way: turning it off while open doesn't resume motion.
+  Not fixed: matches #128; the next open plays normally.
+- The v18 correction also bumps a stale (already broken) streak.
+  Not fixed: that streak is shown anyway; broken streaks are #131.
+- The freeze bridge's `+1` uses the profile read just before its transaction.
+  Not fixed: existing pattern, runs once per launch.
+- `currentStep` doc claimed "playing right now" while the looping today pulse stays current.
+  Fixed: doc clarified.
+- No test for `showFinalState()` mid-run.
+  Fixed: test added in `streak_motion_test.dart`.

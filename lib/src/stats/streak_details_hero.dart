@@ -1,13 +1,13 @@
-// Top of the Streak Details screen (issue #128): the flame "hero" with the
-// current streak number + a situation-dependent line, and the three stat
-// tiles (longest streak, practice days, streak freezes) underneath.
+// Top of the Streak Details screen (issue #128, #132): the flame "hero"
+// with the current streak number + a situation-dependent line, and the
+// three stat tiles (longest streak, practice days, streak freezes)
+// underneath.
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../theme/fox_streak_theme.dart';
 import '../widgets/widgets.dart';
 import 'activity_calendar.dart';
-import 'streak_motion.dart';
 
 /// Which encouraging line the hero shows.
 enum StreakHeroMood { practicedToday, notYetToday, noStreak }
@@ -19,64 +19,33 @@ StreakHeroMood streakHeroMoodFor(ActivityCalendarData data) {
       : StreakHeroMood.notYetToday;
 }
 
-/// Large flame + current streak number, counting up from 0 and flickering
-/// gently each time the screen opens (skipped under reduce motion). A 0
-/// streak shows a still, dimmed flame and an inviting line instead.
-class StreakHero extends StatefulWidget {
+/// Large flame + current streak number. The number counts up and the
+/// flame flickers as driven by [countUp] / [flameFlicker] (the screen's
+/// `StreakDetailsMotion`); without them it shows the final, still frame. A
+/// 0 streak shows a still, dimmed flame and an inviting line instead.
+class StreakHero extends StatelessWidget {
   final ActivityCalendarData data;
 
-  const StreakHero({super.key, required this.data});
+  /// Count-up progress (0..1) of the streak number.
+  final Animation<double> countUp;
 
-  @override
-  State<StreakHero> createState() => _StreakHeroState();
-}
+  /// Flicker intensity (0..1) of the flame.
+  final Animation<double> flameFlicker;
 
-class _StreakHeroState extends State<StreakHero> with TickerProviderStateMixin {
-  late final AnimationController _countUp = AnimationController(
-    vsync: this,
-    duration: kStreakCountUpDuration,
-  );
-  late final AnimationController _flicker = AnimationController(
-    vsync: this,
-    duration: kStreakPulseCycle * kStreakPulseCycles,
-  );
-  bool _animationsStarted = false;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final bool hasStreak = widget.data.currentStreakCount > 0;
-    if (MediaQuery.disableAnimationsOf(context) || !hasStreak) {
-      _countUp.value = 1;
-      _flicker
-        ..stop()
-        ..value = 0;
-    } else if (!_animationsStarted) {
-      _countUp.forward(from: 0);
-      _flicker.forward(from: 0);
-    }
-    _animationsStarted = true;
-  }
-
-  /// The count-up's current frame of [streak] — eased, so it slows down
-  /// as it lands on the final value.
-  int _countedUp(int streak) =>
-      (Curves.easeOutCubic.transform(_countUp.value) * streak).round();
-
-  @override
-  void dispose() {
-    _countUp.dispose();
-    _flicker.dispose();
-    super.dispose();
-  }
+  const StreakHero({
+    super.key,
+    required this.data,
+    this.countUp = kAlwaysCompleteAnimation,
+    this.flameFlicker = kAlwaysDismissedAnimation,
+  });
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
     final ThemeData theme = Theme.of(context);
     final FoxSemanticColors semantics = foxSemantics(context);
-    final int streak = widget.data.currentStreakCount;
-    final StreakHeroMood mood = streakHeroMoodFor(widget.data);
+    final int streak = data.currentStreakCount;
+    final StreakHeroMood mood = streakHeroMoodFor(data);
     final bool dimmed = mood == StreakHeroMood.noStreak;
     final Color flameColor = dimmed
         ? theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.38)
@@ -101,11 +70,10 @@ class _StreakHeroState extends State<StreakHero> with TickerProviderStateMixin {
                 spacing: FoxSpacing.sm,
                 children: [
                   AnimatedBuilder(
-                    animation: _flicker,
+                    animation: flameFlicker,
                     builder: (context, child) {
-                      final double wave = streakPulseWave(_flicker.value);
                       return Transform.scale(
-                        scale: 1 + 0.08 * wave,
+                        scale: 1 + 0.08 * flameFlicker.value,
                         alignment: Alignment.bottomCenter,
                         child: child,
                       );
@@ -118,9 +86,9 @@ class _StreakHeroState extends State<StreakHero> with TickerProviderStateMixin {
                     ),
                   ),
                   AnimatedBuilder(
-                    animation: _countUp,
+                    animation: countUp,
                     builder: (context, _) => Text(
-                      '${_countedUp(streak)}',
+                      '${(countUp.value * streak).round()}',
                       key: const Key('streakHeroCount'),
                       style: theme.textTheme.displayMedium?.copyWith(
                         fontWeight: FontWeight.w800,
@@ -183,7 +151,7 @@ class StreakStatTiles extends StatelessWidget {
         compact: compact,
         icon: Icon(Icons.event_available, color: semantics.flame, size: 24),
         value: data.practiceDays,
-        label: l10n.streakDetailsStatPracticeDaysLabel,
+        label: l10n.streakDetailsStatPracticeDaysLabel(data.practiceDays),
         semanticsLabel: l10n.streakDetailsStatPracticeDaysSemantics(
           data.practiceDays,
         ),
@@ -194,7 +162,7 @@ class StreakStatTiles extends StatelessWidget {
         // #127's one streak-freeze glyph: the icy-blue snowflake.
         icon: const FoxStreakFreezeIcon(),
         value: data.streakFreezesAvailable,
-        label: l10n.streakDetailsStatFreezesLabel,
+        label: l10n.streakDetailsStatFreezesLabel(data.streakFreezesAvailable),
         semanticsLabel: l10n.streakFreezesAvailableLabel(
           data.streakFreezesAvailable,
         ),

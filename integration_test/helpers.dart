@@ -108,6 +108,24 @@ final integrationTestSilentSound = foxSoundEnabledProvider.overrideWith(
 Future<void> settle(WidgetTester tester, {int cap = 150}) =>
     confettiAwareSettle(tester, cap: cap);
 
+/// Pumps frames for [duration] in 100ms steps — for screens that never
+/// settle, such as Streak Details (below).
+Future<void> pumpFrames(WidgetTester tester, Duration duration) async {
+  const step = Duration(milliseconds: 100);
+  for (var elapsed = Duration.zero; elapsed < duration; elapsed += step) {
+    await tester.pump(step);
+  }
+}
+
+/// Taps Home's streak badge and pumps through Streak Details' page
+/// transition and opening sequence (count-up + band draw-in, #132). Not
+/// [settle]: the screen loops its flame / today pulse for as long as it is
+/// open, so it never settles — interact with it via [pumpFrames] too.
+Future<void> openStreakDetails(WidgetTester tester) async {
+  await tester.tap(find.byKey(const Key('streakBadgeButton')));
+  await pumpFrames(tester, const Duration(seconds: 5));
+}
+
 /// Boots the real `FoxStreakApp` with [db]/[clock] overridden, then settles.
 ///
 /// Every flow spec uses this (not a bare screen pump) so the harness proves

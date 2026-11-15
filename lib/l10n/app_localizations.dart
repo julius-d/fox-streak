@@ -1416,11 +1416,11 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{Longest streak: none yet} =1{Longest streak: 1 day} other{Longest streak: {count} days}}'**
   String streakDetailsStatLongestSemantics(int count);
 
-  /// Streak Details stat tile caption: all-time number of days practiced, streak-freeze days excluded (issue #128)
+  /// Streak Details stat tile caption: all-time number of days practiced, streak-freeze days excluded; singular for 1, plural otherwise incl. 0 (issues #128, #132)
   ///
   /// In en, this message translates to:
-  /// **'Practice days'**
-  String get streakDetailsStatPracticeDaysLabel;
+  /// **'{count, plural, =1{Practice day} other{Practice days}}'**
+  String streakDetailsStatPracticeDaysLabel(int count);
 
   /// Screen-reader label for the practice-days stat tile (issue #128)
   ///
@@ -1428,23 +1428,17 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{No practice days yet} =1{1 practice day in total} other{{count} practice days in total}}'**
   String streakDetailsStatPracticeDaysSemantics(int count);
 
-  /// Streak Details stat tile caption: streak freezes owned (issue #128)
+  /// Streak Details stat tile caption: streak freezes owned; singular for 1, plural otherwise incl. 0 (issues #128, #132)
   ///
   /// In en, this message translates to:
-  /// **'Streak freezes'**
-  String get streakDetailsStatFreezesLabel;
+  /// **'{count, plural, =1{Streak freeze} other{Streak freezes}}'**
+  String streakDetailsStatFreezesLabel(int count);
 
   /// Calendar legend: a practiced day (issue #128)
   ///
   /// In en, this message translates to:
   /// **'Practiced'**
   String get streakDetailsLegendPracticed;
-
-  /// Calendar legend: the band marking the current streak (issue #128)
-  ///
-  /// In en, this message translates to:
-  /// **'Current streak'**
-  String get streakDetailsLegendCurrentStreak;
 
   /// Calendar legend: the band marking the all-time longest streak, shown only when that band is drawn (issue #128)
   ///

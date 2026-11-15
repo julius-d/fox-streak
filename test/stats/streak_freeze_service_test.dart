@@ -1,10 +1,12 @@
-// Unit tests for StreakFreezeService's app-launch auto-apply (issue #087).
+// Unit tests for StreakFreezeService's app-launch auto-apply (issue #087);
+// since #132 the saved day counts toward the streak.
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fox_streak_app/src/data/database.dart';
 import 'package:fox_streak_app/src/data/stats_repository.dart';
 import 'package:fox_streak_app/src/stats/streak_freeze_service.dart';
+import 'package:fox_streak_app/src/stats/streak_service.dart';
 
 import '../data/test_helpers.dart';
 
@@ -27,8 +29,8 @@ void main() {
 
   group('checkAndApplyOnLaunch', () {
     test('exactly one missed day + a freeze available: consumes one '
-        'freeze, writes the missed day as streakOnIce/0xp, and bridges '
-        'lastActiveDay to it, leaving streakCount unchanged', () async {
+        'freeze, writes the missed day as streakOnIce/0xp, bridges '
+        'lastActiveDay to it, and counts it as a streak day (#132)', () async {
       final twoDaysAgo = kTestToday.subtract(const Duration(days: 2));
       final yesterday = kTestToday.subtract(const Duration(days: 1));
       await statsRepo.setStreak(
@@ -42,7 +44,7 @@ void main() {
 
       final profile = await statsRepo.getProfile();
       expect(profile.streakFreezesAvailable, 0);
-      expect(profile.streakCount, 5);
+      expect(profile.streakCount, 6);
       final yesterdayString = FakeClock(yesterday).todayDayString();
       expect(profile.lastActiveDay, yesterdayString);
 
@@ -118,6 +120,27 @@ void main() {
       expect(await service.checkAndApplyOnLaunch(), isFalse);
       expect((await statsRepo.getProfile()).streakFreezesAvailable, 1);
     });
+
+    test(
+      'a milestone reached by the freeze day alone is never celebrated: '
+      "the next lesson continues past it (#132's accepted trade-off)",
+      () async {
+        final twoDaysAgo = kTestToday.subtract(const Duration(days: 2));
+        await statsRepo.setStreak(
+          streakCount: 6,
+          lastActiveDay: FakeClock(twoDaysAgo).todayDayString(),
+        );
+        await statsRepo.addStreakFreezes(1);
+
+        expect(await service.checkAndApplyOnLaunch(), isTrue);
+        expect((await statsRepo.getProfile()).streakCount, 7);
+
+        final update = await StreakService(statsRepo, clock).recordActivity();
+        expect(update.streakCount, 8);
+        expect(update.isNewDay, isTrue);
+        expect(StreakService.isMilestone(update.streakCount), isFalse);
+      },
+    );
 
     test(
       'a second call on the same launch is safe/idempotent: the first '

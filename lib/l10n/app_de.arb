@@ -740,7 +740,7 @@
       "count": {"type": "int"}
     }
   },
-  "streakDetailsCurrentStreakHeadline": "{count, plural, =0{Keine aktuelle Streak} =1{Aktuelle Streak: 1 Tag} other{Aktuelle Streak: {count} Tage}}",
+  "streakDetailsCurrentStreakHeadline": "{count, plural, =0{Kein aktueller Streak} =1{Aktueller Streak: 1 Tag} other{Aktueller Streak: {count} Tage}}",
   "@streakDetailsLegendNone": {
     "description": "Calendar legend: a day without a daily_activity row (issue #084, reworded #128)",
     "placeholders": {}
@@ -792,7 +792,7 @@
     "description": "One-time FoxFeedbackBanner on Home informing the user their streak was auto-saved by consuming a banked streak freeze (issue #087)",
     "placeholders": {}
   },
-  "streakFreezeAppliedBannerText": "Deine Streak wurde mit einem Streak-Freeze gerettet! ❄️",
+  "streakFreezeAppliedBannerText": "Dein Streak wurde mit einem Streak-Freeze gerettet! ❄️",
   "@streakFreezesAvailableLabel": {
     "description": "Streak Details screen headline showing the current streakFreezesAvailable balance (issue #087)",
     "placeholders": {
@@ -828,29 +828,31 @@
     "description": "Streak Details hero line when the streak is alive but today is not practiced yet — a friendly nudge (issue #128)",
     "placeholders": {}
   },
-  "streakDetailsHeroNotYetToday": "Übe heute, damit deine Streak weiterläuft.",
+  "streakDetailsHeroNotYetToday": "Übe heute, damit dein Streak weiterläuft.",
   "@streakDetailsHeroNoStreak": {
     "description": "Streak Details hero line with no current streak — an invitation, no \"you lost your streak\" tone (issue #128)",
     "placeholders": {}
   },
-  "streakDetailsHeroNoStreak": "Starte heute eine neue Streak!",
+  "streakDetailsHeroNoStreak": "Starte heute einen neuen Streak!",
   "@streakDetailsStatLongestLabel": {
     "description": "Streak Details stat tile caption: all-time longest streak, freeze days included (issue #128)",
     "placeholders": {}
   },
-  "streakDetailsStatLongestLabel": "Längste Streak",
+  "streakDetailsStatLongestLabel": "Längster Streak",
   "@streakDetailsStatLongestSemantics": {
     "description": "Screen-reader label for the longest-streak stat tile (issue #128)",
     "placeholders": {
       "count": {"type": "int"}
     }
   },
-  "streakDetailsStatLongestSemantics": "{count, plural, =0{Längste Streak: noch keine} =1{Längste Streak: 1 Tag} other{Längste Streak: {count} Tage}}",
+  "streakDetailsStatLongestSemantics": "{count, plural, =0{Längster Streak: noch keiner} =1{Längster Streak: 1 Tag} other{Längster Streak: {count} Tage}}",
   "@streakDetailsStatPracticeDaysLabel": {
-    "description": "Streak Details stat tile caption: all-time number of days practiced, streak-freeze days excluded (issue #128)",
-    "placeholders": {}
+    "description": "Streak Details stat tile caption: all-time number of days practiced, streak-freeze days excluded; singular for 1, plural otherwise incl. 0 (issues #128, #132)",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
   },
-  "streakDetailsStatPracticeDaysLabel": "Übungstage",
+  "streakDetailsStatPracticeDaysLabel": "{count, plural, =1{Übungstag} other{Übungstage}}",
   "@streakDetailsStatPracticeDaysSemantics": {
     "description": "Screen-reader label for the practice-days stat tile (issue #128)",
     "placeholders": {
@@ -859,25 +861,22 @@
   },
   "streakDetailsStatPracticeDaysSemantics": "{count, plural, =0{Noch keine Übungstage} =1{1 Übungstag insgesamt} other{{count} Übungstage insgesamt}}",
   "@streakDetailsStatFreezesLabel": {
-    "description": "Streak Details stat tile caption: streak freezes owned (issue #128)",
-    "placeholders": {}
+    "description": "Streak Details stat tile caption: streak freezes owned; singular for 1, plural otherwise incl. 0 (issues #128, #132)",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
   },
-  "streakDetailsStatFreezesLabel": "Streak-Freezes",
+  "streakDetailsStatFreezesLabel": "{count, plural, =1{Streak-Freeze} other{Streak-Freezes}}",
   "@streakDetailsLegendPracticed": {
     "description": "Calendar legend: a practiced day (issue #128)",
     "placeholders": {}
   },
   "streakDetailsLegendPracticed": "Geübt",
-  "@streakDetailsLegendCurrentStreak": {
-    "description": "Calendar legend: the band marking the current streak (issue #128)",
-    "placeholders": {}
-  },
-  "streakDetailsLegendCurrentStreak": "Aktuelle Streak",
   "@streakDetailsLegendLongestStreak": {
     "description": "Calendar legend: the band marking the all-time longest streak, shown only when that band is drawn (issue #128)",
     "placeholders": {}
   },
-  "streakDetailsLegendLongestStreak": "Längste Streak",
+  "streakDetailsLegendLongestStreak": "Längster Streak",
   "@streakDetailsDayXpEarned": {
     "description": "Tap-a-day popup status: XP earned on a practiced day (issue #128)",
     "placeholders": {
@@ -1081,7 +1080,7 @@
     "description": "Encouraging line on the Android home-screen widget when the streak is at risk (streak > 0, no activity yet today) (issue #115)",
     "placeholders": {}
   },
-  "widgetAtRiskText": "Übe heute, um deine Streak zu halten!",
+  "widgetAtRiskText": "Übe heute, um deinen Streak zu halten!",
   "packUpdateBannerOne": "Neue Inhalte in {title}",
   "packUpdateBannerMany": "Updates für {count} Packs verfügbar",
   "packUpdateAction": "Aktualisieren",

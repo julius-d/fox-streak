@@ -950,10 +950,12 @@
   },
   "streakDetailsStatLongestSemantics": "{count, plural, =0{Longest streak: none yet} =1{Longest streak: 1 day} other{Longest streak: {count} days}}",
   "@streakDetailsStatPracticeDaysLabel": {
-    "description": "Streak Details stat tile caption: all-time number of days practiced, streak-freeze days excluded (issue #128)",
-    "placeholders": {}
+    "description": "Streak Details stat tile caption: all-time number of days practiced, streak-freeze days excluded; singular for 1, plural otherwise incl. 0 (issues #128, #132)",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
   },
-  "streakDetailsStatPracticeDaysLabel": "Practice days",
+  "streakDetailsStatPracticeDaysLabel": "{count, plural, =1{Practice day} other{Practice days}}",
   "@streakDetailsStatPracticeDaysSemantics": {
     "description": "Screen-reader label for the practice-days stat tile (issue #128)",
     "placeholders": {
@@ -962,20 +964,17 @@
   },
   "streakDetailsStatPracticeDaysSemantics": "{count, plural, =0{No practice days yet} =1{1 practice day in total} other{{count} practice days in total}}",
   "@streakDetailsStatFreezesLabel": {
-    "description": "Streak Details stat tile caption: streak freezes owned (issue #128)",
-    "placeholders": {}
+    "description": "Streak Details stat tile caption: streak freezes owned; singular for 1, plural otherwise incl. 0 (issues #128, #132)",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
   },
-  "streakDetailsStatFreezesLabel": "Streak freezes",
+  "streakDetailsStatFreezesLabel": "{count, plural, =1{Streak freeze} other{Streak freezes}}",
   "@streakDetailsLegendPracticed": {
     "description": "Calendar legend: a practiced day (issue #128)",
     "placeholders": {}
   },
   "streakDetailsLegendPracticed": "Practiced",
-  "@streakDetailsLegendCurrentStreak": {
-    "description": "Calendar legend: the band marking the current streak (issue #128)",
-    "placeholders": {}
-  },
-  "streakDetailsLegendCurrentStreak": "Current streak",
   "@streakDetailsLegendLongestStreak": {
     "description": "Calendar legend: the band marking the all-time longest streak, shown only when that band is drawn (issue #128)",
     "placeholders": {}

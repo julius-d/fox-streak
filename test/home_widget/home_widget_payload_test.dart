@@ -121,7 +121,7 @@ void main() {
         locale: 'de',
       );
       expect(p.current.description, '1 Tag Streak, 10 von 50 XP heute');
-      expect(p.atRiskText, 'Übe heute, um deine Streak zu halten!');
+      expect(p.atRiskText, 'Übe heute, um deinen Streak zu halten!');
     });
 
     test('serialises to a channel-friendly map', () {

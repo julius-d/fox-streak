@@ -12,6 +12,7 @@ import 'package:drift_flutter/drift_flutter.dart';
 
 import '../pet/pet_catalog.dart' show kDefaultPetId;
 import 'pack_defaults.dart';
+import 'streak_freeze_correction.dart';
 
 part 'database.g.dart';
 
@@ -118,7 +119,9 @@ class Attempts extends Table {
 ///   resets to the lesson's earned XP on a day change (vs. `lastActiveDay`)
 ///   and accumulates otherwise; #012's `FoxGoalRing` reads it read-only.
 /// - `streakCount` / `lastActiveDay` — written exclusively by #011
-///   `StreakService`. [StatsRepository.recordAttempt] must NOT touch them.
+///   `StreakService`, plus #087 `StreakFreezeService`'s launch-time bridge
+///   (a freeze day counts toward `streakCount` since #132).
+///   [StatsRepository.recordAttempt] must NOT touch them.
 /// - `dailyGoalXp` — editable (see #012), written by [StatsRepository].
 /// - `displayName` / `hasOnboarded` — written exclusively by #012's
 ///   [StatsRepository.setDisplayName]/[StatsRepository.setOnboarded].
@@ -294,7 +297,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 17;
+  int get schemaVersion => 18;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -451,6 +454,10 @@ class AppDatabase extends _$AppDatabase {
       if (from < 17) {
         await _migrateSetsIntoPacks(m);
       }
+      // v18 (#132): data only — freeze days now count toward the streak.
+      if (from < 18) {
+        await _countFreezeDaysIntoStreak();
+      }
     },
     beforeOpen: (details) async {
       // SQLite disables FK enforcement by default; without this,
@@ -511,6 +518,32 @@ class AppDatabase extends _$AppDatabase {
     );
   }
 
+  /// v18 (#132): adds the recorded freeze days inside the current streak to
+  /// `streak_count` once (see [streakCountIncludingFreezeDays]). Raw SQL, so
+  /// this historical step never depends on later table definitions; the
+  /// `'streakOnIce'` literal is `DailyActivitySource.streakOnIce.name`.
+  Future<void> _countFreezeDaysIntoStreak() async {
+    final profile = await customSelect(
+      'SELECT streak_count, last_active_day FROM profile_stats WHERE id = 0',
+    ).getSingleOrNull();
+    if (profile == null) return;
+    final freezeRows = await customSelect(
+      "SELECT day FROM daily_activity WHERE activity_source = 'streakOnIce'",
+    ).get();
+    final int streakCount = profile.read<int>('streak_count');
+    final int corrected = streakCountIncludingFreezeDays(
+      streakCount: streakCount,
+      lastActiveDay: profile.read<String?>('last_active_day'),
+      freezeDays: {for (final row in freezeRows) row.read<String>('day')},
+    );
+    if (corrected == streakCount) return;
+    await customUpdate(
+      'UPDATE profile_stats SET streak_count = ? WHERE id = 0',
+      variables: [Variable.withInt(corrected)],
+      updates: {profileStats},
+    );
+  }
+
   // v1 had no migrations; v2 (#026) added the vocab->choice rewrite above;
   // v3 (#010) added `profileStats.todayXp`; v4 (#022) replaced
   // `items.direction` with `promptLang`/`answerLang`; v5 (#012) added
@@ -528,7 +561,8 @@ class AppDatabase extends _$AppDatabase {
   // `profileStats.streakFreezesAvailable`; v16 (#101) added
   // `items.marketplaceItemId` plus the `marketplace_sources`/
   // `imported_marketplace_sets` tables; v17 (#121) added `packs` and
-  // `question_sets.pack_id`.
+  // `question_sets.pack_id`; v18 (#132) counted recorded freeze days into
+  // `profileStats.streakCount` (data only).
 }
 
 DatabaseConnection _openConnection() => driftDatabase(name: 'fox_streak');

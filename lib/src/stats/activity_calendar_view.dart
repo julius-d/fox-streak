@@ -15,7 +15,6 @@ import 'package:intl/intl.dart';
 import '../data/clock.dart' show parseDayString;
 import '../theme/fox_streak_theme.dart';
 import 'activity_calendar.dart';
-import 'streak_motion.dart';
 
 /// Cell edge length (dp) — ~3 months visible at once on a 360dp phone.
 const double _kCellSize = 20;
@@ -95,36 +94,37 @@ Color colorForStreakBand(StreakBandKind kind, FoxSemanticColors semantics) =>
 /// Fri only) sit in a fixed column to the left; month abbreviations sit in
 /// a row above the grid that scrolls together with it (#089). Streak runs
 /// are outlined by one continuous band each (#128); tapping a day opens a
-/// small popup anchored at it.
+/// small popup anchored at it. The current band's draw-in and the today
+/// pulse follow [bandDrawIn] / [todayPulse] (the screen's
+/// `StreakDetailsMotion`); without them the final, still frame shows.
 class ActivityCalendarView extends StatefulWidget {
   final ActivityCalendarData data;
   final String Function(ActivityDay day) cellSemanticsLabel;
   final ActivityDayPopupText Function(ActivityDay day) dayPopupText;
+
+  /// Draw-in progress (0..1) of the current-streak band, today first.
+  final Animation<double> bandDrawIn;
+
+  /// Pulse intensity (0..1) of the today cell.
+  final Animation<double> todayPulse;
 
   const ActivityCalendarView({
     super.key,
     required this.data,
     required this.cellSemanticsLabel,
     required this.dayPopupText,
+    this.bandDrawIn = kAlwaysCompleteAnimation,
+    this.todayPulse = kAlwaysDismissedAnimation,
   });
 
   @override
   State<ActivityCalendarView> createState() => _ActivityCalendarViewState();
 }
 
-class _ActivityCalendarViewState extends State<ActivityCalendarView>
-    with TickerProviderStateMixin {
+class _ActivityCalendarViewState extends State<ActivityCalendarView> {
   final ScrollController _scrollController = ScrollController();
   final OverlayPortalController _popupController = OverlayPortalController();
   final LayerLink _popupLink = LayerLink();
-  late final AnimationController _bandDrawIn = AnimationController(
-    vsync: this,
-    duration: kStreakBandDrawInDuration,
-  );
-  late final AnimationController _todayPulse = AnimationController(
-    vsync: this,
-    duration: kStreakPulseCycle * kStreakPulseCycles,
-  );
   ScrollPosition? _ancestorScroll;
   ActivityDay? _selectedDay;
 
@@ -132,7 +132,6 @@ class _ActivityCalendarViewState extends State<ActivityCalendarView>
   /// right half of the calendar) instead of rightward, so it stays on
   /// screen next to today.
   bool _popupAlignEnd = false;
-  bool _animationsStarted = false;
 
   @override
   void initState() {
@@ -153,16 +152,6 @@ class _ActivityCalendarViewState extends State<ActivityCalendarView>
       _ancestorScroll?.removeListener(_dismissPopup);
       _ancestorScroll = ancestor?..addListener(_dismissPopup);
     }
-    if (MediaQuery.disableAnimationsOf(context)) {
-      _bandDrawIn.value = 1;
-      _todayPulse
-        ..stop()
-        ..value = 0;
-    } else if (!_animationsStarted) {
-      _bandDrawIn.forward(from: 0);
-      if (!widget.data.practicedToday) _todayPulse.forward(from: 0);
-    }
-    _animationsStarted = true;
   }
 
   @override
@@ -173,11 +162,6 @@ class _ActivityCalendarViewState extends State<ActivityCalendarView>
       // build always runs after didUpdateWidget.
       _selectedDay = null;
       _popupController.hide();
-      if (widget.data.practicedToday) {
-        _todayPulse
-          ..stop()
-          ..value = 0;
-      }
     }
   }
 
@@ -185,8 +169,6 @@ class _ActivityCalendarViewState extends State<ActivityCalendarView>
   void dispose() {
     _ancestorScroll?.removeListener(_dismissPopup);
     _scrollController.dispose();
-    _bandDrawIn.dispose();
-    _todayPulse.dispose();
     super.dispose();
   }
 
@@ -264,8 +246,8 @@ class _ActivityCalendarViewState extends State<ActivityCalendarView>
                         weeks: weeks,
                         semantics: semantics,
                         scheme: scheme,
-                        bandDrawIn: _bandDrawIn,
-                        todayPulse: _todayPulse,
+                        bandDrawIn: widget.bandDrawIn,
+                        todayPulse: widget.todayPulse,
                         selectedDay: _selectedDay,
                         popupLink: _popupLink,
                         cellSemanticsLabel: widget.cellSemanticsLabel,
@@ -653,7 +635,7 @@ class _DayCell extends StatelessWidget {
         animation: pulse,
         child: cell,
         builder: (context, child) {
-          final double wave = streakPulseWave(pulse.value);
+          final double wave = pulse.value;
           return Transform.scale(
             scale: 1 + 0.08 * wave,
             child: Stack(

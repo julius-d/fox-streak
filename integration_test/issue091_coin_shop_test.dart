@@ -84,8 +84,7 @@ void main() {
 
       await tester.pageBack();
       await settle(tester);
-      await tester.tap(find.byKey(const Key('streakBadgeButton')));
-      await settle(tester);
+      await openStreakDetails(tester);
       // #128: the freeze balance lives in the freezes stat tile.
       expect(
         find.descendant(

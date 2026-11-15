@@ -59,6 +59,8 @@ class ActivityDay {
 /// in the window (oldest-first, today last) plus the hero/stat numbers.
 class ActivityCalendarData {
   final List<ActivityDay> days;
+
+  /// `profile.streakCount`: the current streak, freeze days included (#132).
   final int currentStreakCount;
 
   /// All-time longest streak (freeze days count), never below
@@ -109,10 +111,6 @@ class ActivityCalendarData {
     final currentSet = currentStreakDays(
       streakCount: streakCount,
       lastActiveDay: lastActiveDay,
-      freezeDays: {
-        for (final e in byDay.values)
-          if (stateFor(e) == ActivityDayState.streakFreeze) e.day,
-      },
     );
     final longestSet = longestRun(windowDays, byDay.keys.toSet());
     // A different run only: longer than the current one *and* not
@@ -186,31 +184,23 @@ ActivityDayState stateFor(DailyActivityData? entry) {
 
 /// The current streak's run of consecutive local days ending at
 /// [lastActiveDay], going backwards, per `profile.streakCount`/
-/// `lastActiveDay` (#011): [streakCount] practiced days plus every
-/// [freezeDays] day bridged in between — a #087 freeze keeps the streak
-/// alive without counting toward `streakCount`, so it must not push the
-/// run's first day out. Empty when there's no streak yet. May extend before
-/// the calendar's window when the streak predates #084's `daily_activity`
+/// `lastActiveDay` (#011): exactly [streakCount] days — a #087 freeze day
+/// counts toward the streak (#132), so the band and the number always
+/// agree. Empty when there's no streak yet. May extend before the
+/// calendar's window when the streak predates #084's `daily_activity`
 /// recording — callers that render the window intersect this against their
 /// own day set.
 Set<String> currentStreakDays({
   required int streakCount,
   required String? lastActiveDay,
-  Set<String> freezeDays = const {},
 }) {
   if (streakCount <= 0 || lastActiveDay == null) return {};
   final anchor = parseDayString(lastActiveDay);
   if (anchor == null) return {};
-  final days = <String>{};
-  var cursor = anchor;
-  var remaining = streakCount;
-  while (remaining > 0) {
-    final day = toLocalDayString(cursor);
-    days.add(day);
-    if (!freezeDays.contains(day)) remaining--;
-    cursor = DateTime(cursor.year, cursor.month, cursor.day - 1);
-  }
-  return days;
+  return {
+    for (var i = 0; i < streakCount; i++)
+      toLocalDayString(DateTime(anchor.year, anchor.month, anchor.day - i)),
+  };
 }
 
 /// The longest run of consecutive days in [daysAscending] that are members

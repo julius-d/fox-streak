@@ -58,7 +58,7 @@ void main() {
         final twoDaysAgo = toLocalDayString(DateTime(2026, 11, 12));
         final yesterday = toLocalDayString(DateTime(2026, 11, 13));
         final todayDay = toLocalDayString(today);
-        // Lesson (streak 1), freeze (still 1, #087), lesson today (2).
+        // Lesson (streak 1), freeze (2, #132), lesson today (3).
         await statsRepo.recordDailyActivity(
           day: twoDaysAgo,
           xpDelta: 10,
@@ -74,7 +74,7 @@ void main() {
           xpDelta: 10,
           source: DailyActivitySource.lessonCompleted,
         );
-        await statsRepo.setStreak(streakCount: 2, lastActiveDay: todayDay);
+        await statsRepo.setStreak(streakCount: 3, lastActiveDay: todayDay);
 
         await pumpFoxStreakApp(tester, db: db, clock: clock);
 
@@ -93,8 +93,7 @@ void main() {
 
         // Streak Details: the snowflake sits in the freezes stat tile only
         // (#128 replaced the balance line with that tile).
-        await tester.tap(find.byKey(const Key('streakBadgeButton')));
-        await settle(tester);
+        await openStreakDetails(tester);
         final Finder detailsSnowflake = find.byIcon(
           FoxStreakFreezeIcon.iconData,
         );

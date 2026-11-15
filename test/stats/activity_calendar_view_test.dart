@@ -1,8 +1,9 @@
 // Widget tests for the Streak Details calendar (#084, #089, #128): cell
 // colors per day state, Monday-first weekday labels, streak bands (open
 // ends at week breaks, colors, backwards draw-in), the today marker +
-// pulse, the tap-a-day popup, reduce motion, semantics, and the initial
-// scroll position.
+// pulse, the tap-a-day popup, semantics, and the initial scroll position.
+// The draw-in / pulse timing itself lives in `StreakDetailsMotion` (#132,
+// see streak_motion_test.dart); here they're driven by fixed animations.
 
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -50,19 +51,16 @@ ActivityCalendarData fixture({
 Future<void> pumpCalendar(
   WidgetTester tester,
   ActivityCalendarData data, {
-  bool reduceMotion = true,
   double? width,
   bool settle = true,
+  Animation<double> bandDrawIn = kAlwaysCompleteAnimation,
+  Animation<double> todayPulse = kAlwaysDismissedAnimation,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
       theme: FoxStreakTheme.light(),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      builder: (context, child) => MediaQuery(
-        data: MediaQuery.of(context).copyWith(disableAnimations: reduceMotion),
-        child: child!,
-      ),
       home: Scaffold(
         body: Column(
           children: [
@@ -74,6 +72,8 @@ Future<void> pumpCalendar(
                 cellSemanticsLabel: (day) => 'cell-${day.day}',
                 dayPopupText: (day) =>
                     (date: 'date-${day.day}', status: 'status-${day.day}'),
+                bandDrawIn: bandDrawIn,
+                todayPulse: todayPulse,
               ),
             ),
           ],
@@ -209,58 +209,68 @@ void main() {
     expect(bandOf(tester, oct(6)).color, gold);
   });
 
-  testWidgets('with reduce motion the band is fully drawn and today does '
+  testWidgets('without animations the band is fully drawn and today does '
       'not pulse', (tester) async {
     await pumpCalendar(tester, fixture(practicedToday: false), settle: false);
     await tester.pump();
     expect(bandOf(tester, oct(9)).reveal, 1);
     expect(bandOf(tester, oct(12)).reveal, 1);
-    await tester.pump(const Duration(milliseconds: 350));
     expect(todayScale(tester, oct(14)), 1);
     expect(tester.binding.hasScheduledFrame, isFalse);
   });
 
   testWidgets('the current band draws in backwards: today first, the '
       'earliest days last', (tester) async {
-    await pumpCalendar(tester, fixture(), reduceMotion: false, settle: false);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 250));
+    final drawIn = AnimationController(vsync: const TestVSync());
+    addTearDown(drawIn.dispose);
+    await pumpCalendar(tester, fixture(), bandDrawIn: drawIn);
+    // Nothing drawn before the draw-in starts.
+    expect(bandOf(tester, oct(12)).reveal, 0);
+    expect(bandOf(tester, oct(9)).reveal, 0);
     // 6 days total; the later column (3 days) grows first.
+    drawIn.value = 0.25;
+    await tester.pump();
     expect(bandOf(tester, oct(12)).reveal, greaterThan(0));
     expect(bandOf(tester, oct(9)).reveal, 0);
-    await tester.pumpAndSettle();
+    drawIn.value = 0.75;
+    await tester.pump();
+    expect(bandOf(tester, oct(12)).reveal, 1);
+    expect(bandOf(tester, oct(9)).reveal, inExclusiveRange(0, 1));
+    drawIn.value = 1;
+    await tester.pump();
     expect(bandOf(tester, oct(12)).reveal, 1);
     expect(bandOf(tester, oct(9)).reveal, 1);
   });
 
-  testWidgets('today is marked; it pulses while not practiced yet, then '
-      'rests', (tester) async {
+  testWidgets('today is marked and scales with the pulse intensity', (
+    tester,
+  ) async {
+    final pulse = AnimationController(vsync: const TestVSync());
+    addTearDown(pulse.dispose);
     await pumpCalendar(
       tester,
       fixture(practicedToday: false),
-      reduceMotion: false,
-      settle: false,
+      todayPulse: pulse,
     );
     expect(
       find.byKey(const Key('activityCalendarTodayMarker')),
       findsOneWidget,
     );
+    expect(todayScale(tester, oct(14)), 1);
+    pulse.value = 1;
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 350));
-    expect(todayScale(tester, oct(14)), greaterThan(1));
-    await tester.pumpAndSettle();
-    expect(todayScale(tester, oct(14)), moreOrLessEquals(1));
+    expect(todayScale(tester, oct(14)), moreOrLessEquals(1.08));
+    pulse.value = 0;
+    await tester.pump();
+    expect(todayScale(tester, oct(14)), 1);
   });
 
-  testWidgets('a practiced today is marked but does not pulse', (tester) async {
-    await pumpCalendar(tester, fixture(), reduceMotion: false, settle: false);
+  testWidgets('a practiced today is marked too', (tester) async {
+    await pumpCalendar(tester, fixture());
     expect(
       find.byKey(const Key('activityCalendarTodayMarker')),
       findsOneWidget,
     );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 350));
-    expect(todayScale(tester, oct(14)), 1);
   });
 
   group('tap a day', () {
