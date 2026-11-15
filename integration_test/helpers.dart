@@ -47,6 +47,7 @@ import 'dart:math';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:fox_streak_app/l10n/app_localizations.dart';
@@ -148,6 +149,7 @@ Future<void> pumpFoxStreakApp(
   required Clock clock,
   Future<List<PetEntry>> Function()? petCatalogLoader,
   Random Function()? petRandom,
+  List<Override> overrides = const [],
 }) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -158,6 +160,7 @@ Future<void> pumpFoxStreakApp(
         if (petCatalogLoader != null)
           petCatalogLoaderProvider.overrideWithValue(petCatalogLoader),
         if (petRandom != null) petRandomProvider.overrideWithValue(petRandom),
+        ...overrides,
       ],
       child: const FoxStreakApp(),
     ),

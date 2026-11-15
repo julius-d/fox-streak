@@ -1177,4 +1177,20 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get packUpdateRetry => 'Erneut versuchen';
+
+  @override
+  String get setSavedToFile => 'Set gespeichert';
+
+  @override
+  String get showFolder => 'Ordner zeigen';
+
+  @override
+  String get fileDialogUnavailable =>
+      'Fast geschafft! Dein System kann noch keinen Dateidialog anzeigen. Installiere xdg-desktop-portal-gtk, dann klappt\'s.';
+
+  @override
+  String get saveSetDialogTitle => 'Set speichern';
+
+  @override
+  String get importSetDialogTitle => 'Set importieren';
 }

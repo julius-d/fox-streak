@@ -56,6 +56,15 @@ dependencies:
   # native plugin code, so all 4 kept platforms stay supported. #032 (lottie
   # question images) reuses this same dependency.
   lottie: ^3.6.1
+  # Linux "Show folder" after saving a shared set (issue #129); supports
+  # all 5 kept platforms.
+  url_launcher: ^6.3.3
+  # Linux keeps the database in the hidden XDG app-data folder (issue #129);
+  # already transitive via `drift_flutter`, direct only for that override.
+  path_provider: ^2.1.6
+  # Linux GStreamer probe before creating audio players (issue #129); pure
+  # Dart, already transitive via `path_provider_linux`.
+  ffi: ^2.2.0
 
 dev_dependencies:
   flutter_test:

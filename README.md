@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/julius-d/fox-streak/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/julius-d/fox-streak/actions/workflows/ci.yml)
 
-Learning app with gamification (XP + streak + levels). Flutter, Android-first, iOS + Windows + macOS ready. Local-only, no login (MVP).
+Learning app with gamification (XP + streak + levels). Flutter, Android-first, iOS + Windows + macOS + Linux ready. Local-only, no login (MVP).
 
 ## Installation
 

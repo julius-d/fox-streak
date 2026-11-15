@@ -17,6 +17,8 @@
 // menu — Import moved to this speed-dial, Share moved into each card's
 // three-dot menu.
 
+import 'dart:async';
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -42,6 +44,18 @@ import 'set_editor_screen.dart';
 import 'set_mastery_indicator.dart';
 import 'share_actions.dart';
 import 'speed_dial.dart';
+
+/// Linux without a file dialog (issue #129): names the fix instead of
+/// silently doing nothing. Shown longer than usual so the package name can be
+/// read.
+void _showFileDialogUnavailable(BuildContext context) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(AppLocalizations.of(context)!.fileDialogUnavailable),
+      duration: const Duration(seconds: 10),
+    ),
+  );
+}
 
 /// Library home screen: all sets with mastery + play/edit affordances.
 class LibraryScreen extends ConsumerStatefulWidget {
@@ -178,7 +192,11 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
       await importSetFromPicker(
         ref,
         choosePack: () => showPackChoiceDialog(context),
+        dialogTitle: l10n.importSetDialogTitle,
       );
+    } on FileDialogUnavailableException {
+      if (!mounted) return;
+      _showFileDialogUnavailable(context);
     } on SetImportException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
@@ -407,8 +425,35 @@ class _SetCard extends ConsumerWidget {
     WidgetRef ref,
     AppLocalizations l10n,
   ) async {
+    final openFolder = ref.read(folderOpenerProvider);
     try {
-      await shareSet(ref, set.id, set.title);
+      final outcome = await shareSet(
+        ref,
+        set.id,
+        set.title,
+        saveDialogTitle: l10n.saveSetDialogTitle,
+      );
+      if (outcome is! SetSavedToFile || !context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.setSavedToFile),
+          // A confirmation, not a prompt: time out despite the action
+          // (snackbars with an action persist by default).
+          persist: false,
+          action: SnackBarAction(
+            key: const Key('showSavedSetFolderAction'),
+            label: l10n.showFolder,
+            onPressed: () => unawaited(
+              openFolder(File(outcome.path).parent.path).then((opened) {
+                if (!opened) debugPrint('Show folder: no file manager');
+              }, onError: (Object e) => debugPrint('Show folder failed: $e')),
+            ),
+          ),
+        ),
+      );
+    } on FileDialogUnavailableException {
+      if (!context.mounted) return;
+      _showFileDialogUnavailable(context);
     } catch (_) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context)

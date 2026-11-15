@@ -4,7 +4,7 @@ Developed on both Windows and macOS.
 
 - Package: `fox_streak_app` (Android applicationId `io.github.juliusd.foxstreak`), display name `FoxStreak`
 - State management: **Riverpod** (`flutter_riverpod`)
-- Platforms: `android/`, `ios/`, `windows/`, `macos/` (from `flutter create`)
+- Platforms: `android/`, `ios/`, `windows/`, `macos/`, `linux/` (from `flutter create`; Linux desktop polish in #129)
 - Android: `minSdk 24`, Java 17, Kotlin JVM 17
 
 See also `AGENTS.md` for repo conventions and the current issue backlog.
@@ -15,6 +15,7 @@ See also `AGENTS.md` for repo conventions and the current issue backlog.
 - For Android builds: Android Studio + Android SDK (`flutter doctor` must show Android toolchain ✓)
 - For Windows builds: Visual Studio with "Desktop development with C++" workload (Windows only)
 - For macOS/iOS builds: Xcode (macOS only)
+- For Linux builds (Linux only, x64): `clang cmake ninja-build pkg-config libgtk-3-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev`
 - For web runs: Chrome
 
 ## Commands
@@ -49,8 +50,8 @@ CI (`.github/workflows/ci.yml`) runs a single `ci` job on `ubuntu-latest`
 with Flutter `3.47.6` (stable) on `push` to `main` and `pull_request`
 targeting `main`. Concurrency cancels superseded runs on the same ref.
 Steps run in order — format → analyze → fix-hygiene → test → Android debug
-build (a failing early step hides later steps' signals; accepted tradeoff for
-one Flutter setup on this small MVP).
+build → Linux debug build (a failing early step hides later steps' signals;
+accepted tradeoff for one Flutter setup on this small MVP).
 
 | CI step | Rerun locally |
 |---|---|
@@ -60,6 +61,7 @@ one Flutter setup on this small MVP).
 | `dart fix --dry-run` hygiene gate (fails unless the output is `Nothing to fix!`) | `dart fix --dry-run` |
 | `flutter test` (unit/widget in `test/` only, not `integration_test/`) | `flutter test` |
 | `flutter build apk --debug` (unsigned smoke build) | same — needs the Android SDK; expected to fail locally (see AGENTS.md), CI is the gate |
+| `flutter build linux --debug` (smoke build, #129) | same — Linux host with the packages above only; CI is the gate |
 
 Closing-proof convention: an issue closed on CI evidence records a green run
 whose URL cites a `push`-triggered run with its `headSha` actually on `main`
@@ -119,8 +121,9 @@ Column ownership: `xp_total` is written exclusively by #010 `XpService`;
 `streak_count`/`last_active_day` exclusively by #011 `StreakService`;
 `StatsRepository.recordAttempt` writes `attempts` rows only.
 
-Sharing deps (`share_plus`, `file_picker`) support Android/iOS/Windows;
-picker/share UI is wired in #003.
+Sharing deps (`share_plus`, `file_picker`) support Android/iOS/Windows/macOS;
+picker/share UI is wired in #003. Linux has no file share sheet, so Share
+saves the file via `file_picker`'s save dialog instead (#129).
 
 ## Codegen (Drift)
 

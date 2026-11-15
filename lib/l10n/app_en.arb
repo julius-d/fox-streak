@@ -1401,5 +1401,30 @@
     "description": "Pack-update banner retry button (issue #125)",
     "placeholders": {}
   },
-  "packUpdateRetry": "Retry"
+  "packUpdateRetry": "Retry",
+  "@setSavedToFile": {
+    "description": "Snackbar after saving a shared set via the Linux save dialog (issue #129)",
+    "placeholders": {}
+  },
+  "setSavedToFile": "Set saved",
+  "@showFolder": {
+    "description": "Snackbar action that opens the folder a shared set was saved to (issue #129)",
+    "placeholders": {}
+  },
+  "showFolder": "Show folder",
+  "@fileDialogUnavailable": {
+    "description": "Shown when Linux has no file dialog (XDG desktop portal) for import/save; names the package that fixes it (issue #129)",
+    "placeholders": {}
+  },
+  "fileDialogUnavailable": "Almost there! Your system can't show a file dialog yet. Installing xdg-desktop-portal-gtk fixes this.",
+  "@saveSetDialogTitle": {
+    "description": "Title of the Linux save dialog for sharing a set (issue #129)",
+    "placeholders": {}
+  },
+  "saveSetDialogTitle": "Save set",
+  "@importSetDialogTitle": {
+    "description": "Title of the file dialog for importing a set (issue #129)",
+    "placeholders": {}
+  },
+  "importSetDialogTitle": "Import set"
 }

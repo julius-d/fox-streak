@@ -29,7 +29,8 @@ Visual Studio ✓ (C++ workload, for `flutter build windows`). macOS machines
 additionally need Xcode for iOS/macOS runs and builds, and don't have a
 Windows target. Android builds (`flutter build apk`/`appbundle`) need the
 Android SDK on either OS; CI (`ubuntu-latest`) is the build gate until a dev
-machine has it.
+machine has it. Linux builds (`flutter build linux`) need a Linux host with
+the GTK + GStreamer dev packages (see `ci.yml`); CI is their gate too.
 
 ## Verify
 
@@ -103,11 +104,31 @@ Lints via `flutter_lints` + `riverpod_lint` surface through `flutter analyze`;
   from the arb files via the pushed payload — except the two pre-first-run
   strings in `res/values*/widget_strings.xml`.
 
+## Linux desktop (issue #129)
+
+- App id `io.github.juliusd.foxstreak` (`linux/CMakeLists.txt`) keys the data
+  folder: on Linux only, the database lives in `~/.local/share/<app id>`
+  (`databaseDirectoryFor` in `database.dart`), not `~/Documents`. Don't change
+  the id — it orphans users' data.
+- Window title "Fox Streak", phone size and the window icon are set in
+  `linux/runner/my_application.cc`. The desktop entry + 256px icon live in
+  `linux/packaging/` and are installed into the bundle's `share/`;
+  `install-desktop-entry.sh` (bundle root) adds the bundle to the app menu.
+- Share has no share sheet on Linux: `shareSet` saves via a "Save file" dialog
+  (`sharesViaSaveDialog`). `file_picker`'s Linux dialogs use the XDG desktop
+  portal (D-Bus, not zenity); a failing dialog becomes
+  `FileDialogUnavailableException` → message naming `xdg-desktop-portal-gtk`.
+  Tests switch platform via `TargetPlatformVariant`/`defaultTargetPlatform`.
+- `audioplayers_linux` links GStreamer and aborts the app if `playbin` is
+  missing (#135), so on Linux `foxSoundPlayerProvider` probes it first
+  (`gstreamer_probe.dart`, FFI) and falls back to `SilentSoundPlayer`. Other
+  playback failures (no audio device) are logged and skipped by `FoxFeedback`.
+
 ## Conventions
 
 - **Conventional commits**, e.g. `feat: …`. Commit `pubspec.lock` (app, not package).
 - Never commit `local.properties`, `.dart_tool/`, `.idea/`, `*.iml` — root `.gitignore` already excludes them; check `git status` before committing.
 - State management: **Riverpod** (`flutter_riverpod`) with `ProviderScope` at root. Do not introduce Bloc.
 - Package `fox_streak_app` (Android applicationId `io.github.juliusd.foxstreak`); Android `minSdk 24` is pinned in `android/app/build.gradle.kts` — keep the pin, don't revert to `flutter.minSdkVersion`.
-- Platforms in repo: `android/`, `ios/`, `windows/`, `macos/`. Keep all four; never add a plugin without iOS + Windows + macOS support.
+- Platforms in repo: `android/`, `ios/`, `windows/`, `macos/`, `linux/`. Keep all five; never add a plugin without iOS + Windows + macOS + Linux support.
 - One tool call per message; batch independent calls as parallel messages in one turn.

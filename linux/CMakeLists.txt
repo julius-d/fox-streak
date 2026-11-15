@@ -7,7 +7,10 @@ project(runner LANGUAGES CXX)
 set(BINARY_NAME "fox_streak_app")
 # The unique GTK application identifier for this application. See:
 # https://wiki.gnome.org/HowDoI/ChooseApplicationID
-set(APPLICATION_ID "io.github.juliusd.fox_streak_app")
+# Matches the Android applicationId. Also keys the per-user data folder
+# (`~/.local/share/<id>`, issue #129) and the desktop entry/icon names in
+# `packaging/` — changing it orphans users' data.
+set(APPLICATION_ID "io.github.juliusd.foxstreak")
 
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
 # versions of CMake.
@@ -120,6 +123,17 @@ install(CODE "
   " COMPONENT Runtime)
 install(DIRECTORY "${PROJECT_BUILD_DIR}/${FLUTTER_ASSET_DIR_NAME}"
   DESTINATION "${INSTALL_BUNDLE_DATA_DIR}" COMPONENT Runtime)
+
+# Desktop integration (issue #129): app-menu entry and fox icon in the XDG
+# layout, plus the script that registers them for this bundle. The runner
+# loads the window icon from here too; #130's AppImage reuses both files.
+install(FILES "packaging/${APPLICATION_ID}.desktop"
+  DESTINATION "${CMAKE_INSTALL_PREFIX}/share/applications" COMPONENT Runtime)
+install(FILES "packaging/${APPLICATION_ID}.png"
+  DESTINATION "${CMAKE_INSTALL_PREFIX}/share/icons/hicolor/256x256/apps"
+  COMPONENT Runtime)
+install(PROGRAMS "packaging/install-desktop-entry.sh"
+  DESTINATION "${CMAKE_INSTALL_PREFIX}" COMPONENT Runtime)
 
 # Install the AOT library on non-Debug builds only.
 if(NOT CMAKE_BUILD_TYPE MATCHES "Debug")

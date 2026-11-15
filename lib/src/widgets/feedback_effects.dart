@@ -80,6 +80,24 @@ abstract final class FoxFeedback {
     }
   }
 
+  /// Level-up chime (issue #053) for the XP-up screen, same policy as
+  /// [correctChime]: gated by [foxSoundEnabledProvider], fire-and-forget, and
+  /// a chime that can't play (e.g. no audio backend on Linux, issue #129) is
+  /// only logged, never surfaced.
+  static void levelUpChime(WidgetRef ref) {
+    if (!ref.read(foxSoundEnabledProvider)) return;
+    try {
+      unawaited(
+        ref
+            .read(foxSoundPlayerProvider)
+            .playLevelUp()
+            .catchError(logChimeFailure),
+      );
+    } on Object catch (error, stackTrace) {
+      logChimeFailure(error, stackTrace);
+    }
+  }
+
   static Future<void> _buzz(WidgetRef ref, Future<void> Function() buzz) async {
     if (!ref.read(foxHapticsEnabledProvider)) return;
     await buzz();

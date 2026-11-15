@@ -16,8 +16,6 @@
 // flag, not a repeat of the exact streak count `StreakSavedScreen` already
 // announced moments earlier in the same completion sequence.
 
-import 'dart:async';
-
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -184,9 +182,7 @@ class _LevelUpEffectsState extends ConsumerState<_LevelUpEffects> {
       );
       _confettiController = controller;
       controller.play();
-      if (ref.read(foxSoundEnabledProvider)) {
-        unawaited(ref.read(foxSoundPlayerProvider).playLevelUp());
-      }
+      FoxFeedback.levelUpChime(ref);
     }
   }
 

@@ -9,6 +9,8 @@
 
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
+import 'package:flutter/foundation.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../pet/pet_catalog.dart' show kDefaultPetId;
 import 'pack_defaults.dart';
@@ -581,4 +583,21 @@ class AppDatabase extends _$AppDatabase {
   // `attempts.hintUsed` and the `attempts_item_recency` index.
 }
 
-DatabaseConnection _openConnection() => driftDatabase(name: 'fox_streak');
+DatabaseConnection _openConnection() => driftDatabase(
+  name: 'fox_streak',
+  native: DriftNativeOptions(
+    databaseDirectory: databaseDirectoryFor(defaultTargetPlatform),
+  ),
+);
+
+/// Folder the app database lives in on [platform] (issue #129); null keeps
+/// drift's default, the documents folder.
+///
+/// Linux uses the hidden per-user app-data folder (`~/.local/share/<app id>`)
+/// instead of a visible file in `~/Documents`. The folder is keyed by the
+/// GTK application id, not the binary path, so data survives replacing the
+/// app file (#130). Other platforms keep the default: moving it would orphan
+/// existing users' data.
+@visibleForTesting
+Future<Object> Function()? databaseDirectoryFor(TargetPlatform platform) =>
+    platform == TargetPlatform.linux ? getApplicationSupportDirectory : null;

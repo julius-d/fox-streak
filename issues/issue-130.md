@@ -84,3 +84,13 @@ install steps and no build from source.
 
 - Depends on #129 (Linux app on par: window, name, icon, share/import, data folder).
 - Extends `.github/workflows/release.yml`.
+
+## Notes from #129 (2026-11-15)
+
+- Reuse `linux/packaging/io.github.juliusd.foxstreak.{desktop,png}` (also in
+  the bundle's `share/`); the desktop file name must stay the app id so
+  GNOME/Wayland map the window to it.
+- `audioplayers_linux` links `libgstreamer-1.0`, `-app-1.0` and `-audio-1.0`
+  dynamically: the AppImage either bundles them or relies on the host's
+  (present on stock Ubuntu 24.04 desktops). A missing `playbin` plugin alone is
+  handled in-app (#129, #135).

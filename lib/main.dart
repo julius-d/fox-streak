@@ -10,7 +10,9 @@ import 'src/home_widget/home_widget_providers.dart';
 import 'src/theme/fox_streak_theme.dart';
 
 void main() async {
-  if (Platform.isMacOS || Platform.isWindows) {
+  // Phone-shaped, centered desktop window. On Linux (issue #129) centering
+  // is best-effort: Wayland compositors place new windows themselves.
+  if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
     WidgetsFlutterBinding.ensureInitialized();
     await windowManager.ensureInitialized();
     await windowManager.waitUntilReadyToShow(

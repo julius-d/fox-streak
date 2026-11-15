@@ -1,6 +1,6 @@
 # Issue 129: Linux desktop app on par with macOS and Windows
 
-Status: open | Type: enhancement | Refined-at: 2026-11-14
+Status: done | Type: enhancement | Refined-at: 2026-11-14 | Completed-at: 2026-11-15
 
 ## Goal
 
@@ -83,21 +83,21 @@ Linux alternative. This is the base for shipping a Linux download in #130.
 
 ## Acceptance criteria
 
-- [ ] Launching on Linux opens a phone-sized (same as macOS/Windows), resizable "Fox Streak" window with the fox icon; centered on X11 (best-effort on Wayland).
-- [ ] The fox icon and the "Fox Streak" name appear in the desktop app menu / launcher entry.
-- [ ] Share on Linux opens a save dialog with the suggested `<title>.foxstreak.json` filename. Save writes a file that re-imports correctly, and Cancel is a no-op.
-- [ ] After saving, a "Set saved" snackbar appears; its "Show folder" action opens the containing folder in the file manager.
-- [ ] Share on Android/iOS/macOS/Windows is unchanged.
-- [ ] Import on Linux works via the system file dialog.
-- [ ] With no file-dialog helper installed, both import and save show the friendly "install zenity" message instead of doing nothing.
-- [ ] The app runs without sound (no crash, no error shown) when audio playback isn't available. The Sound toggle is unchanged.
-- [ ] On Linux the database is stored in the per-user app-data folder (not `~/Documents`). Data survives restart and replacing the app binary.
-- [ ] Dark mode and DE/EN language follow the system on a stock GNOME desktop.
-- [ ] All new user-visible copy ("Set saved", "Show folder", no-dialog message) exists in DE + EN (arb), with encouraging tone.
-- [ ] Tests cover the Linux-specific share/save and no-dialog decisions (platform overridable in tests).
-- [ ] CI fails when the Linux build breaks.
-- [ ] AGENTS.md lists Linux as a kept platform: "Keep all five" and the plugin-support rule includes Linux.
-- [ ] Follows #015: snackbar/message reuse the kit, with no ad-hoc styling.
+- [x] Launching on Linux opens a phone-sized (same as macOS/Windows), resizable "Fox Streak" window with the fox icon; centered on X11 (best-effort on Wayland).
+- [x] The fox icon and the "Fox Streak" name appear in the desktop app menu / launcher entry.
+- [x] Share on Linux opens a save dialog with the suggested `<title>.foxstreak.json` filename. Save writes a file that re-imports correctly, and Cancel is a no-op.
+- [x] After saving, a "Set saved" snackbar appears; its "Show folder" action opens the containing folder in the file manager.
+- [x] Share on Android/iOS/macOS/Windows is unchanged.
+- [x] Import on Linux works via the system file dialog.
+- [x] With no file-dialog helper installed, both import and save show the friendly "install zenity" message instead of doing nothing. (Shipped as "install xdg-desktop-portal-gtk": `file_picker`'s Linux dialogs use the XDG desktop portal, not zenity.)
+- [x] The app runs without sound (no crash, no error shown) when audio playback isn't available. The Sound toggle is unchanged.
+- [x] On Linux the database is stored in the per-user app-data folder (not `~/Documents`). Data survives restart and replacing the app binary.
+- [x] Dark mode and DE/EN language follow the system on a stock GNOME desktop.
+- [x] All new user-visible copy ("Set saved", "Show folder", no-dialog message) exists in DE + EN (arb), with encouraging tone.
+- [x] Tests cover the Linux-specific share/save and no-dialog decisions (platform overridable in tests).
+- [x] CI fails when the Linux build breaks.
+- [x] AGENTS.md lists Linux as a kept platform: "Keep all five" and the plugin-support rule includes Linux.
+- [x] Follows #015: snackbar/message reuse the kit, with no ad-hoc styling.
 
 ## Out of scope
 
@@ -111,3 +111,27 @@ Linux alternative. This is the base for shipping a Linux download in #130.
 
 - Builds on `26186a1` (Linux scaffold) and #023 (fox icon artwork).
 - Blocks #130.
+
+## Summary
+
+- Linux app id `io.github.juliusd.foxstreak` (= Android id); DB in `~/.local/share/<app id>` (Linux only, `databaseDirectoryFor`).
+- Runner: "Fox Streak" title/app name, 390×844 centered (also via window_manager), window icon from bundle; `linux/packaging/` desktop entry + 256px icon + `install-desktop-entry.sh`, installed into the bundle's `share/`.
+- Share on Linux = save dialog → "Set saved" + "Show folder" (`url_launcher`); dialog failures → `FileDialogUnavailableException` → names `xdg-desktop-portal-gtk` (file_picker uses the XDG portal, not zenity — verified on Ubuntu 24.04 in Docker).
+- Found: `audioplayers_linux` aborts the app without GStreamer `playbin` → FFI probe + `SilentSoundPlayer` (upstream follow-up #135); creation/dispose/level-up chime errors are now logged, not uncaught.
+- CI builds `flutter build linux --debug`. Verified a real arm64 Linux build/run in Docker (window size, centering, title, icon, DE locale, data folder).
+- Screenshots: `issue-129-linux-window.png`, `issue-129-set-saved-snackbar.png`, `issue-129-no-file-dialog-message.png`.
+
+## Code review
+
+- `_fileDialog` classifies every non-`FileSystemException` Linux dialog error as "no portal".
+  Partly fixed: the cause is now logged and the `FileSystemException` path is tested; narrowing to D-Bus types would need a direct `dbus` dependency.
+- "Show folder" silently ignored `launchUrl` returning false.
+  Fixed: logged (no extra UI copy for a rare case).
+- 390×844 window is taller than 768px laptop screens.
+  Not fixed: same size as macOS/Windows (parity), window managers clamp to the work area.
+- `install-desktop-entry.sh` doesn't escape `%`, `$`, `\` in bundle paths.
+  Not fixed: rare paths; #130's AppImage replaces this route for users.
+- GStreamer probe runs synchronously on the first player read (lesson open).
+  Not fixed: one-time `gst_init`, which the plugin performs on that thread anyway.
+- Issue text and AGENTS.md wording still mentioned zenity / chime-only audio failures.
+  Fixed.

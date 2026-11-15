@@ -1901,6 +1901,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Retry'**
   String get packUpdateRetry;
+
+  /// Snackbar after saving a shared set via the Linux save dialog (issue #129)
+  ///
+  /// In en, this message translates to:
+  /// **'Set saved'**
+  String get setSavedToFile;
+
+  /// Snackbar action that opens the folder a shared set was saved to (issue #129)
+  ///
+  /// In en, this message translates to:
+  /// **'Show folder'**
+  String get showFolder;
+
+  /// Shown when Linux has no file dialog (XDG desktop portal) for import/save; names the package that fixes it (issue #129)
+  ///
+  /// In en, this message translates to:
+  /// **'Almost there! Your system can\'t show a file dialog yet. Installing xdg-desktop-portal-gtk fixes this.'**
+  String get fileDialogUnavailable;
+
+  /// Title of the Linux save dialog for sharing a set (issue #129)
+  ///
+  /// In en, this message translates to:
+  /// **'Save set'**
+  String get saveSetDialogTitle;
+
+  /// Title of the file dialog for importing a set (issue #129)
+  ///
+  /// In en, this message translates to:
+  /// **'Import set'**
+  String get importSetDialogTitle;
 }
 
 class _AppLocalizationsDelegate

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Fox Streak
+Comment=Learn in short daily lessons and keep your streak going
+Comment[de]=Lerne in kurzen täglichen Lektionen und halte deinen Streak am Laufen
+Exec=fox_streak_app
+Icon=io.github.juliusd.foxstreak
+Terminal=false
+Categories=Education;
+StartupWMClass=io.github.juliusd.foxstreak

@@ -11,6 +11,8 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'gstreamer_probe.dart';
+
 /// Sound toggle. Default on; mutable from settings (#055).
 class FoxSoundEnabled extends Notifier<bool> {
   @override
@@ -66,6 +68,17 @@ class AudioPlayersSoundPlayer implements FoxSoundPlayer {
 
   AudioPlayersSoundPlayer() {
     unawaited(_ensureCorrectReady().catchError(logChimeFailure));
+    // Without a usable audio backend (e.g. Linux without GStreamer's
+    // `playbin`, issue #129) creating a player fails. The correct-answer
+    // player's failure is logged via [_ensureCorrectReady] above; preparing
+    // the level-up player up front the same way logs its failure too —
+    // otherwise it'd be an uncaught async error. Plays then fail and are
+    // skipped quietly by their callers ([FoxFeedback]).
+    unawaited(
+      _levelUpPlayer
+          .setAudioContext(foxDuckingAudioContext())
+          .catchError(logChimeFailure),
+    );
   }
 
   Future<void> _ensureCorrectReady() {
@@ -76,8 +89,8 @@ class AudioPlayersSoundPlayer implements FoxSoundPlayer {
   }
 
   void dispose() {
-    unawaited(_levelUpPlayer.dispose());
-    unawaited(_correctPlayer.dispose());
+    unawaited(_levelUpPlayer.dispose().catchError(logChimeFailure));
+    unawaited(_correctPlayer.dispose().catchError(logChimeFailure));
   }
 
   Future<void> _prepareCorrect() async {
@@ -118,8 +131,32 @@ class AudioPlayersSoundPlayer implements FoxSoundPlayer {
 void logChimeFailure(Object error, StackTrace stackTrace) =>
     debugPrint('FoxSound: chime failed: $error\n$stackTrace');
 
+/// Plays nothing: the device has no usable audio backend (issue #129).
+class SilentSoundPlayer implements FoxSoundPlayer {
+  const SilentSoundPlayer();
+
+  @override
+  Future<void> playLevelUp() async {}
+
+  @override
+  Future<void> playCorrect() async {}
+}
+
+/// Whether the device can create audio players at all. Only Linux can lack
+/// a backend: without GStreamer's `playbin` (see `gstreamer_probe.dart`),
+/// creating a player would abort the app (issue #129).
+final Provider<bool> foxSoundBackendAvailableProvider = Provider<bool>(
+  (ref) => defaultTargetPlatform != TargetPlatform.linux || gstreamerCanPlay(),
+);
+
+/// Chimes are skipped quietly without an audio backend; the Sound toggle
+/// stays as it is.
 final Provider<FoxSoundPlayer> foxSoundPlayerProvider =
     Provider<FoxSoundPlayer>((ref) {
+      if (!ref.watch(foxSoundBackendAvailableProvider)) {
+        debugPrint('FoxSound: no audio backend, chimes are skipped');
+        return const SilentSoundPlayer();
+      }
       final player = AudioPlayersSoundPlayer();
       ref.onDispose(player.dispose);
       return player;

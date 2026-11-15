@@ -1,5 +1,6 @@
 // FoxFeedback.correctChime coverage for issue #122: gated by the sound
 // toggle, independent of haptics, and never lets a failing player escape.
+// FoxFeedback.levelUpChime (issue #129) shares the same policy.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -11,6 +12,7 @@ class _FakeSoundPlayer implements FoxSoundPlayer {
 
   final Object? failure;
   int playCorrectCallCount = 0;
+  int playLevelUpCallCount = 0;
 
   @override
   Future<void> playCorrect() {
@@ -20,13 +22,23 @@ class _FakeSoundPlayer implements FoxSoundPlayer {
   }
 
   @override
-  Future<void> playLevelUp() async {}
+  Future<void> playLevelUp() {
+    playLevelUpCallCount++;
+    if (failure != null) return Future<void>.error(failure!);
+    return Future<void>.value();
+  }
 }
 
 class _SyncThrowingPlayer extends _FakeSoundPlayer {
   @override
   Future<void> playCorrect() {
     playCorrectCallCount++;
+    throw StateError('sync');
+  }
+
+  @override
+  Future<void> playLevelUp() {
+    playLevelUpCallCount++;
     throw StateError('sync');
   }
 }
@@ -45,16 +57,15 @@ Future<void> _pumpAndChime(
   WidgetTester tester,
   FoxSoundPlayer player, {
   List<Override> extra = const [],
+  void Function(WidgetRef ref) chime = FoxFeedback.correctChime,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [foxSoundPlayerProvider.overrideWithValue(player), ...extra],
       child: MaterialApp(
         home: Consumer(
-          builder: (context, ref, _) => TextButton(
-            onPressed: () => FoxFeedback.correctChime(ref),
-            child: const Text('go'),
-          ),
+          builder: (context, ref, _) =>
+              TextButton(onPressed: () => chime(ref), child: const Text('go')),
         ),
       ),
     ),
@@ -119,5 +130,51 @@ void main() {
     expect(player.playCorrectCallCount, 1);
     expect(tester.takeException(), isNull);
     expect(logs.single, contains('chime failed: Bad state: sync'));
+  });
+
+  group('levelUpChime (issue #129)', () {
+    Future<void> pumpAndLevelUp(
+      WidgetTester tester,
+      FoxSoundPlayer player, {
+      List<Override> extra = const [],
+    }) => _pumpAndChime(
+      tester,
+      player,
+      extra: extra,
+      chime: FoxFeedback.levelUpChime,
+    );
+
+    testWidgets('plays the level-up chime when sound is on', (tester) async {
+      final player = _FakeSoundPlayer();
+      await pumpAndLevelUp(tester, player);
+      expect(player.playLevelUpCallCount, 1);
+      expect(player.playCorrectCallCount, 0);
+    });
+
+    testWidgets('is skipped when the sound toggle is off', (tester) async {
+      final player = _FakeSoundPlayer();
+      await pumpAndLevelUp(
+        tester,
+        player,
+        extra: [foxSoundEnabledProvider.overrideWith(_DisabledSound.new)],
+      );
+      expect(player.playLevelUpCallCount, 0);
+    });
+
+    testWidgets('swallows an asynchronous playback failure', (tester) async {
+      final player = _FakeSoundPlayer(failure: StateError('async'));
+      final logs = await _captureLogs(() => pumpAndLevelUp(tester, player));
+      expect(player.playLevelUpCallCount, 1);
+      expect(tester.takeException(), isNull);
+      expect(logs.single, contains('chime failed: Bad state: async'));
+    });
+
+    testWidgets('swallows a synchronous playback failure', (tester) async {
+      final player = _SyncThrowingPlayer();
+      final logs = await _captureLogs(() => pumpAndLevelUp(tester, player));
+      expect(player.playLevelUpCallCount, 1);
+      expect(tester.takeException(), isNull);
+      expect(logs.single, contains('chime failed: Bad state: sync'));
+    });
   });
 }
