@@ -1890,8 +1890,8 @@ void main() {
     });
   });
 
-  test('onUpgrade (v18 -> v19) adds attempts.hintUsed defaulting to false, '
-      'preserving existing attempts', () async {
+  test('onUpgrade (v18 -> v19) adds attempts.hintUsed defaulting to false '
+      'and the item/recency index, preserving existing attempts', () async {
     final dir = Directory.systemTemp.createTempSync('foxstreak_migration_v19');
     addTearDown(() => dir.deleteSync(recursive: true));
     final file = File('${dir.path}/test.sqlite');
@@ -1916,6 +1916,12 @@ void main() {
     expect([for (final a in attempts) a.ok], [true, false]);
     expect([for (final a in attempts) a.hintUsed], [false, false]);
     expect([for (final a in attempts) a.itemId], [itemId, itemId]);
+    final indexes = await db
+        .customSelect("PRAGMA index_list('attempts')")
+        .get();
+    expect([
+      for (final row in indexes) row.read<String>('name'),
+    ], contains('attempts_item_recency'));
   });
 }
 

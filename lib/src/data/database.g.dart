@@ -4461,6 +4461,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $MarketplaceSourcesTable(this);
   late final $ImportedMarketplaceSetsTable importedMarketplaceSets =
       $ImportedMarketplaceSetsTable(this);
+  late final Index attemptsItemRecency = Index(
+    'attempts_item_recency',
+    'CREATE INDEX attempts_item_recency ON attempts (item_id, at, id)',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -4476,6 +4480,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     dailyActivity,
     marketplaceSources,
     importedMarketplaceSets,
+    attemptsItemRecency,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([

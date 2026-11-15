@@ -118,3 +118,34 @@ mastery signal also reflects practice done before this feature.
   items) or sorting/filtering the Library by mastery.
 - The question-set exchange format is unchanged — hint information is
   local practice data and not exported, so no `docs/` updates are needed.
+
+## Summary
+
+- Schema v19: `attempts.hint_used` (pre-#134 rows = hint-free) + index
+  `attempts_item_recency`; `StatsRepository.watchSetMastery` counts mastered
+  items (two latest attempts correct + hint-free) per set in one query.
+- Kit: `FoxMasteryCrowns` (custom-painted, XP-gold, continuous fill) +
+  `FoxNewBadge`, with goldens. Library cards use `SetMasteryIndicator`; the
+  pure `planMasteryMotion` decides fill / pop / shimmer / morph vs. the value
+  the card last showed this session (`shownMasteryProvider`). Covered cards
+  don't animate until they are on top again.
+- The lesson result's "Home" pops to Home, so the motion usually plays when
+  the user reopens the Library via "Browse sets".
+- Set detail: "N items · M mastered" header + explanation; an empty set keeps
+  its existing "No items yet" empty state (no header).
+- Screenshots: `issues/done/issue134-*.png`.
+
+## Code review
+
+Mastery query window-scanned the whole `attempts` table on every answer.
+Fixed: added the `(item_id, at, id)` index in the v19 migration.
+Set detail header mixed counts from two streams (could briefly read e.g. "13 items · 12 mastered").
+Fixed: both counts come from the one mastery snapshot.
+Empty set shows the existing "No items yet. Add the first one!" state instead of a literal "No items".
+Not fixed: it already says "No items" and keeps the add-item CTA; no header for empty sets, as specified.
+Mastery changing mid-animation restarts the fill from the previous value (possible extra haptic tick).
+Not fixed: needs a stream re-emit within ~1s on a visible card; rare and harmless.
+`shownMasteryProvider` is a session-lived mutable map; deleted sets' entries are never evicted.
+Not fixed: a few ints per set for one app session; intentional session-only baseline.
+Deleting every answered item flips a set back to "New".
+Not fixed: matches the spec's "share of items currently in the set"; their attempts are gone too.

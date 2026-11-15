@@ -138,8 +138,12 @@ class SetDetailScreen extends ConsumerWidget {
             itemCount: loadedItems.length + 1,
             itemBuilder: (context, index) {
               if (index == 0) {
+                // Both counts from one mastery snapshot so they always
+                // match; the item list's own count only until it loads.
                 return _MasteryHeader(
-                  itemCount: loadedItems.length,
+                  itemCount: mastery.kind == MasteryKind.none
+                      ? loadedItems.length
+                      : mastery.itemCount,
                   masteredCount: mastery.masteredCount,
                 );
               }
