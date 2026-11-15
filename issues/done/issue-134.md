@@ -1,6 +1,6 @@
 # Issue 134: Mastery crowns on Library set cards instead of the item count
 
-Status: open | Priority: P2 | Type: feature | Refined-at: 2026-11-15
+Status: done | Priority: P2 | Type: feature | Refined-at: 2026-11-15 | Completed-at: 2026-11-15
 
 PR: https://github.com/julius-d/fox-streak/pull/4
 
