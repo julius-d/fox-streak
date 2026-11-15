@@ -3,7 +3,8 @@
 #   tool/build_appimage.sh <bundle-dir> <output.AppImage>
 # e.g. tool/build_appimage.sh build/linux/x64/release/bundle \
 #        fox-streak-1.2.3-linux-x86_64.AppImage
-# Linux x86_64 only. Uses appimagetool's static type-2 runtime, so the result
+# Linux x86_64 only; needs desktop-file-utils (appimagetool validates the
+# desktop file). Uses appimagetool's static type-2 runtime, so the result
 # runs without libfuse2 (which Ubuntu 24.04 no longer ships).
 set -euo pipefail
 
