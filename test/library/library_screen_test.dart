@@ -22,9 +22,11 @@ import 'package:fox_streak_app/l10n/app_localizations.dart';
 import 'package:fox_streak_app/src/data/database.dart';
 import 'package:fox_streak_app/src/data/providers.dart';
 import 'package:fox_streak_app/src/data/sets_repository.dart';
+import 'package:fox_streak_app/src/data/stats_repository.dart';
 import 'package:fox_streak_app/src/lesson/lesson_screen.dart';
 import 'package:fox_streak_app/src/library/library_screen.dart';
 import 'package:fox_streak_app/src/theme/fox_streak_theme.dart';
+import 'package:fox_streak_app/src/widgets/widgets.dart';
 
 import '../data/test_helpers.dart';
 
@@ -429,4 +431,133 @@ void main() {
       await unmount(tester);
     },
   );
+
+  group('mastery on set cards (issue #134)', () {
+    Future<void> answerTwiceCorrect(AppDatabase db, int itemId) async {
+      final stats = StatsRepository(db, FakeClock(kTestToday));
+      for (var i = 0; i < 2; i++) {
+        await stats.recordAttempt(itemId: itemId, ok: true);
+      }
+    }
+
+    Future<({int practiced, int fresh, int empty})> seedSets(
+      AppDatabase db,
+      FakeClock clock,
+    ) async {
+      final repo = repoOf(db, clock);
+      final practiced = await repo.createSet(
+        title: 'Animals',
+        createdBy: 'Mama',
+      );
+      final ids = [
+        for (var i = 0; i < 4; i++)
+          await repo.addItem(
+            setId: practiced,
+            type: 'freeText',
+            prompt: 'P$i',
+            answer: 'A$i',
+          ),
+      ];
+      await answerTwiceCorrect(db, ids[0]);
+      await answerTwiceCorrect(db, ids[1]);
+      final fresh = await repo.createSet(title: 'Colors', createdBy: 'Mama');
+      await repo.addItem(
+        setId: fresh,
+        type: 'freeText',
+        prompt: 'rot',
+        answer: 'red',
+      );
+      final empty = await repo.createSet(title: 'Empty', createdBy: 'Mama');
+      return (practiced: practiced, fresh: fresh, empty: empty);
+    }
+
+    Finder inCard(int setId, Finder matching) => find.descendant(
+      of: find.byKey(Key('setTile-$setId')),
+      matching: matching,
+    );
+
+    testWidgets('a practiced set shows crowns, an unanswered one the New '
+        'badge, an empty one neither — and no card shows its item count', (
+      tester,
+    ) async {
+      final clock = FakeClock(kTestToday);
+      final db = await pumpLibrary(tester, clock);
+      final sets = await seedSets(db, clock);
+      await settle(tester);
+
+      final crowns = tester.widget<FoxMasteryCrowns>(
+        inCard(sets.practiced, find.byType(FoxMasteryCrowns)),
+      );
+      expect(crowns.fill, 2.5);
+      expect(inCard(sets.fresh, find.byType(FoxNewBadge)), findsOneWidget);
+      expect(inCard(sets.fresh, find.byType(FoxMasteryCrowns)), findsNothing);
+      expect(find.byKey(Key('setMastery-${sets.empty}')), findsNothing);
+      expect(inCard(sets.empty, find.byType(FoxNewBadge)), findsNothing);
+      expect(find.textContaining('item'), findsNothing);
+      await unmount(tester);
+    });
+
+    testWidgets('the crowns update when an answer is recorded', (tester) async {
+      final clock = FakeClock(kTestToday);
+      final db = await pumpLibrary(tester, clock);
+      final sets = await seedSets(db, clock);
+      await settle(tester);
+
+      final itemId = (await repoOf(db, clock).getItemsForSet(sets.fresh))
+          .single
+          .id;
+      await StatsRepository(db, clock).recordAttempt(itemId: itemId, ok: false);
+      await settle(tester);
+
+      expect(inCard(sets.fresh, find.byType(FoxNewBadge)), findsNothing);
+      final crowns = tester.widget<FoxMasteryCrowns>(
+        inCard(sets.fresh, find.byType(FoxMasteryCrowns)),
+      );
+      expect(crowns.fill, 0);
+      await unmount(tester);
+    });
+
+    for (final (name, theme) in [
+      ('light', FoxStreakTheme.light()),
+      ('dark', FoxStreakTheme.dark()),
+    ]) {
+      testWidgets('cards survive the largest font size without clipping '
+          '($name)', (tester) async {
+        final semantics = tester.ensureSemantics();
+        final clock = FakeClock(kTestToday);
+        final db = AppDatabase.forTesting(NativeDatabase.memory());
+        addTearDown(() async => db.close());
+        await seedSets(db, clock);
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              appDatabaseProvider.overrideWithValue(db),
+              systemClockProvider.overrideWithValue(clock),
+            ],
+            child: MaterialApp(
+              theme: theme,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              builder: (context, child) => MediaQuery(
+                data: MediaQuery.of(context)
+                    .copyWith(textScaler: const TextScaler.linear(3)),
+                child: child!,
+              ),
+              home: const LibraryScreen(),
+            ),
+          ),
+        );
+        await settle(tester);
+
+        expect(tester.takeException(), isNull);
+        expect(find.bySemanticsLabel(RegExp('50% mastered')), findsOneWidget);
+        expect(
+          find.bySemanticsLabel(RegExp('New, not practiced yet')),
+          findsOneWidget,
+        );
+        semantics.dispose();
+        await unmount(tester);
+      });
+    }
+  });
 }

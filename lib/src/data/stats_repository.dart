@@ -5,6 +5,7 @@ import 'package:drift/drift.dart';
 import '../pet/pet_catalog.dart' show kDefaultPetId;
 import 'clock.dart';
 import 'database.dart';
+import 'set_mastery.dart';
 
 /// Fixed id of the single per-device profile row.
 const int kProfileId = 0;
@@ -271,20 +272,66 @@ class StatsRepository {
     );
   }
 
-  /// Records a graded answer.
+  /// Records a graded answer; [hintUsed] marks an answer given after
+  /// revealing the hint (#134: it doesn't count toward mastery).
   ///
   /// Writes exactly one `attempts` row and ensures the profile row exists.
   /// Never modifies `xpTotal`, `streakCount` or `lastActiveDay`.
   Future<int> recordAttempt({
     required int itemId,
     required bool ok,
+    bool hintUsed = false,
     DateTime? now,
   }) async {
     await getProfile();
     final atMs = (now ?? _clock.now()).millisecondsSinceEpoch;
     return _db
         .into(_db.attempts)
-        .insert(AttemptsCompanion.insert(itemId: itemId, ok: ok, at: atMs));
+        .insert(
+          AttemptsCompanion.insert(
+            itemId: itemId,
+            ok: ok,
+            at: atMs,
+            hintUsed: Value(hintUsed),
+          ),
+        );
+  }
+
+  /// Mastery of every set that has items, keyed by set id (issue #134); a
+  /// set without items is absent (see [SetMastery.empty]).
+  ///
+  /// An item is mastered when its two most recent attempts (ties on `at`
+  /// broken by insertion order) are both correct and hint-free; one recent
+  /// attempt alone is never enough. Re-emits whenever items or attempts
+  /// change.
+  Stream<Map<int, SetMastery>> watchSetMastery() {
+    return _db
+        .customSelect(
+          'SELECT i.set_id AS set_id, COUNT(*) AS item_count, '
+          'COALESCE(SUM(r.clean = 2), 0) AS mastered_count, '
+          'COUNT(r.item_id) AS answered_count '
+          'FROM items i LEFT JOIN ('
+          '  SELECT item_id, SUM(ok = 1 AND hint_used = 0) AS clean '
+          '  FROM ('
+          '    SELECT item_id, ok, hint_used, ROW_NUMBER() OVER ('
+          '      PARTITION BY item_id ORDER BY at DESC, id DESC'
+          '    ) AS recency FROM attempts'
+          '  ) WHERE recency <= 2 GROUP BY item_id'
+          ') r ON r.item_id = i.id '
+          'GROUP BY i.set_id',
+          readsFrom: {_db.items, _db.attempts},
+        )
+        .watch()
+        .map(
+          (rows) => {
+            for (final row in rows)
+              row.read<int>('set_id'): SetMastery(
+                itemCount: row.read<int>('item_count'),
+                masteredCount: row.read<int>('mastered_count'),
+                practiced: row.read<int>('answered_count') > 0,
+              ),
+          },
+        );
   }
 
   Future<List<Attempt>> getAttemptsForItem(int itemId, {int? limit}) async {

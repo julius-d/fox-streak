@@ -109,6 +109,9 @@ class Attempts extends Table {
   BoolColumn get ok => boolean()();
   // Epoch millis.
   IntColumn get at => integer()();
+  // v19 (#134): the answer was given after revealing the item's hint. FALSE
+  // on every pre-#134 row — older answers count as hint-free for mastery.
+  BoolColumn get hintUsed => boolean().withDefault(const Constant(false))();
 }
 
 /// Single-row profile (id fixed to 0).
@@ -297,7 +300,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 18;
+  int get schemaVersion => 19;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -458,6 +461,11 @@ class AppDatabase extends _$AppDatabase {
       if (from < 18) {
         await _countFreezeDaysIntoStreak();
       }
+      // v19 (#134): adds the per-attempt hint flag driving set mastery;
+      // existing rows default to FALSE (hint-free).
+      if (from < 19) {
+        await m.addColumn(attempts, attempts.hintUsed);
+      }
     },
     beforeOpen: (details) async {
       // SQLite disables FK enforcement by default; without this,
@@ -562,7 +570,8 @@ class AppDatabase extends _$AppDatabase {
   // `items.marketplaceItemId` plus the `marketplace_sources`/
   // `imported_marketplace_sets` tables; v17 (#121) added `packs` and
   // `question_sets.pack_id`; v18 (#132) counted recorded freeze days into
-  // `profileStats.streakCount` (data only).
+  // `profileStats.streakCount` (data only); v19 (#134) added
+  // `attempts.hintUsed`.
 }
 
 DatabaseConnection _openConnection() => driftDatabase(name: 'fox_streak');

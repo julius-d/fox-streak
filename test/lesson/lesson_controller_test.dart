@@ -181,6 +181,43 @@ void main() {
     );
   });
 
+  test(
+    'submitGrade records the hint flag on the attempt row (issue #134)',
+    () async {
+      final item = await insertTestItem(db, 1);
+      final controller = container.read(lessonControllerProvider.notifier);
+      controller.start([item]);
+      controller.updateDraft(
+        ExerciseDraft(
+          hasAnswer: true,
+          grade: () => true,
+          correctAnswerLabel: '05/14/1985',
+          hintUsed: true,
+        ),
+      );
+      await controller.submitGrade();
+      await controller.next();
+
+      controller.start([item]);
+      controller.updateDraft(
+        ExerciseDraft(
+          hasAnswer: true,
+          grade: () => true,
+          correctAnswerLabel: '05/14/1985',
+        ),
+      );
+      await controller.submitGrade();
+
+      final attempts = await (db.select(
+        db.attempts,
+      )..orderBy([(t) => OrderingTerm.asc(t.id)])).get();
+      expect(
+        [for (final a in attempts) (a.ok, a.hintUsed)],
+        [(true, true), (true, false)],
+      );
+    },
+  );
+
   group('distractor pool (issue #116)', () {
     Future<List<Item>> makeItems(int count) async {
       final items = <Item>[await insertTestItem(db, 1)];

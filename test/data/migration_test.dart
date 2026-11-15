@@ -3,8 +3,8 @@
 // #055), v7 -> v8 (issue #059), v8 -> v9 (issue #064), v9 -> v10 (issue
 // #065), v10 -> v11 (issue #068), v11 -> v12 (issue #084), v12 -> v13
 // (issue #014), v13 -> v14 (issue #094), v14 -> v15 (issue #087), and
-// v15 -> v16 (issue #101), v16 -> v17 (issue #121), and v17 -> v18 (issue
-// #132) migration tests.
+// v15 -> v16 (issue #101), v16 -> v17 (issue #121), v17 -> v18 (issue
+// #132), and v18 -> v19 (issue #134) migration tests.
 //
 // Simulates pre-migration databases on disk, then reopens them with the
 // real (current schemaVersion) `AppDatabase` and asserts `onUpgrade` applied
@@ -30,6 +30,19 @@ import 'package:fox_streak_app/src/data/database.dart';
 import 'package:fox_streak_app/src/data/marketplace_repository.dart';
 import 'package:fox_streak_app/src/data/sets_repository.dart';
 import 'package:fox_streak_app/src/pet/pet_catalog.dart' show kDefaultPetId;
+
+/// Creates the v1..v18 `attempts` shape, i.e. without #134's `hint_used`
+/// — the current Dart `Attempts` definition already has it, so
+/// `m.createTable(db.attempts)` would mask the v19 `addColumn` migration.
+Future<void> _createAttemptsWithoutHintUsed(Migrator m) =>
+    m.database.customStatement('''
+      CREATE TABLE attempts (
+        id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        item_id INTEGER NOT NULL REFERENCES items (id) ON DELETE CASCADE,
+        ok INTEGER NOT NULL CHECK (ok IN (0, 1)),
+        at INTEGER NOT NULL
+      )
+    ''');
 
 /// Creates the pre-#022 `items` shape (`direction` TEXT instead of
 /// `promptLang`/`answerLang`) — the current Dart `Items` definition no
@@ -80,8 +93,8 @@ Future<int> _insertLegacyItem(
   );
 }
 
-/// Creates the pre-#010 (v1/v2) table shapes: `attempts` matches the
-/// current Dart def (no structural diff since v1); `questionSets` is the
+/// Creates the pre-#010 (v1/v2) table shapes: `attempts` is the v1..v18
+/// shape (see [_createAttemptsWithoutHintUsed]); `questionSets` is the
 /// pre-#045 shape (see [_createQuestionSetsWithoutCategory]); `items` is
 /// the pre-#022 shape (see [_createItemsTableWithDirection]); `profile_stats`
 /// is hand-written *without* `today_xp` — using `createAll()` here would
@@ -91,7 +104,7 @@ Future<void> _createLegacySchema(Migrator m) async {
   final db = m.database as AppDatabase;
   await _createQuestionSetsWithoutCategory(m);
   await _createItemsTableWithDirection(m);
-  await m.createTable(db.attempts);
+  await _createAttemptsWithoutHintUsed(m);
   await db.customStatement('''
     CREATE TABLE profile_stats (
       id INTEGER NOT NULL,
@@ -151,7 +164,7 @@ Future<void> _createProfileStatsWithTodayXpOnly(Migrator m) async {
   // `questionSets` is still pre-#045 (no `category`); `attempts` matches
   // the current Dart def, unaffected by #022/#012/#045.
   await _createQuestionSetsWithoutCategory(m);
-  await m.createTable(db.attempts);
+  await _createAttemptsWithoutHintUsed(m);
 }
 
 /// A schemaVersion-3 view of [AppDatabase], used only to seed a pre-#022
@@ -288,9 +301,8 @@ class _LegacyV5Database extends AppDatabase {
     onCreate: (m) async {
       await _createQuestionSetsWithoutCategory(m);
       await _createProfileStatsPrePetColumns(m);
-      final db = m.database as AppDatabase;
       await _createItemsTableWithoutImage(m);
-      await m.createTable(db.attempts);
+      await _createAttemptsWithoutHintUsed(m);
     },
   );
 }
@@ -311,10 +323,9 @@ class _LegacyV6Database extends AppDatabase {
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
       await _createProfileStatsPrePetColumns(m);
-      final db = m.database as AppDatabase;
       await _createQuestionSetsWithoutPackId(m);
       await _createItemsTableWithoutImage(m);
-      await m.createTable(db.attempts);
+      await _createAttemptsWithoutHintUsed(m);
     },
   );
 }
@@ -338,7 +349,7 @@ class _LegacyV7Database extends AppDatabase {
       final db = m.database as AppDatabase;
       await _createQuestionSetsWithoutPackId(m);
       await _createItemsTableWithoutImage(m);
-      await m.createTable(db.attempts);
+      await _createAttemptsWithoutHintUsed(m);
       await m.createTable(db.appSettings);
     },
   );
@@ -402,7 +413,7 @@ class _LegacyV8Database extends AppDatabase {
       final db = m.database as AppDatabase;
       await _createQuestionSetsWithoutPackId(m);
       await _createItemsTableWithoutImage(m);
-      await m.createTable(db.attempts);
+      await _createAttemptsWithoutHintUsed(m);
       await _createProfileStatsPreCoinsTotal(m);
       await m.createTable(db.appSettings);
       await _createOwnedMascotsPreCount(m);
@@ -428,7 +439,7 @@ class _LegacyV9Database extends AppDatabase {
       final db = m.database as AppDatabase;
       await _createQuestionSetsWithoutPackId(m);
       await _createItemsTableWithoutImage(m);
-      await m.createTable(db.attempts);
+      await _createAttemptsWithoutHintUsed(m);
       await _createProfileStatsPreCoinsTotal(m);
       await m.createTable(db.appSettings);
       await m.database.customStatement('''
@@ -460,7 +471,7 @@ class _LegacyV10Database extends AppDatabase {
       final db = m.database as AppDatabase;
       await _createQuestionSetsWithoutPackId(m);
       await _createItemsTableWithoutImage(m);
-      await m.createTable(db.attempts);
+      await _createAttemptsWithoutHintUsed(m);
       await m.database.customStatement('''
         CREATE TABLE profile_stats (
           id INTEGER NOT NULL,
@@ -511,7 +522,7 @@ class _LegacyV11Database extends AppDatabase {
       final db = m.database as AppDatabase;
       await _createQuestionSetsWithoutPackId(m);
       await _createItemsTableWithoutImage(m);
-      await m.createTable(db.attempts);
+      await _createAttemptsWithoutHintUsed(m);
       await _createProfileStatsTableWithoutStreakFreezes(m);
       await m.createTable(db.appSettings);
       await m.createTable(db.ownedPets);
@@ -558,7 +569,7 @@ class _LegacyV12Database extends AppDatabase {
       final db = m.database as AppDatabase;
       await _createQuestionSetsWithoutPackId(m);
       await _createItemsTableWithoutImage(m);
-      await m.createTable(db.attempts);
+      await _createAttemptsWithoutHintUsed(m);
       await _createProfileStatsTableWithoutStreakFreezes(m);
       await m.createTable(db.appSettings);
       await m.createTable(db.ownedPets);
@@ -609,7 +620,7 @@ class _LegacyV13Database extends AppDatabase {
       final db = m.database as AppDatabase;
       await _createQuestionSetsWithoutPackId(m);
       await _createItemsTableWithImageNoCopyright(m);
-      await m.createTable(db.attempts);
+      await _createAttemptsWithoutHintUsed(m);
       await _createProfileStatsTableWithoutStreakFreezes(m);
       await m.createTable(db.appSettings);
       await m.createTable(db.ownedPets);
@@ -663,7 +674,7 @@ class _LegacyV14Database extends AppDatabase {
       final db = m.database as AppDatabase;
       await _createQuestionSetsWithoutPackId(m);
       await _createItemsTableWithoutMarketplaceId(m);
-      await m.createTable(db.attempts);
+      await _createAttemptsWithoutHintUsed(m);
       await _createProfileStatsTableWithoutStreakFreezes(m);
       await m.createTable(db.appSettings);
       await m.createTable(db.ownedPets);
@@ -715,7 +726,7 @@ class _LegacyV15Database extends AppDatabase {
       final db = m.database as AppDatabase;
       await _createQuestionSetsWithoutPackId(m);
       await _createItemsTableWithoutMarketplaceId(m);
-      await m.createTable(db.attempts);
+      await _createAttemptsWithoutHintUsed(m);
       await m.createTable(db.profileStats);
       await m.createTable(db.appSettings);
       await m.createTable(db.ownedPets);
@@ -739,7 +750,7 @@ class _LegacyV16Database extends AppDatabase {
       final db = m.database as AppDatabase;
       await _createQuestionSetsWithoutPackId(m);
       await m.createTable(db.items);
-      await m.createTable(db.attempts);
+      await _createAttemptsWithoutHintUsed(m);
       await m.createTable(db.profileStats);
       await m.createTable(db.appSettings);
       await m.createTable(db.ownedPets);
@@ -751,8 +762,8 @@ class _LegacyV16Database extends AppDatabase {
 }
 
 /// A schemaVersion-17 view of [AppDatabase], used only to seed a pre-#132
-/// file. v18 is a data-only step, so every table is already in its current
-/// shape.
+/// file. v18 is a data-only step, so every table except `attempts` (see
+/// [_LegacyV18Database]) is already in its current shape.
 class _LegacyV17Database extends AppDatabase {
   _LegacyV17Database(QueryExecutor executor) : super.forTesting(executor); // ignore: use_super_parameters — must forward to the named forTesting() ctor, not the default unnamed one
 
@@ -761,7 +772,32 @@ class _LegacyV17Database extends AppDatabase {
 
   @override
   MigrationStrategy get migration =>
-      MigrationStrategy(onCreate: (m) => m.createAll());
+      MigrationStrategy(onCreate: _createAllWithoutHintUsed);
+}
+
+/// A schemaVersion-18 view of [AppDatabase], used only to seed a pre-#134
+/// file: every table in its current shape except `attempts`, which lacks
+/// `hint_used`.
+class _LegacyV18Database extends AppDatabase {
+  _LegacyV18Database(QueryExecutor executor) : super.forTesting(executor); // ignore: use_super_parameters — must forward to the named forTesting() ctor, not the default unnamed one
+
+  @override
+  int get schemaVersion => 18;
+
+  @override
+  MigrationStrategy get migration =>
+      MigrationStrategy(onCreate: _createAllWithoutHintUsed);
+}
+
+Future<void> _createAllWithoutHintUsed(Migrator m) async {
+  final db = m.database as AppDatabase;
+  for (final table in db.allTables) {
+    if (table == db.attempts) {
+      await _createAttemptsWithoutHintUsed(m);
+    } else {
+      await m.createTable(table);
+    }
+  }
 }
 
 Future<void> _markImported(
@@ -1852,6 +1888,34 @@ void main() {
       addTearDown(db.close);
       expect(await db.select(db.profileStats).get(), isEmpty);
     });
+  });
+
+  test('onUpgrade (v18 -> v19) adds attempts.hintUsed defaulting to false, '
+      'preserving existing attempts', () async {
+    final dir = Directory.systemTemp.createTempSync('foxstreak_migration_v19');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final file = File('${dir.path}/test.sqlite');
+    final legacy = _LegacyV18Database(NativeDatabase(file));
+    final setId = await SetsRepository(legacy)
+        .createSet(title: 'S', createdBy: 'teacher');
+    final itemId = await SetsRepository(legacy)
+        .addItem(setId: setId, type: 'freeText', prompt: 'P', answer: 'A');
+    for (final ok in [true, false]) {
+      await legacy.customStatement(
+        'INSERT INTO attempts (item_id, ok, at) VALUES (?, ?, ?)',
+        [itemId, ok ? 1 : 0, 1000],
+      );
+    }
+    await legacy.close();
+
+    final db = AppDatabase.forTesting(NativeDatabase(file));
+    addTearDown(db.close);
+    final attempts = await (db.select(
+      db.attempts,
+    )..orderBy([(t) => OrderingTerm.asc(t.id)])).get();
+    expect([for (final a in attempts) a.ok], [true, false]);
+    expect([for (final a in attempts) a.hintUsed], [false, false]);
+    expect([for (final a in attempts) a.itemId], [itemId, itemId]);
   });
 }
 

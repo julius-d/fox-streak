@@ -7,7 +7,8 @@
 // dialog to a full screen by #047). Share/Import used to live in an
 // `AppBar` overflow menu here — moved to the Library screen's card menu and
 // FAB speed-dial respectively, and the (now empty) overflow menu removed
-// entirely (issue #074).
+// entirely (issue #074). A header above the items shows the item count,
+// how many are mastered and what "mastered" means (issue #134).
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,6 +16,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../l10n/app_localizations.dart';
 import '../data/database.dart';
 import '../data/providers.dart';
+import '../data/set_mastery.dart';
 import '../data/validation.dart';
 import '../pet/pet_providers.dart';
 import '../theme/fox_streak_theme.dart';
@@ -129,11 +131,19 @@ class SetDetailScreen extends ConsumerWidget {
               ctaKey: const Key('emptySetBackToLibraryButton'),
             );
           }
+          final mastery =
+              ref.watch(masteryForSetProvider(setId)).value ?? SetMastery.empty;
           return ListView.builder(
             padding: fabListBottomPadding(context),
-            itemCount: loadedItems.length,
+            itemCount: loadedItems.length + 1,
             itemBuilder: (context, index) {
-              final item = loadedItems[index];
+              if (index == 0) {
+                return _MasteryHeader(
+                  itemCount: loadedItems.length,
+                  masteredCount: mastery.masteredCount,
+                );
+              }
+              final item = loadedItems[index - 1];
               final typeLabel = switch (item.type) {
                 'choice' => l10n.typeChoice,
                 'freeText' => l10n.typeFreeText,
@@ -197,6 +207,47 @@ class SetDetailScreen extends ConsumerWidget {
             },
           );
         },
+      ),
+    );
+  }
+}
+
+/// "12 items · 7 mastered" plus what "mastered" means (issue #134).
+class _MasteryHeader extends StatelessWidget {
+  final int itemCount;
+  final int masteredCount;
+
+  const _MasteryHeader({required this.itemCount, required this.masteredCount});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    return Padding(
+      key: const Key('setMasteryHeader'),
+      padding: const EdgeInsets.fromLTRB(
+        FoxSpacing.lg,
+        FoxSpacing.md,
+        FoxSpacing.lg,
+        FoxSpacing.sm,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '${l10n.setItemCount(itemCount)} · '
+            '${l10n.setMasteredCount(masteredCount)}',
+            key: const Key('setMasterySummary'),
+            style: theme.textTheme.titleSmall,
+          ),
+          const SizedBox(height: FoxSpacing.xs),
+          Text(
+            l10n.setMasteryExplanation,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -435,6 +435,7 @@ class LessonController extends Notifier<LessonState> {
     await _statsRepo.recordAttempt(
       itemId: item.id,
       ok: correct,
+      hintUsed: draft.hintUsed,
       now: _clock.now(),
     );
 
@@ -472,6 +473,7 @@ class LessonController extends Notifier<LessonState> {
     await _statsRepo.recordAttempt(
       itemId: item.id,
       ok: false,
+      hintUsed: outcome.hintUsed,
       now: _clock.now(),
     );
 

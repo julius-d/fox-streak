@@ -9,12 +9,38 @@
   "librarySeedError": "Could not load the demo set. Please try again.",
   "librarySeedLoading": "Loading demo set…",
   "@setItemCount": {
-    "description": "Item count subtitle on a set card",
+    "description": "Item count of a set (Marketplace set rows/preview, set detail header)",
     "placeholders": {
       "count": {"type": "int"}
     }
   },
   "setItemCount": "{count, plural, =0{No items} =1{1 item} other{{count} items}}",
+  "@masteryNewBadge": {
+    "description": "Badge on a Library set card whose items were never answered (issue #134)"
+  },
+  "masteryNewBadge": "New",
+  "@masteryNewSemantics": {
+    "description": "Screen-reader label of the New badge on a Library set card (issue #134)"
+  },
+  "masteryNewSemantics": "New, not practiced yet",
+  "@masteryPercentSemantics": {
+    "description": "Screen-reader label of the mastery crowns on a Library set card (issue #134)",
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "masteryPercentSemantics": "{percent}% mastered",
+  "@setMasteredCount": {
+    "description": "Mastered item count in the set detail header, after the item count (issue #134)",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "setMasteredCount": "{count} mastered",
+  "@setMasteryExplanation": {
+    "description": "Explains what a mastered item is, below the set detail header counts (issue #134)"
+  },
+  "setMasteryExplanation": "Mastered = answered correctly twice in a row without a hint",
   "newSet": "New set",
   "createSet": "Create set",
   "editSet": "Edit set",

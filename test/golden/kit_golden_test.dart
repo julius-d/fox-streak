@@ -280,6 +280,44 @@ void main() {
     }
   });
 
+  group('mastery crowns (#134)', () {
+    for (final (String themeName, ThemeData theme) in themes) {
+      testWidgets('mastery crowns partial ($themeName)', (
+        WidgetTester tester,
+      ) async {
+        await _expectGolden(
+          tester,
+          'fox_mastery_crowns_partial_$themeName',
+          const FoxMasteryCrowns(fill: 2.25),
+          theme: theme,
+          surfaceSize: const Size(160, 60),
+        );
+      });
+
+      testWidgets('mastery crowns full ($themeName)', (
+        WidgetTester tester,
+      ) async {
+        await _expectGolden(
+          tester,
+          'fox_mastery_crowns_full_$themeName',
+          const FoxMasteryCrowns(fill: 5),
+          theme: theme,
+          surfaceSize: const Size(160, 60),
+        );
+      });
+
+      testWidgets('new badge ($themeName)', (WidgetTester tester) async {
+        await _expectGolden(
+          tester,
+          'fox_new_badge_$themeName',
+          const FoxNewBadge(label: 'New'),
+          theme: theme,
+          surfaceSize: const Size(160, 60),
+        );
+      });
+    }
+  });
+
   group('question image caption', () {
     for (final (String themeName, ThemeData theme) in themes) {
       testWidgets('question image caption ($themeName)', (
