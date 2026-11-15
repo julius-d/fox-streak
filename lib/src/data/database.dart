@@ -102,6 +102,11 @@ class Items extends Table {
 }
 
 /// One row per graded answer. No per-attempt XP column (see #010).
+///
+/// v19 (#134): indexed by item and recency, so set mastery's "two most
+/// recent attempts per item" window reads the index instead of sorting the
+/// whole (ever-growing) table on every answer.
+@TableIndex(name: 'attempts_item_recency', columns: {#itemId, #at, #id})
 class Attempts extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get itemId =>
@@ -461,10 +466,12 @@ class AppDatabase extends _$AppDatabase {
       if (from < 18) {
         await _countFreezeDaysIntoStreak();
       }
-      // v19 (#134): adds the per-attempt hint flag driving set mastery;
-      // existing rows default to FALSE (hint-free).
+      // v19 (#134): adds the per-attempt hint flag driving set mastery
+      // (existing rows default to FALSE, hint-free) and the item/recency
+      // index its query reads.
       if (from < 19) {
         await m.addColumn(attempts, attempts.hintUsed);
+        await m.createIndex(attemptsItemRecency);
       }
     },
     beforeOpen: (details) async {
@@ -571,7 +578,7 @@ class AppDatabase extends _$AppDatabase {
   // `imported_marketplace_sets` tables; v17 (#121) added `packs` and
   // `question_sets.pack_id`; v18 (#132) counted recorded freeze days into
   // `profileStats.streakCount` (data only); v19 (#134) added
-  // `attempts.hintUsed`.
+  // `attempts.hintUsed` and the `attempts_item_recency` index.
 }
 
 DatabaseConnection _openConnection() => driftDatabase(name: 'fox_streak');
