@@ -1,6 +1,7 @@
 # Issue 130: Linux AppImage in the multi-platform release
 
-Status: open | Type: build | Refined-at: 2026-11-14
+Status: done | Type: build | Refined-at: 2026-11-14
+Completed-at: 2026-11-15
 
 ## Goal
 
@@ -94,3 +95,21 @@ install steps and no build from source.
   dynamically: the AppImage either bundles them or relies on the host's
   (present on stock Ubuntu 24.04 desktops). A missing `playbin` plugin alone is
   handled in-app (#129, #135).
+
+## Summary
+
+- `tool/build_appimage.sh` packages the Linux bundle into an AppDir (whole bundle in `usr/bin`, #129 desktop file + icon at the root, `AppRun`) and builds it with appimagetool 1.9.0's static runtime (no libfuse2).
+- `release.yml`: new `build-linux` job (pinned `ubuntu-24.04`), required by `release`; asset `fox-streak-<version>-linux-x86_64.AppImage`; release body = changelog + `.github/release-notes-linux.md`; summary line added.
+- `ci.yml` smoke-packages the debug bundle and checks no libfuse link + AppDir content. README/CONTRIBUTING updated.
+- Not verifiable on this macOS machine: first real proof is the CI run and the next release (no GStreamer bundling; relies on host libs).
+
+## Code review
+
+- appimagetool download was unverified.
+  Fixed: pinned sha256 in `tool/build_appimage.sh`.
+- Release notes named zenity, but the app uses the XDG desktop portal (AGENTS.md, #129).
+  Fixed: notes now name `xdg-desktop-portal-gtk`.
+- CI smoke never runs the app (AppRun / `/proc/self/exe` path untested) and the `ldd` libfuse check is weak.
+  Not fixed: needs a Linux host with a display to get right; first release run is the proof.
+- Smoke job uses `ubuntu-latest`, release pins `ubuntu-24.04`.
+  Not fixed: harmless today, same as other CI jobs.

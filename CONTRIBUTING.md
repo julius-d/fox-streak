@@ -62,6 +62,7 @@ accepted tradeoff for one Flutter setup on this small MVP).
 | `flutter test` (unit/widget in `test/` only, not `integration_test/`) | `flutter test` |
 | `flutter build apk --debug` (unsigned smoke build) | same — needs the Android SDK; expected to fail locally (see AGENTS.md), CI is the gate |
 | `flutter build linux --debug` (smoke build, #129) | same — Linux host with the packages above only; CI is the gate |
+| `tool/build_appimage.sh <bundle> <out>` (AppImage packaging smoke, #130) | same, after the Linux build — Linux x86_64 only; CI is the gate |
 
 Closing-proof convention: an issue closed on CI evidence records a green run
 whose URL cites a `push`-triggered run with its `headSha` actually on `main`

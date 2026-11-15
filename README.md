@@ -25,6 +25,10 @@ Download the latest DMG from the [Releases page](https://github.com/julius-d/fox
 
 Download the latest ZIP from the [Releases page](https://github.com/julius-d/fox-streak/releases/latest).
 
+### Linux
+
+Download the latest AppImage (x86_64, Ubuntu 24.04+ or similar) from the [Releases page](https://github.com/julius-d/fox-streak/releases/latest), then `chmod +x` it and run it.
+
 ---
 
 Collectible pet animations are Google's Noto Emoji animated assets (CC BY
